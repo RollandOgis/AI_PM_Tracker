@@ -1,427 +1,200 @@
-from flask import (
-    Flask,
-    render_template,
-    request,
-    redirect,
-    session
-)
-
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
-
-from datetime import date
-
-from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
-)
-
-from functools import wraps
-
+import os
 
 app = Flask(__name__)
+app.secret_key = "secretkey"
 
-app.secret_key = "supersecretkey"
-
-
-def login_required(route_function):
-
-    @wraps(route_function)
-    def wrapper(*args, **kwargs):
-
-        if "user_id" not in session:
-            return redirect("/login")
-
-        return route_function(*args, **kwargs)
-
-    return wrapper
+DATABASE = "ai_pm_tracker.db"
 
 
-@app.route("/")
-@login_required
-def home():
+# ---------------- DATABASE ---------------- #
 
-    conn = sqlite3.connect("ai_pm_tracker.db")
+def get_db_connection():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT id,
-           name,
-           status,
-           start_date,
-           end_date
-    FROM projects
-    WHERE user_id = ?
-    """, (session["user_id"],))
-
-    projects = cursor.fetchall()
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+    )
+    """)
 
     cursor.execute("""
-    SELECT COUNT(*)
-    FROM projects
-    WHERE user_id = ?
-    """, (session["user_id"],))
-
-    total_projects = cursor.fetchone()[0]
-
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],))
-
-    total_tasks = cursor.fetchone()[0]
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        status TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        user_id INTEGER
+    )
+    """)
 
     cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.status = 'Completed'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        title TEXT,
+        description TEXT,
+        priority TEXT,
+        status TEXT,
+        due_date TEXT
+    )
+    """)
 
-    completed_tasks = cursor.fetchone()[0]
+    conn.commit()
+    conn.close()
 
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.status = 'In Progress'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
 
-    in_progress_tasks = cursor.fetchone()[0]
+init_db()
 
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.status = 'Pending'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
 
-    pending_tasks = cursor.fetchone()[0]
+# ---------------- HOME ---------------- #
 
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.status = 'Blocked'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
+@app.route("/")
+def home():
+    if "user_id" not in session:
+        return redirect("/login")
 
-    blocked_tasks = cursor.fetchone()[0]
+    conn = get_db_connection()
 
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.priority = 'High'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
+    projects = conn.execute(
+        "SELECT * FROM projects WHERE user_id = ?",
+        (session["user_id"],)
+    ).fetchall()
 
-    high_priority_tasks = cursor.fetchone()[0]
+    tasks = conn.execute("SELECT * FROM tasks").fetchall()
 
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.priority = 'Medium'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
+    total_projects = len(projects)
+    total_tasks = len(tasks)
 
-    medium_priority_tasks = cursor.fetchone()[0]
+    completed_tasks = len(
+        [task for task in tasks if task["status"] == "Completed"]
+    )
 
-    cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.priority = 'Low'
-    AND projects.user_id = ?
-    """, (session["user_id"],))
+    high_tasks = len(
+        [task for task in tasks if task["priority"] == "High"]
+    )
 
-    low_priority_tasks = cursor.fetchone()[0]
+    medium_tasks = len(
+        [task for task in tasks if task["priority"] == "Medium"]
+    )
 
-    all_projects = []
+    low_tasks = len(
+        [task for task in tasks if task["priority"] == "Low"]
+    )
 
-    for project in projects:
-
-        cursor.execute("""
-        SELECT title,
-               priority,
-               status,
-               due_date
-        FROM tasks
-        WHERE project_id = ?
-        """, (project[0],))
-
-        tasks = cursor.fetchall()
-
-        cursor.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE project_id = ?
-        """, (project[0],))
-
-        total_project_tasks = cursor.fetchone()[0]
-
-        cursor.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE project_id = ?
-        AND status = 'Completed'
-        """, (project[0],))
-
-        completed_project_tasks = cursor.fetchone()[0]
-
-        if total_project_tasks > 0:
-
-            completion_percentage = round(
-                (completed_project_tasks / total_project_tasks) * 100
-            )
-
-        else:
-
-            completion_percentage = 0
-
-        all_projects.append({
-            "project": project,
-            "tasks": tasks,
-            "completion": completion_percentage
-        })
+    in_progress_tasks = len(
+        [task for task in tasks if task["status"] == "In Progress"]
+    )
 
     conn.close()
 
     return render_template(
         "index.html",
-        projects=all_projects,
         total_projects=total_projects,
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
-        in_progress_tasks=in_progress_tasks,
-        pending_tasks=pending_tasks,
-        blocked_tasks=blocked_tasks,
-        high_priority_tasks=high_priority_tasks,
-        medium_priority_tasks=medium_priority_tasks,
-        low_priority_tasks=low_priority_tasks,
-        current_date=str(date.today())
+        high_tasks=high_tasks,
+        medium_tasks=medium_tasks,
+        low_tasks=low_tasks,
+        in_progress_tasks=in_progress_tasks
     )
 
 
-@app.route("/tasks")
-@login_required
-def tasks():
+# ---------------- REGISTER ---------------- #
 
-    search = request.args.get("search", "")
-    sort = request.args.get("sort", "")
-
-    conn = sqlite3.connect("ai_pm_tracker.db")
-    cursor = conn.cursor()
-
-    base_query = """
-    SELECT tasks.id,
-           tasks.title,
-           tasks.priority,
-           tasks.status,
-           tasks.due_date,
-           projects.name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    AND (
-        tasks.title LIKE ?
-        OR tasks.priority LIKE ?
-        OR tasks.status LIKE ?
-        OR projects.name LIKE ?
-    )
-    """
-
-    if sort == "due_date":
-        base_query += " ORDER BY tasks.due_date ASC"
-
-    elif sort == "priority":
-        base_query += " ORDER BY tasks.priority ASC"
-
-    elif sort == "status":
-        base_query += " ORDER BY tasks.status ASC"
-
-    cursor.execute(base_query, (
-        session["user_id"],
-        "%" + search + "%",
-        "%" + search + "%",
-        "%" + search + "%",
-        "%" + search + "%"
-    ))
-
-    all_tasks = cursor.fetchall()
-
-    conn.close()
-
-    return render_template(
-        "tasks.html",
-        tasks=all_tasks,
-        current_date=str(date.today()),
-        search=search,
-        sort=sort
-    )
-
-
-@app.route("/add-task", methods=["GET", "POST"])
-@login_required
-def add_task_page():
-
-    conn = sqlite3.connect("ai_pm_tracker.db")
-    cursor = conn.cursor()
-
+@app.route("/register", methods=["GET", "POST"])
+def register():
     if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        priority = request.form["priority"]
-        status = request.form["status"]
-        due_date = request.form["due_date"]
+        conn = get_db_connection()
 
-        cursor.execute("""
-        INSERT INTO tasks (
-            project_id,
-            title,
-            priority,
-            status,
-            due_date
-        )
-        VALUES (?, ?, ?, ?, ?)
-        """, (
-            project_id,
-            title,
-            priority,
-            status,
-            due_date
-        ))
+        try:
+            conn.execute(
+                "INSERT INTO users (username, password) VALUES (?, ?)",
+                (username, password)
+            )
 
-        conn.commit()
+            conn.commit()
 
-    cursor.execute("""
-    SELECT id, name
-    FROM projects
-    WHERE user_id = ?
-    """, (session["user_id"],))
+        except:
+            conn.close()
+            return "User already exists"
 
-    projects = cursor.fetchall()
-
-    conn.close()
-
-    return render_template(
-        "add_task.html",
-        projects=projects
-    )
-
-
-@app.route("/delete-task/<int:task_id>", methods=["POST"])
-@login_required
-def delete_task(task_id):
-
-    conn = sqlite3.connect("ai_pm_tracker.db")
-    cursor = conn.cursor()
-
-    cursor.execute("""
-    DELETE FROM tasks
-    WHERE id = ?
-    """, (task_id,))
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/tasks")
-
-
-@app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
-@login_required
-def edit_task(task_id):
-
-    conn = sqlite3.connect("ai_pm_tracker.db")
-    cursor = conn.cursor()
-
-    if request.method == "POST":
-
-        title = request.form["title"]
-        priority = request.form["priority"]
-        status = request.form["status"]
-        due_date = request.form["due_date"]
-
-        cursor.execute("""
-        UPDATE tasks
-        SET title = ?,
-            priority = ?,
-            status = ?,
-            due_date = ?
-        WHERE id = ?
-        """, (
-            title,
-            priority,
-            status,
-            due_date,
-            task_id
-        ))
-
-        conn.commit()
         conn.close()
 
-        return redirect("/tasks")
+        return redirect("/login")
 
-    cursor.execute("""
-    SELECT id,
-           title,
-           priority,
-           status,
-           due_date
-    FROM tasks
-    WHERE id = ?
-    """, (task_id,))
-
-    task = cursor.fetchone()
-
-    conn.close()
-
-    return render_template(
-        "edit_task.html",
-        task=task
-    )
+    return render_template("register.html")
 
 
-@app.route("/add-project", methods=["GET", "POST"])
-@login_required
-def add_project_page():
+# ---------------- LOGIN ---------------- #
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = get_db_connection()
+
+        user = conn.execute(
+            "SELECT * FROM users WHERE username = ? AND password = ?",
+            (username, password)
+        ).fetchone()
+
+        conn.close()
+
+        if user:
+            session["user_id"] = user["id"]
+            return redirect("/")
+
+        return "Invalid username or password"
+
+    return render_template("login.html")
+
+
+# ---------------- LOGOUT ---------------- #
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
+# ---------------- ADD PROJECT ---------------- #
+
+@app.route("/add_project", methods=["GET", "POST"])
+def add_project():
+    if "user_id" not in session:
+        return redirect("/login")
 
     if request.method == "POST":
-
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
         start_date = request.form["start_date"]
         end_date = request.form["end_date"]
 
-        conn = sqlite3.connect("ai_pm_tracker.db")
-        cursor = conn.cursor()
+        conn = get_db_connection()
 
-        cursor.execute("""
-        INSERT INTO projects (
-            name,
-            description,
-            status,
-            start_date,
-            end_date,
-            user_id
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
+        conn.execute("""
+            INSERT INTO projects
+            (name, description, status, start_date, end_date, user_id)
+            VALUES (?, ?, ?, ?, ?, ?)
         """, (
             name,
             description,
@@ -439,135 +212,65 @@ def add_project_page():
     return render_template("add_project.html")
 
 
-@app.route("/project/<int:project_id>")
-@login_required
-def project_detail(project_id):
+# ---------------- TASKS ---------------- #
 
-    conn = sqlite3.connect("ai_pm_tracker.db")
-    cursor = conn.cursor()
+@app.route("/tasks")
+def tasks():
+    conn = get_db_connection()
 
-    cursor.execute("""
-    SELECT id,
-           name,
-           description,
-           status,
-           start_date,
-           end_date
-    FROM projects
-    WHERE id = ?
-    AND user_id = ?
-    """, (
-        project_id,
-        session["user_id"]
-    ))
-
-    project = cursor.fetchone()
-
-    cursor.execute("""
-    SELECT title,
-           priority,
-           status,
-           due_date
-    FROM tasks
-    WHERE project_id = ?
-    """, (project_id,))
-
-    tasks = cursor.fetchall()
+    tasks = conn.execute("""
+        SELECT tasks.*, projects.name AS project_name
+        FROM tasks
+        LEFT JOIN projects
+        ON tasks.project_id = projects.id
+    """).fetchall()
 
     conn.close()
 
-    return render_template(
-        "project_detail.html",
-        project=project,
-        tasks=tasks,
-        current_date=str(date.today())
-    )
+    return render_template("tasks.html", tasks=tasks)
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
+# ---------------- ADD TASK ---------------- #
 
-    error = None
+@app.route("/add_task", methods=["GET", "POST"])
+def add_task():
+    conn = get_db_connection()
+
+    projects = conn.execute("SELECT * FROM projects").fetchall()
 
     if request.method == "POST":
+        project_id = request.form["project_id"]
+        title = request.form["title"]
+        description = request.form["description"]
+        priority = request.form["priority"]
+        status = request.form["status"]
+        due_date = request.form["due_date"]
 
-        username = request.form["username"]
-        password = request.form["password"]
+        conn.execute("""
+            INSERT INTO tasks
+            (project_id, title, description, priority, status, due_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            project_id,
+            title,
+            description,
+            priority,
+            status,
+            due_date
+        ))
 
-        hashed_password = generate_password_hash(password)
-
-        conn = sqlite3.connect("ai_pm_tracker.db")
-        cursor = conn.cursor()
-
-        try:
-            cursor.execute("""
-            INSERT INTO users (
-                username,
-                password
-            )
-            VALUES (?, ?)
-            """, (
-                username,
-                hashed_password
-            ))
-
-            conn.commit()
-            conn.close()
-
-            return redirect("/login")
-
-        except sqlite3.IntegrityError:
-
-            conn.close()
-
-            error = "Username already exists. Please choose another username."
-
-    return render_template(
-        "register.html",
-        error=error
-    )
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-
-    if request.method == "POST":
-
-        username = request.form["username"]
-        password = request.form["password"]
-
-        conn = sqlite3.connect("ai_pm_tracker.db")
-        cursor = conn.cursor()
-
-        cursor.execute("""
-        SELECT id,
-               username,
-               password
-        FROM users
-        WHERE username = ?
-        """, (username,))
-
-        user = cursor.fetchone()
-
+        conn.commit()
         conn.close()
 
-        if user and check_password_hash(user[2], password):
+        return redirect("/tasks")
 
-            session["user_id"] = user[0]
-            session["username"] = user[1]
+    conn.close()
 
-            return redirect("/")
-
-    return render_template("login.html")
+    return render_template("add_task.html", projects=projects)
 
 
-@app.route("/logout")
-def logout():
-
-    session.clear()
-
-    return redirect("/login")
-
+# ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
