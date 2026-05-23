@@ -63,6 +63,7 @@ init_db()
 
 @app.route("/")
 def home():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -73,7 +74,9 @@ def home():
         (session["user_id"],)
     ).fetchall()
 
-    tasks = conn.execute("SELECT * FROM tasks").fetchall()
+    tasks = conn.execute(
+        "SELECT * FROM tasks"
+    ).fetchall()
 
     total_projects = len(projects)
     total_tasks = len(tasks)
@@ -116,7 +119,9 @@ def home():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -145,7 +150,9 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -171,18 +178,22 @@ def login():
 
 @app.route("/logout")
 def logout():
+
     session.clear()
+
     return redirect("/login")
 
 
 # ---------------- ADD PROJECT ---------------- #
 
-@app.route("/add_project", methods=["GET", "POST"])
+@app.route("/add-project", methods=["GET", "POST"])
 def add_project():
+
     if "user_id" not in session:
         return redirect("/login")
 
     if request.method == "POST":
+
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
@@ -216,6 +227,7 @@ def add_project():
 
 @app.route("/tasks")
 def tasks():
+
     conn = get_db_connection()
 
     tasks = conn.execute("""
@@ -232,13 +244,17 @@ def tasks():
 
 # ---------------- ADD TASK ---------------- #
 
-@app.route("/add_task", methods=["GET", "POST"])
+@app.route("/add-task", methods=["GET", "POST"])
 def add_task():
+
     conn = get_db_connection()
 
-    projects = conn.execute("SELECT * FROM projects").fetchall()
+    projects = conn.execute(
+        "SELECT * FROM projects"
+    ).fetchall()
 
     if request.method == "POST":
+
         project_id = request.form["project_id"]
         title = request.form["title"]
         description = request.form["description"]
@@ -266,11 +282,19 @@ def add_task():
 
     conn.close()
 
-    return render_template("add_task.html", projects=projects)
+    return render_template(
+        "add_task.html",
+        projects=projects
+    )
 
 
 # ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
