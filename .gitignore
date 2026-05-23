@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+.idea/
+
+venv/
+
+ai_pm_tracker.db
+
+.DS_Store

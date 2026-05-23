@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Task</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="page-layout">
+
+    <div class="sidebar">
+        <h2>AI PM</h2>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/register">Register</a>
+        <a href="/login">Login</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <h1>Add Task</h1>
+
+        <form method="POST" class="project-card">
+
+            <label>Project</label>
+            <select name="project_id" required>
+                {% for project in projects %}
+                    <option value="{{ project[0] }}">
+                        {{ project[1] }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <br><br>
+
+            <input type="text" name="title" placeholder="Task title" required>
+
+            <br><br>
+
+            <label>Priority</label>
+            <select name="priority" required>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+
+            <br><br>
+
+            <label>Status</label>
+            <select name="status" required>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="Blocked">Blocked</option>
+            </select>
+
+            <br><br>
+
+            <input type="date" name="due_date" required>
+
+            <br><br>
+
+            <button type="submit">Add Task</button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

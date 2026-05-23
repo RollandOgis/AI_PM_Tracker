@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Project</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="page-layout">
+
+   <div class="sidebar">
+
+    <h2>AI PM</h2>
+
+    <p>
+        Logged in as:
+        <strong>{{ session["username"] }}</strong>
+    </p>
+
+    <a href="/">Dashboard</a>
+
+    <a href="/tasks">Tasks</a>
+
+    <a href="/add-task">Add Task</a>
+
+    <a href="/add-project">Add Project</a>
+
+    <a href="/logout">Logout</a>
+
+</div>
+
+    <div class="main-content">
+
+        <h1>Add Project</h1>
+
+        <form method="POST" class="project-card">
+
+            <input type="text" name="name" placeholder="Project name" required>
+            <br><br>
+
+            <input type="text" name="description" placeholder="Description" required>
+            <br><br>
+
+           <label>Status</label>
+            <select name="status" required>
+                  <option value="Active">Active</option>
+                 <option value="Planning">Planning</option>
+                  <option value="On Hold">On Hold</option>
+              <option value="Completed">Completed</option>
+            </select>
+            <br><br>
+
+            <input type="date" name="start_date" required>
+            <br><br>
+
+            <input type="date" name="end_date" required>
+            <br><br>
+
+            <button type="submit">Add Project</button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

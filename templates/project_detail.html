@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Details</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="page-layout">
+
+    <div class="sidebar">
+
+    <h2>AI PM</h2>
+
+    <p>
+        Logged in as:
+        <strong>{{ session["username"] }}</strong>
+    </p>
+
+    <a href="/">Dashboard</a>
+
+    <a href="/tasks">Tasks</a>
+
+    <a href="/add-task">Add Task</a>
+
+    <a href="/add-project">Add Project</a>
+
+    <a href="/logout">Logout</a>
+
+</div>
+
+    <div class="main-content">
+
+        <h1>{{ project[1] }}</h1>
+        <a href="/" class="back-link">← Back to Dashboard</a>
+
+        <div class="project-card">
+            <p><strong>Description:</strong> {{ project[2] }}</p>
+            <p><strong>Status:</strong> {{ project[3] }}</p>
+            <p><strong>Start Date:</strong> {{ project[4] }}</p>
+            <p><strong>End Date:</strong> {{ project[5] }}</p>
+        </div>
+
+        <h2>Project Tasks</h2>
+
+        {% for task in tasks %}
+
+            <div class="task-card">
+
+                <p><strong>Title:</strong> {{ task[0] }}</p>
+                <p><strong>Priority:</strong> {{ task[1] }}</p>
+                <p><strong>Status:</strong> {{ task[2] }}</p>
+                <p><strong>Due Date:</strong> {{ task[3] }}</p>
+
+                {% if task[3] < current_date and task[2] != "Completed" %}
+                    <span class="overdue-badge">Overdue</span>
+                {% endif %}
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

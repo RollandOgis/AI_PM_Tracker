@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>All Tasks</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="page-layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/register">Register</a>
+        <a href="/login">Login</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <h1>All Tasks</h1>
+
+        <a href="/" class="back-link">
+            ← Back to Dashboard
+        </a>
+
+        <form method="GET"
+              action="/tasks"
+              class="project-card">
+
+            <input
+                type="text"
+                name="search"
+                placeholder="Search tasks..."
+                value="{{ search }}">
+
+            <select name="sort">
+
+                <option value="">
+                    Sort By
+                </option>
+
+                <option value="due_date"
+                    {% if sort == "due_date" %}selected{% endif %}>
+                    Due Date
+                </option>
+
+                <option value="priority"
+                    {% if sort == "priority" %}selected{% endif %}>
+                    Priority
+                </option>
+
+                <option value="status"
+                    {% if sort == "status" %}selected{% endif %}>
+                    Status
+                </option>
+
+            </select>
+
+            <button type="submit">
+                Apply
+            </button>
+
+        </form>
+
+        {% for task in tasks %}
+
+            <div class="project-card">
+
+                <h3>{{ task[1] }}</h3>
+
+                <p>
+                    <strong>Priority:</strong>
+
+                    {% if task[2] == "High" %}
+
+                        <span class="priority-high">
+                            {{ task[2] }}
+                        </span>
+
+                    {% elif task[2] == "Medium" %}
+
+                        <span class="priority-medium">
+                            {{ task[2] }}
+                        </span>
+
+                    {% elif task[2] == "Low" %}
+
+                        <span class="priority-low">
+                            {{ task[2] }}
+                        </span>
+
+                    {% else %}
+
+                        {{ task[2] }}
+
+                    {% endif %}
+
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+
+                    {% if task[3] == "Completed" %}
+
+                        <span class="status-completed">
+                            {{ task[3] }}
+                        </span>
+
+                    {% elif task[3] == "In Progress" %}
+
+                        <span class="status-progress">
+                            {{ task[3] }}
+                        </span>
+
+                    {% else %}
+
+                        <span class="status-other">
+                            {{ task[3] }}
+                        </span>
+
+                    {% endif %}
+
+                </p>
+
+                <p><strong>Due Date:</strong> {{ task[4] }}</p>
+
+                {% if task[4] < current_date and task[3] != "Completed" %}
+
+                    <span class="overdue-badge">
+                        Overdue
+                    </span>
+
+                {% endif %}
+
+                <p><strong>Project:</strong> {{ task[5] }}</p>
+
+                <a href="/edit-task/{{ task[0] }}">
+                    Edit Task
+                </a>
+
+                <form action="/delete-task/{{ task[0] }}"
+                      method="POST">
+
+                    <button type="submit">
+                        Delete Task
+                    </button>
+
+                </form>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
