@@ -364,7 +364,6 @@ def calendar():
         current_date=str(date.today())
     )
 
-
 @app.route("/report")
 def report():
     if "user_id" not in session:
@@ -473,7 +472,6 @@ def pdf_report():
             "Content-Disposition": "attachment; filename=ai_pm_tracker_report.pdf"
         }
     )
-
 
 @app.route("/insights")
 def insights():
