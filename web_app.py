@@ -71,6 +71,8 @@ def ensure_column(table, column, column_type):
 
 ensure_column("projects", "user_id", "INTEGER")
 ensure_column("projects", "status", "TEXT DEFAULT 'Pending'")
+ensure_column("projects", "start_date", "TEXT")
+ensure_column("projects", "end_date", "TEXT")
 ensure_column("tasks", "description", "TEXT")
 
 
