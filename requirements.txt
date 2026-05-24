@@ -1,3 +1,7 @@
 Flask
 gunicorn
 Werkzeug
+Flask-SQLAlchemy
+gunicorn
+psycopg2-binary
+reportlab
