@@ -1,22 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
 
-<div class="page-layout">
+<div class="container">
 
     <div class="sidebar">
 
-        <h2>AI PM</h2>
+        <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
         <a href="/register">Register</a>
@@ -26,31 +31,45 @@
 
     <div class="main-content">
 
-        <h1>Login</h1>
+        <div class="form-card">
 
-        <form method="POST" class="project-card">
+            <h2>Login</h2>
 
-            <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                required>
+            <form method="POST">
 
-            <br><br>
+                <label>Username</label>
 
-            <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                required>
+                <input
+                    type="text"
+                    name="username"
+                    required
+                >
 
-            <br><br>
+                <label>Password</label>
 
-            <button type="submit">
-                Login
-            </button>
+                <input
+                    type="password"
+                    name="password"
+                    required
+                >
 
-        </form>
+                <button type="submit">
+                    Login
+                </button>
+
+            </form>
+
+            <p style="margin-top:20px;">
+
+                Don’t have an account?
+
+                <a href="/register">
+                    Register
+                </a>
+
+            </p>
+
+        </div>
 
     </div>
 

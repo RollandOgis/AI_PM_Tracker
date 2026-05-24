@@ -1,56 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="page-layout">
+<div class="container">
 
     <div class="sidebar">
-        <h2>AI PM</h2>
+
+        <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
         <a href="/register">Register</a>
+        <a href="/login">Login</a>
+
     </div>
 
     <div class="main-content">
 
-        <h1>Create Account</h1>
-        {% if error %}
-    <p style="color: red; font-weight: bold;">
-        {{ error }}
-    </p>
-{% endif %}
+        <div class="form-card">
 
-        <form method="POST" class="project-card">
+            <h2>Create Account</h2>
 
-            <input type="text"
-                   name="username"
-                   placeholder="Username"
-                   required>
+            {% if error %}
 
-            <br><br>
+                <p style="color:red; margin-bottom:20px;">
+                    {{ error }}
+                </p>
 
-            <input type="password"
-                   name="password"
-                   placeholder="Password"
-                   required>
+            {% endif %}
 
-            <br><br>
+            <form method="POST">
 
-            <button type="submit">
-                Register
-            </button>
+                <label>Username</label>
+                <input type="text" name="username" required>
 
-        </form>
+                <label>Password</label>
+                <input type="password" name="password" required>
+
+                <button type="submit">
+                    Register
+                </button>
+
+            </form>
+
+            <p style="margin-top:20px;">
+                Already have an account?
+                <a href="/login">Login</a>
+            </p>
+
+        </div>
 
     </div>
 

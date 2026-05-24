@@ -1,22 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Details</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -28,23 +16,15 @@
         <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
-
         <a href="/tasks">Tasks</a>
-
+        <a href="/kanban">Kanban</a>
         <a href="/add-task">Add Task</a>
-
         <a href="/add-project">Add Project</a>
-
         <a href="/logout">Logout</a>
 
         <div class="user-box">
-
             Logged in as:
-
-            <strong>
-                {{ session.get("username", "User") }}
-            </strong>
-
+            <strong>{{ session.get("username", "User") }}</strong>
         </div>
 
     </div>
@@ -58,17 +38,12 @@
                 <h1>{{ project[1] }}</h1>
 
                 <p class="project-description">
-
                     {{ project[2] }}
-
                 </p>
 
             </div>
 
-            <a
-                href="/add-task"
-                class="view-btn"
-            >
+            <a href="/add-task" class="view-btn">
                 + Add Task
             </a>
 
@@ -77,35 +52,23 @@
         <div class="stats-grid">
 
             <div class="stat-card">
-
                 <h3>Project Status</h3>
-
                 <p>{{ project[3] }}</p>
-
             </div>
 
             <div class="stat-card">
-
                 <h3>Total Tasks</h3>
-
                 <p>{{ total_tasks }}</p>
-
             </div>
 
             <div class="stat-card">
-
                 <h3>Completed</h3>
-
                 <p>{{ completed_tasks }}</p>
-
             </div>
 
             <div class="stat-card">
-
                 <h3>Progress</h3>
-
                 <p>{{ completion }}%</p>
-
             </div>
 
         </div>
@@ -117,7 +80,7 @@
             <div class="progress-bar large-progress">
 
                 <div
-                    class="progress-fill completed-fill"
+                    class="progress-fill green"
                     style="width: {{ completion }}%;"
                 ></div>
 
@@ -133,73 +96,63 @@
 
                 {% for task in tasks %}
 
-                <div class="task-card">
+                    <div class="task-card">
 
-                    <div class="task-top">
+                        <div class="task-top">
 
-                        <h3>{{ task[1] }}</h3>
+                            <h3>{{ task[1] }}</h3>
 
-                        <span class="priority-badge">
+                            <span class="priority-badge">
+                                {{ task[2] }}
+                            </span>
 
-                            {{ task[2] }}
+                        </div>
 
-                        </span>
+                        <p>
+                            <strong>Status:</strong>
+                            {{ task[3] }}
+                        </p>
 
-                    </div>
+                        <p>
+                            <strong>Due Date:</strong>
+                            {{ task[4] }}
+                        </p>
 
-                    <p>
+                        {% if task[5] %}
 
-                        <strong>Status:</strong>
+                            <div class="overdue-box">
+                                ⚠️ This task is overdue
+                            </div>
 
-                        {{ task[3] }}
+                        {% endif %}
 
-                    </p>
+                        <div class="task-buttons">
 
-                    <p>
-
-                        <strong>Due Date:</strong>
-
-                        {{ task[4] }}
-
-                    </p>
-
-                    {% if task[5] %}
-
-                    <div class="overdue-box">
-
-                        ⚠️ This task is overdue
-
-                    </div>
-
-                    {% endif %}
-
-                    <div class="project-buttons">
-
-                        <a
-                            href="/edit-task/{{ task[0] }}"
-                            class="edit-btn"
-                        >
-                            Edit Task
-                        </a>
-
-                        <form
-                            action="/delete-task/{{ task[0] }}"
-                            method="POST"
-                            onsubmit="return confirm('Delete this task?');"
-                        >
-
-                            <button
-                                type="submit"
-                                class="delete-btn"
+                            <a
+                                href="/edit-task/{{ task[0] }}"
+                                class="edit-btn"
                             >
-                                Delete Task
-                            </button>
+                                Edit Task
+                            </a>
 
-                        </form>
+                            <form
+                                action="/delete-task/{{ task[0] }}"
+                                method="POST"
+                                onsubmit="return confirm('Delete this task?');"
+                            >
+
+                                <button
+                                    type="submit"
+                                    class="delete-btn"
+                                >
+                                    Delete Task
+                                </button>
+
+                            </form>
+
+                        </div>
 
                     </div>
-
-                </div>
 
                 {% endfor %}
 
@@ -210,10 +163,12 @@
                     <h3>No Tasks Yet</h3>
 
                     <p>
-
                         Add tasks to start tracking this project.
-
                     </p>
+
+                    <a href="/add-task" class="view-btn">
+                        Add Task
+                    </a>
 
                 </div>
 
