@@ -20,6 +20,10 @@
 
     <div class="sidebar">
 
+        <div class="theme-toggle" onclick="toggleTheme()">
+    Toggle Theme
+        </div>
+
         <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
@@ -243,6 +247,26 @@ new Chart(priorityCtx, {
         }]
     }
 });
+
+</script>
+
+<script>
+
+function toggleTheme() {
+
+    document.body.classList.toggle("dark-mode");
+
+    localStorage.setItem(
+        "theme",
+        document.body.classList.contains("dark-mode")
+            ? "dark"
+            : "light"
+    );
+}
+
+if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark-mode");
+}
 
 </script>
 

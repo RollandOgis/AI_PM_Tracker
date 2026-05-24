@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Search</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/advanced-search">Advanced Search</a>
+        <a href="/tasks">Tasks</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <h2>Advanced Search</h2>
+        </div>
+
+        <div class="form-card">
+
+            <form method="GET">
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option value="">All</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Blocked">Blocked</option>
+
+                </select>
+
+                <label>Priority</label>
+
+                <select name="priority">
+
+                    <option value="">All</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+
+                </select>
+
+                <button type="submit">
+                    Search
+                </button>
+
+            </form>
+
+        </div>
+
+        {% for task in tasks %}
+
+            <div class="task-card">
+
+                <h3>{{ task["title"] }}</h3>
+
+                <p>
+                    <strong>Project:</strong>
+                    {{ task["project_name"] }}
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    {{ task["status"] }}
+                </p>
+
+                <p>
+                    <strong>Priority:</strong>
+                    {{ task["priority"] }}
+                </p>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sprint Planner</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/sprint-planner">Sprint Planner</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/activity">Activity Feed</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <h2>AI Sprint Planner</h2>
+        </div>
+
+        <div class="analytics-card">
+
+            <h3>Recommendations</h3>
+
+            {% for recommendation in recommendations %}
+
+                <div class="insight-box">
+                    {{ recommendation }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="tasks-section">
+
+            {% for task in sprint_tasks %}
+
+                <div class="task-card">
+
+                    <h3>{{ task["title"] }}</h3>
+
+                    <p>
+                        <strong>Project:</strong>
+                        {{ task["project_name"] }}
+                    </p>
+
+                    <p>
+                        <strong>Priority:</strong>
+                        {{ task["priority"] }}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        {{ task["status"] }}
+                    </p>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

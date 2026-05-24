@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Comments</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/activity">Activity Feed</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <h2>{{ project["name"] }} Comments</h2>
+        </div>
+
+        <div class="form-card">
+
+            <form method="POST">
+
+                <textarea
+                    name="comment"
+                    rows="4"
+                    placeholder="Write comment..."
+                    required
+                ></textarea>
+
+                <button type="submit">
+                    Add Comment
+                </button>
+
+            </form>
+
+        </div>
+
+        {% for comment in comments %}
+
+            <div class="comment-card">
+
+                <h4>{{ comment["username"] }}</h4>
+
+                <p>{{ comment["comment"] }}</p>
+
+                <small>{{ comment["created_at"] }}</small>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

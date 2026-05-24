@@ -441,3 +441,123 @@ body.dark-ready {
 .dark-ready h3 {
     color: #f8fafc;
 }
+
+.activity-card,
+.comment-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    animation: fadeIn 0.5s ease;
+}
+
+.notification-card {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 14px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    animation: slideDown 0.4s ease;
+}
+
+.insight-box {
+    background: #eff6ff;
+    padding: 14px;
+    border-left: 5px solid #2563eb;
+    margin-bottom: 12px;
+    border-radius: 10px;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.analytics-card,
+.project-card,
+.task-card,
+.calendar-card,
+.stat-card {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.theme-toggle {
+    cursor: pointer;
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #1e293b;
+    color: white;
+    text-align: center;
+}
+
+.dark-mode {
+    background: #0f172a;
+    color: white;
+}
+
+.dark-mode .main-content,
+.dark-mode .sidebar {
+    background: #111827;
+    color: white;
+}
+
+.dark-mode .project-card,
+.dark-mode .analytics-card,
+.dark-mode .task-card,
+.dark-mode .stat-card,
+.dark-mode .calendar-card,
+.dark-mode .activity-card,
+.dark-mode .comment-card {
+    background: #1f2937;
+    color: white;
+}
+
+@media (max-width: 768px) {
+
+    .container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        gap: 10px;
+    }
+
+    .main-content {
+        padding: 15px;
+    }
+
+    .stats-grid,
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+
+}

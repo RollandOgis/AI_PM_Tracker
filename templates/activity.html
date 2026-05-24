@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Feed</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/activity">Activity Feed</a>
+        <a href="/sprint-planner">Sprint Planner</a>
+        <a href="/advanced-search">Advanced Search</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <h2>Recent Activity</h2>
+        </div>
+
+        {% for activity in activities %}
+
+            <div class="activity-card">
+
+                <p>{{ activity["message"] }}</p>
+
+                <small>{{ activity["created_at"] }}</small>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
