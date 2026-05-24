@@ -9,6 +9,9 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
 <body>
@@ -47,6 +50,18 @@
             <h2>Dashboard Overview</h2>
         </div>
 
+        {% if notifications %}
+
+            {% for note in notifications %}
+
+                <div class="notification-card">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
         <div class="stats-grid">
 
             <div class="stat-card">
@@ -65,53 +80,27 @@
             </div>
 
             <div class="stat-card">
-                <h3>In Progress</h3>
-                <p>{{ in_progress_tasks }}</p>
+                <h3>Overdue</h3>
+                <p>{{ overdue_tasks }}</p>
             </div>
 
         </div>
 
-        <div class="analytics-grid">
+        <div class="chart-grid">
 
             <div class="analytics-card">
 
-                <h3>Task Status</h3>
+                <h3>Task Status Chart</h3>
 
-                <p>Completed: {{ completed_tasks }}</p>
-
-                <div class="progress-bar">
-                    <div
-                        class="progress-fill green"
-                        style="width:
-                        {% if total_tasks > 0 %}
-                        {{ (completed_tasks / total_tasks) * 100 }}%
-                        {% else %}
-                        0%
-                        {% endif %}
-                        "
-                    ></div>
-                </div>
+                <canvas id="statusChart"></canvas>
 
             </div>
 
             <div class="analytics-card">
 
-                <h3>Priority Breakdown</h3>
+                <h3>Priority Chart</h3>
 
-                <p>High Priority: {{ high_priority_tasks }}</p>
-
-                <div class="progress-bar">
-                    <div
-                        class="progress-fill red"
-                        style="width:
-                        {% if total_tasks > 0 %}
-                        {{ (high_priority_tasks / total_tasks) * 100 }}%
-                        {% else %}
-                        0%
-                        {% endif %}
-                        "
-                    ></div>
-                </div>
+                <canvas id="priorityChart"></canvas>
 
             </div>
 
@@ -119,82 +108,143 @@
 
         <h2>Your Projects</h2>
 
-        {% for item in projects %}
+        {% if projects %}
 
-            <div class="project-card">
+            {% for item in projects %}
 
-                <h3>{{ item.project[1] }}</h3>
+                <div class="project-card">
 
-                <p>
-                    <strong>Status:</strong>
-                    {{ item.project[2] }}
-                </p>
+                    <h3>{{ item.project[1] }}</h3>
 
-                <p>
-                    <strong>Start Date:</strong>
-                    {{ item.project[3] }}
-                </p>
+                    <p>
+                        <strong>Status:</strong>
+                        {{ item.project[2] }}
+                    </p>
 
-                <p>
-                    <strong>End Date:</strong>
-                    {{ item.project[4] }}
-                </p>
+                    <p>
+                        <strong>Start Date:</strong>
+                        {{ item.project[3] }}
+                    </p>
 
-                <p>
-                    <strong>Completion:</strong>
-                    {{ item.completion }}%
-                </p>
+                    <p>
+                        <strong>End Date:</strong>
+                        {{ item.project[4] }}
+                    </p>
 
-                <div class="progress-bar">
+                    <p>
+                        <strong>Completion:</strong>
+                        {{ item.completion }}%
+                    </p>
 
-                    <div
-                        class="progress-fill green"
-                        style="width: {{ item.completion }}%"
-                    ></div>
+                    <div class="progress-bar">
 
-                </div>
+                        <div
+                            class="progress-fill green"
+                            style="width: {{ item.completion }}%;"
+                        ></div>
 
-                <div class="button-group">
+                    </div>
 
-                    <a
-                        href="/project/{{ item.project[0] }}"
-                        class="view-btn"
-                    >
-                        View Project
-                    </a>
+                    <div class="button-group">
 
-                    <a
-                        href="/edit-project/{{ item.project[0] }}"
-                        class="edit-btn"
-                    >
-                        Edit Project
-                    </a>
-
-                    <form
-                        action="/delete-project/{{ item.project[0] }}"
-                        method="POST"
-                        style="display:inline;"
-                    >
-
-                        <button
-                            type="submit"
-                            class="delete-btn"
-                            onclick="return confirm('Delete this project?')"
+                        <a
+                            href="/project/{{ item.project[0] }}"
+                            class="view-btn"
                         >
-                            Delete Project
-                        </button>
+                            View Project
+                        </a>
 
-                    </form>
+                        <a
+                            href="/edit-project/{{ item.project[0] }}"
+                            class="edit-btn"
+                        >
+                            Edit Project
+                        </a>
+
+                        <form
+                            action="/delete-project/{{ item.project[0] }}"
+                            method="POST"
+                            style="display:inline;"
+                        >
+
+                            <button
+                                type="submit"
+                                class="delete-btn"
+                                onclick="return confirm('Delete this project?')"
+                            >
+                                Delete Project
+                            </button>
+
+                        </form>
+
+                    </div>
 
                 </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Projects Yet</h3>
+
+                <p>
+                    Create your first project to start tracking work.
+                </p>
+
+                <a href="/add-project" class="view-btn">
+                    Add Project
+                </a>
 
             </div>
 
-        {% endfor %}
+        {% endif %}
 
     </div>
 
 </div>
+
+<script>
+
+const statusData = JSON.parse('{{ chart_status_data | tojson | safe }}');
+const priorityData = JSON.parse('{{ chart_priority_data | tojson | safe }}');
+
+const statusCtx = document.getElementById('statusChart');
+
+new Chart(statusCtx, {
+    type: 'pie',
+    data: {
+        labels: [
+            'Completed',
+            'In Progress',
+            'Pending',
+            'Blocked'
+        ],
+        datasets: [{
+            data: statusData
+        }]
+    }
+});
+
+const priorityCtx = document.getElementById('priorityChart');
+
+new Chart(priorityCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            'High',
+            'Medium',
+            'Low'
+        ],
+        datasets: [{
+            label: 'Tasks',
+            data: priorityData
+        }]
+    }
+});
+
+</script>
 
 </body>
 </html>

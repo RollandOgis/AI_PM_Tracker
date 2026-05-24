@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, Response, jsonify
 import sqlite3
 import os
+import csv
+from io import StringIO
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -11,37 +13,27 @@ DATABASE = "ai_pm_tracker.db"
 
 
 def get_db_connection():
-
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
-
     return conn
 
 
 def ensure_column(table, column, column_type):
-
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute(f"PRAGMA table_info({table})")
-
     columns = [row["name"] for row in cursor.fetchall()]
 
     if column not in columns:
-
-        cursor.execute(
-            f"ALTER TABLE {table} ADD COLUMN {column} {column_type}"
-        )
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
 
     conn.commit()
     conn.close()
 
 
 def init_db():
-
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -80,13 +72,11 @@ def init_db():
 
 
 init_db()
-
 ensure_column("tasks", "assigned_to", "TEXT")
 
 
 @app.route("/")
 def home():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -109,8 +99,9 @@ def home():
     medium_priority_tasks = 0
     low_priority_tasks = 0
 
-    for project in projects:
+    overdue_tasks = 0
 
+    for project in projects:
         tasks = conn.execute(
             "SELECT * FROM tasks WHERE project_id = ?",
             (project["id"],)
@@ -119,29 +110,26 @@ def home():
         task_list = []
 
         for task in tasks:
-
             total_tasks += 1
 
             if task["status"] == "Completed":
                 completed_tasks += 1
-
             elif task["status"] == "In Progress":
                 in_progress_tasks += 1
-
             elif task["status"] == "Pending":
                 pending_tasks += 1
-
             elif task["status"] == "Blocked":
                 blocked_tasks += 1
 
             if task["priority"] == "High":
                 high_priority_tasks += 1
-
             elif task["priority"] == "Medium":
                 medium_priority_tasks += 1
-
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
+
+            if task["due_date"] and task["due_date"] < str(date.today()) and task["status"] != "Completed":
+                overdue_tasks += 1
 
             task_list.append((
                 task["title"],
@@ -151,17 +139,11 @@ def home():
             ))
 
         if len(tasks) > 0:
-
             completed_for_project = len(
                 [task for task in tasks if task["status"] == "Completed"]
             )
-
-            completion = round(
-                (completed_for_project / len(tasks)) * 100
-            )
-
+            completion = round((completed_for_project / len(tasks)) * 100)
         else:
-
             completion = 0
 
         all_projects.append({
@@ -178,6 +160,33 @@ def home():
 
     conn.close()
 
+    chart_status_data = [
+        completed_tasks,
+        in_progress_tasks,
+        pending_tasks,
+        blocked_tasks
+    ]
+
+    chart_priority_data = [
+        high_priority_tasks,
+        medium_priority_tasks,
+        low_priority_tasks
+    ]
+
+    notifications = []
+
+    if overdue_tasks > 0:
+        notifications.append(f"You have {overdue_tasks} overdue task(s).")
+
+    if blocked_tasks > 0:
+        notifications.append(f"{blocked_tasks} task(s) are currently blocked.")
+
+    if high_priority_tasks > 0:
+        notifications.append(f"You have {high_priority_tasks} high-priority task(s).")
+
+    if total_tasks == 0:
+        notifications.append("No tasks yet. Add tasks to start tracking progress.")
+
     return render_template(
         "index.html",
         projects=all_projects,
@@ -190,13 +199,16 @@ def home():
         high_priority_tasks=high_priority_tasks,
         medium_priority_tasks=medium_priority_tasks,
         low_priority_tasks=low_priority_tasks,
+        overdue_tasks=overdue_tasks,
+        chart_status_data=chart_status_data,
+        chart_priority_data=chart_priority_data,
+        notifications=notifications,
         current_date=str(date.today())
     )
 
 
 @app.route("/kanban")
 def kanban():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -220,9 +232,196 @@ def kanban():
     )
 
 
+@app.route("/update-task-status", methods=["POST"])
+def update_task_status():
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    data = request.get_json()
+
+    task_id = data.get("task_id")
+    new_status = data.get("status")
+
+    allowed_statuses = ["Pending", "In Progress", "Completed", "Blocked"]
+
+    if new_status not in allowed_statuses:
+        return jsonify({"success": False, "message": "Invalid status"}), 400
+
+    conn = get_db_connection()
+
+    task = conn.execute("""
+    SELECT tasks.id
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE tasks.id = ?
+    AND projects.user_id = ?
+    """, (task_id, session["user_id"])).fetchone()
+
+    if not task:
+        conn.close()
+        return jsonify({"success": False, "message": "Task not found"}), 404
+
+    conn.execute(
+        "UPDATE tasks SET status = ? WHERE id = ?",
+        (new_status, task_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+
+@app.route("/calendar")
+def calendar():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "calendar.html",
+        tasks=tasks,
+        current_date=str(date.today())
+    )
+
+
+@app.route("/insights")
+def insights():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    total = len(tasks)
+    completed = len([t for t in tasks if t["status"] == "Completed"])
+    in_progress = len([t for t in tasks if t["status"] == "In Progress"])
+    pending = len([t for t in tasks if t["status"] == "Pending"])
+    blocked = len([t for t in tasks if t["status"] == "Blocked"])
+    high_priority = len([t for t in tasks if t["priority"] == "High"])
+
+    overdue = len([
+        t for t in tasks
+        if t["due_date"]
+        and t["due_date"] < str(date.today())
+        and t["status"] != "Completed"
+    ])
+
+    insights_list = []
+
+    if total == 0:
+        insights_list.append("You do not have any tasks yet. Start by creating tasks under your projects.")
+
+    if overdue > 0:
+        insights_list.append(f"You have {overdue} overdue task(s). Review deadlines and update priorities.")
+
+    if high_priority > 0:
+        insights_list.append(f"You have {high_priority} high-priority task(s). Focus on these first.")
+
+    if blocked > 0:
+        insights_list.append(f"{blocked} task(s) are blocked. These may need escalation or support.")
+
+    if in_progress > pending and overdue == 0:
+        insights_list.append("You have more active work than pending work. Keep pushing tasks toward completion.")
+
+    if total > 0 and completed == total:
+        insights_list.append("All current tasks are completed. Great progress.")
+
+    if total > 0 and completed < total and overdue == 0 and blocked == 0:
+        insights_list.append("Your workload looks healthy. Keep reviewing progress regularly.")
+
+    if total > 0:
+        completion_rate = round((completed / total) * 100)
+    else:
+        completion_rate = 0
+
+    return render_template(
+        "insights.html",
+        insights=insights_list,
+        total=total,
+        completed=completed,
+        in_progress=in_progress,
+        pending=pending,
+        blocked=blocked,
+        overdue=overdue,
+        high_priority=high_priority,
+        completion_rate=completion_rate
+    )
+
+
+@app.route("/export-tasks")
+def export_tasks():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.title, tasks.priority, tasks.status, tasks.due_date,
+           tasks.assigned_to, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Project",
+        "Task",
+        "Priority",
+        "Status",
+        "Due Date",
+        "Assigned To"
+    ])
+
+    for task in tasks:
+        writer.writerow([
+            task["project_name"],
+            task["title"],
+            task["priority"],
+            task["status"],
+            task["due_date"],
+            task["assigned_to"] or "Unassigned"
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=ai_pm_tasks.csv"
+        }
+    )
+
+
 @app.route("/project/<int:project_id>")
 def project_detail(project_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -257,13 +456,9 @@ def project_detail(project_id):
     completed_tasks = 0
 
     for task in tasks:
-
         overdue = False
 
-        if (
-            task["status"] != "Completed"
-            and task["due_date"] < str(date.today())
-        ):
+        if task["status"] != "Completed" and task["due_date"] and task["due_date"] < str(date.today()):
             overdue = True
 
         if task["status"] == "Completed":
@@ -281,13 +476,8 @@ def project_detail(project_id):
     total_tasks = len(tasks)
 
     if total_tasks > 0:
-
-        completion = round(
-            (completed_tasks / total_tasks) * 100
-        )
-
+        completion = round((completed_tasks / total_tasks) * 100)
     else:
-
         completion = 0
 
     conn.close()
@@ -311,7 +501,6 @@ def project_detail(project_id):
 
 @app.route("/tasks")
 def tasks():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -336,10 +525,8 @@ def tasks():
 
     if sort == "due_date":
         query += " ORDER BY tasks.due_date ASC"
-
     elif sort == "priority":
         query += " ORDER BY tasks.priority ASC"
-
     elif sort == "status":
         query += " ORDER BY tasks.status ASC"
 
@@ -357,7 +544,6 @@ def tasks():
     all_tasks = []
 
     for task in task_rows:
-
         all_tasks.append((
             task["id"],
             task["title"],
@@ -380,12 +566,10 @@ def tasks():
 
 @app.route("/add-project", methods=["GET", "POST"])
 def add_project():
-
     if "user_id" not in session:
         return redirect("/login")
 
     if request.method == "POST":
-
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
@@ -417,7 +601,6 @@ def add_project():
 
 @app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
 def edit_project(project_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -433,7 +616,6 @@ def edit_project(project_id):
         return redirect("/")
 
     if request.method == "POST":
-
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
@@ -474,7 +656,6 @@ def edit_project(project_id):
 
 @app.route("/delete-project/<int:project_id>", methods=["POST"])
 def delete_project(project_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -498,7 +679,6 @@ def delete_project(project_id):
 
 @app.route("/add-task", methods=["GET", "POST"])
 def add_task():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -510,7 +690,6 @@ def add_task():
     ).fetchall()
 
     if request.method == "POST":
-
         project_id = request.form["project_id"]
         title = request.form["title"]
         priority = request.form["priority"]
@@ -546,7 +725,6 @@ def add_task():
 
 @app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
 def edit_task(task_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -558,7 +736,6 @@ def edit_task(task_id):
     ).fetchone()
 
     if request.method == "POST":
-
         title = request.form["title"]
         priority = request.form["priority"]
         status = request.form["status"]
@@ -597,7 +774,6 @@ def edit_task(task_id):
 
 @app.route("/delete-task/<int:task_id>", methods=["POST"])
 def delete_task(task_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -616,11 +792,9 @@ def delete_task(task_id):
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-
     error = None
 
     if request.method == "POST":
-
         username = request.form["username"]
         password = request.form["password"]
 
@@ -629,7 +803,6 @@ def register():
         conn = get_db_connection()
 
         try:
-
             conn.execute(
                 "INSERT INTO users (username, password) VALUES (?, ?)",
                 (username, hashed_password)
@@ -641,9 +814,7 @@ def register():
             return redirect("/login")
 
         except sqlite3.IntegrityError:
-
             error = "Username already exists"
-
             conn.close()
 
     return render_template(
@@ -654,9 +825,7 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
-
         username = request.form["username"]
         password = request.form["password"]
 
@@ -670,14 +839,9 @@ def login():
         conn.close()
 
         if user:
-
             stored_password = user["password"]
 
-            if (
-                check_password_hash(stored_password, password)
-                or stored_password == password
-            ):
-
+            if check_password_hash(stored_password, password) or stored_password == password:
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
 
@@ -690,13 +854,152 @@ def login():
 
 @app.route("/logout")
 def logout():
-
     session.clear()
-
     return redirect("/login")
 
-@app.route("/calendar")
-def calendar():
+# =========================
+# ACTIVITY FEED + COMMENTS
+# =========================
+
+def create_activity(message):
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS activities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message TEXT,
+        created_at TEXT
+    )
+    """)
+
+    conn.execute("""
+    INSERT INTO activities (message, created_at)
+    VALUES (?, ?)
+    """, (
+        message,
+        str(date.today())
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def ensure_comments_table():
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        username TEXT,
+        comment TEXT,
+        created_at TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+ensure_comments_table()
+
+
+@app.route("/activity")
+def activity():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    activities = conn.execute("""
+    SELECT *
+    FROM activities
+    ORDER BY id DESC
+    LIMIT 50
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "activity.html",
+        activities=activities
+    )
+
+
+@app.route("/project-comments/<int:project_id>", methods=["GET", "POST"])
+def project_comments(project_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        project_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    if request.method == "POST":
+
+        comment = request.form["comment"]
+
+        conn.execute("""
+        INSERT INTO comments (
+            project_id,
+            username,
+            comment,
+            created_at
+        )
+        VALUES (?, ?, ?, ?)
+        """, (
+            project_id,
+            session["username"],
+            comment,
+            str(date.today())
+        ))
+
+        conn.commit()
+
+        create_activity(
+            f"{session['username']} commented on project {project['name']}"
+        )
+
+    comments = conn.execute("""
+    SELECT *
+    FROM comments
+    WHERE project_id = ?
+    ORDER BY id DESC
+    """, (
+        project_id,
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "comments.html",
+        comments=comments,
+        project=project
+    )
+
+
+# =========================
+# AI SPRINT PLANNER
+# =========================
+
+@app.route("/sprint-planner")
+def sprint_planner():
 
     if "user_id" not in session:
         return redirect("/login")
@@ -709,128 +1012,92 @@ def calendar():
     JOIN projects
     ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    ORDER BY tasks.due_date ASC
-    """, (session["user_id"],)).fetchall()
+    AND tasks.status != 'Completed'
+    ORDER BY tasks.priority DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
 
     conn.close()
 
-    return render_template(
-        "calendar.html",
-        tasks=tasks,
-        current_date=str(date.today())
-    )
-
-@app.route("/export-tasks")
-def export_tasks():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    import csv
-    from io import StringIO
-    from flask import Response
-
-    conn = get_db_connection()
-
-    tasks = conn.execute("""
-    SELECT tasks.title, tasks.priority, tasks.status, tasks.due_date,
-           tasks.assigned_to, projects.name AS project_name
-    FROM tasks
-    JOIN projects ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    output = StringIO()
-    writer = csv.writer(output)
-
-    writer.writerow([
-        "Project",
-        "Task",
-        "Priority",
-        "Status",
-        "Due Date",
-        "Assigned To"
-    ])
+    sprint_tasks = []
+    recommendations = []
 
     for task in tasks:
-        writer.writerow([
-            task["project_name"],
-            task["title"],
-            task["priority"],
-            task["status"],
-            task["due_date"],
-            task["assigned_to"] or "Unassigned"
-        ])
 
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={
-            "Content-Disposition": "attachment; filename=ai_pm_tasks.csv"
-        }
+        sprint_tasks.append(task)
+
+        if task["priority"] == "High":
+            recommendations.append(
+                f"Prioritize '{task['title']}' immediately because it is high priority."
+            )
+
+        if task["status"] == "Blocked":
+            recommendations.append(
+                f"Resolve blockers for '{task['title']}' before sprint execution."
+            )
+
+    if len(sprint_tasks) == 0:
+        recommendations.append(
+            "No active tasks available for sprint planning."
+        )
+
+    return render_template(
+        "sprint_planner.html",
+        sprint_tasks=sprint_tasks,
+        recommendations=recommendations
     )
 
 
-@app.route("/insights")
-def insights():
+# =========================
+# SEARCH FILTERS
+# =========================
+
+@app.route("/advanced-search")
+def advanced_search():
+
     if "user_id" not in session:
         return redirect("/login")
 
+    status = request.args.get("status", "")
+    priority = request.args.get("priority", "")
+
     conn = get_db_connection()
 
-    tasks = conn.execute("""
+    query = """
     SELECT tasks.*, projects.name AS project_name
     FROM tasks
-    JOIN projects ON tasks.project_id = projects.id
+    JOIN projects
+    ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
+    """
+
+    params = [session["user_id"]]
+
+    if status:
+        query += " AND tasks.status = ?"
+        params.append(status)
+
+    if priority:
+        query += " AND tasks.priority = ?"
+        params.append(priority)
+
+    tasks = conn.execute(
+        query,
+        params
+    ).fetchall()
 
     conn.close()
 
-    total = len(tasks)
-    completed = len([t for t in tasks if t["status"] == "Completed"])
-    overdue = len([
-        t for t in tasks
-        if t["due_date"] and t["due_date"] < str(date.today())
-        and t["status"] != "Completed"
-    ])
-    high_priority = len([t for t in tasks if t["priority"] == "High"])
-    blocked = len([t for t in tasks if t["status"] == "Blocked"])
-
-    insights_list = []
-
-    if total == 0:
-        insights_list.append("You do not have any tasks yet. Start by creating tasks under your projects.")
-
-    if overdue > 0:
-        insights_list.append(f"You have {overdue} overdue task(s). Review deadlines and update priorities.")
-
-    if high_priority > 0:
-        insights_list.append(f"You have {high_priority} high-priority task(s). Focus on these first.")
-
-    if blocked > 0:
-        insights_list.append(f"{blocked} task(s) are blocked. These may need escalation or support.")
-
-    if total > 0 and completed == total:
-        insights_list.append("All current tasks are completed. Great progress.")
-
-    if total > 0 and completed < total and overdue == 0:
-        insights_list.append("Your active workload looks healthy. Keep tracking progress regularly.")
-
     return render_template(
-        "insights.html",
-        insights=insights_list,
-        total=total,
-        completed=completed,
-        overdue=overdue,
-        high_priority=high_priority,
-        blocked=blocked
+        "advanced_search.html",
+        tasks=tasks,
+        selected_status=status,
+        selected_priority=priority
     )
 
 
 if __name__ == "__main__":
-
     port = int(os.environ.get("PORT", 5000))
 
     app.run(
