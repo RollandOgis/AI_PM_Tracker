@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Insights</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/export-tasks">Export CSV</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/logout">Logout</a>
+
+        <div class="user-box">
+
+            Logged in as:
+
+            <strong>
+                {{ session.get("username", "User") }}
+            </strong>
+
+        </div>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <h2>AI Insights Panel</h2>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <h3>Total Tasks</h3>
+                <p>{{ total }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Completed</h3>
+                <p>{{ completed }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Overdue</h3>
+                <p>{{ overdue }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>High Priority</h3>
+                <p>{{ high_priority }}</p>
+            </div>
+
+        </div>
+
+        <div class="analytics-card">
+
+            <h3>Recommended Actions</h3>
+
+            {% for insight in insights %}
+
+                <div class="insight-box">
+                    {{ insight }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

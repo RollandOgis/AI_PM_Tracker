@@ -4,20 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar View</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
-<body class="dark-ready">
+<body>
 
 <div class="container">
 
     <div class="sidebar">
+
         <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
         <a href="/kanban">Kanban</a>
         <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/export-tasks">Export CSV</a>
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
         <a href="/logout">Logout</a>
@@ -26,6 +30,7 @@
             Logged in as:
             <strong>{{ session.get("username", "User") }}</strong>
         </div>
+
     </div>
 
     <div class="main-content">
@@ -41,6 +46,7 @@
                 <div class="calendar-card">
 
                     <div>
+
                         <h3>{{ task["title"] }}</h3>
 
                         <p>
@@ -62,15 +68,25 @@
                             <strong>Assigned To:</strong>
                             {{ task["assigned_to"] or "Unassigned" }}
                         </p>
+
                     </div>
 
                     <div class="calendar-date">
+
                         <strong>Due</strong>
-                        <span>{{ task["due_date"] }}</span>
+
+                        <span>
+                            {{ task["due_date"] }}
+                        </span>
 
                         {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
-                            <small class="overdue-badge">Overdue</small>
+
+                            <small class="overdue-badge">
+                                Overdue
+                            </small>
+
                         {% endif %}
+
                     </div>
 
                 </div>
@@ -80,9 +96,17 @@
         {% else %}
 
             <div class="empty-box">
+
                 <h3>No Scheduled Tasks</h3>
-                <p>Add tasks with due dates to see them here.</p>
-                <a href="/add-task" class="view-btn">Add Task</a>
+
+                <p>
+                    Add tasks with due dates to see them here.
+                </p>
+
+                <a href="/add-task" class="view-btn">
+                    Add Task
+                </a>
+
             </div>
 
         {% endif %}

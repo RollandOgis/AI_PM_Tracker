@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
@@ -19,13 +21,22 @@
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/export-tasks">Export CSV</a>
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
         <a href="/logout">Logout</a>
 
         <div class="user-box">
+
             Logged in as:
-            <strong>{{ session.get("username", "User") }}</strong>
+
+            <strong>
+                {{ session.get("username", "User") }}
+            </strong>
+
         </div>
 
     </div>
@@ -47,7 +58,9 @@
 
                 <select name="sort">
 
-                    <option value="">Sort By</option>
+                    <option value="">
+                        Sort By
+                    </option>
 
                     <option value="due_date">
                         Due Date
@@ -75,71 +88,57 @@
 
             {% for task in tasks %}
 
-            <div class="task-card">
+                <div class="task-card">
 
-                <h3>{{ task[1] }}</h3>
+                    <h3>{{ task[1] }}</h3>
 
-                <p>
-                    <strong>Priority:</strong>
-
-                    <span class="
-                        {% if task[2] == 'High' %}
-                            high
-                        {% elif task[2] == 'Medium' %}
-                            medium
-                        {% else %}
-                            low
-                        {% endif %}
-                    ">
+                    <p>
+                        <strong>Priority:</strong>
                         {{ task[2] }}
-                    </span>
-                </p>
+                    </p>
 
-                <p>
-                    <strong>Status:</strong>
-
-                    <span class="
-                        {% if task[3] == 'Completed' %}
-                            completed
-                        {% elif task[3] == 'In Progress' %}
-                            progress
-                        {% elif task[3] == 'Blocked' %}
-                            blocked
-                        {% else %}
-                            pending
-                        {% endif %}
-                    ">
+                    <p>
+                        <strong>Status:</strong>
                         {{ task[3] }}
-                    </span>
-                </p>
+                    </p>
 
-                <p>
-                    <strong>Due Date:</strong>
-                    {{ task[4] }}
-                </p>
+                    <p>
+                        <strong>Due Date:</strong>
+                        {{ task[4] }}
+                    </p>
 
-                <p>
-                    <strong>Project:</strong>
-                    {{ task[5] }}
-                </p>
+                    <p>
+                        <strong>Project:</strong>
+                        {{ task[5] }}
+                    </p>
 
-                <div class="task-buttons">
+                    <div class="task-buttons">
 
-                    <a href="/edit-task/{{ task[0] }}" class="edit-btn">
-                        Edit Task
-                    </a>
+                        <a
+                            href="/edit-task/{{ task[0] }}"
+                            class="edit-btn"
+                        >
+                            Edit Task
+                        </a>
 
-                    <form action="/delete-task/{{ task[0] }}" method="POST">
+                        <form
+                            action="/delete-task/{{ task[0] }}"
+                            method="POST"
+                            onsubmit="return confirm('Delete this task?');"
+                        >
 
-                        <button type="submit" class="delete-btn">
-                            Delete Task
-                        </button>
+                            <button
+                                type="submit"
+                                class="delete-btn"
+                            >
+                                Delete Task
+                            </button>
 
-                    </form>
+                        </form>
+
+                    </div>
 
                 </div>
-
-            </div>
 
             {% endfor %}
 
@@ -149,7 +148,13 @@
 
                 <h3>No Tasks Found</h3>
 
-                <p>Create a task to begin tracking your work.</p>
+                <p>
+                    Create a task to begin tracking work.
+                </p>
+
+                <a href="/add-task" class="view-btn">
+                    Add Task
+                </a>
 
             </div>
 

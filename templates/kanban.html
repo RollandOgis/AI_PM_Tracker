@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanban Board</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
@@ -12,20 +16,24 @@
 <div class="container">
 
     <div class="sidebar">
+
         <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
         <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/export-tasks">Export CSV</a>
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
         <a href="/logout">Logout</a>
-        <a href="/calendar">Calendar</a>
 
         <div class="user-box">
             Logged in as:
             <strong>{{ session.get("username", "User") }}</strong>
         </div>
+
     </div>
 
     <div class="main-content">
@@ -70,14 +78,11 @@
                                     {{ task["due_date"] }}
                                 </p>
 
-                                {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
-                                    <span class="overdue-badge">Overdue</span>
-                                {% endif %}
-
-                                <br>
-
-                                <a href="/edit-task/{{ task['id'] }}" class="edit-btn">
-                                    Edit Task
+                                <a
+                                    href="/edit-task/{{ task['id'] }}"
+                                    class="edit-btn"
+                                >
+                                    Edit
                                 </a>
 
                             </div>

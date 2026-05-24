@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI PM Dashboard</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
@@ -19,6 +21,10 @@
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/export-tasks">Export CSV</a>
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
         <a href="/logout">Logout</a>
@@ -38,43 +44,29 @@
     <div class="main-content">
 
         <div class="top-bar">
-
             <h2>Dashboard Overview</h2>
-
         </div>
 
         <div class="stats-grid">
 
             <div class="stat-card">
-
                 <h3>Total Projects</h3>
-
                 <p>{{ total_projects }}</p>
-
             </div>
 
             <div class="stat-card">
-
                 <h3>Total Tasks</h3>
-
                 <p>{{ total_tasks }}</p>
-
             </div>
 
             <div class="stat-card">
-
                 <h3>Completed Tasks</h3>
-
                 <p>{{ completed_tasks }}</p>
-
             </div>
 
             <div class="stat-card">
-
                 <h3>In Progress</h3>
-
                 <p>{{ in_progress_tasks }}</p>
-
             </div>
 
         </div>
@@ -88,52 +80,16 @@
                 <p>Completed: {{ completed_tasks }}</p>
 
                 <div class="progress-bar">
-
                     <div
-                        class="progress-fill completed-fill"
+                        class="progress-fill green"
                         style="width:
                         {% if total_tasks > 0 %}
-                            {{ (completed_tasks / total_tasks) * 100 }}%
+                        {{ (completed_tasks / total_tasks) * 100 }}%
                         {% else %}
-                            0%
+                        0%
                         {% endif %}
-                        ;"
+                        "
                     ></div>
-
-                </div>
-
-                <p>Pending: {{ pending_tasks }}</p>
-
-                <div class="progress-bar">
-
-                    <div
-                        class="progress-fill pending-fill"
-                        style="width:
-                        {% if total_tasks > 0 %}
-                            {{ (pending_tasks / total_tasks) * 100 }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                        ;"
-                    ></div>
-
-                </div>
-
-                <p>Blocked: {{ blocked_tasks }}</p>
-
-                <div class="progress-bar">
-
-                    <div
-                        class="progress-fill blocked-fill"
-                        style="width:
-                        {% if total_tasks > 0 %}
-                            {{ (blocked_tasks / total_tasks) * 100 }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                        ;"
-                    ></div>
-
                 </div>
 
             </div>
@@ -145,158 +101,96 @@
                 <p>High Priority: {{ high_priority_tasks }}</p>
 
                 <div class="progress-bar">
-
                     <div
-                        class="progress-fill high-fill"
+                        class="progress-fill red"
                         style="width:
                         {% if total_tasks > 0 %}
-                            {{ (high_priority_tasks / total_tasks) * 100 }}%
+                        {{ (high_priority_tasks / total_tasks) * 100 }}%
                         {% else %}
-                            0%
+                        0%
                         {% endif %}
-                        ;"
+                        "
                     ></div>
-
-                </div>
-
-                <p>Medium Priority: {{ medium_priority_tasks }}</p>
-
-                <div class="progress-bar">
-
-                    <div
-                        class="progress-fill medium-fill"
-                        style="width:
-                        {% if total_tasks > 0 %}
-                            {{ (medium_priority_tasks / total_tasks) * 100 }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                        ;"
-                    ></div>
-
-                </div>
-
-                <p>Low Priority: {{ low_priority_tasks }}</p>
-
-                <div class="progress-bar">
-
-                    <div
-                        class="progress-fill low-fill"
-                        style="width:
-                        {% if total_tasks > 0 %}
-                            {{ (low_priority_tasks / total_tasks) * 100 }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                        ;"
-                    ></div>
-
                 </div>
 
             </div>
 
         </div>
 
-        <div class="projects-section">
+        <h2>Your Projects</h2>
 
-            <h2>Your Projects</h2>
+        {% for item in projects %}
 
-            {% if projects %}
+            <div class="project-card">
 
-                {% for item in projects %}
+                <h3>{{ item.project[1] }}</h3>
 
-                <div class="project-card">
+                <p>
+                    <strong>Status:</strong>
+                    {{ item.project[2] }}
+                </p>
 
-                    <h3>{{ item.project[1] }}</h3>
+                <p>
+                    <strong>Start Date:</strong>
+                    {{ item.project[3] }}
+                </p>
 
-                    <p>
-                        <strong>Status:</strong>
-                        {{ item.project[2] }}
-                    </p>
+                <p>
+                    <strong>End Date:</strong>
+                    {{ item.project[4] }}
+                </p>
 
-                    <p>
-                        <strong>Start Date:</strong>
-                        {{ item.project[3] }}
-                    </p>
+                <p>
+                    <strong>Completion:</strong>
+                    {{ item.completion }}%
+                </p>
 
-                    <p>
-                        <strong>End Date:</strong>
-                        {{ item.project[4] }}
-                    </p>
+                <div class="progress-bar">
 
-                    <p>
-                        <strong>Completion:</strong>
-                        {{ item.completion }}%
-                    </p>
-
-                    <div class="progress-bar">
-
-                        <div
-                            class="progress-fill completed-fill"
-                            style="width: {{ item.completion }}%;"
-                        ></div>
-
-                    </div>
-
-                    <div class="project-buttons">
-
-                        <a
-                            href="/project/{{ item.project[0] }}"
-                            class="view-btn"
-                        >
-                            View Project
-                        </a>
-
-                        <a
-                            href="/edit-project/{{ item.project[0] }}"
-                            class="edit-btn"
-                        >
-                            Edit Project
-                        </a>
-
-                        <form
-                            action="/delete-project/{{ item.project[0] }}"
-                            method="POST"
-                            onsubmit="return confirm('Delete this project and all its tasks?');"
-                        >
-
-                            <button
-                                type="submit"
-                                class="delete-btn"
-                            >
-                                Delete Project
-                            </button>
-
-                        </form>
-
-                    </div>
+                    <div
+                        class="progress-fill green"
+                        style="width: {{ item.completion }}%"
+                    ></div>
 
                 </div>
 
-                {% endfor %}
-
-            {% else %}
-
-                <div class="empty-box">
-
-                    <h3>No Projects Yet</h3>
-
-                    <p>
-                        Create your first project to start tracking tasks and progress.
-                    </p>
+                <div class="button-group">
 
                     <a
-                        href="/add-project"
+                        href="/project/{{ item.project[0] }}"
                         class="view-btn"
                     >
-                        Create Project
+                        View Project
                     </a>
+
+                    <a
+                        href="/edit-project/{{ item.project[0] }}"
+                        class="edit-btn"
+                    >
+                        Edit Project
+                    </a>
+
+                    <form
+                        action="/delete-project/{{ item.project[0] }}"
+                        method="POST"
+                        style="display:inline;"
+                    >
+
+                        <button
+                            type="submit"
+                            class="delete-btn"
+                            onclick="return confirm('Delete this project?')"
+                        >
+                            Delete Project
+                        </button>
+
+                    </form>
 
                 </div>
 
-            {% endif %}
+            </div>
 
-        </div>
+        {% endfor %}
 
     </div>
 
