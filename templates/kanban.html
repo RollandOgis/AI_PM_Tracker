@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/logout">Logout</a>
+
+        <div class="user-box">
+            Logged in as:
+            <strong>{{ session.get("username", "User") }}</strong>
+        </div>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <h2>Kanban Board</h2>
+        </div>
+
+        <div class="kanban-board">
+
+            {% for status in ["Pending", "In Progress", "Completed", "Blocked"] %}
+
+            <div class="kanban-column">
+
+                <h3>{{ status }}</h3>
+
+                {% for task in tasks %}
+
+                    {% if task["status"] == status %}
+
+                    <div class="kanban-card">
+
+                        <h4>{{ task["title"] }}</h4>
+
+                        <p>
+                            <strong>Project:</strong>
+                            {{ task["project_name"] }}
+                        </p>
+
+                        <p>
+                            <strong>Priority:</strong>
+                            {{ task["priority"] }}
+                        </p>
+
+                        <p>
+                            <strong>Assigned To:</strong>
+                            {{ task["assigned_to"] or "Unassigned" }}
+                        </p>
+
+                        <p>
+                            <strong>Due:</strong>
+                            {{ task["due_date"] }}
+                        </p>
+
+                        {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
+
+                        <span class="overdue-badge">
+                            Overdue
+                        </span>
+
+                        {% endif %}
+
+                        <br>
+
+                        <a href="/edit-task/{{ task['id'] }}" class="edit-btn">
+                            Edit
+                        </a>
+
+                    </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

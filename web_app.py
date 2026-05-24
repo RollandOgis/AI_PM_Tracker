@@ -18,6 +18,26 @@ def get_db_connection():
     return conn
 
 
+def ensure_column(table, column, column_type):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute(f"PRAGMA table_info({table})")
+
+    columns = [row["name"] for row in cursor.fetchall()]
+
+    if column not in columns:
+
+        cursor.execute(
+            f"ALTER TABLE {table} ADD COLUMN {column} {column_type}"
+        )
+
+    conn.commit()
+    conn.close()
+
+
 def init_db():
 
     conn = get_db_connection()
@@ -60,6 +80,8 @@ def init_db():
 
 
 init_db()
+
+ensure_column("tasks", "assigned_to", "TEXT")
 
 
 @app.route("/")
@@ -168,6 +190,32 @@ def home():
         high_priority_tasks=high_priority_tasks,
         medium_priority_tasks=medium_priority_tasks,
         low_priority_tasks=low_priority_tasks,
+        current_date=str(date.today())
+    )
+
+
+@app.route("/kanban")
+def kanban():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "kanban.html",
+        tasks=tasks,
         current_date=str(date.today())
     )
 
@@ -468,17 +516,19 @@ def add_task():
         priority = request.form["priority"]
         status = request.form["status"]
         due_date = request.form["due_date"]
+        assigned_to = request.form["assigned_to"]
 
         conn.execute("""
         INSERT INTO tasks
-        (project_id, title, priority, status, due_date)
-        VALUES (?, ?, ?, ?, ?)
+        (project_id, title, priority, status, due_date, assigned_to)
+        VALUES (?, ?, ?, ?, ?, ?)
         """, (
             project_id,
             title,
             priority,
             status,
-            due_date
+            due_date,
+            assigned_to
         ))
 
         conn.commit()
@@ -513,19 +563,22 @@ def edit_task(task_id):
         priority = request.form["priority"]
         status = request.form["status"]
         due_date = request.form["due_date"]
+        assigned_to = request.form["assigned_to"]
 
         conn.execute("""
         UPDATE tasks
         SET title = ?,
             priority = ?,
             status = ?,
-            due_date = ?
+            due_date = ?,
+            assigned_to = ?
         WHERE id = ?
         """, (
             title,
             priority,
             status,
             due_date,
+            assigned_to,
             task_id
         ))
 
