@@ -60,6 +60,7 @@ init_db()
 
 @app.route("/")
 def home():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -83,6 +84,7 @@ def home():
     low_priority_tasks = 0
 
     for project in projects:
+
         tasks = conn.execute(
             "SELECT * FROM tasks WHERE project_id = ?",
             (project["id"],)
@@ -91,21 +93,27 @@ def home():
         task_list = []
 
         for task in tasks:
+
             total_tasks += 1
 
             if task["status"] == "Completed":
                 completed_tasks += 1
+
             elif task["status"] == "In Progress":
                 in_progress_tasks += 1
+
             elif task["status"] == "Pending":
                 pending_tasks += 1
+
             elif task["status"] == "Blocked":
                 blocked_tasks += 1
 
             if task["priority"] == "High":
                 high_priority_tasks += 1
+
             elif task["priority"] == "Medium":
                 medium_priority_tasks += 1
+
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
 
@@ -117,10 +125,15 @@ def home():
             ))
 
         if len(tasks) > 0:
+
             completed_for_project = len(
                 [task for task in tasks if task["status"] == "Completed"]
             )
-            completion = round((completed_for_project / len(tasks)) * 100)
+
+            completion = round(
+                (completed_for_project / len(tasks)) * 100
+            )
+
         else:
             completion = 0
 
@@ -156,6 +169,7 @@ def home():
 
 @app.route("/tasks")
 def tasks():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -180,8 +194,10 @@ def tasks():
 
     if sort == "due_date":
         query += " ORDER BY tasks.due_date ASC"
+
     elif sort == "priority":
         query += " ORDER BY tasks.priority ASC"
+
     elif sort == "status":
         query += " ORDER BY tasks.status ASC"
 
@@ -199,6 +215,7 @@ def tasks():
     all_tasks = []
 
     for task in task_rows:
+
         all_tasks.append((
             task["id"],
             task["title"],
@@ -221,10 +238,12 @@ def tasks():
 
 @app.route("/add-project", methods=["GET", "POST"])
 def add_project():
+
     if "user_id" not in session:
         return redirect("/login")
 
     if request.method == "POST":
+
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
@@ -254,8 +273,99 @@ def add_project():
     return render_template("add_project.html")
 
 
+@app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
+def edit_project(project_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+        (project_id, session["user_id"])
+    ).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        description = request.form["description"]
+        status = request.form["status"]
+        start_date = request.form["start_date"]
+        end_date = request.form["end_date"]
+
+        conn.execute("""
+        UPDATE projects
+        SET name = ?,
+            description = ?,
+            status = ?,
+            start_date = ?,
+            end_date = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            project_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    conn.close()
+
+    return render_template(
+        "edit_project.html",
+        project=project
+    )
+
+
+@app.route("/delete-project/<int:project_id>", methods=["POST"])
+def delete_project(project_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+        (project_id, session["user_id"])
+    ).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    conn.execute(
+        "DELETE FROM tasks WHERE project_id = ?",
+        (project_id,)
+    )
+
+    conn.execute(
+        "DELETE FROM projects WHERE id = ?",
+        (project_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/")
+
+
 @app.route("/add-task", methods=["GET", "POST"])
 def add_task():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -267,6 +377,7 @@ def add_task():
     ).fetchall()
 
     if request.method == "POST":
+
         project_id = request.form["project_id"]
         title = request.form["title"]
         priority = request.form["priority"]
@@ -292,17 +403,22 @@ def add_task():
 
     conn.close()
 
-    return render_template("add_task.html", projects=projects)
+    return render_template(
+        "add_task.html",
+        projects=projects
+    )
 
 
 @app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
 def edit_task(task_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
     if request.method == "POST":
+
         title = request.form["title"]
         priority = request.form["priority"]
         status = request.form["status"]
@@ -349,6 +465,7 @@ def edit_task(task_id):
 
 @app.route("/delete-task/<int:task_id>", methods=["POST"])
 def delete_task(task_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -367,9 +484,11 @@ def delete_task(task_id):
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+
     error = None
 
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -378,6 +497,7 @@ def register():
         conn = get_db_connection()
 
         try:
+
             conn.execute(
                 "INSERT INTO users (username, password) VALUES (?, ?)",
                 (username, hashed_password)
@@ -389,15 +509,22 @@ def register():
             return redirect("/login")
 
         except sqlite3.IntegrityError:
-            conn.close()
-            error = "Username already exists. Please choose another username."
 
-    return render_template("register.html", error=error)
+            conn.close()
+
+            error = "Username already exists"
+
+    return render_template(
+        "register.html",
+        error=error
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -411,11 +538,17 @@ def login():
         conn.close()
 
         if user:
+
             stored_password = user["password"]
 
-            if check_password_hash(stored_password, password) or stored_password == password:
+            if check_password_hash(
+                stored_password,
+                password
+            ) or stored_password == password:
+
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
+
                 return redirect("/")
 
         return "Invalid username or password"
@@ -425,63 +558,17 @@ def login():
 
 @app.route("/logout")
 def logout():
+
     session.clear()
+
     return redirect("/login")
 
-@app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
-def edit_project(project_id):
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    project = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (project_id, session["user_id"])
-    ).fetchone()
-
-    if not project:
-        conn.close()
-        return redirect("/")
-
-    if request.method == "POST":
-        name = request.form["name"]
-        description = request.form["description"]
-        status = request.form["status"]
-        start_date = request.form["start_date"]
-        end_date = request.form["end_date"]
-
-        conn.execute("""
-        UPDATE projects
-        SET name = ?,
-            description = ?,
-            status = ?,
-            start_date = ?,
-            end_date = ?
-        WHERE id = ?
-        AND user_id = ?
-        """, (
-            name,
-            description,
-            status,
-            start_date,
-            end_date,
-            project_id,
-            session["user_id"]
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    conn.close()
-
-    return render_template(
-        "edit_project.html",
-        project=project
-    )
 
 if __name__ == "__main__":
+
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )

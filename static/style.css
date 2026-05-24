@@ -262,3 +262,24 @@ form textarea {
     color: #ef4444;
     font-weight: bold;
 }
+
+.project-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+.empty-box {
+    text-align: center;
+    padding: 40px;
+}
+
+.empty-box h3 {
+    margin-bottom: 10px;
+    color: #111827;
+}
+
+.empty-box p {
+    color: #6b7280;
+}

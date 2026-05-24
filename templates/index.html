@@ -24,8 +24,13 @@
         <a href="/logout">Logout</a>
 
         <div class="user-box">
+
             Logged in as:
-            <strong>{{ session.get("username", "User") }}</strong>
+
+            <strong>
+                {{ session.get("username", "User") }}
+            </strong>
+
         </div>
 
     </div>
@@ -41,23 +46,35 @@
         <div class="stats-grid">
 
             <div class="stat-card">
+
                 <h3>Total Projects</h3>
+
                 <p>{{ total_projects }}</p>
+
             </div>
 
             <div class="stat-card">
+
                 <h3>Total Tasks</h3>
+
                 <p>{{ total_tasks }}</p>
+
             </div>
 
             <div class="stat-card">
+
                 <h3>Completed Tasks</h3>
+
                 <p>{{ completed_tasks }}</p>
+
             </div>
 
             <div class="stat-card">
+
                 <h3>In Progress</h3>
+
                 <p>{{ in_progress_tasks }}</p>
+
             </div>
 
         </div>
@@ -71,6 +88,7 @@
                 <p>Completed: {{ completed_tasks }}</p>
 
                 <div class="progress-bar">
+
                     <div
                         class="progress-fill completed-fill"
                         style="width:
@@ -79,13 +97,15 @@
                         {% else %}
                             0%
                         {% endif %}
-                        ">
-                    </div>
+                        ;"
+                    ></div>
+
                 </div>
 
                 <p>Pending: {{ pending_tasks }}</p>
 
                 <div class="progress-bar">
+
                     <div
                         class="progress-fill pending-fill"
                         style="width:
@@ -94,13 +114,15 @@
                         {% else %}
                             0%
                         {% endif %}
-                        ">
-                    </div>
+                        ;"
+                    ></div>
+
                 </div>
 
                 <p>Blocked: {{ blocked_tasks }}</p>
 
                 <div class="progress-bar">
+
                     <div
                         class="progress-fill blocked-fill"
                         style="width:
@@ -109,8 +131,9 @@
                         {% else %}
                             0%
                         {% endif %}
-                        ">
-                    </div>
+                        ;"
+                    ></div>
+
                 </div>
 
             </div>
@@ -122,6 +145,7 @@
                 <p>High Priority: {{ high_priority_tasks }}</p>
 
                 <div class="progress-bar">
+
                     <div
                         class="progress-fill high-fill"
                         style="width:
@@ -130,13 +154,15 @@
                         {% else %}
                             0%
                         {% endif %}
-                        ">
-                    </div>
+                        ;"
+                    ></div>
+
                 </div>
 
                 <p>Medium Priority: {{ medium_priority_tasks }}</p>
 
                 <div class="progress-bar">
+
                     <div
                         class="progress-fill medium-fill"
                         style="width:
@@ -145,13 +171,15 @@
                         {% else %}
                             0%
                         {% endif %}
-                        ">
-                    </div>
+                        ;"
+                    ></div>
+
                 </div>
 
                 <p>Low Priority: {{ low_priority_tasks }}</p>
 
                 <div class="progress-bar">
+
                     <div
                         class="progress-fill low-fill"
                         style="width:
@@ -160,8 +188,9 @@
                         {% else %}
                             0%
                         {% endif %}
-                        ">
-                    </div>
+                        ;"
+                    ></div>
+
                 </div>
 
             </div>
@@ -204,26 +233,43 @@
 
                         <div
                             class="progress-fill completed-fill"
-                            style="width: {{ item.completion }}%;">
-                        </div>
+                            style="width: {{ item.completion }}%;"
+                        ></div>
 
                     </div>
 
-                    <br>
+                    <div class="project-buttons">
 
-                    <a
-                        href="/project/{{ item.project[0] }}"
-                        class="view-btn"
-                    >
-                        View Project
-                    </a>
+                        <a
+                            href="/project/{{ item.project[0] }}"
+                            class="view-btn"
+                        >
+                            View Project
+                        </a>
 
-                    <a
-                        href="/edit-project/{{ item.project[0] }}"
-                        class="edit-btn"
-                    >
-                        Edit Project
-                    </a>
+                        <a
+                            href="/edit-project/{{ item.project[0] }}"
+                            class="edit-btn"
+                        >
+                            Edit Project
+                        </a>
+
+                        <form
+                            action="/delete-project/{{ item.project[0] }}"
+                            method="POST"
+                            onsubmit="return confirm('Delete this project and all its tasks?');"
+                        >
+
+                            <button
+                                type="submit"
+                                class="delete-btn"
+                            >
+                                Delete Project
+                            </button>
+
+                        </form>
+
+                    </div>
 
                 </div>
 
@@ -235,7 +281,16 @@
 
                     <h3>No Projects Yet</h3>
 
-                    <p>Create your first project to get started.</p>
+                    <p>
+                        Create your first project to start tracking tasks and progress.
+                    </p>
+
+                    <a
+                        href="/add-project"
+                        class="view-btn"
+                    >
+                        Create Project
+                    </a>
 
                 </div>
 
