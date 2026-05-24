@@ -1,56 +1,214 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>AI PM Report</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
+    <title>Report - AI PM Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+        }
 
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            margin: 0;
+            color: #222;
+        }
+
+        .nav a,
+        .btn {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 10px 14px;
+            text-decoration: none;
+            background: #2563eb;
+            color: white;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .nav a:hover,
+        .btn:hover {
+            background: #1d4ed8;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            color: #555;
+            font-size: 15px;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 26px;
+            font-weight: bold;
+            color: #111;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #111827;
+            color: white;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            color: #666;
+        }
+
+        @media (max-width: 800px) {
+            .top-bar {
+                display: block;
+            }
+
+            .nav {
+                margin-top: 15px;
+            }
+
+            .nav a,
+            .btn {
+                margin: 5px 5px 0 0;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
 <body>
 
-<div class="report-page">
+<div class="container">
 
-    <div class="report-header">
-        <h1>AI PM Tracker Report</h1>
-        <p>Generated on {{ current_date }}</p>
+    <div class="top-bar">
+        <h1>Project Report</h1>
 
-        <button onclick="window.print()" class="view-btn">
-            Export / Save as PDF
-        </button>
+        <div class="nav">
+            <a href="/">Dashboard</a>
+            <a href="/tasks">Tasks</a>
+            <a href="/kanban">Kanban</a>
+            <a href="/calendar">Calendar</a>
+            <a href="{{ url_for('pdf_report') }}">Export PDF Report</a>
+            <a href="/export-tasks">Export CSV</a>
+        </div>
     </div>
 
-    <h2>Projects</h2>
+    <p>Report generated on: {{ current_date }}</p>
 
-    {% for project in projects %}
-        <div class="report-card">
-            <h3>{{ project["name"] }}</h3>
-            <p><strong>Status:</strong> {{ project["status"] }}</p>
-            <p><strong>Start:</strong> {{ project["start_date"] }}</p>
-            <p><strong>End:</strong> {{ project["end_date"] }}</p>
+    <div class="cards">
+        <div class="card">
+            <h3>Total Tasks</h3>
+            <p>{{ total_tasks }}</p>
         </div>
-    {% endfor %}
+
+        <div class="card">
+            <h3>Completed Tasks</h3>
+            <p>{{ completed_tasks }}</p>
+        </div>
+
+        <div class="card">
+            <h3>Overdue Tasks</h3>
+            <p>{{ overdue_tasks }}</p>
+        </div>
+
+        <div class="card">
+            <h3>Completion Rate</h3>
+            <p>{{ completion_rate }}%</p>
+        </div>
+    </div>
 
     <h2>Tasks</h2>
 
-    {% for task in tasks %}
-        <div class="report-card">
-            <h3>{{ task["title"] }}</h3>
-            <p><strong>Project:</strong> {{ task["project_name"] }}</p>
-            <p><strong>Priority:</strong> {{ task["priority"] }}</p>
-            <p><strong>Status:</strong> {{ task["status"] }}</p>
-            <p><strong>Due:</strong> {{ task["due_date"] }}</p>
-            <p><strong>Assigned To:</strong> {{ task["assigned_to"] or "Unassigned" }}</p>
-
-            {% if task["attachment_url"] %}
-                <p>
-                    <strong>Attachment:</strong>
-                    <a href="{{ task['attachment_url'] }}" target="_blank">
-                        Open File
-                    </a>
-                </p>
-            {% endif %}
+    {% if tasks %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th>Task</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Due Date</th>
+                    <th>Assigned To</th>
+                    <th>Attachment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                    <tr>
+                        <td>{{ task["project_name"] }}</td>
+                        <td>{{ task["title"] }}</td>
+                        <td>{{ task["priority"] }}</td>
+                        <td>{{ task["status"] }}</td>
+                        <td>{{ task["due_date"] }}</td>
+                        <td>{{ task["assigned_to"] or "Unassigned" }}</td>
+                        <td>
+                            {% if task["attachment_url"] %}
+                                <a href="{{ task['attachment_url'] }}" target="_blank">Open</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty">
+            No tasks found for this report.
         </div>
-    {% endfor %}
+    {% endif %}
 
 </div>
 
