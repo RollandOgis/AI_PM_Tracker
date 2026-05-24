@@ -28,7 +28,7 @@ def ensure_column(table, column, column_type):
     conn.close()
 
 
-init_db()
+#init_db()
 
 ensure_column("projects", "user_id", "INTEGER")
 ensure_column("tasks", "description", "TEXT")
