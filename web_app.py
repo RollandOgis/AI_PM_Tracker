@@ -11,13 +11,17 @@ DATABASE = "ai_pm_tracker.db"
 
 
 def get_db_connection():
+
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
+
     return conn
 
 
 def init_db():
+
     conn = get_db_connection()
+
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -135,6 +139,7 @@ def home():
             )
 
         else:
+
             completion = 0
 
         all_projects.append({
@@ -164,6 +169,95 @@ def home():
         medium_priority_tasks=medium_priority_tasks,
         low_priority_tasks=low_priority_tasks,
         current_date=str(date.today())
+    )
+
+
+@app.route("/project/<int:project_id>")
+def project_detail(project_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute(
+        """
+        SELECT *
+        FROM projects
+        WHERE id = ?
+        AND user_id = ?
+        """,
+        (project_id, session["user_id"])
+    ).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    tasks = conn.execute(
+        """
+        SELECT *
+        FROM tasks
+        WHERE project_id = ?
+        ORDER BY due_date ASC
+        """,
+        (project_id,)
+    ).fetchall()
+
+    task_list = []
+
+    completed_tasks = 0
+
+    for task in tasks:
+
+        overdue = False
+
+        if (
+            task["status"] != "Completed"
+            and task["due_date"] < str(date.today())
+        ):
+            overdue = True
+
+        if task["status"] == "Completed":
+            completed_tasks += 1
+
+        task_list.append((
+            task["id"],
+            task["title"],
+            task["priority"],
+            task["status"],
+            task["due_date"],
+            overdue
+        ))
+
+    total_tasks = len(tasks)
+
+    if total_tasks > 0:
+
+        completion = round(
+            (completed_tasks / total_tasks) * 100
+        )
+
+    else:
+
+        completion = 0
+
+    conn.close()
+
+    return render_template(
+        "project_detail.html",
+        project=(
+            project["id"],
+            project["name"],
+            project["description"],
+            project["status"],
+            project["start_date"],
+            project["end_date"]
+        ),
+        tasks=task_list,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion=completion
     )
 
 
@@ -338,23 +432,14 @@ def delete_project(project_id):
 
     conn = get_db_connection()
 
-    project = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (project_id, session["user_id"])
-    ).fetchone()
-
-    if not project:
-        conn.close()
-        return redirect("/")
-
     conn.execute(
         "DELETE FROM tasks WHERE project_id = ?",
         (project_id,)
     )
 
     conn.execute(
-        "DELETE FROM projects WHERE id = ?",
-        (project_id,)
+        "DELETE FROM projects WHERE id = ? AND user_id = ?",
+        (project_id, session["user_id"])
     )
 
     conn.commit()
@@ -417,6 +502,11 @@ def edit_task(task_id):
 
     conn = get_db_connection()
 
+    task = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
     if request.method == "POST":
 
         title = request.form["title"]
@@ -444,22 +534,11 @@ def edit_task(task_id):
 
         return redirect("/tasks")
 
-    task = conn.execute(
-        "SELECT * FROM tasks WHERE id = ?",
-        (task_id,)
-    ).fetchone()
-
     conn.close()
 
     return render_template(
         "edit_task.html",
-        task=(
-            task["id"],
-            task["title"],
-            task["priority"],
-            task["status"],
-            task["due_date"]
-        )
+        task=task
     )
 
 
@@ -510,9 +589,9 @@ def register():
 
         except sqlite3.IntegrityError:
 
-            conn.close()
-
             error = "Username already exists"
+
+            conn.close()
 
     return render_template(
         "register.html",
@@ -541,10 +620,10 @@ def login():
 
             stored_password = user["password"]
 
-            if check_password_hash(
-                stored_password,
-                password
-            ) or stored_password == password:
+            if (
+                check_password_hash(stored_password, password)
+                or stored_password == password
+            ):
 
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
