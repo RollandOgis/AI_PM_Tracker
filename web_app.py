@@ -73,7 +73,11 @@ ensure_column("projects", "user_id", "INTEGER")
 ensure_column("projects", "status", "TEXT DEFAULT 'Pending'")
 ensure_column("projects", "start_date", "TEXT")
 ensure_column("projects", "end_date", "TEXT")
+
 ensure_column("tasks", "description", "TEXT")
+ensure_column("tasks", "priority", "TEXT DEFAULT 'Medium'")
+ensure_column("tasks", "due_date", "TEXT")
+ensure_column("tasks", "assigned_to", "TEXT")
 
 
 #init_db()
