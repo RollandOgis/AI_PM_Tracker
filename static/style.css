@@ -379,3 +379,65 @@ form textarea {
         grid-template-columns: 1fr;
     }
 }
+
+.calendar-card {
+    background: white;
+    padding: 22px;
+    border-radius: 15px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.calendar-date {
+    min-width: 160px;
+    background: #f3f4f6;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.calendar-date span {
+    display: block;
+    margin-top: 8px;
+    font-weight: bold;
+    color: #111827;
+}
+
+body.dark-ready {
+    background: #0f172a;
+}
+
+.dark-ready .main-content {
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+.dark-ready .stat-card,
+.dark-ready .analytics-card,
+.dark-ready .project-card,
+.dark-ready .task-card,
+.dark-ready .form-card,
+.dark-ready .empty-box,
+.dark-ready .calendar-card,
+.dark-ready .kanban-column,
+.dark-ready .kanban-card {
+    background: #1e293b;
+    color: #e5e7eb;
+}
+
+.dark-ready .calendar-date {
+    background: #334155;
+}
+
+.dark-ready .calendar-date span {
+    color: #e5e7eb;
+}
+
+.dark-ready .top-bar h2,
+.dark-ready h2,
+.dark-ready h3 {
+    color: #f8fafc;
+}

@@ -695,6 +695,31 @@ def logout():
 
     return redirect("/login")
 
+@app.route("/calendar")
+def calendar():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "calendar.html",
+        tasks=tasks,
+        current_date=str(date.today())
+    )
+
 
 if __name__ == "__main__":
 
