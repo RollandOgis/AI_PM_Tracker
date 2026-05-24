@@ -1,331 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AI PM Tracker</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <title>Dashboard</title>
 </head>
-
 <body>
 
-<div class="page-layout">
+<h1>AI PM Dashboard</h1>
 
-   <div class="sidebar">
+<p>
+    Logged in as:
+    <strong>{{ session.get("username", "User") }}</strong>
+</p>
 
-    <h2>AI PM</h2>
+<hr>
 
-    <p>
-        Logged in as:
-        <strong>{{ session["username"] }}</strong>
-    </p>
+<h2>Summary</h2>
 
-    <a href="/">Dashboard</a>
+<ul>
+    <li>Total Projects: {{ total_projects }}</li>
+    <li>Total Tasks: {{ total_tasks }}</li>
+    <li>Completed Tasks: {{ completed_tasks }}</li>
+    <li>In Progress Tasks: {{ in_progress_tasks }}</li>
+    <li>Pending Tasks: {{ pending_tasks }}</li>
+    <li>Blocked Tasks: {{ blocked_tasks }}</li>
+</ul>
 
-    <a href="/tasks">Tasks</a>
+<hr>
 
-    <a href="/add-task">Add Task</a>
+<a href="/add-project">Add Project</a> |
+<a href="/tasks">View Tasks</a> |
+<a href="/logout">Logout</a>
 
-    <a href="/add-project">Add Project</a>
+<hr>
 
-    <a href="/logout">Logout</a>
+<h2>Projects</h2>
+
+{% for item in projects %}
+
+<div style="border:1px solid #ccc; padding:15px; margin-bottom:20px;">
+
+    <h3>{{ item.project[1] }}</h3>
+
+    <p>Status: {{ item.project[2] }}</p>
+
+    <p>Start Date: {{ item.project[3] }}</p>
+
+    <p>End Date: {{ item.project[4] }}</p>
+
+    <p>Completion: {{ item.completion }}%</p>
+
+    <a href="/project/{{ item.project[0] }}">
+        View Project
+    </a>
 
 </div>
 
-    <div class="main-content">
-
-        <h1>AI PM Tracker</h1>
-
-        <div class="stats-container">
-
-            <div class="stat-card">
-                <h3>Total Projects</h3>
-                <p>{{ total_projects }}</p>
-            </div>
-
-            <div class="stat-card">
-                <h3>Total Tasks</h3>
-                <p>{{ total_tasks }}</p>
-            </div>
-
-            <div class="stat-card">
-                <h3>Completed</h3>
-                <p>{{ completed_tasks }}</p>
-            </div>
-
-            <div class="stat-card">
-                <h3>In Progress</h3>
-                <p>{{ in_progress_tasks }}</p>
-            </div>
-
-        </div>
-
-        <h2>Task Priority Breakdown</h2>
-
-        <div class="project-card">
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    High: {{ high_priority_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill high-fill"
-                         style="width: {{ high_priority_tasks * 20 }}%;">
-
-                        {{ high_priority_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    Medium: {{ medium_priority_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill medium-fill"
-                         style="width: {{ medium_priority_tasks * 20 }}%;">
-
-                        {{ medium_priority_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    Low: {{ low_priority_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill low-fill"
-                         style="width: {{ low_priority_tasks * 20 }}%;">
-
-                        {{ low_priority_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <h2>Task Status Breakdown</h2>
-
-        <div class="project-card">
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    Completed: {{ completed_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill low-fill"
-                         style="width: {{ completed_tasks * 20 }}%;">
-
-                        {{ completed_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    In Progress: {{ in_progress_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill medium-fill"
-                         style="width: {{ in_progress_tasks * 20 }}%;">
-
-                        {{ in_progress_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    Pending: {{ pending_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill high-fill"
-                         style="width: {{ pending_tasks * 20 }}%;">
-
-                        {{ pending_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="breakdown-row">
-
-                <div class="breakdown-label">
-                    Blocked: {{ blocked_tasks }}
-                </div>
-
-                <div class="breakdown-bar">
-
-                    <div class="breakdown-fill high-fill"
-                         style="width: {{ blocked_tasks * 20 }}%;">
-
-                        {{ blocked_tasks }}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <h2>Projects</h2>
-
-        {% for item in projects %}
-
-            <div class="project-card">
-
-                <h3>{{ item.project[1] }}</h3>
-
-                <a href="/project/{{ item.project[0] }}">
-                    View Project Details
-                </a>
-
-                <p><strong>Status:</strong> {{ item.project[2] }}</p>
-
-                <p><strong>Start Date:</strong> {{ item.project[3] }}</p>
-
-                <p><strong>End Date:</strong> {{ item.project[4] }}</p>
-
-                <p>
-                    <strong>Completion:</strong>
-                    {{ item.completion }}%
-                </p>
-
-                <div class="progress-bar">
-
-                    <div class="progress-fill"
-                         style="width: {{ item.completion }}%;">
-
-                        {{ item.completion }}%
-
-                    </div>
-
-                </div>
-
-                <h4>Tasks</h4>
-
-                {% for task in item.tasks %}
-
-                    <div class="task-card">
-
-                        <p>
-                            <strong>Title:</strong>
-                            {{ task[0] }}
-                        </p>
-
-                        <p>
-                            <strong>Priority:</strong>
-
-                            {% if task[1] == "High" %}
-
-                                <span class="priority-high">
-                                    {{ task[1] }}
-                                </span>
-
-                            {% elif task[1] == "Medium" %}
-
-                                <span class="priority-medium">
-                                    {{ task[1] }}
-                                </span>
-
-                            {% elif task[1] == "Low" %}
-
-                                <span class="priority-low">
-                                    {{ task[1] }}
-                                </span>
-
-                            {% else %}
-
-                                {{ task[1] }}
-
-                            {% endif %}
-                        </p>
-
-                        <p>
-                            <strong>Status:</strong>
-
-                            {% if task[2] == "Completed" %}
-
-                                <span class="status-completed">
-                                    {{ task[2] }}
-                                </span>
-
-                            {% elif task[2] == "In Progress" %}
-
-                                <span class="status-progress">
-                                    {{ task[2] }}
-                                </span>
-
-                            {% else %}
-
-                                <span class="status-other">
-                                    {{ task[2] }}
-                                </span>
-
-                            {% endif %}
-                        </p>
-
-                        <p>
-                            <strong>Due Date:</strong>
-                            {{ task[3] }}
-                        </p>
-
-                        {% if task[3] < current_date and task[2] != "Completed" %}
-
-                            <span class="overdue-badge">
-                                Overdue
-                            </span>
-
-                        {% endif %}
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
-        {% endfor %}
-
-    </div>
-
-</div>
+{% endfor %}
 
 </body>
 </html>

@@ -2,70 +2,45 @@
 <html>
 <head>
     <title>Project Details</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<div class="page-layout">
+<h1>{{ project[1] }}</h1>
 
-    <div class="sidebar">
+<p>
+    Logged in as:
+    <strong>{{ session.get("username", "User") }}</strong>
+</p>
 
-    <h2>AI PM</h2>
+<hr>
 
-    <p>
-        Logged in as:
-        <strong>{{ session["username"] }}</strong>
-    </p>
+<p>Description: {{ project[2] }}</p>
 
-    <a href="/">Dashboard</a>
+<p>Status: {{ project[3] }}</p>
 
-    <a href="/tasks">Tasks</a>
+<p>Start Date: {{ project[4] }}</p>
 
-    <a href="/add-task">Add Task</a>
+<p>End Date: {{ project[5] }}</p>
 
-    <a href="/add-project">Add Project</a>
+<hr>
 
-    <a href="/logout">Logout</a>
+<h2>Tasks</h2>
 
-</div>
+{% for task in tasks %}
 
-    <div class="main-content">
+<div style="border:1px solid #ccc; padding:15px; margin-bottom:20px;">
 
-        <h1>{{ project[1] }}</h1>
-        <a href="/" class="back-link">← Back to Dashboard</a>
+    <h3>{{ task[0] }}</h3>
 
-        <div class="project-card">
-            <p><strong>Description:</strong> {{ project[2] }}</p>
-            <p><strong>Status:</strong> {{ project[3] }}</p>
-            <p><strong>Start Date:</strong> {{ project[4] }}</p>
-            <p><strong>End Date:</strong> {{ project[5] }}</p>
-        </div>
+    <p>Priority: {{ task[1] }}</p>
 
-        <h2>Project Tasks</h2>
+    <p>Status: {{ task[2] }}</p>
 
-        {% for task in tasks %}
-
-            <div class="task-card">
-
-                <p><strong>Title:</strong> {{ task[0] }}</p>
-                <p><strong>Priority:</strong> {{ task[1] }}</p>
-                <p><strong>Status:</strong> {{ task[2] }}</p>
-                <p><strong>Due Date:</strong> {{ task[3] }}</p>
-
-                {% if task[3] < current_date and task[2] != "Completed" %}
-                    <span class="overdue-badge">Overdue</span>
-                {% endif %}
-
-            </div>
-
-        {% endfor %}
-
-    </div>
+    <p>Due Date: {{ task[3] }}</p>
 
 </div>
+
+{% endfor %}
 
 </body>
 </html>

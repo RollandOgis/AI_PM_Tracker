@@ -1,171 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-    <title>All Tasks</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
-
+    <title>Tasks</title>
 </head>
-
 <body>
 
-<div class="page-layout">
+<h1>Tasks</h1>
 
-    <div class="sidebar">
+<p>
+    Logged in as:
+    <strong>{{ session.get("username", "User") }}</strong>
+</p>
 
-        <h2>AI PM</h2>
+<hr>
 
-        <a href="/">Dashboard</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/register">Register</a>
-        <a href="/login">Login</a>
-        <a href="/logout">Logout</a>
+<a href="/">Dashboard</a> |
+<a href="/add-task">Add Task</a> |
+<a href="/logout">Logout</a>
 
-    </div>
+<hr>
 
-    <div class="main-content">
+<form method="GET">
 
-        <h1>All Tasks</h1>
+    <input type="text" name="search" placeholder="Search" value="{{ search }}">
 
-        <a href="/" class="back-link">
-            ← Back to Dashboard
-        </a>
+    <select name="sort">
+        <option value="">Sort</option>
+        <option value="due_date">Due Date</option>
+        <option value="priority">Priority</option>
+        <option value="status">Status</option>
+    </select>
 
-        <form method="GET"
-              action="/tasks"
-              class="project-card">
+    <button type="submit">Apply</button>
 
-            <input
-                type="text"
-                name="search"
-                placeholder="Search tasks..."
-                value="{{ search }}">
+</form>
 
-            <select name="sort">
+<hr>
 
-                <option value="">
-                    Sort By
-                </option>
+{% for task in tasks %}
 
-                <option value="due_date"
-                    {% if sort == "due_date" %}selected{% endif %}>
-                    Due Date
-                </option>
+<div style="border:1px solid #ccc; padding:15px; margin-bottom:20px;">
 
-                <option value="priority"
-                    {% if sort == "priority" %}selected{% endif %}>
-                    Priority
-                </option>
+    <h3>{{ task[1] }}</h3>
 
-                <option value="status"
-                    {% if sort == "status" %}selected{% endif %}>
-                    Status
-                </option>
+    <p>Priority: {{ task[2] }}</p>
 
-            </select>
+    <p>Status: {{ task[3] }}</p>
 
-            <button type="submit">
-                Apply
-            </button>
+    <p>Due Date: {{ task[4] }}</p>
 
-        </form>
+    <p>Project: {{ task[5] }}</p>
 
-        {% for task in tasks %}
+    <a href="/edit-task/{{ task[0] }}">Edit</a>
 
-            <div class="project-card">
-
-                <h3>{{ task[1] }}</h3>
-
-                <p>
-                    <strong>Priority:</strong>
-
-                    {% if task[2] == "High" %}
-
-                        <span class="priority-high">
-                            {{ task[2] }}
-                        </span>
-
-                    {% elif task[2] == "Medium" %}
-
-                        <span class="priority-medium">
-                            {{ task[2] }}
-                        </span>
-
-                    {% elif task[2] == "Low" %}
-
-                        <span class="priority-low">
-                            {{ task[2] }}
-                        </span>
-
-                    {% else %}
-
-                        {{ task[2] }}
-
-                    {% endif %}
-
-                </p>
-
-                <p>
-                    <strong>Status:</strong>
-
-                    {% if task[3] == "Completed" %}
-
-                        <span class="status-completed">
-                            {{ task[3] }}
-                        </span>
-
-                    {% elif task[3] == "In Progress" %}
-
-                        <span class="status-progress">
-                            {{ task[3] }}
-                        </span>
-
-                    {% else %}
-
-                        <span class="status-other">
-                            {{ task[3] }}
-                        </span>
-
-                    {% endif %}
-
-                </p>
-
-                <p><strong>Due Date:</strong> {{ task[4] }}</p>
-
-                {% if task[4] < current_date and task[3] != "Completed" %}
-
-                    <span class="overdue-badge">
-                        Overdue
-                    </span>
-
-                {% endif %}
-
-                <p><strong>Project:</strong> {{ task[5] }}</p>
-
-                <a href="/edit-task/{{ task[0] }}">
-                    Edit Task
-                </a>
-
-                <form action="/delete-task/{{ task[0] }}"
-                      method="POST">
-
-                    <button type="submit">
-                        Delete Task
-                    </button>
-
-                </form>
-
-            </div>
-
-        {% endfor %}
-
-    </div>
+    <form action="/delete-task/{{ task[0] }}" method="POST">
+        <button type="submit">Delete</button>
+    </form>
 
 </div>
+
+{% endfor %}
 
 </body>
 </html>

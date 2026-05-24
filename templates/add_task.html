@@ -2,76 +2,75 @@
 <html>
 <head>
     <title>Add Task</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<div class="page-layout">
+<h1>Add Task</h1>
 
-    <div class="sidebar">
-        <h2>AI PM</h2>
-        <a href="/">Dashboard</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/register">Register</a>
-        <a href="/login">Login</a>
-        <a href="/logout">Logout</a>
+<p>
+    Logged in as:
+    <strong>{{ session.get("username", "User") }}</strong>
+</p>
 
-    </div>
+<hr>
 
-    <div class="main-content">
+<a href="/">Dashboard</a>
 
-        <h1>Add Task</h1>
+<hr>
 
-        <form method="POST" class="project-card">
+<form method="POST">
 
-            <label>Project</label>
-            <select name="project_id" required>
-                {% for project in projects %}
-                    <option value="{{ project[0] }}">
-                        {{ project[1] }}
-                    </option>
-                {% endfor %}
-            </select>
+    <select name="project_id">
 
-            <br><br>
+        {% for project in projects %}
 
-            <input type="text" name="title" placeholder="Task title" required>
+        <option value="{{ project['id'] }}">
+            {{ project['name'] }}
+        </option>
 
-            <br><br>
+        {% endfor %}
 
-            <label>Priority</label>
-            <select name="priority" required>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-            </select>
+    </select>
 
-            <br><br>
+    <br><br>
 
-            <label>Status</label>
-            <select name="status" required>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-                <option value="Pending">Pending</option>
-                <option value="Blocked">Blocked</option>
-            </select>
+    <input type="text" name="title" placeholder="Task Title" required>
 
-            <br><br>
+    <br><br>
 
-            <input type="date" name="due_date" required>
+    <select name="priority">
 
-            <br><br>
+        <option value="High">High</option>
 
-            <button type="submit">Add Task</button>
+        <option value="Medium">Medium</option>
 
-        </form>
+        <option value="Low">Low</option>
 
-    </div>
+    </select>
 
-</div>
+    <br><br>
+
+    <select name="status">
+
+        <option value="Pending">Pending</option>
+
+        <option value="In Progress">In Progress</option>
+
+        <option value="Completed">Completed</option>
+
+        <option value="Blocked">Blocked</option>
+
+    </select>
+
+    <br><br>
+
+    <input type="date" name="due_date">
+
+    <br><br>
+
+    <button type="submit">Create Task</button>
+
+</form>
 
 </body>
 </html>

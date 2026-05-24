@@ -2,118 +2,57 @@
 <html>
 <head>
     <title>Edit Task</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<div class="page-layout">
+<h1>Edit Task</h1>
 
-   <div class="sidebar">
+<p>
+    Logged in as:
+    <strong>{{ session.get("username", "User") }}</strong>
+</p>
 
-    <h2>AI PM</h2>
+<hr>
 
-    <p>
-        Logged in as:
-        <strong>{{ session["username"] }}</strong>
-    </p>
+<form method="POST">
 
-    <a href="/">Dashboard</a>
+    <input type="text" name="title" value="{{ task[1] }}">
 
-    <a href="/tasks">Tasks</a>
+    <br><br>
 
-    <a href="/add-task">Add Task</a>
+    <select name="priority">
 
-    <a href="/add-project">Add Project</a>
+        <option value="High">High</option>
 
-    <a href="/logout">Logout</a>
+        <option value="Medium">Medium</option>
 
-</div>
+        <option value="Low">Low</option>
 
-    <div class="main-content">
+    </select>
 
-        <h1>Edit Task</h1>
+    <br><br>
 
-        <form method="POST" class="project-card">
+    <select name="status">
 
-            <input
-                type="text"
-                name="title"
-                value="{{ task[1] }}"
-                required>
+        <option value="Pending">Pending</option>
 
-            <br><br>
+        <option value="In Progress">In Progress</option>
 
-            <label>Priority</label>
+        <option value="Completed">Completed</option>
 
-            <select name="priority" required>
+        <option value="Blocked">Blocked</option>
 
-                <option value="High"
-                    {% if task[2] == "High" %}selected{% endif %}>
-                    High
-                </option>
+    </select>
 
-                <option value="Medium"
-                    {% if task[2] == "Medium" %}selected{% endif %}>
-                    Medium
-                </option>
+    <br><br>
 
-                <option value="Low"
-                    {% if task[2] == "Low" %}selected{% endif %}>
-                    Low
-                </option>
+    <input type="date" name="due_date" value="{{ task[4] }}">
 
-            </select>
+    <br><br>
 
-            <br><br>
+    <button type="submit">Update Task</button>
 
-            <label>Status</label>
-
-            <select name="status" required>
-
-                <option value="In Progress"
-                    {% if task[3] == "In Progress" %}selected{% endif %}>
-                    In Progress
-                </option>
-
-                <option value="Completed"
-                    {% if task[3] == "Completed" %}selected{% endif %}>
-                    Completed
-                </option>
-
-                <option value="Pending"
-                    {% if task[3] == "Pending" %}selected{% endif %}>
-                    Pending
-                </option>
-
-                <option value="Blocked"
-                    {% if task[3] == "Blocked" %}selected{% endif %}>
-                    Blocked
-                </option>
-
-            </select>
-
-            <br><br>
-
-            <input
-                type="date"
-                name="due_date"
-                value="{{ task[4] }}"
-                required>
-
-            <br><br>
-
-            <button type="submit">
-                Update Task
-            </button>
-
-        </form>
-
-    </div>
-
-</div>
+</form>
 
 </body>
 </html>

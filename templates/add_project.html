@@ -2,68 +2,55 @@
 <html>
 <head>
     <title>Add Project</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<div class="page-layout">
+<h1>Add Project</h1>
 
-   <div class="sidebar">
+<p>
+    Logged in as:
+    <strong>{{ session.get("username", "User") }}</strong>
+</p>
 
-    <h2>AI PM</h2>
+<hr>
 
-    <p>
-        Logged in as:
-        <strong>{{ session["username"] }}</strong>
-    </p>
+<a href="/">Dashboard</a>
 
-    <a href="/">Dashboard</a>
+<hr>
 
-    <a href="/tasks">Tasks</a>
+<form method="POST">
 
-    <a href="/add-task">Add Task</a>
+    <input type="text" name="name" placeholder="Project Name" required>
 
-    <a href="/add-project">Add Project</a>
+    <br><br>
 
-    <a href="/logout">Logout</a>
+    <textarea name="description" placeholder="Description"></textarea>
 
-</div>
+    <br><br>
 
-    <div class="main-content">
+    <select name="status">
 
-        <h1>Add Project</h1>
+        <option value="Planning">Planning</option>
 
-        <form method="POST" class="project-card">
+        <option value="In Progress">In Progress</option>
 
-            <input type="text" name="name" placeholder="Project name" required>
-            <br><br>
+        <option value="Completed">Completed</option>
 
-            <input type="text" name="description" placeholder="Description" required>
-            <br><br>
+    </select>
 
-           <label>Status</label>
-            <select name="status" required>
-                  <option value="Active">Active</option>
-                 <option value="Planning">Planning</option>
-                  <option value="On Hold">On Hold</option>
-              <option value="Completed">Completed</option>
-            </select>
-            <br><br>
+    <br><br>
 
-            <input type="date" name="start_date" required>
-            <br><br>
+    <input type="date" name="start_date">
 
-            <input type="date" name="end_date" required>
-            <br><br>
+    <br><br>
 
-            <button type="submit">Add Project</button>
+    <input type="date" name="end_date">
 
-        </form>
+    <br><br>
 
-    </div>
+    <button type="submit">Create Project</button>
 
-</div>
+</form>
 
 </body>
 </html>
