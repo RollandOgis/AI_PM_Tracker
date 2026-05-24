@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanban Board</title>
-
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,7 +12,6 @@
 <div class="container">
 
     <div class="sidebar">
-
         <h1>AI PM</h1>
 
         <a href="/">Dashboard</a>
@@ -28,7 +25,6 @@
             Logged in as:
             <strong>{{ session.get("username", "User") }}</strong>
         </div>
-
     </div>
 
     <div class="main-content">
@@ -41,59 +37,55 @@
 
             {% for status in ["Pending", "In Progress", "Completed", "Blocked"] %}
 
-            <div class="kanban-column">
+                <div class="kanban-column">
 
-                <h3>{{ status }}</h3>
+                    <h3>{{ status }}</h3>
 
-                {% for task in tasks %}
+                    {% for task in tasks %}
 
-                    {% if task["status"] == status %}
+                        {% if task["status"] == status %}
 
-                    <div class="kanban-card">
+                            <div class="kanban-card">
 
-                        <h4>{{ task["title"] }}</h4>
+                                <h4>{{ task["title"] }}</h4>
 
-                        <p>
-                            <strong>Project:</strong>
-                            {{ task["project_name"] }}
-                        </p>
+                                <p>
+                                    <strong>Project:</strong>
+                                    {{ task["project_name"] }}
+                                </p>
 
-                        <p>
-                            <strong>Priority:</strong>
-                            {{ task["priority"] }}
-                        </p>
+                                <p>
+                                    <strong>Priority:</strong>
+                                    {{ task["priority"] }}
+                                </p>
 
-                        <p>
-                            <strong>Assigned To:</strong>
-                            {{ task["assigned_to"] or "Unassigned" }}
-                        </p>
+                                <p>
+                                    <strong>Assigned To:</strong>
+                                    {{ task["assigned_to"] or "Unassigned" }}
+                                </p>
 
-                        <p>
-                            <strong>Due:</strong>
-                            {{ task["due_date"] }}
-                        </p>
+                                <p>
+                                    <strong>Due:</strong>
+                                    {{ task["due_date"] }}
+                                </p>
 
-                        {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
+                                {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
+                                    <span class="overdue-badge">Overdue</span>
+                                {% endif %}
 
-                        <span class="overdue-badge">
-                            Overdue
-                        </span>
+                                <br>
+
+                                <a href="/edit-task/{{ task['id'] }}" class="edit-btn">
+                                    Edit Task
+                                </a>
+
+                            </div>
 
                         {% endif %}
 
-                        <br>
+                    {% endfor %}
 
-                        <a href="/edit-task/{{ task['id'] }}" class="edit-btn">
-                            Edit
-                        </a>
-
-                    </div>
-
-                    {% endif %}
-
-                {% endfor %}
-
-            </div>
+                </div>
 
             {% endfor %}
 
