@@ -428,6 +428,59 @@ def logout():
     session.clear()
     return redirect("/login")
 
+@app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
+def edit_project(project_id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+        (project_id, session["user_id"])
+    ).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    if request.method == "POST":
+        name = request.form["name"]
+        description = request.form["description"]
+        status = request.form["status"]
+        start_date = request.form["start_date"]
+        end_date = request.form["end_date"]
+
+        conn.execute("""
+        UPDATE projects
+        SET name = ?,
+            description = ?,
+            status = ?,
+            start_date = ?,
+            end_date = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            project_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    conn.close()
+
+    return render_template(
+        "edit_project.html",
+        project=project
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

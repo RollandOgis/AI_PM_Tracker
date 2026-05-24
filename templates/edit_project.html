@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Project</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <h1>AI PM</h1>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-card">
+
+            <h2>Edit Project</h2>
+
+            <form method="POST">
+
+                <label>Project Name</label>
+
+                <input
+                    type="text"
+                    name="name"
+                    value="{{ project[1] }}"
+                    required
+                >
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="5"
+                >{{ project[5] }}</textarea>
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option value="Planning"
+                    {% if project[2] == "Planning" %}selected{% endif %}>
+                        Planning
+                    </option>
+
+                    <option value="In Progress"
+                    {% if project[2] == "In Progress" %}selected{% endif %}>
+                        In Progress
+                    </option>
+
+                    <option value="Completed"
+                    {% if project[2] == "Completed" %}selected{% endif %}>
+                        Completed
+                    </option>
+
+                    <option value="On Hold"
+                    {% if project[2] == "On Hold" %}selected{% endif %}>
+                        On Hold
+                    </option>
+
+                </select>
+
+                <label>Start Date</label>
+
+                <input
+                    type="date"
+                    name="start_date"
+                    value="{{ project[3] }}"
+                >
+
+                <label>End Date</label>
+
+                <input
+                    type="date"
+                    name="end_date"
+                    value="{{ project[4] }}"
+                >
+
+                <button type="submit">
+                    Update Project
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
