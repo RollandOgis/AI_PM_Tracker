@@ -70,13 +70,12 @@ def ensure_column(table, column, column_type):
 
 
 ensure_column("projects", "user_id", "INTEGER")
+ensure_column("projects", "status", "TEXT DEFAULT 'Pending'")
 ensure_column("tasks", "description", "TEXT")
 
 
 #init_db()
 
-ensure_column("projects", "user_id", "INTEGER")
-ensure_column("tasks", "description", "TEXT")
 
 
 @app.route("/")
