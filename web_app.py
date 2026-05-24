@@ -344,11 +344,26 @@ def calendar():
     if "user_id" not in session:
         return redirect("/login")
 
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    AND tasks.due_date IS NOT NULL
+    AND tasks.due_date != ''
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
     return render_template(
         "calendar.html",
-        tasks=[],
+        tasks=tasks,
         current_date=str(date.today())
     )
+
 @app.route("/report")
 def report():
     if "user_id" not in session:
