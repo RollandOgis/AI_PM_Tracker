@@ -720,6 +720,114 @@ def calendar():
         current_date=str(date.today())
     )
 
+@app.route("/export-tasks")
+def export_tasks():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    import csv
+    from io import StringIO
+    from flask import Response
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.title, tasks.priority, tasks.status, tasks.due_date,
+           tasks.assigned_to, projects.name AS project_name
+    FROM tasks
+    JOIN projects ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Project",
+        "Task",
+        "Priority",
+        "Status",
+        "Due Date",
+        "Assigned To"
+    ])
+
+    for task in tasks:
+        writer.writerow([
+            task["project_name"],
+            task["title"],
+            task["priority"],
+            task["status"],
+            task["due_date"],
+            task["assigned_to"] or "Unassigned"
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=ai_pm_tasks.csv"
+        }
+    )
+
+
+@app.route("/insights")
+def insights():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    total = len(tasks)
+    completed = len([t for t in tasks if t["status"] == "Completed"])
+    overdue = len([
+        t for t in tasks
+        if t["due_date"] and t["due_date"] < str(date.today())
+        and t["status"] != "Completed"
+    ])
+    high_priority = len([t for t in tasks if t["priority"] == "High"])
+    blocked = len([t for t in tasks if t["status"] == "Blocked"])
+
+    insights_list = []
+
+    if total == 0:
+        insights_list.append("You do not have any tasks yet. Start by creating tasks under your projects.")
+
+    if overdue > 0:
+        insights_list.append(f"You have {overdue} overdue task(s). Review deadlines and update priorities.")
+
+    if high_priority > 0:
+        insights_list.append(f"You have {high_priority} high-priority task(s). Focus on these first.")
+
+    if blocked > 0:
+        insights_list.append(f"{blocked} task(s) are blocked. These may need escalation or support.")
+
+    if total > 0 and completed == total:
+        insights_list.append("All current tasks are completed. Great progress.")
+
+    if total > 0 and completed < total and overdue == 0:
+        insights_list.append("Your active workload looks healthy. Keep tracking progress regularly.")
+
+    return render_template(
+        "insights.html",
+        insights=insights_list,
+        total=total,
+        completed=completed,
+        overdue=overdue,
+        high_priority=high_priority,
+        blocked=blocked
+    )
+
 
 if __name__ == "__main__":
 
