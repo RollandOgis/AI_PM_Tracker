@@ -14,48 +14,24 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-
-def init_db():
+def ensure_column(table, column, column_type):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-    )
-    """)
+    cursor.execute(f"PRAGMA table_info({table})")
+    columns = [row["name"] for row in cursor.fetchall()]
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        description TEXT,
-        status TEXT,
-        start_date TEXT,
-        end_date TEXT,
-        user_id INTEGER
-    )
-    """)
-
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER,
-        title TEXT,
-        description TEXT,
-        priority TEXT,
-        status TEXT,
-        due_date TEXT
-    )
-    """)
+    if column not in columns:
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
 
     conn.commit()
     conn.close()
 
 
 init_db()
+
+ensure_column("projects", "user_id", "INTEGER")
+ensure_column("tasks", "description", "TEXT")
 
 
 @app.route("/")
