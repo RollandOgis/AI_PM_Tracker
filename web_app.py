@@ -495,6 +495,9 @@ def project_detail(project_id):
         current_date=str(date.today())
     )
 
+@app.errorhandler(Exception)
+def show_error(e):
+    return f"<h1>App Error</h1><pre>{str(e)}</pre>", 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
