@@ -34,33 +34,25 @@
             <form method="POST">
 
                 <label>Project Name</label>
-
-                <input
-                    type="text"
-                    name="name"
-                    required
-                >
+                <input type="text" name="name" required>
 
                 <label>Description</label>
+                <textarea name="description" rows="5"></textarea>
 
-                <textarea
-                    name="description"
-                    rows="5"
-                ></textarea>
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Active">Active</option>
+                    <option value="Planning">Planning</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                </select>
 
                 <label>Start Date</label>
-
-                <input
-                    type="date"
-                    name="start_date"
-                >
+                <input type="date" name="start_date">
 
                 <label>End Date</label>
-
-                <input
-                    type="date"
-                    name="end_date"
-                >
+                <input type="date" name="end_date">
 
                 <button type="submit">
                     Add Project
