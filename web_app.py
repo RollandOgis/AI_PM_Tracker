@@ -22,10 +22,17 @@ def ensure_column(table, column, column_type):
     columns = [row["name"] for row in cursor.fetchall()]
 
     if column not in columns:
-        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+        try:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+            conn.commit()
+        except Exception as e:
+            print(f"Could not add column {column}: {e}")
 
-    conn.commit()
     conn.close()
+
+
+ensure_column("projects", "user_id", "INTEGER")
+ensure_column("tasks", "description", "TEXT")
 
 
 #init_db()
