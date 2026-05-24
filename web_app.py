@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect, session, Response, jsonify
 import sqlite3
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -255,22 +257,28 @@ def kanban():
     tasks = conn.execute("""
     SELECT tasks.*, projects.name AS project_name
     FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
+    JOIN projects ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    ORDER BY
-        CASE
-            WHEN tasks.due_date IS NULL OR tasks.due_date = '' THEN 1
-            ELSE 0
-        END,
-        tasks.due_date ASC
+    ORDER BY tasks.due_date ASC
     """, (session["user_id"],)).fetchall()
 
     conn.close()
 
+    columns = {
+        "Pending": [],
+        "In Progress": [],
+        "Completed": [],
+        "Blocked": []
+    }
+
+    for task in tasks:
+        status = task["status"] if task["status"] in columns else "Pending"
+        columns[status].append(task)
+
     return render_template(
         "kanban.html",
         tasks=tasks,
+        columns=columns,
         current_date=str(date.today())
     )
 
@@ -341,15 +349,11 @@ def calendar():
     tasks = conn.execute("""
     SELECT tasks.*, projects.name AS project_name
     FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
+    JOIN projects ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    ORDER BY
-        CASE
-            WHEN tasks.due_date IS NULL OR tasks.due_date = '' THEN 1
-            ELSE 0
-        END,
-        tasks.due_date ASC
+    AND tasks.due_date IS NOT NULL
+    AND tasks.due_date != ''
+    ORDER BY tasks.due_date ASC
     """, (session["user_id"],)).fetchall()
 
     conn.close()
@@ -407,6 +411,67 @@ def report():
         overdue_tasks=overdue_tasks,
         completion_rate=completion_rate,
         current_date=str(date.today())
+    )
+
+@app.route("/pdf-report")
+def pdf_report():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+
+    width, height = A4
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(50, y, "AI PM Tracker Report")
+
+    y -= 35
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(50, y, f"Generated: {str(date.today())}")
+
+    y -= 35
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(50, y, "Tasks")
+
+    y -= 25
+    pdf.setFont("Helvetica", 10)
+
+    if not tasks:
+        pdf.drawString(50, y, "No tasks found.")
+    else:
+        for task in tasks:
+            if y < 70:
+                pdf.showPage()
+                y = height - 50
+                pdf.setFont("Helvetica", 10)
+
+            line = f"{task['project_name']} | {task['title']} | {task['priority']} | {task['status']} | Due: {task['due_date']}"
+            pdf.drawString(50, y, line[:115])
+            y -= 18
+
+    pdf.save()
+    buffer.seek(0)
+
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": "attachment; filename=ai_pm_tracker_report.pdf"
+        }
     )
 
 
