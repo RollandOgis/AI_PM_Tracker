@@ -1,56 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Project</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<h1>Add Project</h1>
+<div class="container">
 
-<p>
-    Logged in as:
-    <strong>{{ session.get("username", "User") }}</strong>
-</p>
+    <div class="sidebar">
 
-<hr>
+        <h1>AI PM</h1>
 
-<a href="/">Dashboard</a>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/logout">Logout</a>
 
-<hr>
+    </div>
 
-<form method="POST">
+    <div class="main-content">
 
-    <input type="text" name="name" placeholder="Project Name" required>
+        <div class="form-card">
 
-    <br><br>
+            <h2>Add New Project</h2>
 
-    <textarea name="description" placeholder="Description"></textarea>
+            <form method="POST">
 
-    <br><br>
+                <label>Project Name</label>
 
-    <select name="status">
+                <input
+                    type="text"
+                    name="name"
+                    required
+                >
 
-        <option value="Planning">Planning</option>
+                <label>Description</label>
 
-        <option value="In Progress">In Progress</option>
+                <textarea
+                    name="description"
+                    rows="5"
+                ></textarea>
 
-        <option value="Completed">Completed</option>
+                <label>Start Date</label>
 
-    </select>
+                <input
+                    type="date"
+                    name="start_date"
+                >
 
-    <br><br>
+                <label>End Date</label>
 
-    <input type="date" name="start_date">
+                <input
+                    type="date"
+                    name="end_date"
+                >
 
-    <br><br>
+                <button type="submit">
+                    Add Project
+                </button>
 
-    <input type="date" name="end_date">
+            </form>
 
-    <br><br>
+        </div>
 
-    <button type="submit">Create Project</button>
+    </div>
 
-</form>
+</div>
 
 </body>
 </html>

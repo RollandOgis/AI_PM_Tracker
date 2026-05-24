@@ -1,76 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Task</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<h1>Add Task</h1>
+<div class="container">
 
-<p>
-    Logged in as:
-    <strong>{{ session.get("username", "User") }}</strong>
-</p>
+    <div class="sidebar">
 
-<hr>
+        <h1>AI PM</h1>
 
-<a href="/">Dashboard</a>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/logout">Logout</a>
 
-<hr>
+    </div>
 
-<form method="POST">
+    <div class="main-content">
 
-    <select name="project_id">
+        <div class="form-card">
 
-        {% for project in projects %}
+            <h2>Add New Task</h2>
 
-        <option value="{{ project['id'] }}">
-            {{ project['name'] }}
-        </option>
+            <form method="POST">
 
-        {% endfor %}
+                <label>Task Title</label>
 
-    </select>
+                <input
+                    type="text"
+                    name="title"
+                    required
+                >
 
-    <br><br>
+                <label>Priority</label>
 
-    <input type="text" name="title" placeholder="Task Title" required>
+                <select name="priority">
 
-    <br><br>
+                    <option value="Low">
+                        Low
+                    </option>
 
-    <select name="priority">
+                    <option value="Medium">
+                        Medium
+                    </option>
 
-        <option value="High">High</option>
+                    <option value="High">
+                        High
+                    </option>
 
-        <option value="Medium">Medium</option>
+                </select>
 
-        <option value="Low">Low</option>
+                <label>Status</label>
 
-    </select>
+                <select name="status">
 
-    <br><br>
+                    <option value="Pending">
+                        Pending
+                    </option>
 
-    <select name="status">
+                    <option value="In Progress">
+                        In Progress
+                    </option>
 
-        <option value="Pending">Pending</option>
+                    <option value="Completed">
+                        Completed
+                    </option>
 
-        <option value="In Progress">In Progress</option>
+                    <option value="Blocked">
+                        Blocked
+                    </option>
 
-        <option value="Completed">Completed</option>
+                </select>
 
-        <option value="Blocked">Blocked</option>
+                <label>Due Date</label>
 
-    </select>
+                <input
+                    type="date"
+                    name="due_date"
+                >
 
-    <br><br>
+                <label>Select Project</label>
 
-    <input type="date" name="due_date">
+                <select name="project_id">
 
-    <br><br>
+                    {% for project in projects %}
 
-    <button type="submit">Create Task</button>
+                    <option value="{{ project[0] }}">
+                        {{ project[1] }}
+                    </option>
 
-</form>
+                    {% endfor %}
+
+                </select>
+
+                <button type="submit">
+                    Add Task
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>

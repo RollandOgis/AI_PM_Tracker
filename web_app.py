@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import os
 from datetime import date
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "secretkey"
@@ -14,36 +15,40 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        )
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
+    )
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            user_id INTEGER
-        )
+    CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        status TEXT,
+        start_date TEXT,
+        end_date TEXT,
+        user_id INTEGER
+    )
     """)
 
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            status TEXT DEFAULT 'Pending',
-            project_id INTEGER,
-            user_id INTEGER
-        )
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        title TEXT,
+        priority TEXT,
+        status TEXT,
+        due_date TEXT
+    )
     """)
 
     conn.commit()
@@ -51,37 +56,6 @@ def init_db():
 
 
 init_db()
-
-def ensure_column(table, column, column_type):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(f"PRAGMA table_info({table})")
-    columns = [row["name"] for row in cursor.fetchall()]
-
-    if column not in columns:
-        try:
-            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
-            conn.commit()
-        except Exception as e:
-            print(f"Could not add column {column}: {e}")
-
-    conn.close()
-
-
-ensure_column("projects", "user_id", "INTEGER")
-ensure_column("projects", "status", "TEXT DEFAULT 'Pending'")
-ensure_column("projects", "start_date", "TEXT")
-ensure_column("projects", "end_date", "TEXT")
-
-ensure_column("tasks", "description", "TEXT")
-ensure_column("tasks", "priority", "TEXT DEFAULT 'Medium'")
-ensure_column("tasks", "due_date", "TEXT")
-ensure_column("tasks", "assigned_to", "TEXT")
-
-
-#init_db()
-
 
 
 @app.route("/")
@@ -135,32 +109,29 @@ def home():
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
 
-            task_list.append([
+            task_list.append((
                 task["title"],
                 task["priority"],
                 task["status"],
                 task["due_date"]
-            ])
+            ))
 
         if len(tasks) > 0:
-            project_completed = len(
+            completed_for_project = len(
                 [task for task in tasks if task["status"] == "Completed"]
             )
-
-            completion = round((project_completed / len(tasks)) * 100)
+            completion = round((completed_for_project / len(tasks)) * 100)
         else:
             completion = 0
 
-        project_tuple = (
-            project["id"],
-            project["name"],
-            project["status"],
-            project["start_date"],
-            project["end_date"]
-        )
-
         all_projects.append({
-            "project": project_tuple,
+            "project": (
+                project["id"],
+                project["name"],
+                project["status"],
+                project["start_date"],
+                project["end_date"]
+            ),
             "tasks": task_list,
             "completion": completion
         })
@@ -183,98 +154,6 @@ def home():
     )
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    error = None
-
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-
-        conn = get_db_connection()
-
-        try:
-            conn.execute(
-                "INSERT INTO users (username, password) VALUES (?, ?)",
-                (username, password)
-            )
-            conn.commit()
-            conn.close()
-            return redirect("/login")
-
-        except sqlite3.IntegrityError:
-            conn.close()
-            error = "Username already exists. Please choose another username."
-
-    return render_template("register.html", error=error)
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-
-        conn = get_db_connection()
-
-        user = conn.execute(
-            "SELECT * FROM users WHERE username = ? AND password = ?",
-            (username, password)
-        ).fetchone()
-
-        conn.close()
-
-        if user:
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
-            return redirect("/")
-
-        return "Invalid username or password"
-
-    return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
-
-@app.route("/add-project", methods=["GET", "POST"])
-def add_project():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if request.method == "POST":
-        name = request.form["name"]
-        description = request.form["description"]
-        status = request.form["status"]
-        start_date = request.form["start_date"]
-        end_date = request.form["end_date"]
-
-        conn = get_db_connection()
-
-        conn.execute("""
-            INSERT INTO projects
-            (name, description, status, start_date, end_date, user_id)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            name,
-            description,
-            status,
-            start_date,
-            end_date,
-            session["user_id"]
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    return render_template("add_project.html")
-
-
 @app.route("/tasks")
 def tasks():
     if "user_id" not in session:
@@ -286,17 +165,17 @@ def tasks():
     conn = get_db_connection()
 
     query = """
-        SELECT tasks.*, projects.name AS project_name
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        WHERE projects.user_id = ?
-        AND (
-            tasks.title LIKE ?
-            OR tasks.priority LIKE ?
-            OR tasks.status LIKE ?
-            OR projects.name LIKE ?
-        )
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    AND (
+        tasks.title LIKE ?
+        OR tasks.priority LIKE ?
+        OR tasks.status LIKE ?
+        OR projects.name LIKE ?
+    )
     """
 
     if sort == "due_date":
@@ -317,10 +196,10 @@ def tasks():
         )
     ).fetchall()
 
-    task_list = []
+    all_tasks = []
 
     for task in task_rows:
-        task_list.append((
+        all_tasks.append((
             task["id"],
             task["title"],
             task["priority"],
@@ -333,11 +212,46 @@ def tasks():
 
     return render_template(
         "tasks.html",
-        tasks=task_list,
+        tasks=all_tasks,
         current_date=str(date.today()),
         search=search,
         sort=sort
     )
+
+
+@app.route("/add-project", methods=["GET", "POST"])
+def add_project():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+        name = request.form["name"]
+        description = request.form["description"]
+        status = request.form["status"]
+        start_date = request.form["start_date"]
+        end_date = request.form["end_date"]
+
+        conn = get_db_connection()
+
+        conn.execute("""
+        INSERT INTO projects
+        (name, description, status, start_date, end_date, user_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/")
+
+    return render_template("add_project.html")
 
 
 @app.route("/add-task", methods=["GET", "POST"])
@@ -360,9 +274,9 @@ def add_task():
         due_date = request.form["due_date"]
 
         conn.execute("""
-            INSERT INTO tasks
-            (project_id, title, priority, status, due_date)
-            VALUES (?, ?, ?, ?, ?)
+        INSERT INTO tasks
+        (project_id, title, priority, status, due_date)
+        VALUES (?, ?, ?, ?, ?)
         """, (
             project_id,
             title,
@@ -395,12 +309,12 @@ def edit_task(task_id):
         due_date = request.form["due_date"]
 
         conn.execute("""
-            UPDATE tasks
-            SET title = ?,
-                priority = ?,
-                status = ?,
-                due_date = ?
-            WHERE id = ?
+        UPDATE tasks
+        SET title = ?,
+            priority = ?,
+            status = ?,
+            due_date = ?
+        WHERE id = ?
         """, (
             title,
             priority,
@@ -415,7 +329,7 @@ def edit_task(task_id):
         return redirect("/tasks")
 
     task = conn.execute(
-        "SELECT id, title, priority, status, due_date FROM tasks WHERE id = ?",
+        "SELECT * FROM tasks WHERE id = ?",
         (task_id,)
     ).fetchone()
 
@@ -451,58 +365,69 @@ def delete_task(task_id):
     return redirect("/tasks")
 
 
-@app.route("/project/<int:project_id>")
-def project_detail(project_id):
-    if "user_id" not in session:
-        return redirect("/login")
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    error = None
 
-    conn = get_db_connection()
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
 
-    project = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (project_id, session["user_id"])
-    ).fetchone()
+        hashed_password = generate_password_hash(password)
 
-    if not project:
+        conn = get_db_connection()
+
+        try:
+            conn.execute(
+                "INSERT INTO users (username, password) VALUES (?, ?)",
+                (username, hashed_password)
+            )
+
+            conn.commit()
+            conn.close()
+
+            return redirect("/login")
+
+        except sqlite3.IntegrityError:
+            conn.close()
+            error = "Username already exists. Please choose another username."
+
+    return render_template("register.html", error=error)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = get_db_connection()
+
+        user = conn.execute(
+            "SELECT * FROM users WHERE username = ?",
+            (username,)
+        ).fetchone()
+
         conn.close()
-        return redirect("/")
 
-    tasks = conn.execute(
-        "SELECT * FROM tasks WHERE project_id = ?",
-        (project_id,)
-    ).fetchall()
+        if user:
+            stored_password = user["password"]
 
-    task_list = []
+            if check_password_hash(stored_password, password) or stored_password == password:
+                session["user_id"] = user["id"]
+                session["username"] = user["username"]
+                return redirect("/")
 
-    for task in tasks:
-        task_list.append((
-            task["title"],
-            task["priority"],
-            task["status"],
-            task["due_date"]
-        ))
+        return "Invalid username or password"
 
-    conn.close()
+    return render_template("login.html")
 
-    project_tuple = (
-        project["id"],
-        project["name"],
-        project["description"],
-        project["status"],
-        project["start_date"],
-        project["end_date"]
-    )
 
-    return render_template(
-        "project_detail.html",
-        project=project_tuple,
-        tasks=task_list,
-        current_date=str(date.today())
-    )
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
 
-@app.errorhandler(Exception)
-def show_error(e):
-    return f"<h1>App Error</h1><pre>{str(e)}</pre>", 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

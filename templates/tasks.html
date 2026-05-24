@@ -1,65 +1,163 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<h1>Tasks</h1>
+<div class="container">
 
-<p>
-    Logged in as:
-    <strong>{{ session.get("username", "User") }}</strong>
-</p>
+    <div class="sidebar">
 
-<hr>
+        <h1>AI PM</h1>
 
-<a href="/">Dashboard</a> |
-<a href="/add-task">Add Task</a> |
-<a href="/logout">Logout</a>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/logout">Logout</a>
 
-<hr>
+        <div class="user-box">
+            Logged in as:
+            <strong>{{ session.get("username", "User") }}</strong>
+        </div>
 
-<form method="GET">
+    </div>
 
-    <input type="text" name="search" placeholder="Search" value="{{ search }}">
+    <div class="main-content">
 
-    <select name="sort">
-        <option value="">Sort</option>
-        <option value="due_date">Due Date</option>
-        <option value="priority">Priority</option>
-        <option value="status">Status</option>
-    </select>
+        <div class="top-bar">
 
-    <button type="submit">Apply</button>
+            <h2>Task Management</h2>
 
-</form>
+            <form method="GET" class="search-form">
 
-<hr>
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Search tasks..."
+                    value="{{ search }}"
+                >
 
-{% for task in tasks %}
+                <select name="sort">
 
-<div style="border:1px solid #ccc; padding:15px; margin-bottom:20px;">
+                    <option value="">Sort By</option>
 
-    <h3>{{ task[1] }}</h3>
+                    <option value="due_date">
+                        Due Date
+                    </option>
 
-    <p>Priority: {{ task[2] }}</p>
+                    <option value="priority">
+                        Priority
+                    </option>
 
-    <p>Status: {{ task[3] }}</p>
+                    <option value="status">
+                        Status
+                    </option>
 
-    <p>Due Date: {{ task[4] }}</p>
+                </select>
 
-    <p>Project: {{ task[5] }}</p>
+                <button type="submit">
+                    Search
+                </button>
 
-    <a href="/edit-task/{{ task[0] }}">Edit</a>
+            </form>
 
-    <form action="/delete-task/{{ task[0] }}" method="POST">
-        <button type="submit">Delete</button>
-    </form>
+        </div>
+
+        {% if tasks %}
+
+            {% for task in tasks %}
+
+            <div class="task-card">
+
+                <h3>{{ task[1] }}</h3>
+
+                <p>
+                    <strong>Priority:</strong>
+
+                    <span class="
+                        {% if task[2] == 'High' %}
+                            high
+                        {% elif task[2] == 'Medium' %}
+                            medium
+                        {% else %}
+                            low
+                        {% endif %}
+                    ">
+                        {{ task[2] }}
+                    </span>
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+
+                    <span class="
+                        {% if task[3] == 'Completed' %}
+                            completed
+                        {% elif task[3] == 'In Progress' %}
+                            progress
+                        {% elif task[3] == 'Blocked' %}
+                            blocked
+                        {% else %}
+                            pending
+                        {% endif %}
+                    ">
+                        {{ task[3] }}
+                    </span>
+                </p>
+
+                <p>
+                    <strong>Due Date:</strong>
+                    {{ task[4] }}
+                </p>
+
+                <p>
+                    <strong>Project:</strong>
+                    {{ task[5] }}
+                </p>
+
+                <div class="task-buttons">
+
+                    <a href="/edit-task/{{ task[0] }}" class="edit-btn">
+                        Edit Task
+                    </a>
+
+                    <form action="/delete-task/{{ task[0] }}" method="POST">
+
+                        <button type="submit" class="delete-btn">
+                            Delete Task
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Tasks Found</h3>
+
+                <p>Create a task to begin tracking your work.</p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
 
 </div>
-
-{% endfor %}
 
 </body>
 </html>
