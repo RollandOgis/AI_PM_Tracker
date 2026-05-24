@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h1>AI PM</h1>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">AI Insights</a>
+        <a href="/profile">Profile</a>
+        <a href="/report">PDF Report</a>
+        <a href="/logout">Logout</a>
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-card">
+
+            <h2>User Profile</h2>
+
+            <div class="avatar-circle">
+                {{ user["avatar_initials"] or session.get("username", "U")[0:2].upper() }}
+            </div>
+
+            <form method="POST">
+
+                <label>Avatar Initials</label>
+
+                <input
+                    type="text"
+                    name="avatar_initials"
+                    maxlength="3"
+                    placeholder="e.g. DO"
+                    value="{{ user['avatar_initials'] or '' }}"
+                >
+
+                <button type="submit">
+                    Save Profile
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

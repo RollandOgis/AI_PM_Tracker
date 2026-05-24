@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI PM Report</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="report-page">
+
+    <div class="report-header">
+        <h1>AI PM Tracker Report</h1>
+        <p>Generated on {{ current_date }}</p>
+
+        <button onclick="window.print()" class="view-btn">
+            Export / Save as PDF
+        </button>
+    </div>
+
+    <h2>Projects</h2>
+
+    {% for project in projects %}
+        <div class="report-card">
+            <h3>{{ project["name"] }}</h3>
+            <p><strong>Status:</strong> {{ project["status"] }}</p>
+            <p><strong>Start:</strong> {{ project["start_date"] }}</p>
+            <p><strong>End:</strong> {{ project["end_date"] }}</p>
+        </div>
+    {% endfor %}
+
+    <h2>Tasks</h2>
+
+    {% for task in tasks %}
+        <div class="report-card">
+            <h3>{{ task["title"] }}</h3>
+            <p><strong>Project:</strong> {{ task["project_name"] }}</p>
+            <p><strong>Priority:</strong> {{ task["priority"] }}</p>
+            <p><strong>Status:</strong> {{ task["status"] }}</p>
+            <p><strong>Due:</strong> {{ task["due_date"] }}</p>
+            <p><strong>Assigned To:</strong> {{ task["assigned_to"] or "Unassigned" }}</p>
+
+            {% if task["attachment_url"] %}
+                <p>
+                    <strong>Attachment:</strong>
+                    <a href="{{ task['attachment_url'] }}" target="_blank">
+                        Open File
+                    </a>
+                </p>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+</div>
+
+</body>
+</html>

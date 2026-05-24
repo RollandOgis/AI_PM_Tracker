@@ -26,7 +26,9 @@ def ensure_column(table, column, column_type):
     columns = [row["name"] for row in cursor.fetchall()]
 
     if column not in columns:
-        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+        cursor.execute(
+            f"ALTER TABLE {table} ADD COLUMN {column} {column_type}"
+        )
 
     conn.commit()
     conn.close()
@@ -67,12 +69,48 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS activities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message TEXT,
+        created_at TEXT
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER,
+        username TEXT,
+        comment TEXT,
+        created_at TEXT
+    )
+    """)
+
     conn.commit()
     conn.close()
 
 
 init_db()
+
 ensure_column("tasks", "assigned_to", "TEXT")
+ensure_column("tasks", "attachment_url", "TEXT")
+ensure_column("users", "avatar_initials", "TEXT")
+
+
+def create_activity(message):
+    conn = get_db_connection()
+
+    conn.execute("""
+    INSERT INTO activities (message, created_at)
+    VALUES (?, ?)
+    """, (
+        message,
+        str(date.today())
+    ))
+
+    conn.commit()
+    conn.close()
 
 
 @app.route("/")
@@ -128,7 +166,11 @@ def home():
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
 
-            if task["due_date"] and task["due_date"] < str(date.today()) and task["status"] != "Completed":
+            if (
+                task["due_date"]
+                and task["due_date"] < str(date.today())
+                and task["status"] != "Completed"
+            ):
                 overdue_tasks += 1
 
             task_list.append((
@@ -207,298 +249,6 @@ def home():
     )
 
 
-@app.route("/kanban")
-def kanban():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    ORDER BY tasks.due_date ASC
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "kanban.html",
-        tasks=tasks,
-        current_date=str(date.today())
-    )
-
-
-@app.route("/update-task-status", methods=["POST"])
-def update_task_status():
-    if "user_id" not in session:
-        return jsonify({"success": False, "message": "Not logged in"}), 401
-
-    data = request.get_json()
-
-    task_id = data.get("task_id")
-    new_status = data.get("status")
-
-    allowed_statuses = ["Pending", "In Progress", "Completed", "Blocked"]
-
-    if new_status not in allowed_statuses:
-        return jsonify({"success": False, "message": "Invalid status"}), 400
-
-    conn = get_db_connection()
-
-    task = conn.execute("""
-    SELECT tasks.id
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.id = ?
-    AND projects.user_id = ?
-    """, (task_id, session["user_id"])).fetchone()
-
-    if not task:
-        conn.close()
-        return jsonify({"success": False, "message": "Task not found"}), 404
-
-    conn.execute(
-        "UPDATE tasks SET status = ? WHERE id = ?",
-        (new_status, task_id)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"success": True})
-
-
-@app.route("/calendar")
-def calendar():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    ORDER BY tasks.due_date ASC
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "calendar.html",
-        tasks=tasks,
-        current_date=str(date.today())
-    )
-
-
-@app.route("/insights")
-def insights():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    total = len(tasks)
-    completed = len([t for t in tasks if t["status"] == "Completed"])
-    in_progress = len([t for t in tasks if t["status"] == "In Progress"])
-    pending = len([t for t in tasks if t["status"] == "Pending"])
-    blocked = len([t for t in tasks if t["status"] == "Blocked"])
-    high_priority = len([t for t in tasks if t["priority"] == "High"])
-
-    overdue = len([
-        t for t in tasks
-        if t["due_date"]
-        and t["due_date"] < str(date.today())
-        and t["status"] != "Completed"
-    ])
-
-    insights_list = []
-
-    if total == 0:
-        insights_list.append("You do not have any tasks yet. Start by creating tasks under your projects.")
-
-    if overdue > 0:
-        insights_list.append(f"You have {overdue} overdue task(s). Review deadlines and update priorities.")
-
-    if high_priority > 0:
-        insights_list.append(f"You have {high_priority} high-priority task(s). Focus on these first.")
-
-    if blocked > 0:
-        insights_list.append(f"{blocked} task(s) are blocked. These may need escalation or support.")
-
-    if in_progress > pending and overdue == 0:
-        insights_list.append("You have more active work than pending work. Keep pushing tasks toward completion.")
-
-    if total > 0 and completed == total:
-        insights_list.append("All current tasks are completed. Great progress.")
-
-    if total > 0 and completed < total and overdue == 0 and blocked == 0:
-        insights_list.append("Your workload looks healthy. Keep reviewing progress regularly.")
-
-    if total > 0:
-        completion_rate = round((completed / total) * 100)
-    else:
-        completion_rate = 0
-
-    return render_template(
-        "insights.html",
-        insights=insights_list,
-        total=total,
-        completed=completed,
-        in_progress=in_progress,
-        pending=pending,
-        blocked=blocked,
-        overdue=overdue,
-        high_priority=high_priority,
-        completion_rate=completion_rate
-    )
-
-
-@app.route("/export-tasks")
-def export_tasks():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    tasks = conn.execute("""
-    SELECT tasks.title, tasks.priority, tasks.status, tasks.due_date,
-           tasks.assigned_to, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
-
-    conn.close()
-
-    output = StringIO()
-    writer = csv.writer(output)
-
-    writer.writerow([
-        "Project",
-        "Task",
-        "Priority",
-        "Status",
-        "Due Date",
-        "Assigned To"
-    ])
-
-    for task in tasks:
-        writer.writerow([
-            task["project_name"],
-            task["title"],
-            task["priority"],
-            task["status"],
-            task["due_date"],
-            task["assigned_to"] or "Unassigned"
-        ])
-
-    return Response(
-        output.getvalue(),
-        mimetype="text/csv",
-        headers={
-            "Content-Disposition": "attachment; filename=ai_pm_tasks.csv"
-        }
-    )
-
-
-@app.route("/project/<int:project_id>")
-def project_detail(project_id):
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    project = conn.execute(
-        """
-        SELECT *
-        FROM projects
-        WHERE id = ?
-        AND user_id = ?
-        """,
-        (project_id, session["user_id"])
-    ).fetchone()
-
-    if not project:
-        conn.close()
-        return redirect("/")
-
-    tasks = conn.execute(
-        """
-        SELECT *
-        FROM tasks
-        WHERE project_id = ?
-        ORDER BY due_date ASC
-        """,
-        (project_id,)
-    ).fetchall()
-
-    task_list = []
-
-    completed_tasks = 0
-
-    for task in tasks:
-        overdue = False
-
-        if task["status"] != "Completed" and task["due_date"] and task["due_date"] < str(date.today()):
-            overdue = True
-
-        if task["status"] == "Completed":
-            completed_tasks += 1
-
-        task_list.append((
-            task["id"],
-            task["title"],
-            task["priority"],
-            task["status"],
-            task["due_date"],
-            overdue
-        ))
-
-    total_tasks = len(tasks)
-
-    if total_tasks > 0:
-        completion = round((completed_tasks / total_tasks) * 100)
-    else:
-        completion = 0
-
-    conn.close()
-
-    return render_template(
-        "project_detail.html",
-        project=(
-            project["id"],
-            project["name"],
-            project["description"],
-            project["status"],
-            project["start_date"],
-            project["end_date"]
-        ),
-        tasks=task_list,
-        total_tasks=total_tasks,
-        completed_tasks=completed_tasks,
-        completion=completion
-    )
-
-
 @app.route("/tasks")
 def tasks():
     if "user_id" not in session:
@@ -564,121 +314,262 @@ def tasks():
     )
 
 
-@app.route("/add-project", methods=["GET", "POST"])
-def add_project():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if request.method == "POST":
-        name = request.form["name"]
-        description = request.form["description"]
-        status = request.form["status"]
-        start_date = request.form["start_date"]
-        end_date = request.form["end_date"]
-
-        conn = get_db_connection()
-
-        conn.execute("""
-        INSERT INTO projects
-        (name, description, status, start_date, end_date, user_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            name,
-            description,
-            status,
-            start_date,
-            end_date,
-            session["user_id"]
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    return render_template("add_project.html")
-
-
-@app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
-def edit_project(project_id):
+@app.route("/kanban")
+def kanban():
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
-    project = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (project_id, session["user_id"])
-    ).fetchone()
-
-    if not project:
-        conn.close()
-        return redirect("/")
-
-    if request.method == "POST":
-        name = request.form["name"]
-        description = request.form["description"]
-        status = request.form["status"]
-        start_date = request.form["start_date"]
-        end_date = request.form["end_date"]
-
-        conn.execute("""
-        UPDATE projects
-        SET name = ?,
-            description = ?,
-            status = ?,
-            start_date = ?,
-            end_date = ?
-        WHERE id = ?
-        AND user_id = ?
-        """, (
-            name,
-            description,
-            status,
-            start_date,
-            end_date,
-            project_id,
-            session["user_id"]
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
 
     conn.close()
 
     return render_template(
-        "edit_project.html",
-        project=project
+        "kanban.html",
+        tasks=tasks,
+        current_date=str(date.today())
     )
 
 
-@app.route("/delete-project/<int:project_id>", methods=["POST"])
-def delete_project(project_id):
+@app.route("/update-task-status", methods=["POST"])
+def update_task_status():
     if "user_id" not in session:
-        return redirect("/login")
+        return jsonify({
+            "success": False,
+            "message": "Not logged in"
+        }), 401
+
+    data = request.get_json()
+
+    task_id = data.get("task_id")
+    new_status = data.get("status")
+
+    allowed_statuses = [
+        "Pending",
+        "In Progress",
+        "Completed",
+        "Blocked"
+    ]
+
+    if new_status not in allowed_statuses:
+        return jsonify({
+            "success": False,
+            "message": "Invalid status"
+        }), 400
 
     conn = get_db_connection()
 
-    conn.execute(
-        "DELETE FROM tasks WHERE project_id = ?",
-        (project_id,)
-    )
+    task = conn.execute("""
+    SELECT tasks.id
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE tasks.id = ?
+    AND projects.user_id = ?
+    """, (
+        task_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not task:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "message": "Task not found"
+        }), 404
 
     conn.execute(
-        "DELETE FROM projects WHERE id = ? AND user_id = ?",
-        (project_id, session["user_id"])
+        "UPDATE tasks SET status = ? WHERE id = ?",
+        (
+            new_status,
+            task_id
+        )
     )
 
     conn.commit()
     conn.close()
 
-    return redirect("/")
+    return jsonify({"success": True})
 
 
-@app.route("/add-task", methods=["GET", "POST"])
-def add_task():
+@app.route("/calendar")
+def calendar():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "calendar.html",
+        tasks=tasks,
+        current_date=str(date.today())
+    )
+
+
+@app.route("/insights")
+def insights():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    total = len(tasks)
+    completed = len([task for task in tasks if task["status"] == "Completed"])
+    in_progress = len([task for task in tasks if task["status"] == "In Progress"])
+    pending = len([task for task in tasks if task["status"] == "Pending"])
+    blocked = len([task for task in tasks if task["status"] == "Blocked"])
+    high_priority = len([task for task in tasks if task["priority"] == "High"])
+
+    overdue = len([
+        task for task in tasks
+        if task["due_date"]
+        and task["due_date"] < str(date.today())
+        and task["status"] != "Completed"
+    ])
+
+    insights_list = []
+
+    if total == 0:
+        insights_list.append(
+            "You do not have any tasks yet. Start by creating tasks under your projects."
+        )
+
+    if overdue > 0:
+        insights_list.append(
+            f"You have {overdue} overdue task(s). Review deadlines and update priorities."
+        )
+
+    if high_priority > 0:
+        insights_list.append(
+            f"You have {high_priority} high-priority task(s). Focus on these first."
+        )
+
+    if blocked > 0:
+        insights_list.append(
+            f"{blocked} task(s) are blocked. These may need escalation or support."
+        )
+
+    if in_progress > pending and overdue == 0:
+        insights_list.append(
+            "You have more active work than pending work. Keep pushing tasks toward completion."
+        )
+
+    if total > 0 and completed == total:
+        insights_list.append(
+            "All current tasks are completed. Great progress."
+        )
+
+    if total > 0 and completed < total and overdue == 0 and blocked == 0:
+        insights_list.append(
+            "Your workload looks healthy. Keep reviewing progress regularly."
+        )
+
+    if total > 0:
+        completion_rate = round((completed / total) * 100)
+    else:
+        completion_rate = 0
+
+    return render_template(
+        "insights.html",
+        insights=insights_list,
+        total=total,
+        completed=completed,
+        in_progress=in_progress,
+        pending=pending,
+        blocked=blocked,
+        overdue=overdue,
+        high_priority=high_priority,
+        completion_rate=completion_rate
+    )
+
+
+@app.route("/export-tasks")
+def export_tasks():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT tasks.title,
+           tasks.priority,
+           tasks.status,
+           tasks.due_date,
+           tasks.assigned_to,
+           tasks.attachment_url,
+           projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    conn.close()
+
+    output = StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Project",
+        "Task",
+        "Priority",
+        "Status",
+        "Due Date",
+        "Assigned To",
+        "Attachment URL"
+    ])
+
+    for task in tasks:
+        writer.writerow([
+            task["project_name"],
+            task["title"],
+            task["priority"],
+            task["status"],
+            task["due_date"],
+            task["assigned_to"] or "Unassigned",
+            task["attachment_url"] or ""
+        ])
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=ai_pm_tasks.csv"
+        }
+    )
+
+
+@app.route("/report")
+def report():
     if "user_id" not in session:
         return redirect("/login")
 
@@ -689,226 +580,65 @@ def add_task():
         (session["user_id"],)
     ).fetchall()
 
-    if request.method == "POST":
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        priority = request.form["priority"]
-        status = request.form["status"]
-        due_date = request.form["due_date"]
-        assigned_to = request.form["assigned_to"]
-
-        conn.execute("""
-        INSERT INTO tasks
-        (project_id, title, priority, status, due_date, assigned_to)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            project_id,
-            title,
-            priority,
-            status,
-            due_date,
-            assigned_to
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/tasks")
+    tasks = conn.execute("""
+    SELECT tasks.*, projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
 
     conn.close()
 
     return render_template(
-        "add_task.html",
-        projects=projects
+        "report.html",
+        projects=projects,
+        tasks=tasks,
+        current_date=str(date.today())
     )
 
 
-@app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
-def edit_task(task_id):
+@app.route("/profile", methods=["GET", "POST"])
+def profile():
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
-    task = conn.execute(
-        "SELECT * FROM tasks WHERE id = ?",
-        (task_id,)
+    if request.method == "POST":
+        avatar_initials = request.form["avatar_initials"]
+
+        conn.execute(
+            "UPDATE users SET avatar_initials = ? WHERE id = ?",
+            (
+                avatar_initials,
+                session["user_id"]
+            )
+        )
+
+        conn.commit()
+        session["avatar_initials"] = avatar_initials
+
+        conn.close()
+
+        return redirect("/")
+
+    user = conn.execute(
+        "SELECT * FROM users WHERE id = ?",
+        (session["user_id"],)
     ).fetchone()
 
-    if request.method == "POST":
-        title = request.form["title"]
-        priority = request.form["priority"]
-        status = request.form["status"]
-        due_date = request.form["due_date"]
-        assigned_to = request.form["assigned_to"]
-
-        conn.execute("""
-        UPDATE tasks
-        SET title = ?,
-            priority = ?,
-            status = ?,
-            due_date = ?,
-            assigned_to = ?
-        WHERE id = ?
-        """, (
-            title,
-            priority,
-            status,
-            due_date,
-            assigned_to,
-            task_id
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/tasks")
-
     conn.close()
 
     return render_template(
-        "edit_task.html",
-        task=task
+        "profile.html",
+        user=user
     )
-
-
-@app.route("/delete-task/<int:task_id>", methods=["POST"])
-def delete_task(task_id):
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    conn.execute(
-        "DELETE FROM tasks WHERE id = ?",
-        (task_id,)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/tasks")
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    error = None
-
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-
-        hashed_password = generate_password_hash(password)
-
-        conn = get_db_connection()
-
-        try:
-            conn.execute(
-                "INSERT INTO users (username, password) VALUES (?, ?)",
-                (username, hashed_password)
-            )
-
-            conn.commit()
-            conn.close()
-
-            return redirect("/login")
-
-        except sqlite3.IntegrityError:
-            error = "Username already exists"
-            conn.close()
-
-    return render_template(
-        "register.html",
-        error=error
-    )
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-
-        conn = get_db_connection()
-
-        user = conn.execute(
-            "SELECT * FROM users WHERE username = ?",
-            (username,)
-        ).fetchone()
-
-        conn.close()
-
-        if user:
-            stored_password = user["password"]
-
-            if check_password_hash(stored_password, password) or stored_password == password:
-                session["user_id"] = user["id"]
-                session["username"] = user["username"]
-
-                return redirect("/")
-
-        return "Invalid username or password"
-
-    return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
-# =========================
-# ACTIVITY FEED + COMMENTS
-# =========================
-
-def create_activity(message):
-
-    conn = get_db_connection()
-
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS activities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        message TEXT,
-        created_at TEXT
-    )
-    """)
-
-    conn.execute("""
-    INSERT INTO activities (message, created_at)
-    VALUES (?, ?)
-    """, (
-        message,
-        str(date.today())
-    ))
-
-    conn.commit()
-    conn.close()
-
-
-def ensure_comments_table():
-
-    conn = get_db_connection()
-
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER,
-        username TEXT,
-        comment TEXT,
-        created_at TEXT
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-ensure_comments_table()
 
 
 @app.route("/activity")
 def activity():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -931,7 +661,6 @@ def activity():
 
 @app.route("/project-comments/<int:project_id>", methods=["GET", "POST"])
 def project_comments(project_id):
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -952,7 +681,6 @@ def project_comments(project_id):
         return redirect("/")
 
     if request.method == "POST":
-
         comment = request.form["comment"]
 
         conn.execute("""
@@ -994,13 +722,8 @@ def project_comments(project_id):
     )
 
 
-# =========================
-# AI SPRINT PLANNER
-# =========================
-
 @app.route("/sprint-planner")
 def sprint_planner():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -1024,7 +747,6 @@ def sprint_planner():
     recommendations = []
 
     for task in tasks:
-
         sprint_tasks.append(task)
 
         if task["priority"] == "High":
@@ -1049,13 +771,8 @@ def sprint_planner():
     )
 
 
-# =========================
-# SEARCH FILTERS
-# =========================
-
 @app.route("/advanced-search")
 def advanced_search():
-
     if "user_id" not in session:
         return redirect("/login")
 
@@ -1095,6 +812,459 @@ def advanced_search():
         selected_status=status,
         selected_priority=priority
     )
+
+
+@app.route("/project/<int:project_id>")
+def project_detail(project_id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        project_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    tasks = conn.execute("""
+    SELECT *
+    FROM tasks
+    WHERE project_id = ?
+    ORDER BY due_date ASC
+    """, (
+        project_id,
+    )).fetchall()
+
+    task_list = []
+    completed_tasks = 0
+
+    for task in tasks:
+        overdue = False
+
+        if (
+            task["status"] != "Completed"
+            and task["due_date"]
+            and task["due_date"] < str(date.today())
+        ):
+            overdue = True
+
+        if task["status"] == "Completed":
+            completed_tasks += 1
+
+        task_list.append((
+            task["id"],
+            task["title"],
+            task["priority"],
+            task["status"],
+            task["due_date"],
+            overdue
+        ))
+
+    total_tasks = len(tasks)
+
+    if total_tasks > 0:
+        completion = round((completed_tasks / total_tasks) * 100)
+    else:
+        completion = 0
+
+    conn.close()
+
+    return render_template(
+        "project_detail.html",
+        project=(
+            project["id"],
+            project["name"],
+            project["description"],
+            project["status"],
+            project["start_date"],
+            project["end_date"]
+        ),
+        tasks=task_list,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion=completion
+    )
+
+
+@app.route("/add-project", methods=["GET", "POST"])
+def add_project():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+        name = request.form["name"]
+        description = request.form["description"]
+        status = request.form["status"]
+        start_date = request.form["start_date"]
+        end_date = request.form["end_date"]
+
+        conn = get_db_connection()
+
+        conn.execute("""
+        INSERT INTO projects (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            user_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} created project {name}"
+        )
+
+        return redirect("/")
+
+    return render_template("add_project.html")
+
+
+@app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
+def edit_project(project_id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+        (
+            project_id,
+            session["user_id"]
+        )
+    ).fetchone()
+
+    if not project:
+        conn.close()
+        return redirect("/")
+
+    if request.method == "POST":
+        name = request.form["name"]
+        description = request.form["description"]
+        status = request.form["status"]
+        start_date = request.form["start_date"]
+        end_date = request.form["end_date"]
+
+        conn.execute("""
+        UPDATE projects
+        SET name = ?,
+            description = ?,
+            status = ?,
+            start_date = ?,
+            end_date = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            name,
+            description,
+            status,
+            start_date,
+            end_date,
+            project_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated project {name}"
+        )
+
+        return redirect("/")
+
+    conn.close()
+
+    return render_template(
+        "edit_project.html",
+        project=project
+    )
+
+
+@app.route("/delete-project/<int:project_id>", methods=["POST"])
+def delete_project(project_id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    project = conn.execute(
+        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
+        (
+            project_id,
+            session["user_id"]
+        )
+    ).fetchone()
+
+    conn.execute(
+        "DELETE FROM tasks WHERE project_id = ?",
+        (project_id,)
+    )
+
+    conn.execute(
+        "DELETE FROM projects WHERE id = ? AND user_id = ?",
+        (
+            project_id,
+            session["user_id"]
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
+    if project:
+        create_activity(
+            f"{session['username']} deleted project {project['name']}"
+        )
+
+    return redirect("/")
+
+
+@app.route("/add-task", methods=["GET", "POST"])
+def add_task():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute(
+        "SELECT * FROM projects WHERE user_id = ?",
+        (session["user_id"],)
+    ).fetchall()
+
+    if request.method == "POST":
+        project_id = request.form["project_id"]
+        title = request.form["title"]
+        priority = request.form["priority"]
+        status = request.form["status"]
+        due_date = request.form["due_date"]
+        assigned_to = request.form["assigned_to"]
+        attachment_url = request.form["attachment_url"]
+
+        conn.execute("""
+        INSERT INTO tasks (
+            project_id,
+            title,
+            priority,
+            status,
+            due_date,
+            assigned_to,
+            attachment_url
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            project_id,
+            title,
+            priority,
+            status,
+            due_date,
+            assigned_to,
+            attachment_url
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} created task {title}"
+        )
+
+        return redirect("/tasks")
+
+    conn.close()
+
+    return render_template(
+        "add_task.html",
+        projects=projects
+    )
+
+
+@app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
+def edit_task(task_id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    task = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
+    if request.method == "POST":
+        title = request.form["title"]
+        priority = request.form["priority"]
+        status = request.form["status"]
+        due_date = request.form["due_date"]
+        assigned_to = request.form["assigned_to"]
+        attachment_url = request.form["attachment_url"]
+
+        conn.execute("""
+        UPDATE tasks
+        SET title = ?,
+            priority = ?,
+            status = ?,
+            due_date = ?,
+            assigned_to = ?,
+            attachment_url = ?
+        WHERE id = ?
+        """, (
+            title,
+            priority,
+            status,
+            due_date,
+            assigned_to,
+            attachment_url,
+            task_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated task {title}"
+        )
+
+        return redirect("/tasks")
+
+    conn.close()
+
+    return render_template(
+        "edit_task.html",
+        task=task
+    )
+
+
+@app.route("/delete-task/<int:task_id>", methods=["POST"])
+def delete_task(task_id):
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    task = conn.execute(
+        "SELECT * FROM tasks WHERE id = ?",
+        (task_id,)
+    ).fetchone()
+
+    conn.execute(
+        "DELETE FROM tasks WHERE id = ?",
+        (task_id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    if task:
+        create_activity(
+            f"{session['username']} deleted task {task['title']}"
+        )
+
+    return redirect("/tasks")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    error = None
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        hashed_password = generate_password_hash(password)
+
+        initials = username[:2].upper()
+
+        conn = get_db_connection()
+
+        try:
+            conn.execute("""
+            INSERT INTO users (
+                username,
+                password,
+                avatar_initials
+            )
+            VALUES (?, ?, ?)
+            """, (
+                username,
+                hashed_password,
+                initials
+            ))
+
+            conn.commit()
+            conn.close()
+
+            return redirect("/login")
+
+        except sqlite3.IntegrityError:
+            conn.close()
+            error = "Username already exists"
+
+    return render_template(
+        "register.html",
+        error=error
+    )
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = get_db_connection()
+
+        user = conn.execute(
+            "SELECT * FROM users WHERE username = ?",
+            (username,)
+        ).fetchone()
+
+        conn.close()
+
+        if user:
+            stored_password = user["password"]
+
+            if (
+                check_password_hash(stored_password, password)
+                or stored_password == password
+            ):
+                session["user_id"] = user["id"]
+                session["username"] = user["username"]
+                session["avatar_initials"] = user["avatar_initials"] or user["username"][:2].upper()
+
+                return redirect("/")
+
+        return "Invalid username or password"
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+
+    return redirect("/login")
 
 
 if __name__ == "__main__":
