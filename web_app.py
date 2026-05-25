@@ -598,6 +598,50 @@ def home():
         project_health_score = 65
         project_health_label = "Stable"
 
+    delivery_insights = []
+
+    if overdue_tasks > 0:
+        delivery_insights.append({
+            "title": "Overdue Delivery Risk",
+            "message": f"{overdue_tasks} task(s) are overdue and may delay delivery.",
+            "level": "High"
+        })
+
+    if blocked_tasks > 0:
+        delivery_insights.append({
+            "title": "Blocked Work",
+            "message": f"{blocked_tasks} blocked task(s) need escalation.",
+            "level": "High"
+        })
+
+    if high_priority_tasks > 0:
+        delivery_insights.append({
+            "title": "Priority Pressure",
+            "message": f"{high_priority_tasks} high-priority task(s) need attention.",
+            "level": "Medium"
+        })
+
+    if over_budget_projects > 0:
+        delivery_insights.append({
+            "title": "Budget Pressure",
+            "message": f"{over_budget_projects} project(s) are over budget.",
+            "level": "High"
+        })
+
+    if completion_rate >= 70 and overdue_tasks == 0 and blocked_tasks == 0:
+        delivery_insights.append({
+            "title": "Delivery Looks Healthy",
+            "message": "Most work is progressing well with no major delivery blockers.",
+            "level": "Low"
+        })
+
+    if not delivery_insights:
+        delivery_insights.append({
+            "title": "Stable Delivery",
+            "message": "No major delivery risks detected right now.",
+            "level": "Low"
+        })
+
     smart_insights = []
 
     if overdue_tasks > 0:
@@ -721,6 +765,7 @@ def home():
         project_health_score=project_health_score,
         project_health_label=project_health_label,
         smart_insights=smart_insights,
+        delivery_insights=delivery_insights,
         upcoming_deadlines=upcoming_deadlines,
         workload_summary=workload_summary,
         total_budget=total_budget,
