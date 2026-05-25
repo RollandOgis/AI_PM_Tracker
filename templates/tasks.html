@@ -5,165 +5,228 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks</title>
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="container">
+<div class="layout">
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h2>AI PM</h2>
 
-      <div class="sidebar">
-
-    <h2>AI PM</h2>
-
-    <a href="/">Dashboard</a>
-    <a href="/tasks">Tasks</a>
-    <a href="/kanban">Kanban</a>
-    <a href="/calendar">Calendar</a>
-    <a href="/clients">Clients</a>
-    <a href="/insights">Insights</a>
-    <a href="/report">Reports</a>
-    <a href="/activity">Activity</a>
-    <a href="/advanced-search">Search</a>
-    <a href="/add-task">Add Task</a>
-    <a href="/add-project">Add Project</a>
-    <a href="/profile">Profile</a>
-    <a href="/logout">Logout</a>
-
-</div>
-
-        <div class="user-box">
-
-            Logged in as:
-
-            <strong>
-                {{ session.get("username", "User") }}
-            </strong>
-
-        </div>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/clients">Clients</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
 
     </div>
 
     <div class="main-content">
 
-        <div class="top-bar">
+        <div class="dashboard-header">
 
-            <h2>Task Management</h2>
+            <div>
 
-            <form method="GET" class="search-form">
+                <h1>Task Management</h1>
 
-                <input
-                    type="text"
-                    name="search"
-                    placeholder="Search tasks..."
-                    value="{{ search }}"
-                >
+                <p class="dashboard-subtitle">
+                    Track workload, priorities and delivery progress
+                </p>
 
-                <select name="sort">
+            </div>
 
-                    <option value="">
-                        Sort By
-                    </option>
+            <div class="dashboard-actions">
 
-                    <option value="due_date">
-                        Due Date
-                    </option>
+                <a href="/add-task" class="btn-primary">
+                    + Add Task
+                </a>
 
-                    <option value="priority">
-                        Priority
-                    </option>
-
-                    <option value="status">
-                        Status
-                    </option>
-
-                </select>
-
-                <button type="submit">
-                    Search
-                </button>
-
-            </form>
+            </div>
 
         </div>
 
+
         {% if tasks %}
 
-            {% for task in tasks %}
+            <div class="projects-grid">
 
-                <div class="task-card">
+                {% for task in tasks %}
 
-                    <h3>{{ task[1] }}</h3>
+                    <div class="project-card">
 
-                    <p>
-                        <strong>Priority:</strong>
-                        {{ task[2] }}
-                    </p>
+                        <div class="project-top">
 
-                    <p>
-                        <strong>Status:</strong>
-                        {{ task[3] }}
-                    </p>
+                            <div>
 
-                    <p>
-                        <strong>Due Date:</strong>
-                        {{ task[4] }}
-                    </p>
+                                <h3>
+                                    {{ task["title"] }}
+                                </h3>
 
-                    <p>
-                        <strong>Project:</strong>
-                        {{ task[5] }}
-                    </p>
+                                <div class="task-badges">
 
-                    <div class="task-buttons">
+                                    <span class="
+                                        badge
+                                        {% if task['status'] == 'Completed' %}
+                                            badge-green
+                                        {% elif task['status'] == 'Blocked' %}
+                                            badge-red
+                                        {% elif task['status'] == 'In Progress' %}
+                                            badge-blue
+                                        {% else %}
+                                            badge-yellow
+                                        {% endif %}
+                                    ">
+                                        {{ task["status"] }}
+                                    </span>
 
-                        <a
-                            href="/edit-task/{{ task[0] }}"
-                            class="edit-btn"
-                        >
-                            Edit Task
-                        </a>
+                                    <span class="
+                                        badge
+                                        {% if task['priority'] == 'High' %}
+                                            badge-red
+                                        {% elif task['priority'] == 'Medium' %}
+                                            badge-yellow
+                                        {% else %}
+                                            badge-green
+                                        {% endif %}
+                                    ">
+                                        {{ task["priority"] }}
+                                    </span>
 
-                        <form
-                            action="/delete-task/{{ task[0] }}"
-                            method="POST"
-                            onsubmit="return confirm('Delete this task?');"
-                        >
+                                </div>
 
-                            <button
-                                type="submit"
-                                class="delete-btn"
-                            >
-                                Delete Task
-                            </button>
+                            </div>
 
-                        </form>
+                            <div class="project-actions">
+
+                                <a href="/edit-task/{{ task['id'] }}">
+                                    Edit
+                                </a>
+
+                                <a
+                                    href="/delete-task/{{ task['id'] }}"
+                                    onclick="return confirm('Delete this task?')"
+                                >
+                                    Delete
+                                </a>
+
+                            </div>
+
+                        </div>
+
+
+                        {% if task["project_name"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Project:</strong>
+                                {{ task["project_name"] }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if task["assigned_to"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Assigned To:</strong>
+                                {{ task["assigned_to"] }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if task["description"] %}
+
+                            <div class="task-description">
+
+                                {{ task["description"] }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Due Date</span>
+
+                                <strong>
+                                    {{ task["due_date"] or "No date" }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Estimated Hours</span>
+
+                                <strong>
+                                    {{ task["estimated_hours"] or 0 }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Actual Hours</span>
+
+                                <strong>
+                                    {{ task["actual_hours"] or 0 }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        {% if task["status"] != "Completed" %}
+
+                            {% if task["due_date"] and task["due_date"] < current_date %}
+
+                                <div class="alert-box alert-danger">
+
+                                    ⚠ Overdue Task
+
+                                </div>
+
+                            {% endif %}
+
+                        {% endif %}
 
                     </div>
 
-                </div>
+                {% endfor %}
 
-            {% endfor %}
+            </div>
 
         {% else %}
 
             <div class="empty-box">
 
-                <h3>No Tasks Found</h3>
+                <h3>No Tasks Yet</h3>
 
                 <p>
-                    Create a task to begin tracking work.
+                    Create tasks to begin managing project delivery.
                 </p>
 
-                <a href="/add-task" class="view-btn">
-                    Add Task
+                <a href="/add-task" class="btn-primary">
+                    Create First Task
                 </a>
 
             </div>
