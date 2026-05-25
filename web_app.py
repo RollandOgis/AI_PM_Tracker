@@ -204,7 +204,7 @@ def home():
             project["estimated_budget"] or 0
         )
 
-        actual_cost = float(
+        base_actual_cost = float(
             project["actual_cost"] or 0
         )
 
@@ -216,7 +216,8 @@ def home():
         WHERE project_id = ?
         ORDER BY
             CASE
-                WHEN due_date IS NULL OR due_date = ''
+                WHEN due_date IS NULL
+                OR due_date = ''
                 THEN '9999-12-31'
                 ELSE due_date
             END ASC
@@ -226,7 +227,7 @@ def home():
 
         task_list = []
 
-        task_cost_total = 0
+        task_actual_cost_total = 0
 
         for task in tasks:
 
@@ -240,7 +241,7 @@ def home():
                 task["hourly_rate"] or 0
             )
 
-            task_cost_total += (
+            task_actual_cost_total += (
                 task_actual_hours * task_hourly_rate
             )
 
@@ -292,26 +293,31 @@ def home():
                 task["due_date"]
             ))
 
-        combined_actual_cost = (
-            actual_cost + task_cost_total
+        actual_cost = (
+            base_actual_cost
+            + task_actual_cost_total
         )
 
-        total_actual_cost += combined_actual_cost
+        total_actual_cost += actual_cost
 
         remaining_budget = (
-            estimated_budget - combined_actual_cost
+            estimated_budget
+            - actual_cost
         )
 
         if (
             estimated_budget > 0
-            and combined_actual_cost > estimated_budget
+            and actual_cost > estimated_budget
         ):
             over_budget_projects += 1
 
         if estimated_budget > 0:
 
             budget_used_percent = round(
-                (combined_actual_cost / estimated_budget) * 100
+                (
+                    actual_cost
+                    / estimated_budget
+                ) * 100
             )
 
         else:
@@ -325,7 +331,10 @@ def home():
             ])
 
             completion = round(
-                (completed_for_project / len(tasks)) * 100
+                (
+                    completed_for_project
+                    / len(tasks)
+                ) * 100
             )
 
         else:
@@ -342,7 +351,7 @@ def home():
             "tasks": task_list,
             "completion": completion,
             "estimated_budget": estimated_budget,
-            "actual_cost": combined_actual_cost,
+            "actual_cost": actual_cost,
             "remaining_budget": remaining_budget,
             "budget_used_percent": budget_used_percent
         })
@@ -357,14 +366,18 @@ def home():
     if total_tasks > 0:
 
         completion_rate = round(
-            (completed_tasks / total_tasks) * 100
+            (
+                completed_tasks
+                / total_tasks
+            ) * 100
         )
 
     else:
         completion_rate = 0
 
     total_remaining_budget = (
-        total_budget - total_actual_cost
+        total_budget
+        - total_actual_cost
     )
 
     if (
@@ -415,7 +428,7 @@ def home():
     if over_budget_projects > 0:
 
         smart_insights.append(
-            f"{over_budget_projects} project(s) are over budget. Review costs."
+            f"{over_budget_projects} project(s) are currently over budget."
         )
 
     if high_priority_tasks > 0:
@@ -430,6 +443,50 @@ def home():
             f"{len(upcoming_deadlines)} upcoming deadline(s) are active."
         )
 
+    if total_budget > 0:
+
+        budget_usage_percent = round(
+            (
+                total_actual_cost
+                / total_budget
+            ) * 100
+        )
+
+    else:
+        budget_usage_percent = 0
+
+    if budget_usage_percent >= 90:
+
+        smart_insights.append(
+            "Budget usage is critically high across projects."
+        )
+
+    elif budget_usage_percent >= 70:
+
+        smart_insights.append(
+            "Project burn rate is increasing. Monitor costs closely."
+        )
+
+    else:
+
+        smart_insights.append(
+            "Budget usage currently appears healthy."
+        )
+
+    if total_remaining_budget < 0:
+
+        smart_insights.append(
+            "Overall portfolio spending has exceeded available budget."
+        )
+
+    elif total_remaining_budget < (
+        total_budget * 0.2
+    ):
+
+        smart_insights.append(
+            "Remaining portfolio budget is becoming limited."
+        )
+
     if (
         total_tasks > 0
         and completed_tasks == total_tasks
@@ -442,11 +499,42 @@ def home():
     if not smart_insights:
 
         smart_insights.append(
-            "Your workload and budget currently look balanced."
+            "Workload, delivery pace and financial health look balanced."
         )
 
+    if total_budget > 0:
+
+        profitability_score = round(
+            (
+                total_remaining_budget
+                / total_budget
+            ) * 100
+        )
+
+    else:
+        profitability_score = 0
+
+    if profitability_score >= 50:
+
+        financial_health_label = "Strong"
+
+    elif profitability_score >= 20:
+
+        financial_health_label = "Stable"
+
+    elif profitability_score >= 0:
+
+        financial_health_label = "At Risk"
+
+    else:
+
+        financial_health_label = "Over Budget"
+
     workload_summary = {
-        "active": in_progress_tasks + pending_tasks,
+        "active": (
+            in_progress_tasks
+            + pending_tasks
+        ),
         "completed": completed_tasks,
         "blocked": blocked_tasks,
         "overdue": overdue_tasks
@@ -495,6 +583,9 @@ def home():
         total_actual_cost=total_actual_cost,
         total_remaining_budget=total_remaining_budget,
         over_budget_projects=over_budget_projects,
+        budget_usage_percent=budget_usage_percent,
+        profitability_score=profitability_score,
+        financial_health_label=financial_health_label,
         chart_status_data=[
             completed_tasks,
             pending_tasks,

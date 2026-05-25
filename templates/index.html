@@ -226,6 +226,85 @@
 
             </div>
 
+            <div class="smart-card">
+
+                <h3>Financial Health</h3>
+
+                <div class="smart-insight">
+                    Status: {{ financial_health_label }}
+                </div>
+
+                <div class="smart-insight">
+                    Budget Used: {{ budget_usage_percent }}%
+                </div>
+
+                <div class="smart-insight">
+                    Profitability Score: {{ profitability_score }}%
+                </div>
+
+            </div>
+
+            <div class="smart-card">
+
+                <h3>Budget Summary</h3>
+
+                <div class="budget-row">
+
+                    <span>Total Budget</span>
+
+                    <strong>
+                        £{{ "{:,.0f}".format(total_budget) }}
+                    </strong>
+
+                </div>
+
+                <div class="budget-row">
+
+                    <span>Total Cost</span>
+
+                    <strong>
+                        £{{ "{:,.0f}".format(total_actual_cost) }}
+                    </strong>
+
+                </div>
+
+                <div class="budget-row">
+
+                    <span>Remaining</span>
+
+                    <strong
+                        class="{% if total_remaining_budget < 0 %}health-warning{% else %}health-good{% endif %}"
+                    >
+                        £{{ "{:,.0f}".format(total_remaining_budget) }}
+                    </strong>
+
+                </div>
+
+                <div class="progress-wrapper">
+
+                    <div class="progress-info">
+
+                        <span>Portfolio Budget Usage</span>
+
+                        <span>
+                            {{ budget_usage_percent }}%
+                        </span>
+
+                    </div>
+
+                    <div class="progress-bar">
+
+                        <div
+                            class="progress-fill {% if budget_usage_percent > 100 %}blocked-fill{% elif budget_usage_percent > 70 %}pending-fill{% else %}completed-fill{% endif %}"
+                            style="width: {{ budget_usage_percent if budget_usage_percent <= 100 else 100 }}%;"
+                        ></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
 
