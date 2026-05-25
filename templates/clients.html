@@ -16,25 +16,21 @@
 
         <h2>AI PM</h2>
 
-       <div class="sidebar">
-
-    <h2>AI PM</h2>
-
-    <a href="/">Dashboard</a>
-    <a href="/tasks">Tasks</a>
-    <a href="/kanban">Kanban</a>
-    <a href="/calendar">Calendar</a>
-    <a href="/clients">Clients</a>
-    <a href="/insights">Insights</a>
-    <a href="/report">Reports</a>
-    <a href="/activity">Activity</a>
-    <a href="/advanced-search">Search</a>
-    <a href="/add-task">Add Task</a>
-    <a href="/add-project">Add Project</a>
-    <a href="/profile">Profile</a>
-    <a href="/logout">Logout</a>
-
-</div>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
 
     </div>
 
@@ -44,10 +40,10 @@
 
             <div>
 
-                <h1>Clients</h1>
+                <h1>Client Management</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage customers and business relationships
+                    Manage relationships, companies and delivery portfolios.
                 </p>
 
             </div>
@@ -62,6 +58,7 @@
 
         </div>
 
+
         {% if clients %}
 
             <div class="projects-grid">
@@ -75,18 +72,32 @@
                             <div>
 
                                 <h3>
-                                    {{ client.name }}
+                                    {{ client["name"] }}
                                 </h3>
 
-                                <span class="project-status">
-                                    {{ client.status }}
-                                </span>
+                                <div class="task-badges">
+
+                                    {% if client["status"] == "Active" %}
+                                        <span class="badge badge-green">
+                                            Active
+                                        </span>
+                                    {% elif client["status"] == "Lead" %}
+                                        <span class="badge badge-yellow">
+                                            Lead
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-blue">
+                                            {{ client["status"] }}
+                                        </span>
+                                    {% endif %}
+
+                                </div>
 
                             </div>
 
                             <div class="project-actions">
 
-                                <a href="/edit-client/{{ client.id }}">
+                                <a href="/edit-client/{{ client['id'] }}">
                                     Edit
                                 </a>
 
@@ -94,73 +105,67 @@
 
                         </div>
 
+
+                        {% if client["company"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Company:</strong>
+                                {{ client["company"] }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if client["email"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Email:</strong>
+                                {{ client["email"] }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if client["phone"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Phone:</strong>
+                                {{ client["phone"] }}
+
+                            </div>
+
+                        {% endif %}
+
+
                         <div class="budget-section">
-
-                            <div class="budget-row">
-
-                                <span>Company</span>
-
-                                <strong>
-                                    {{ client.company }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Email</span>
-
-                                <strong>
-                                    {{ client.email }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Phone</span>
-
-                                <strong>
-                                    {{ client.phone }}
-                                </strong>
-
-                            </div>
 
                             <div class="budget-row">
 
                                 <span>Estimated Value</span>
 
-                                <strong class="health-good">
-                                    £{{ "{:,.0f}".format(client.estimated_value or 0) }}
+                                <strong>
+                                    £{{ "{:,.0f}".format(client["estimated_value"] or 0) }}
                                 </strong>
 
                             </div>
 
                         </div>
 
-                        {% if client.notes %}
 
-                            <div class="smart-insight">
+                        {% if client["notes"] %}
 
-                                {{ client.notes }}
+                            <div class="task-description">
+
+                                {{ client["notes"] }}
 
                             </div>
 
                         {% endif %}
-
-                        <form
-                            action="/delete-client/{{ client.id }}"
-                            method="POST"
-                        >
-
-                            <button
-                                type="submit"
-                                class="btn-danger"
-                            >
-                                Delete
-                            </button>
-
-                        </form>
 
                     </div>
 
@@ -175,11 +180,11 @@
                 <h3>No Clients Yet</h3>
 
                 <p>
-                    Add your first client to start tracking customer relationships.
+                    Add clients to begin tracking delivery relationships.
                 </p>
 
                 <a href="/add-client" class="btn-primary">
-                    Add Client
+                    Add First Client
                 </a>
 
             </div>

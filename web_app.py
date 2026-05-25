@@ -2193,6 +2193,83 @@ def advanced_search():
         search=search
     )
 
+@app.route("/gantt")
+def gantt():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute("""
+    SELECT
+        projects.*,
+        clients.name AS client_name
+    FROM projects
+    LEFT JOIN clients
+    ON projects.client_id = clients.id
+    WHERE projects.user_id = ?
+    ORDER BY
+        CASE
+            WHEN projects.start_date IS NULL OR projects.start_date = ''
+            THEN '9999-12-31'
+            ELSE projects.start_date
+        END ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "gantt.html",
+        projects=projects,
+        current_date=str(date.today())
+    )
+
+@app.route("/analytics")
+def analytics():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    total_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    """).fetchone()[0]
+
+    completed_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    WHERE status = 'Completed'
+    """).fetchone()[0]
+
+    pending_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    WHERE status = 'Pending'
+    """).fetchone()[0]
+
+    progress_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    WHERE status = 'In Progress'
+    """).fetchone()[0]
+
+    blocked_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    WHERE status = 'Blocked'
+    """).fetchone()[0]
+
+    conn.close()
+
+    return render_template(
+        "analytics.html",
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        pending_tasks=pending_tasks,
+        progress_tasks=progress_tasks,
+        blocked_tasks=blocked_tasks
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

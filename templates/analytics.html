@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Analytics Dashboard</h1>
+
+                <p class="dashboard-subtitle">
+                    View delivery performance, workload and operational metrics.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <h3>Total Tasks</h3>
+                <p>{{ total_tasks }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Completed</h3>
+                <p>{{ completed_tasks }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>In Progress</h3>
+                <p>{{ progress_tasks }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Pending</h3>
+                <p>{{ pending_tasks }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Blocked</h3>
+                <p>{{ blocked_tasks }}</p>
+            </div>
+
+        </div>
+
+
+        <div class="smart-dashboard-grid">
+
+            <div class="smart-card">
+
+                <h3>Status Breakdown</h3>
+
+                <div class="analytics-row">
+                    <span>Completed</span>
+                    <strong>{{ completed_tasks }}</strong>
+                </div>
+
+                <div class="analytics-bar">
+                    <div class="analytics-fill completed-fill"></div>
+                </div>
+
+
+                <div class="analytics-row">
+                    <span>In Progress</span>
+                    <strong>{{ progress_tasks }}</strong>
+                </div>
+
+                <div class="analytics-bar">
+                    <div class="analytics-fill pending-fill"></div>
+                </div>
+
+
+                <div class="analytics-row">
+                    <span>Pending</span>
+                    <strong>{{ pending_tasks }}</strong>
+                </div>
+
+                <div class="analytics-bar">
+                    <div class="analytics-fill warning-fill"></div>
+                </div>
+
+
+                <div class="analytics-row">
+                    <span>Blocked</span>
+                    <strong>{{ blocked_tasks }}</strong>
+                </div>
+
+                <div class="analytics-bar">
+                    <div class="analytics-fill blocked-fill"></div>
+                </div>
+
+            </div>
+
+
+            <div class="smart-card">
+
+                <h3>Delivery Summary</h3>
+
+                {% if total_tasks > 0 %}
+
+                    <div class="smart-insight">
+                        You are currently tracking
+                        <strong>{{ total_tasks }}</strong>
+                        tasks across your workspace.
+                    </div>
+
+                    <div class="smart-insight">
+                        <strong>{{ completed_tasks }}</strong>
+                        task(s) have been completed successfully.
+                    </div>
+
+                    <div class="smart-insight">
+                        <strong>{{ progress_tasks }}</strong>
+                        task(s) are currently in progress.
+                    </div>
+
+                    <div class="smart-insight">
+                        <strong>{{ blocked_tasks }}</strong>
+                        blocked task(s) may impact delivery timelines.
+                    </div>
+
+                {% else %}
+
+                    <div class="smart-insight">
+                        No analytics data available yet.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="smart-card">
+
+                <h3>Operational Insights</h3>
+
+                {% if blocked_tasks > 0 %}
+
+                    <div class="alert-box alert-danger">
+                        ⚠ Delivery risk detected due to blocked tasks.
+                    </div>
+
+                {% endif %}
+
+                {% if pending_tasks > completed_tasks %}
+
+                    <div class="alert-box alert-warning">
+                        ⏳ Pending workload is currently high.
+                    </div>
+
+                {% endif %}
+
+                {% if completed_tasks >= pending_tasks and total_tasks > 0 %}
+
+                    <div class="smart-insight">
+                        ✅ Delivery performance is looking healthy.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

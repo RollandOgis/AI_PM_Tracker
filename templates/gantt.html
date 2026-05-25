@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gantt Timeline</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Gantt Timeline</h1>
+
+                <p class="dashboard-subtitle">
+                    View project schedules, timelines and delivery windows.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-project" class="btn-primary">
+                    + Add Project
+                </a>
+
+            </div>
+
+        </div>
+
+        {% if projects %}
+
+            <div class="gantt-container">
+
+                {% for project in projects %}
+
+                    <div class="gantt-row">
+
+                        <div class="gantt-info">
+
+                            <h3>
+                                {{ project["name"] }}
+                            </h3>
+
+                            {% if project["client_name"] %}
+
+                                <p>
+                                    Client:
+                                    {{ project["client_name"] }}
+                                </p>
+
+                            {% endif %}
+
+                            <small>
+                                {{ project["start_date"] or "No start date" }}
+                                →
+                                {{ project["end_date"] or "No end date" }}
+                            </small>
+
+                        </div>
+
+                        <div class="gantt-track">
+
+                            {% if project["status"] == "Completed" %}
+
+                                <div
+                                    class="gantt-bar gantt-completed"
+                                    style="width: 100%;"
+                                >
+                                    Completed
+                                </div>
+
+                            {% elif project["status"] == "In Progress" %}
+
+                                <div
+                                    class="gantt-bar gantt-progress"
+                                    style="width: 65%;"
+                                >
+                                    In Progress
+                                </div>
+
+                            {% elif project["status"] == "Blocked" %}
+
+                                <div
+                                    class="gantt-bar gantt-blocked"
+                                    style="width: 45%;"
+                                >
+                                    Blocked
+                                </div>
+
+                            {% else %}
+
+                                <div
+                                    class="gantt-bar gantt-pending"
+                                    style="width: 25%;"
+                                >
+                                    Pending
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Projects Yet</h3>
+
+                <p>
+                    Create projects with start and end dates to see them on the timeline.
+                </p>
+
+                <a href="/add-project" class="btn-primary">
+                    Create Project
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
