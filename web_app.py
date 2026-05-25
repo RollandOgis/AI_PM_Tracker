@@ -1315,78 +1315,77 @@ def project_detail(project_id):
 
 @app.route("/tasks")
 def tasks():
+
     if "user_id" not in session:
         return redirect("/login")
 
     search = request.args.get("search", "")
-    sort = request.args.get("sort", "")
+    status_filter = request.args.get("status", "")
+    priority_filter = request.args.get("priority", "")
 
     conn = get_db_connection()
 
     query = """
-    SELECT tasks.*, projects.name AS project_name
+    SELECT
+        tasks.*,
+        projects.name AS project_name
     FROM tasks
     JOIN projects
     ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    AND (
-        tasks.title LIKE ?
-        OR tasks.priority LIKE ?
-        OR tasks.status LIKE ?
-        OR tasks.assigned_to LIKE ?
-        OR projects.name LIKE ?
-    )
     """
 
-    if sort == "due_date":
-        query += " ORDER BY tasks.due_date ASC"
-    elif sort == "priority":
+    params = [session["user_id"]]
+
+    if search:
         query += """
-        ORDER BY
-            CASE tasks.priority
-                WHEN 'High' THEN 1
-                WHEN 'Medium' THEN 2
-                WHEN 'Low' THEN 3
-                ELSE 4
-            END
-        """
-    elif sort == "status":
-        query += " ORDER BY tasks.status ASC"
-    else:
-        query += " ORDER BY tasks.id DESC"
-
-    task_rows = conn.execute(
-        query,
-        (
-            session["user_id"],
-            "%" + search + "%",
-            "%" + search + "%",
-            "%" + search + "%",
-            "%" + search + "%",
-            "%" + search + "%"
+        AND (
+            tasks.title LIKE ?
+            OR projects.name LIKE ?
+            OR tasks.status LIKE ?
+            OR tasks.priority LIKE ?
+            OR tasks.assigned_to LIKE ?
         )
-    ).fetchall()
+        """
 
-    all_tasks = []
+        search_term = f"%{search}%"
 
-    for task in task_rows:
-        all_tasks.append((
-            task["id"],
-            task["title"],
-            task["priority"],
-            task["status"],
-            task["due_date"],
-            task["project_name"]
-        ))
+        params.extend([
+            search_term,
+            search_term,
+            search_term,
+            search_term,
+            search_term
+        ])
+
+    if status_filter:
+        query += " AND tasks.status = ?"
+        params.append(status_filter)
+
+    if priority_filter:
+        query += " AND tasks.priority = ?"
+        params.append(priority_filter)
+
+    query += """
+    ORDER BY
+        CASE
+            WHEN tasks.due_date IS NULL OR tasks.due_date = ''
+            THEN '9999-12-31'
+            ELSE tasks.due_date
+        END ASC
+    """
+
+    tasks = conn.execute(query, params).fetchall()
 
     conn.close()
 
     return render_template(
         "tasks.html",
-        tasks=all_tasks,
-        current_date=str(date.today()),
+        tasks=tasks,
         search=search,
-        sort=sort
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        current_date=str(date.today())
     )
 
 
