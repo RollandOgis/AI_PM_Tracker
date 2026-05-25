@@ -1213,3 +1213,42 @@ body.dark-ready {
 .project-actions a:hover {
     text-decoration: underline;
 }
+
+.search-form {
+    display: flex;
+    gap: 12px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+}
+
+.search-form input,
+.search-form select {
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    min-width: 220px;
+    font-size: 15px;
+}
+
+.search-form button {
+    min-width: 120px;
+}
+
+.alert-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+.link-button {
+    background: none;
+    border: none;
+    color: #dc2626;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 0;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
