@@ -90,6 +90,20 @@ def init_db():
     conn.commit()
     conn.close()
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        company TEXT,
+        email TEXT,
+        phone TEXT,
+        status TEXT,
+        notes TEXT,
+        estimated_value REAL DEFAULT 0,
+        user_id INTEGER
+    )
+    """)
+
 
 init_db()
 
@@ -101,6 +115,7 @@ ensure_column("projects", "actual_cost", "REAL DEFAULT 0")
 ensure_column("tasks", "estimated_hours", "REAL DEFAULT 0")
 ensure_column("tasks", "actual_hours", "REAL DEFAULT 0")
 ensure_column("tasks", "hourly_rate", "REAL DEFAULT 0")
+ensure_column("projects", "client_id", "INTEGER")
 
 
 def create_demo_user():
