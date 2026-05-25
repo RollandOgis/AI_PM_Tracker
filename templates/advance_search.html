@@ -10,86 +10,140 @@
 
 <body>
 
-<div class="container">
+<div class="layout">
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h2>AI PM</h2>
 
-        <a href="/">Dashboard</a>
-        <a href="/advanced-search">Advanced Search</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/profile">Profile</a>
-        <a href="/report">PDF Report</a><a href="/profile">Profile</a>
-        <a href="/report">PDF Report</a>
+       <div class="sidebar">
+
+    <h2>AI PM</h2>
+
+    <a href="/">Dashboard</a>
+    <a href="/tasks">Tasks</a>
+    <a href="/kanban">Kanban</a>
+    <a href="/calendar">Calendar</a>
+    <a href="/clients">Clients</a>
+    <a href="/insights">Insights</a>
+    <a href="/report">Reports</a>
+    <a href="/activity">Activity</a>
+    <a href="/advanced-search">Search</a>
+    <a href="/add-task">Add Task</a>
+    <a href="/add-project">Add Project</a>
+    <a href="/profile">Profile</a>
+    <a href="/logout">Logout</a>
+
+</div>
 
     </div>
 
     <div class="main-content">
 
-        <div class="top-bar">
-            <h2>Advanced Search</h2>
-        </div>
+        <div class="dashboard-header">
 
-        <div class="form-card">
+            <div>
 
-            <form method="GET">
+                <h1>Advanced Search</h1>
 
-                <label>Status</label>
-
-                <select name="status">
-
-                    <option value="">All</option>
-                    <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Blocked">Blocked</option>
-
-                </select>
-
-                <label>Priority</label>
-
-                <select name="priority">
-
-                    <option value="">All</option>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-
-                </select>
-
-                <button type="submit">
-                    Search
-                </button>
-
-            </form>
-
-        </div>
-
-        {% for task in tasks %}
-
-            <div class="task-card">
-
-                <h3>{{ task["title"] }}</h3>
-
-                <p>
-                    <strong>Project:</strong>
-                    {{ task["project_name"] }}
-                </p>
-
-                <p>
-                    <strong>Status:</strong>
-                    {{ task["status"] }}
-                </p>
-
-                <p>
-                    <strong>Priority:</strong>
-                    {{ task["priority"] }}
+                <p class="dashboard-subtitle">
+                    Search across projects and tasks
                 </p>
 
             </div>
 
-        {% endfor %}
+        </div>
+
+        <form
+            method="GET"
+            action="/advanced-search"
+            class="search-form"
+        >
+
+            <input
+                type="text"
+                name="search"
+                placeholder="Search tasks, projects, status..."
+                value="{{ search }}"
+            >
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Search
+            </button>
+
+        </form>
+
+        {% if tasks %}
+
+            <div class="projects-grid">
+
+                {% for task in tasks %}
+
+                    <div class="project-card">
+
+                        <h3>
+                            {{ task["title"] }}
+                        </h3>
+
+                        <div class="smart-insight">
+
+                            <strong>Project:</strong>
+                            {{ task["project_name"] }}
+
+                        </div>
+
+                        <div class="budget-row">
+
+                            <span>Status</span>
+
+                            <strong>
+                                {{ task["status"] }}
+                            </strong>
+
+                        </div>
+
+                        <div class="budget-row">
+
+                            <span>Priority</span>
+
+                            <strong>
+                                {{ task["priority"] }}
+                            </strong>
+
+                        </div>
+
+                        <div class="budget-row">
+
+                            <span>Due Date</span>
+
+                            <strong>
+                                {{ task["due_date"] }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% elif search %}
+
+            <div class="empty-box">
+
+                <h3>No Results Found</h3>
+
+                <p>
+                    Try another search keyword.
+                </p>
+
+            </div>
+
+        {% endif %}
 
     </div>
 
