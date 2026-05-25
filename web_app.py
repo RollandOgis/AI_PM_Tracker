@@ -2070,11 +2070,40 @@ def advanced_search():
     if "user_id" not in session:
         return redirect("/login")
 
-    return """
-    <h1>Search Page Works</h1>
-    <p>The route is working. Now we can rebuild the proper search page.</p>
-    <a href="/">Back to Dashboard</a>
-    """
+    search = request.args.get("search", "")
+
+    conn = get_db_connection()
+
+    tasks = conn.execute("""
+    SELECT
+        tasks.*,
+        projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = ?
+    AND (
+        tasks.title LIKE ?
+        OR projects.name LIKE ?
+        OR tasks.status LIKE ?
+        OR tasks.priority LIKE ?
+    )
+    ORDER BY tasks.id DESC
+    """, (
+        session["user_id"],
+        f"%{search}%",
+        f"%{search}%",
+        f"%{search}%",
+        f"%{search}%"
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "advanced_search.html",
+        tasks=tasks,
+        search=search
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
