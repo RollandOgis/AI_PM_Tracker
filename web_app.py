@@ -630,6 +630,50 @@ def home():
             f"{len(upcoming_deadlines)} upcoming deadline(s) are active."
         )
 
+        delivery_insights = []
+
+        if overdue_tasks > 0:
+            delivery_insights.append({
+                "level": "High",
+                "title": "Overdue Delivery Risk",
+                "message": f"{overdue_tasks} task(s) are overdue and may delay delivery."
+            })
+
+        if blocked_tasks > 0:
+            delivery_insights.append({
+                "level": "High",
+                "title": "Blocked Work",
+                "message": f"{blocked_tasks} blocked task(s) need escalation."
+            })
+
+        if high_priority_tasks > 0:
+            delivery_insights.append({
+                "level": "Medium",
+                "title": "Priority Pressure",
+                "message": f"{high_priority_tasks} high-priority task(s) need attention."
+            })
+
+        if over_budget_projects > 0:
+            delivery_insights.append({
+                "level": "High",
+                "title": "Budget Pressure",
+                "message": f"{over_budget_projects} project(s) are over budget."
+            })
+
+        if completion_rate >= 70 and overdue_tasks == 0 and blocked_tasks == 0:
+            delivery_insights.append({
+                "level": "Low",
+                "title": "Delivery Looks Healthy",
+                "message": "Most work is progressing well with no major delivery blockers."
+            })
+
+        if not delivery_insights:
+            delivery_insights.append({
+                "level": "Low",
+                "title": "Stable Delivery",
+                "message": "No major delivery risks detected right now."
+            })
+
     workload_summary = {
         "active": (
             in_progress_tasks
@@ -677,6 +721,7 @@ def home():
         project_health_score=project_health_score,
         project_health_label=project_health_label,
         smart_insights=smart_insights,
+        delivery_insights=delivery_insights,
         upcoming_deadlines=upcoming_deadlines,
         workload_summary=workload_summary,
         total_budget=total_budget,

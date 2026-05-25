@@ -16,25 +16,19 @@
 
         <h2>AI PM</h2>
 
-       <div class="sidebar">
-
-    <h2>AI PM</h2>
-
-    <a href="/">Dashboard</a>
-    <a href="/tasks">Tasks</a>
-    <a href="/kanban">Kanban</a>
-    <a href="/calendar">Calendar</a>
-    <a href="/clients">Clients</a>
-    <a href="/insights">Insights</a>
-    <a href="/report">Reports</a>
-    <a href="/activity">Activity</a>
-    <a href="/advanced-search">Search</a>
-    <a href="/add-task">Add Task</a>
-    <a href="/add-project">Add Project</a>
-    <a href="/profile">Profile</a>
-    <a href="/logout">Logout</a>
-
-</div>
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/clients">Clients</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
 
     </div>
 
@@ -46,7 +40,7 @@
                 <h1>AI Project Dashboard</h1>
 
                 <p class="dashboard-subtitle">
-                    Welcome back, {{ session.username }}
+                    Welcome back, {{ session["username"] }}
                 </p>
             </div>
 
@@ -116,37 +110,37 @@
         <div class="dashboard-summary">
 
             <div class="summary-card">
-
                 <h3>Project Health Score</h3>
 
-                <p class="{% if project_health_score >= 80 %}health-good{% elif project_health_score >= 50 %}health-neutral{% else %}health-warning{% endif %}">
-                    {{ project_health_score }}%
-                </p>
+                {% if project_health_score >= 80 %}
+                    <p class="health-good">{{ project_health_score }}%</p>
+                {% elif project_health_score >= 50 %}
+                    <p class="health-neutral">{{ project_health_score }}%</p>
+                {% else %}
+                    <p class="health-warning">{{ project_health_score }}%</p>
+                {% endif %}
 
                 <small>{{ project_health_label }}</small>
-
             </div>
 
             <div class="summary-card">
-
                 <h3>Financial Health</h3>
 
-                <p class="{% if profitability_score >= 50 %}health-good{% elif profitability_score >= 0 %}health-neutral{% else %}health-warning{% endif %}">
-                    {{ profitability_score }}%
-                </p>
+                {% if profitability_score >= 50 %}
+                    <p class="health-good">{{ profitability_score }}%</p>
+                {% elif profitability_score >= 0 %}
+                    <p class="health-neutral">{{ profitability_score }}%</p>
+                {% else %}
+                    <p class="health-warning">{{ profitability_score }}%</p>
+                {% endif %}
 
                 <small>{{ financial_health_label }}</small>
-
             </div>
 
             <div class="summary-card">
-
                 <h3>Budget Usage</h3>
-
                 <p>{{ budget_usage_percent }}%</p>
-
                 <small>Portfolio burn rate</small>
-
             </div>
 
         </div>
@@ -166,6 +160,26 @@
 
             </div>
 
+
+            <div class="smart-card">
+
+                <h3>AI Delivery Insights</h3>
+
+                {% for insight in delivery_insights %}
+                    <div class="smart-insight">
+                        <strong>{{ insight["title"] }}</strong>
+
+                        <p>{{ insight["message"] }}</p>
+
+                        <small>
+                            Risk Level: {{ insight["level"] }}
+                        </small>
+                    </div>
+                {% endfor %}
+
+            </div>
+
+
             <div class="smart-card">
 
                 <h3>Upcoming Deadlines</h3>
@@ -177,14 +191,16 @@
                         <div class="deadline-item">
 
                             <div>
-                                <strong>{{ deadline.title }}</strong>
+                                <strong>{{ deadline["title"] }}</strong>
 
                                 <p>
-                                    {{ deadline.project_name }} · {{ deadline.status }}
+                                    {{ deadline["project_name"] }}
+                                    ·
+                                    {{ deadline["status"] }}
                                 </p>
                             </div>
 
-                            <span>{{ deadline.due_date }}</span>
+                            <span>{{ deadline["due_date"] }}</span>
 
                         </div>
 
@@ -235,16 +251,16 @@
                             <div class="project-top">
 
                                 <div>
-                                    <h3>{{ item.project[1] }}</h3>
+                                    <h3>{{ item["project"][1] }}</h3>
 
                                     <span class="project-status">
-                                        {{ item.project[2] }}
+                                        {{ item["project"][2] }}
                                     </span>
                                 </div>
 
                                 <div class="project-actions">
-                                    <a href="/project/{{ item.project[0] }}">View</a>
-                                    <a href="/edit-project/{{ item.project[0] }}">Edit</a>
+                                    <a href="/project/{{ item['project'][0] }}">View</a>
+                                    <a href="/edit-project/{{ item['project'][0] }}">Edit</a>
                                 </div>
 
                             </div>
@@ -254,21 +270,31 @@
 
                                 <strong>AI Risk:</strong>
 
-                                <span class="{% if item.risk_score >= 70 %}health-warning{% elif item.risk_score >= 45 %}health-neutral{% else %}health-good{% endif %}">
-                                    {{ item.risk_label }} ({{ item.risk_score }}%)
-                                </span>
+                                {% if item["risk_score"] >= 70 %}
+                                    <span class="health-warning">
+                                        {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+                                    </span>
+                                {% elif item["risk_score"] >= 45 %}
+                                    <span class="health-neutral">
+                                        {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+                                    </span>
+                                {% else %}
+                                    <span class="health-good">
+                                        {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+                                    </span>
+                                {% endif %}
 
                             </div>
 
 
-                            {% if item.client_name %}
+                            {% if item["client_name"] %}
 
                                 <div class="smart-insight">
                                     <strong>Client:</strong>
-                                    {{ item.client_name }}
+                                    {{ item["client_name"] }}
 
-                                    {% if item.client_company %}
-                                        · {{ item.client_company }}
+                                    {% if item["client_company"] %}
+                                        · {{ item["client_company"] }}
                                     {% endif %}
                                 </div>
 
@@ -280,7 +306,7 @@
                                 <strong>AI Recommendation:</strong>
 
                                 <ul class="ai-list">
-                                    {% for recommendation in item.ai_recommendation %}
+                                    {% for recommendation in item["ai_recommendation"] %}
                                         <li>{{ recommendation }}</li>
                                     {% endfor %}
                                 </ul>
@@ -292,13 +318,12 @@
 
                                 <div class="progress-info">
                                     <span>Progress</span>
-                                    <span>{{ item.completion }}%</span>
+                                    <span>{{ item["completion"] }}%</span>
                                 </div>
 
                                 <div class="progress-bar">
                                     <div
                                         class="progress-fill completed-fill"
-                                        style="width: {{ item.completion }}%;"
                                     ></div>
                                 </div>
 
@@ -309,12 +334,12 @@
 
                                 <div>
                                     <strong>Start:</strong>
-                                    {{ item.project[3] }}
+                                    {{ item["project"][3] }}
                                 </div>
 
                                 <div>
                                     <strong>End:</strong>
-                                    {{ item.project[4] }}
+                                    {{ item["project"][4] }}
                                 </div>
 
                             </div>
@@ -324,25 +349,31 @@
 
                                 <div class="budget-row">
                                     <span>Budget</span>
-                                    <strong>£{{ "{:,.0f}".format(item.estimated_budget) }}</strong>
+                                    <strong>£{{ "{:,.0f}".format(item["estimated_budget"]) }}</strong>
                                 </div>
 
                                 <div class="budget-row">
                                     <span>Actual Cost</span>
-                                    <strong>£{{ "{:,.0f}".format(item.actual_cost) }}</strong>
+                                    <strong>£{{ "{:,.0f}".format(item["actual_cost"]) }}</strong>
                                 </div>
 
                                 <div class="budget-row">
                                     <span>Remaining</span>
 
-                                    <strong class="{% if item.remaining_budget < 0 %}health-warning{% else %}health-good{% endif %}">
-                                        £{{ "{:,.0f}".format(item.remaining_budget) }}
-                                    </strong>
+                                    {% if item["remaining_budget"] < 0 %}
+                                        <strong class="health-warning">
+                                            £{{ "{:,.0f}".format(item["remaining_budget"]) }}
+                                        </strong>
+                                    {% else %}
+                                        <strong class="health-good">
+                                            £{{ "{:,.0f}".format(item["remaining_budget"]) }}
+                                        </strong>
+                                    {% endif %}
                                 </div>
 
                                 <div class="budget-row">
                                     <span>Budget Used</span>
-                                    <strong>{{ item.budget_used_percent }}%</strong>
+                                    <strong>{{ item["budget_used_percent"] }}%</strong>
                                 </div>
 
                             </div>
