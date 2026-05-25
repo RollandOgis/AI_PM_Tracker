@@ -97,6 +97,7 @@ ensure_column("tasks", "assigned_to", "TEXT")
 ensure_column("tasks", "attachment_url", "TEXT")
 ensure_column("users", "avatar_initials", "TEXT")
 
+
 def create_demo_user():
     conn = get_db_connection()
 
@@ -123,7 +124,6 @@ def create_demo_user():
 
 
 create_demo_user()
-
 
 def create_activity(message):
     conn = get_db_connection()
