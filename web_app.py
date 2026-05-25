@@ -101,14 +101,25 @@ ensure_column("users", "avatar_initials", "TEXT")
 def create_demo_user():
     conn = get_db_connection()
 
+    hashed_password = generate_password_hash("demo123")
+
     existing_user = conn.execute(
         "SELECT * FROM users WHERE username = ?",
         ("demo",)
     ).fetchone()
 
-    if not existing_user:
-        hashed_password = generate_password_hash("demo123")
-
+    if existing_user:
+        conn.execute("""
+        UPDATE users
+        SET password = ?,
+            avatar_initials = ?
+        WHERE username = ?
+        """, (
+            hashed_password,
+            "DE",
+            "demo"
+        ))
+    else:
         conn.execute("""
         INSERT INTO users (username, password, avatar_initials)
         VALUES (?, ?, ?)
@@ -118,8 +129,7 @@ def create_demo_user():
             "DE"
         ))
 
-        conn.commit()
-
+    conn.commit()
     conn.close()
 
 
