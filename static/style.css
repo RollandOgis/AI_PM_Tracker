@@ -1038,3 +1038,24 @@ body.dark-ready {
         flex-direction: column;
     }
 }
+
+.budget-section {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.budget-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.budget-row span {
+    color: #6b7280;
+}
+
+.budget-row strong {
+    color: #111827;
+}

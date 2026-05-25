@@ -190,11 +190,25 @@ def home():
     high_priority_tasks = 0
     medium_priority_tasks = 0
     low_priority_tasks = 0
-
     overdue_tasks = 0
+
+    total_budget = 0
+    total_actual_cost = 0
+    over_budget_projects = 0
+
     upcoming_deadlines = []
 
     for project in projects:
+
+        estimated_budget = float(
+            project["estimated_budget"] or 0
+        )
+
+        actual_cost = float(
+            project["actual_cost"] or 0
+        )
+
+        total_budget += estimated_budget
 
         tasks = conn.execute("""
         SELECT *
@@ -212,9 +226,23 @@ def home():
 
         task_list = []
 
+        task_cost_total = 0
+
         for task in tasks:
 
             total_tasks += 1
+
+            task_actual_hours = float(
+                task["actual_hours"] or 0
+            )
+
+            task_hourly_rate = float(
+                task["hourly_rate"] or 0
+            )
+
+            task_cost_total += (
+                task_actual_hours * task_hourly_rate
+            )
 
             if task["status"] == "Completed":
                 completed_tasks += 1
@@ -237,7 +265,10 @@ def home():
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
 
-            if is_overdue(task["due_date"], task["status"]):
+            if is_overdue(
+                task["due_date"],
+                task["status"]
+            ):
                 overdue_tasks += 1
 
             if (
@@ -245,6 +276,7 @@ def home():
                 and task["status"] != "Completed"
                 and task["due_date"] >= str(date.today())
             ):
+
                 upcoming_deadlines.append({
                     "title": task["title"],
                     "project_name": project["name"],
@@ -259,6 +291,31 @@ def home():
                 task["status"],
                 task["due_date"]
             ))
+
+        combined_actual_cost = (
+            actual_cost + task_cost_total
+        )
+
+        total_actual_cost += combined_actual_cost
+
+        remaining_budget = (
+            estimated_budget - combined_actual_cost
+        )
+
+        if (
+            estimated_budget > 0
+            and combined_actual_cost > estimated_budget
+        ):
+            over_budget_projects += 1
+
+        if estimated_budget > 0:
+
+            budget_used_percent = round(
+                (combined_actual_cost / estimated_budget) * 100
+            )
+
+        else:
+            budget_used_percent = 0
 
         if len(tasks) > 0:
 
@@ -283,7 +340,11 @@ def home():
                 project["end_date"]
             ),
             "tasks": task_list,
-            "completion": completion
+            "completion": completion,
+            "estimated_budget": estimated_budget,
+            "actual_cost": combined_actual_cost,
+            "remaining_budget": remaining_budget,
+            "budget_used_percent": budget_used_percent
         })
 
     conn.close()
@@ -294,61 +355,94 @@ def home():
     )[:5]
 
     if total_tasks > 0:
+
         completion_rate = round(
             (completed_tasks / total_tasks) * 100
         )
+
     else:
         completion_rate = 0
 
-    if overdue_tasks > 0 or blocked_tasks > 0:
+    total_remaining_budget = (
+        total_budget - total_actual_cost
+    )
+
+    if (
+        overdue_tasks > 0
+        or blocked_tasks > 0
+        or over_budget_projects > 0
+    ):
+
         project_health_score = max(
             0,
-            100 - (overdue_tasks * 15) - (blocked_tasks * 10)
+            100
+            - (overdue_tasks * 15)
+            - (blocked_tasks * 10)
+            - (over_budget_projects * 15)
         )
+
         project_health_label = "Needs Attention"
 
     elif completion_rate >= 70:
+
         project_health_score = 90
         project_health_label = "Healthy"
 
     elif total_tasks == 0:
+
         project_health_score = 0
         project_health_label = "No Data Yet"
 
     else:
+
         project_health_score = 65
         project_health_label = "Stable"
 
     smart_insights = []
 
     if overdue_tasks > 0:
+
         smart_insights.append(
             f"You have {overdue_tasks} overdue task(s). Review these first."
         )
 
     if blocked_tasks > 0:
+
         smart_insights.append(
             f"{blocked_tasks} task(s) are blocked. These may need escalation."
         )
 
+    if over_budget_projects > 0:
+
+        smart_insights.append(
+            f"{over_budget_projects} project(s) are over budget. Review costs."
+        )
+
     if high_priority_tasks > 0:
+
         smart_insights.append(
             f"{high_priority_tasks} high-priority task(s) need attention."
         )
 
     if upcoming_deadlines:
+
         smart_insights.append(
             f"{len(upcoming_deadlines)} upcoming deadline(s) are active."
         )
 
-    if total_tasks > 0 and completed_tasks == total_tasks:
+    if (
+        total_tasks > 0
+        and completed_tasks == total_tasks
+    ):
+
         smart_insights.append(
             "All tracked tasks are complete. Great progress."
         )
 
     if not smart_insights:
+
         smart_insights.append(
-            "Your workload currently looks balanced."
+            "Your workload and budget currently look balanced."
         )
 
     workload_summary = {
@@ -361,18 +455,21 @@ def home():
     notifications = []
 
     if overdue_tasks > 0:
+
         notifications.append(
             f"You have {overdue_tasks} overdue task(s)."
         )
 
     if blocked_tasks > 0:
+
         notifications.append(
             f"{blocked_tasks} task(s) are blocked."
         )
 
-    if high_priority_tasks > 0:
+    if over_budget_projects > 0:
+
         notifications.append(
-            f"You have {high_priority_tasks} high-priority task(s)."
+            f"{over_budget_projects} project(s) are over budget."
         )
 
     return render_template(
@@ -394,6 +491,10 @@ def home():
         smart_insights=smart_insights,
         upcoming_deadlines=upcoming_deadlines,
         workload_summary=workload_summary,
+        total_budget=total_budget,
+        total_actual_cost=total_actual_cost,
+        total_remaining_budget=total_remaining_budget,
+        over_budget_projects=over_budget_projects,
         chart_status_data=[
             completed_tasks,
             pending_tasks,
@@ -408,7 +509,6 @@ def home():
         notifications=notifications,
         current_date=str(date.today())
     )
-
 
 @app.route("/kanban")
 def kanban():

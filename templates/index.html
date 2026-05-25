@@ -35,11 +35,13 @@
         <div class="dashboard-header">
 
             <div>
+
                 <h1>AI Project Dashboard</h1>
 
                 <p class="dashboard-subtitle">
                     Welcome back, {{ session.username }}
                 </p>
+
             </div>
 
             <div class="dashboard-actions">
@@ -80,13 +82,39 @@
             </div>
 
             <div class="stat-card">
-                <h3>In Progress</h3>
-                <p>{{ in_progress_tasks }}</p>
+                <h3>Total Budget</h3>
+
+                <p>
+                    £{{ "{:,.0f}".format(total_budget) }}
+                </p>
             </div>
 
             <div class="stat-card">
-                <h3>Blocked</h3>
-                <p>{{ blocked_tasks }}</p>
+                <h3>Total Cost</h3>
+
+                <p>
+                    £{{ "{:,.0f}".format(total_actual_cost) }}
+                </p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Remaining Budget</h3>
+
+                <p>
+                    £{{ "{:,.0f}".format(total_remaining_budget) }}
+                </p>
+            </div>
+
+            <div class="stat-card">
+
+                <h3>Over Budget</h3>
+
+                <p
+                    class="{% if over_budget_projects > 0 %}health-warning{% else %}health-good{% endif %}"
+                >
+                    {{ over_budget_projects }}
+                </p>
+
             </div>
 
         </div>
@@ -129,7 +157,10 @@
                 <p>{{ workload_summary.active }}</p>
 
                 <small>
-                    {{ workload_summary.blocked }} blocked · {{ workload_summary.overdue }} overdue
+                    {{ workload_summary.blocked }}
+                    blocked ·
+                    {{ workload_summary.overdue }}
+                    overdue
                 </small>
 
             </div>
@@ -165,7 +196,9 @@
 
                             <div>
 
-                                <strong>{{ deadline.title }}</strong>
+                                <strong>
+                                    {{ deadline.title }}
+                                </strong>
 
                                 <p>
                                     {{ deadline.project_name }}
@@ -231,7 +264,9 @@
 
                                 <div>
 
-                                    <h3>{{ item.project[1] }}</h3>
+                                    <h3>
+                                        {{ item.project[1] }}
+                                    </h3>
 
                                     <span class="project-status">
                                         {{ item.project[2] }}
@@ -252,6 +287,7 @@
                                 </div>
 
                             </div>
+
 
                             <div class="progress-wrapper">
 
@@ -276,19 +312,87 @@
 
                             </div>
 
+
                             <div class="project-dates">
 
                                 <div>
+
                                     <strong>Start:</strong>
+
                                     {{ item.project[3] }}
+
                                 </div>
 
                                 <div>
+
                                     <strong>End:</strong>
+
                                     {{ item.project[4] }}
+
                                 </div>
 
                             </div>
+
+
+                            <div class="budget-section">
+
+                                <div class="budget-row">
+
+                                    <span>Budget</span>
+
+                                    <strong>
+                                        £{{ "{:,.0f}".format(item.estimated_budget) }}
+                                    </strong>
+
+                                </div>
+
+                                <div class="budget-row">
+
+                                    <span>Actual Cost</span>
+
+                                    <strong>
+                                        £{{ "{:,.0f}".format(item.actual_cost) }}
+                                    </strong>
+
+                                </div>
+
+                                <div class="budget-row">
+
+                                    <span>Remaining</span>
+
+                                    <strong
+                                        class="{% if item.remaining_budget < 0 %}health-warning{% else %}health-good{% endif %}"
+                                    >
+                                        £{{ "{:,.0f}".format(item.remaining_budget) }}
+                                    </strong>
+
+                                </div>
+
+                                <div class="progress-wrapper">
+
+                                    <div class="progress-info">
+
+                                        <span>Budget Usage</span>
+
+                                        <span>
+                                            {{ item.budget_used_percent }}%
+                                        </span>
+
+                                    </div>
+
+                                    <div class="progress-bar">
+
+                                        <div
+                                            class="progress-fill {% if item.budget_used_percent > 100 %}blocked-fill{% elif item.budget_used_percent > 70 %}pending-fill{% else %}completed-fill{% endif %}"
+                                            style="width: {{ item.budget_used_percent if item.budget_used_percent <= 100 else 100 }}%;"
+                                        ></div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
 
                             <div class="project-task-preview">
 
@@ -312,9 +416,13 @@
 
                                             <div class="task-preview-bottom">
 
-                                                <span>{{ task[2] }}</span>
+                                                <span>
+                                                    {{ task[2] }}
+                                                </span>
 
-                                                <span>{{ task[3] }}</span>
+                                                <span>
+                                                    {{ task[3] }}
+                                                </span>
 
                                             </div>
 
