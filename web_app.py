@@ -183,7 +183,6 @@ def is_overdue(due_date, status):
 
     return due_date < str(date.today()) and status != "Completed"
 
-
 @app.route("/")
 def home():
 
@@ -193,10 +192,23 @@ def home():
     conn = get_db_connection()
 
     projects = conn.execute("""
-    SELECT *
+    SELECT
+        projects.*,
+        clients.name AS client_name,
+        clients.company AS client_company
     FROM projects
+    LEFT JOIN clients
+    ON projects.client_id = clients.id
+    WHERE projects.user_id = ?
+    ORDER BY projects.id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    clients = conn.execute("""
+    SELECT *
+    FROM clients
     WHERE user_id = ?
-    ORDER BY id DESC
     """, (
         session["user_id"],
     )).fetchall()
@@ -218,7 +230,17 @@ def home():
     total_actual_cost = 0
     over_budget_projects = 0
 
+    total_clients = len(clients)
+    total_client_value = 0
+    active_clients = set()
+
     upcoming_deadlines = []
+
+    for client in clients:
+
+        total_client_value += float(
+            client["estimated_value"] or 0
+        )
 
     for project in projects:
 
@@ -231,6 +253,11 @@ def home():
         )
 
         total_budget += estimated_budget
+
+        if project["client_name"]:
+            active_clients.add(
+                project["client_name"]
+            )
 
         tasks = conn.execute("""
         SELECT *
@@ -248,7 +275,6 @@ def home():
         )).fetchall()
 
         task_list = []
-
         task_actual_cost_total = 0
 
         for task in tasks:
@@ -264,7 +290,8 @@ def home():
             )
 
             task_actual_cost_total += (
-                task_actual_hours * task_hourly_rate
+                task_actual_hours
+                * task_hourly_rate
             )
 
             if task["status"] == "Completed":
@@ -362,6 +389,102 @@ def home():
         else:
             completion = 0
 
+
+        # AI RISK SCORING
+
+        risk_score = 0
+
+        if completion < 30:
+            risk_score += 25
+
+        if budget_used_percent > 100:
+
+            risk_score += 30
+
+        elif budget_used_percent > 80:
+
+            risk_score += 15
+
+        project_overdue_tasks = len([
+            task for task in tasks
+            if is_overdue(
+                task["due_date"],
+                task["status"]
+            )
+        ])
+
+        risk_score += project_overdue_tasks * 10
+
+        project_blocked_tasks = len([
+            task for task in tasks
+            if task["status"] == "Blocked"
+        ])
+
+        risk_score += project_blocked_tasks * 15
+
+        project_high_priority = len([
+            task for task in tasks
+            if (
+                task["priority"] == "High"
+                and task["status"] != "Completed"
+            )
+        ])
+
+        risk_score += project_high_priority * 5
+
+
+        if risk_score >= 70:
+
+            risk_label = "Critical Risk"
+
+        elif risk_score >= 45:
+
+            risk_label = "High Risk"
+
+        elif risk_score >= 20:
+
+            risk_label = "Medium Risk"
+
+        else:
+
+            risk_label = "Low Risk"
+
+
+        # AI RECOMMENDATIONS
+
+        ai_recommendation = []
+
+        if project_overdue_tasks > 0:
+
+            ai_recommendation.append(
+                "Resolve overdue tasks immediately."
+            )
+
+        if project_blocked_tasks > 0:
+
+            ai_recommendation.append(
+                "Blocked tasks require escalation."
+            )
+
+        if budget_used_percent > 90:
+
+            ai_recommendation.append(
+                "Budget usage is critically high."
+            )
+
+        if completion < 30:
+
+            ai_recommendation.append(
+                "Project delivery pace is behind schedule."
+            )
+
+        if not ai_recommendation:
+
+            ai_recommendation.append(
+                "Project performance currently appears stable."
+            )
+
+
         all_projects.append({
             "project": (
                 project["id"],
@@ -375,7 +498,12 @@ def home():
             "estimated_budget": estimated_budget,
             "actual_cost": actual_cost,
             "remaining_budget": remaining_budget,
-            "budget_used_percent": budget_used_percent
+            "budget_used_percent": budget_used_percent,
+            "client_name": project["client_name"],
+            "client_company": project["client_company"],
+            "risk_score": risk_score,
+            "risk_label": risk_label,
+            "ai_recommendation": ai_recommendation
         })
 
     conn.close()
@@ -401,6 +529,43 @@ def home():
         total_budget
         - total_actual_cost
     )
+
+    if total_budget > 0:
+
+        budget_usage_percent = round(
+            (
+                total_actual_cost
+                / total_budget
+            ) * 100
+        )
+
+        profitability_score = round(
+            (
+                total_remaining_budget
+                / total_budget
+            ) * 100
+        )
+
+    else:
+
+        budget_usage_percent = 0
+        profitability_score = 0
+
+    if profitability_score >= 50:
+
+        financial_health_label = "Strong"
+
+    elif profitability_score >= 20:
+
+        financial_health_label = "Stable"
+
+    elif profitability_score >= 0:
+
+        financial_health_label = "At Risk"
+
+    else:
+
+        financial_health_label = "Over Budget"
 
     if (
         overdue_tasks > 0
@@ -438,19 +603,19 @@ def home():
     if overdue_tasks > 0:
 
         smart_insights.append(
-            f"You have {overdue_tasks} overdue task(s). Review these first."
+            f"You have {overdue_tasks} overdue task(s)."
         )
 
     if blocked_tasks > 0:
 
         smart_insights.append(
-            f"{blocked_tasks} task(s) are blocked. These may need escalation."
+            f"{blocked_tasks} task(s) are blocked."
         )
 
     if over_budget_projects > 0:
 
         smart_insights.append(
-            f"{over_budget_projects} project(s) are currently over budget."
+            f"{over_budget_projects} project(s) are over budget."
         )
 
     if high_priority_tasks > 0:
@@ -464,93 +629,6 @@ def home():
         smart_insights.append(
             f"{len(upcoming_deadlines)} upcoming deadline(s) are active."
         )
-
-    if total_budget > 0:
-
-        budget_usage_percent = round(
-            (
-                total_actual_cost
-                / total_budget
-            ) * 100
-        )
-
-    else:
-        budget_usage_percent = 0
-
-    if budget_usage_percent >= 90:
-
-        smart_insights.append(
-            "Budget usage is critically high across projects."
-        )
-
-    elif budget_usage_percent >= 70:
-
-        smart_insights.append(
-            "Project burn rate is increasing. Monitor costs closely."
-        )
-
-    else:
-
-        smart_insights.append(
-            "Budget usage currently appears healthy."
-        )
-
-    if total_remaining_budget < 0:
-
-        smart_insights.append(
-            "Overall portfolio spending has exceeded available budget."
-        )
-
-    elif total_remaining_budget < (
-        total_budget * 0.2
-    ):
-
-        smart_insights.append(
-            "Remaining portfolio budget is becoming limited."
-        )
-
-    if (
-        total_tasks > 0
-        and completed_tasks == total_tasks
-    ):
-
-        smart_insights.append(
-            "All tracked tasks are complete. Great progress."
-        )
-
-    if not smart_insights:
-
-        smart_insights.append(
-            "Workload, delivery pace and financial health look balanced."
-        )
-
-    if total_budget > 0:
-
-        profitability_score = round(
-            (
-                total_remaining_budget
-                / total_budget
-            ) * 100
-        )
-
-    else:
-        profitability_score = 0
-
-    if profitability_score >= 50:
-
-        financial_health_label = "Strong"
-
-    elif profitability_score >= 20:
-
-        financial_health_label = "Stable"
-
-    elif profitability_score >= 0:
-
-        financial_health_label = "At Risk"
-
-    else:
-
-        financial_health_label = "Over Budget"
 
     workload_summary = {
         "active": (
@@ -608,6 +686,9 @@ def home():
         budget_usage_percent=budget_usage_percent,
         profitability_score=profitability_score,
         financial_health_label=financial_health_label,
+        total_clients=total_clients,
+        total_client_value=total_client_value,
+        active_clients_count=len(active_clients),
         chart_status_data=[
             completed_tasks,
             pending_tasks,

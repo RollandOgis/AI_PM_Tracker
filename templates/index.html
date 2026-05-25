@@ -36,25 +36,16 @@
         <div class="dashboard-header">
 
             <div>
-
                 <h1>AI Project Dashboard</h1>
 
                 <p class="dashboard-subtitle">
                     Welcome back, {{ session.username }}
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
-                <a href="/add-project" class="btn-primary">
-                    + New Project
-                </a>
-
-                <a href="/add-task" class="btn-secondary">
-                    + New Task
-                </a>
-
+                <a href="/add-project" class="btn-primary">+ New Project</a>
+                <a href="/add-task" class="btn-secondary">+ New Task</a>
             </div>
 
         </div>
@@ -84,38 +75,32 @@
 
             <div class="stat-card">
                 <h3>Total Budget</h3>
-
-                <p>
-                    £{{ "{:,.0f}".format(total_budget) }}
-                </p>
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
             </div>
 
             <div class="stat-card">
                 <h3>Total Cost</h3>
-
-                <p>
-                    £{{ "{:,.0f}".format(total_actual_cost) }}
-                </p>
+                <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
             </div>
 
             <div class="stat-card">
                 <h3>Remaining Budget</h3>
-
-                <p>
-                    £{{ "{:,.0f}".format(total_remaining_budget) }}
-                </p>
+                <p>£{{ "{:,.0f}".format(total_remaining_budget) }}</p>
             </div>
 
             <div class="stat-card">
+                <h3>Total Clients</h3>
+                <p>{{ total_clients }}</p>
+            </div>
 
-                <h3>Over Budget</h3>
+            <div class="stat-card">
+                <h3>Active Clients</h3>
+                <p>{{ active_clients_count }}</p>
+            </div>
 
-                <p
-                    class="{% if over_budget_projects > 0 %}health-warning{% else %}health-good{% endif %}"
-                >
-                    {{ over_budget_projects }}
-                </p>
-
+            <div class="stat-card">
+                <h3>Client Portfolio</h3>
+                <p>£{{ "{:,.0f}".format(total_client_value) }}</p>
             </div>
 
         </div>
@@ -127,42 +112,33 @@
 
                 <h3>Project Health Score</h3>
 
-                <p
-                    class="{% if project_health_score >= 80 %}health-good{% elif project_health_score >= 50 %}health-neutral{% else %}health-warning{% endif %}"
-                >
+                <p class="{% if project_health_score >= 80 %}health-good{% elif project_health_score >= 50 %}health-neutral{% else %}health-warning{% endif %}">
                     {{ project_health_score }}%
                 </p>
 
-                <small>
-                    {{ project_health_label }}
-                </small>
+                <small>{{ project_health_label }}</small>
 
             </div>
 
             <div class="summary-card">
 
-                <h3>Completion Rate</h3>
+                <h3>Financial Health</h3>
 
-                <p>{{ completion_rate }}%</p>
+                <p class="{% if profitability_score >= 50 %}health-good{% elif profitability_score >= 0 %}health-neutral{% else %}health-warning{% endif %}">
+                    {{ profitability_score }}%
+                </p>
 
-                <small>
-                    {{ completed_tasks }} of {{ total_tasks }} tasks completed
-                </small>
+                <small>{{ financial_health_label }}</small>
 
             </div>
 
             <div class="summary-card">
 
-                <h3>Active Workload</h3>
+                <h3>Budget Usage</h3>
 
-                <p>{{ workload_summary.active }}</p>
+                <p>{{ budget_usage_percent }}%</p>
 
-                <small>
-                    {{ workload_summary.blocked }}
-                    blocked ·
-                    {{ workload_summary.overdue }}
-                    overdue
-                </small>
+                <small>Portfolio burn rate</small>
 
             </div>
 
@@ -176,11 +152,9 @@
                 <h3>Smart Insights</h3>
 
                 {% for insight in smart_insights %}
-
                     <div class="smart-insight">
                         {{ insight }}
                     </div>
-
                 {% endfor %}
 
             </div>
@@ -196,22 +170,14 @@
                         <div class="deadline-item">
 
                             <div>
-
-                                <strong>
-                                    {{ deadline.title }}
-                                </strong>
+                                <strong>{{ deadline.title }}</strong>
 
                                 <p>
-                                    {{ deadline.project_name }}
-                                    ·
-                                    {{ deadline.status }}
+                                    {{ deadline.project_name }} · {{ deadline.status }}
                                 </p>
-
                             </div>
 
-                            <span>
-                                {{ deadline.due_date }}
-                            </span>
+                            <span>{{ deadline.due_date }}</span>
 
                         </div>
 
@@ -227,103 +193,22 @@
 
             </div>
 
-            <div class="smart-card">
-
-                <h3>Financial Health</h3>
-
-                <div class="smart-insight">
-                    Status: {{ financial_health_label }}
-                </div>
-
-                <div class="smart-insight">
-                    Budget Used: {{ budget_usage_percent }}%
-                </div>
-
-                <div class="smart-insight">
-                    Profitability Score: {{ profitability_score }}%
-                </div>
-
-            </div>
-
-            <div class="smart-card">
-
-                <h3>Budget Summary</h3>
-
-                <div class="budget-row">
-
-                    <span>Total Budget</span>
-
-                    <strong>
-                        £{{ "{:,.0f}".format(total_budget) }}
-                    </strong>
-
-                </div>
-
-                <div class="budget-row">
-
-                    <span>Total Cost</span>
-
-                    <strong>
-                        £{{ "{:,.0f}".format(total_actual_cost) }}
-                    </strong>
-
-                </div>
-
-                <div class="budget-row">
-
-                    <span>Remaining</span>
-
-                    <strong
-                        class="{% if total_remaining_budget < 0 %}health-warning{% else %}health-good{% endif %}"
-                    >
-                        £{{ "{:,.0f}".format(total_remaining_budget) }}
-                    </strong>
-
-                </div>
-
-                <div class="progress-wrapper">
-
-                    <div class="progress-info">
-
-                        <span>Portfolio Budget Usage</span>
-
-                        <span>
-                            {{ budget_usage_percent }}%
-                        </span>
-
-                    </div>
-
-                    <div class="progress-bar">
-
-                        <div
-                            class="progress-fill {% if budget_usage_percent > 100 %}blocked-fill{% elif budget_usage_percent > 70 %}pending-fill{% else %}completed-fill{% endif %}"
-                            style="width: {{ budget_usage_percent if budget_usage_percent <= 100 else 100 }}%;"
-                        ></div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
         </div>
 
 
         {% if notifications %}
 
-        <div class="notifications-section">
+            <div class="notifications-section">
 
-            <h2>Notifications</h2>
+                <h2>Notifications</h2>
 
-            {% for notification in notifications %}
+                {% for notification in notifications %}
+                    <div class="notification-card">
+                        {{ notification }}
+                    </div>
+                {% endfor %}
 
-                <div class="notification-card">
-                    {{ notification }}
-                </div>
-
-            {% endfor %}
-
-        </div>
+            </div>
 
         {% endif %}
 
@@ -343,28 +228,55 @@
                             <div class="project-top">
 
                                 <div>
-
-                                    <h3>
-                                        {{ item.project[1] }}
-                                    </h3>
+                                    <h3>{{ item.project[1] }}</h3>
 
                                     <span class="project-status">
                                         {{ item.project[2] }}
                                     </span>
-
                                 </div>
 
                                 <div class="project-actions">
-
-                                    <a href="/project/{{ item.project[0] }}">
-                                        View
-                                    </a>
-
-                                    <a href="/edit-project/{{ item.project[0] }}">
-                                        Edit
-                                    </a>
-
+                                    <a href="/project/{{ item.project[0] }}">View</a>
+                                    <a href="/edit-project/{{ item.project[0] }}">Edit</a>
                                 </div>
+
+                            </div>
+
+
+                            <div class="smart-insight">
+
+                                <strong>AI Risk:</strong>
+
+                                <span class="{% if item.risk_score >= 70 %}health-warning{% elif item.risk_score >= 45 %}health-neutral{% else %}health-good{% endif %}">
+                                    {{ item.risk_label }} ({{ item.risk_score }}%)
+                                </span>
+
+                            </div>
+
+
+                            {% if item.client_name %}
+
+                                <div class="smart-insight">
+                                    <strong>Client:</strong>
+                                    {{ item.client_name }}
+
+                                    {% if item.client_company %}
+                                        · {{ item.client_company }}
+                                    {% endif %}
+                                </div>
+
+                            {% endif %}
+
+
+                            <div class="smart-insight">
+
+                                <strong>AI Recommendation:</strong>
+
+                                <ul class="ai-list">
+                                    {% for recommendation in item.ai_recommendation %}
+                                        <li>{{ recommendation }}</li>
+                                    {% endfor %}
+                                </ul>
 
                             </div>
 
@@ -372,22 +284,15 @@
                             <div class="progress-wrapper">
 
                                 <div class="progress-info">
-
                                     <span>Progress</span>
-
-                                    <span>
-                                        {{ item.completion }}%
-                                    </span>
-
+                                    <span>{{ item.completion }}%</span>
                                 </div>
 
                                 <div class="progress-bar">
-
                                     <div
                                         class="progress-fill completed-fill"
                                         style="width: {{ item.completion }}%;"
                                     ></div>
-
                                 </div>
 
                             </div>
@@ -396,19 +301,13 @@
                             <div class="project-dates">
 
                                 <div>
-
                                     <strong>Start:</strong>
-
                                     {{ item.project[3] }}
-
                                 </div>
 
                                 <div>
-
                                     <strong>End:</strong>
-
                                     {{ item.project[4] }}
-
                                 </div>
 
                             </div>
@@ -417,106 +316,27 @@
                             <div class="budget-section">
 
                                 <div class="budget-row">
-
                                     <span>Budget</span>
-
-                                    <strong>
-                                        £{{ "{:,.0f}".format(item.estimated_budget) }}
-                                    </strong>
-
+                                    <strong>£{{ "{:,.0f}".format(item.estimated_budget) }}</strong>
                                 </div>
 
                                 <div class="budget-row">
-
                                     <span>Actual Cost</span>
-
-                                    <strong>
-                                        £{{ "{:,.0f}".format(item.actual_cost) }}
-                                    </strong>
-
+                                    <strong>£{{ "{:,.0f}".format(item.actual_cost) }}</strong>
                                 </div>
 
                                 <div class="budget-row">
-
                                     <span>Remaining</span>
 
-                                    <strong
-                                        class="{% if item.remaining_budget < 0 %}health-warning{% else %}health-good{% endif %}"
-                                    >
+                                    <strong class="{% if item.remaining_budget < 0 %}health-warning{% else %}health-good{% endif %}">
                                         £{{ "{:,.0f}".format(item.remaining_budget) }}
                                     </strong>
-
                                 </div>
 
-                                <div class="progress-wrapper">
-
-                                    <div class="progress-info">
-
-                                        <span>Budget Usage</span>
-
-                                        <span>
-                                            {{ item.budget_used_percent }}%
-                                        </span>
-
-                                    </div>
-
-                                    <div class="progress-bar">
-
-                                        <div
-                                            class="progress-fill {% if item.budget_used_percent > 100 %}blocked-fill{% elif item.budget_used_percent > 70 %}pending-fill{% else %}completed-fill{% endif %}"
-                                            style="width: {{ item.budget_used_percent if item.budget_used_percent <= 100 else 100 }}%;"
-                                        ></div>
-
-                                    </div>
-
+                                <div class="budget-row">
+                                    <span>Budget Used</span>
+                                    <strong>{{ item.budget_used_percent }}%</strong>
                                 </div>
-
-                            </div>
-
-
-                            <div class="project-task-preview">
-
-                                {% if item.tasks %}
-
-                                    {% for task in item.tasks[:3] %}
-
-                                        <div class="task-preview-card">
-
-                                            <div class="task-preview-top">
-
-                                                <span class="task-title">
-                                                    {{ task[0] }}
-                                                </span>
-
-                                                <span class="priority-badge priority-{{ task[1]|lower }}">
-                                                    {{ task[1] }}
-                                                </span>
-
-                                            </div>
-
-                                            <div class="task-preview-bottom">
-
-                                                <span>
-                                                    {{ task[2] }}
-                                                </span>
-
-                                                <span>
-                                                    {{ task[3] }}
-                                                </span>
-
-                                            </div>
-
-                                        </div>
-
-                                    {% endfor %}
-
-                                {% else %}
-
-                                    <div class="empty-box">
-                                        No tasks added yet
-                                    </div>
-
-                                {% endif %}
 
                             </div>
 
@@ -532,9 +352,7 @@
 
                     <h3>No Projects Yet</h3>
 
-                    <p>
-                        Create your first project to begin managing tasks.
-                    </p>
+                    <p>Create your first project to begin managing tasks.</p>
 
                     <a href="/add-project" class="btn-primary">
                         Create Project

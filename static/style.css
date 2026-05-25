@@ -1059,3 +1059,12 @@ body.dark-ready {
 .budget-row strong {
     color: #111827;
 }
+
+.ai-list {
+    margin-top: 8px;
+    padding-left: 18px;
+}
+
+.ai-list li {
+    margin-bottom: 6px;
+}
