@@ -90,6 +90,12 @@ def init_db():
     conn.commit()
     conn.close()
 
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # other tables...
+
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clients (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,6 +109,9 @@ def init_db():
         user_id INTEGER
     )
     """)
+
+    conn.commit()
+    conn.close()
 
 
 init_db()
