@@ -96,6 +96,11 @@ init_db()
 ensure_column("tasks", "assigned_to", "TEXT")
 ensure_column("tasks", "attachment_url", "TEXT")
 ensure_column("users", "avatar_initials", "TEXT")
+ensure_column("projects", "estimated_budget", "REAL DEFAULT 0")
+ensure_column("projects", "actual_cost", "REAL DEFAULT 0")
+ensure_column("tasks", "estimated_hours", "REAL DEFAULT 0")
+ensure_column("tasks", "actual_hours", "REAL DEFAULT 0")
+ensure_column("tasks", "hourly_rate", "REAL DEFAULT 0")
 
 
 def create_demo_user():
