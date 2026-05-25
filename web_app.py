@@ -35,29 +35,37 @@ def ensure_column(table, column, column_type):
 
 
 def init_db():
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # USERS TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        username TEXT UNIQUE,
+        password TEXT,
+        avatar_initials TEXT
     )
     """)
 
+    # PROJECTS TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT,
         description TEXT,
         status TEXT,
         start_date TEXT,
         end_date TEXT,
+        estimated_budget REAL DEFAULT 0,
+        actual_cost REAL DEFAULT 0,
+        client_id INTEGER,
         user_id INTEGER
     )
     """)
 
+    # TASKS TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,37 +73,25 @@ def init_db():
         title TEXT,
         priority TEXT,
         status TEXT,
-        due_date TEXT
+        due_date TEXT,
+        assigned_to TEXT,
+        attachment_url TEXT,
+        estimated_hours REAL DEFAULT 0,
+        actual_hours REAL DEFAULT 0,
+        hourly_rate REAL DEFAULT 0
     )
     """)
 
+    # ACTIVITY LOGS TABLE
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS activities (
+    CREATE TABLE IF NOT EXISTS activity_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        message TEXT,
+        activity TEXT,
         created_at TEXT
     )
     """)
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER,
-        username TEXT,
-        comment TEXT,
-        created_at TEXT
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # other tables...
-
+    # CLIENTS TABLE
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clients (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,6 +108,7 @@ def init_db():
 
     conn.commit()
     conn.close()
+
 
 init_db()
 
