@@ -1234,51 +1234,6 @@ def sprint_planner():
     )
 
 
-@app.route("/advanced-search")
-def advanced_search():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    status = request.args.get("status", "")
-    priority = request.args.get("priority", "")
-
-    conn = get_db_connection()
-
-    query = """
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """
-
-    params = [session["user_id"]]
-
-    if status:
-        query += " AND tasks.status = ?"
-        params.append(status)
-
-    if priority:
-        query += " AND tasks.priority = ?"
-        params.append(priority)
-
-    query += " ORDER BY tasks.due_date ASC"
-
-    tasks = conn.execute(
-        query,
-        params
-    ).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "advanced_search.html",
-        tasks=tasks,
-        selected_status=status,
-        selected_priority=priority
-    )
-
-
 @app.route("/project/<int:project_id>")
 def project_detail(project_id):
     if "user_id" not in session:
