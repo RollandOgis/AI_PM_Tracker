@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanban Board</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -22,8 +24,9 @@
         <a href="/insights">Insights</a>
         <a href="/report">Reports</a>
         <a href="/activity">Activity</a>
-        <a href="/sprint-planner">Sprint Planner</a>
         <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
         <a href="/profile">Profile</a>
         <a href="/logout">Logout</a>
 
@@ -35,114 +38,145 @@
 
             <div>
                 <h1>Kanban Board</h1>
+
                 <p class="dashboard-subtitle">
-                    Drag tasks across columns to update their status.
+                    Drag tasks between columns to update delivery status.
                 </p>
             </div>
 
             <div class="dashboard-actions">
-                <a href="/add-task" class="btn-primary">
-                    + New Task
-                </a>
+                <a href="/add-task" class="btn-primary">+ Add Task</a>
             </div>
 
         </div>
 
+        <div id="kanban-message" class="kanban-message"></div>
+
         <div class="kanban-board">
 
-            {% for status in ["Pending", "In Progress", "Completed", "Blocked"] %}
+            {% set statuses = ["Pending", "In Progress", "Completed", "Blocked"] %}
+
+            {% for status in statuses %}
 
                 <div
                     class="kanban-column"
-                    ondrop="dropTask(event, '{{ status }}')"
+                    data-status="{{ status }}"
                     ondragover="allowDrop(event)"
                     ondragenter="dragEnter(event)"
                     ondragleave="dragLeave(event)"
+                    ondrop="dropTask(event)"
                 >
 
                     <div class="kanban-column-header">
+
                         <h3>{{ status }}</h3>
 
+                        {% set count = namespace(value=0) %}
+
+                        {% for task in tasks %}
+                            {% if task["status"] == status %}
+                                {% set count.value = count.value + 1 %}
+                            {% endif %}
+                        {% endfor %}
+
                         <span class="kanban-count">
-                            {% set count = namespace(value=0) %}
-                            {% for task in tasks %}
-                                {% if task["status"] == status %}
-                                    {% set count.value = count.value + 1 %}
-                                {% endif %}
-                            {% endfor %}
                             {{ count.value }}
                         </span>
+
                     </div>
 
-                    {% for task in tasks %}
+                    <div class="kanban-drop-zone">
 
-                        {% if task["status"] == status %}
+                        {% for task in tasks %}
 
-                            <div
-                                class="kanban-task-card"
-                                draggable="true"
-                                ondragstart="dragTask(event)"
-                                data-task-id="{{ task['id'] }}"
-                            >
+                            {% if task["status"] == status %}
 
-                                <div class="kanban-task-top">
+                                <div
+                                    class="kanban-task-card"
+                                    draggable="true"
+                                    data-task-id="{{ task['id'] }}"
+                                    ondragstart="dragTask(event)"
+                                    ondragend="dragEnd(event)"
+                                >
 
-                                    <h4>{{ task["title"] }}</h4>
+                                    <div class="kanban-task-top">
 
-                                    <span class="priority-badge priority-{{ task['priority'] | lower }}">
-                                        {{ task["priority"] }}
-                                    </span>
+                                        <h4>
+                                            {{ task["title"] }}
+                                        </h4>
 
-                                </div>
+                                        {% if task["priority"] == "High" %}
+                                            <span class="badge badge-red">High</span>
+                                        {% elif task["priority"] == "Medium" %}
+                                            <span class="badge badge-yellow">Medium</span>
+                                        {% else %}
+                                            <span class="badge badge-green">Low</span>
+                                        {% endif %}
 
-                                <p>
-                                    <strong>Project:</strong>
-                                    {{ task["project_name"] }}
-                                </p>
-
-                                <p>
-                                    <strong>Due:</strong>
-                                    {{ task["due_date"] or "No date" }}
-                                </p>
-
-                                <p>
-                                    <strong>Assigned:</strong>
-                                    {{ task["assigned_to"] or "Unassigned" }}
-                                </p>
-
-                                {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
-
-                                    <div class="overdue-badge">
-                                        Overdue
                                     </div>
 
-                                {% endif %}
+                                    <div class="budget-section">
 
-                                {% if task["attachment_url"] %}
+                                        <div class="budget-row">
+                                            <span>Project</span>
+                                            <strong>
+                                                {{ task["project_name"] }}
+                                            </strong>
+                                        </div>
 
-                                    <a
-                                        href="{{ task['attachment_url'] }}"
-                                        target="_blank"
-                                        class="attachment-link"
-                                    >
-                                        Attachment
-                                    </a>
+                                        <div class="budget-row">
+                                            <span>Due</span>
+                                            <strong>
+                                                {{ task["due_date"] or "No date" }}
+                                            </strong>
+                                        </div>
 
-                                {% endif %}
+                                        {% if task["assigned_to"] %}
 
-                                <div class="kanban-card-actions">
+                                            <div class="budget-row">
+                                                <span>Assigned</span>
+                                                <strong>
+                                                    {{ task["assigned_to"] }}
+                                                </strong>
+                                            </div>
 
-                                    <a href="/edit-task/{{ task['id'] }}" class="edit-btn">
-                                        Edit
-                                    </a>
+                                        {% endif %}
+
+                                    </div>
+
+                                    {% if task["status"] != "Completed" %}
+
+                                        {% if task["due_date"] and task["due_date"] < current_date %}
+
+                                            <div class="alert-box alert-danger">
+                                                ⚠ Overdue
+                                            </div>
+
+                                        {% elif task["due_date"] %}
+
+                                            <div class="alert-box alert-warning">
+                                                ⏳ Due Soon
+                                            </div>
+
+                                        {% endif %}
+
+                                    {% endif %}
+
+                                    <div class="kanban-card-footer">
+
+                                        <a href="/edit-task/{{ task['id'] }}">
+                                            Edit
+                                        </a>
+
+                                    </div>
 
                                 </div>
 
-                            </div>
+                            {% endif %}
 
-                        {% endif %}
+                        {% endfor %}
 
-                    {% endfor %}
+                    </div>
 
                 </div>
 
@@ -155,16 +189,40 @@
 </div>
 
 <script>
+    let draggedTaskId = null;
+
+    function showKanbanMessage(message, type) {
+        const box = document.getElementById("kanban-message");
+
+        box.textContent = message;
+        box.className = "kanban-message show " + type;
+
+        setTimeout(function () {
+            box.className = "kanban-message";
+            box.textContent = "";
+        }, 2500);
+    }
+
     function allowDrop(event) {
         event.preventDefault();
     }
 
     function dragTask(event) {
-        event.dataTransfer.setData("task_id", event.target.dataset.taskId);
-        event.target.classList.add("dragging");
+        draggedTaskId = event.currentTarget.dataset.taskId;
+        event.currentTarget.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+    }
+
+    function dragEnd(event) {
+        event.currentTarget.classList.remove("dragging");
+
+        document.querySelectorAll(".kanban-column").forEach(function (column) {
+            column.classList.remove("drag-over");
+        });
     }
 
     function dragEnter(event) {
+        event.preventDefault();
         event.currentTarget.classList.add("drag-over");
     }
 
@@ -172,12 +230,18 @@
         event.currentTarget.classList.remove("drag-over");
     }
 
-    function dropTask(event, newStatus) {
+    function dropTask(event) {
         event.preventDefault();
 
-        const taskId = event.dataTransfer.getData("task_id");
+        const column = event.currentTarget;
+        const newStatus = column.dataset.status;
 
-        event.currentTarget.classList.remove("drag-over");
+        column.classList.remove("drag-over");
+
+        if (!draggedTaskId || !newStatus) {
+            showKanbanMessage("Could not identify the task or status.", "error");
+            return;
+        }
 
         fetch("/update-task-status", {
             method: "POST",
@@ -185,17 +249,26 @@
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                task_id: taskId,
+                task_id: draggedTaskId,
                 status: newStatus
             })
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(function (response) {
+            return response.json();
+        })
+        .then(function (data) {
             if (data.success) {
-                window.location.reload();
+                showKanbanMessage("Task status updated successfully.", "success");
+
+                setTimeout(function () {
+                    window.location.reload();
+                }, 700);
             } else {
-                alert("Could not update task status.");
+                showKanbanMessage("Could not update task status.", "error");
             }
+        })
+        .catch(function () {
+            showKanbanMessage("Network error while updating task.", "error");
         });
     }
 </script>
