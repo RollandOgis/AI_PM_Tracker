@@ -1,270 +1,271 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Project Dashboard</title>
 
-{% block content %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 
-<div class="dashboard-header">
-    <div>
-        <h1>AI Project Dashboard</h1>
-        <p class="dashboard-subtitle">
-            Welcome back, {{ session.username }}
-        </p>
-    </div>
+<body>
 
-    <div class="dashboard-actions">
-        <a href="/add-project" class="btn-primary">
-            + New Project
-        </a>
+<div class="layout">
 
-        <a href="/add-task" class="btn-secondary">
-            + New Task
-        </a>
-    </div>
-</div>
+    <div class="sidebar">
 
+        <h2>AI PM</h2>
 
-<div class="stats-grid">
-
-    <div class="stat-card">
-        <h3>Total Projects</h3>
-        <p>{{ total_projects }}</p>
-    </div>
-
-    <div class="stat-card">
-        <h3>Total Tasks</h3>
-        <p>{{ total_tasks }}</p>
-    </div>
-
-    <div class="stat-card">
-        <h3>Completed</h3>
-        <p>{{ completed_tasks }}</p>
-    </div>
-
-    <div class="stat-card">
-        <h3>In Progress</h3>
-        <p>{{ in_progress_tasks }}</p>
-    </div>
-
-    <div class="stat-card">
-        <h3>Pending</h3>
-        <p>{{ pending_tasks }}</p>
-    </div>
-
-    <div class="stat-card">
-        <h3>Blocked</h3>
-        <p>{{ blocked_tasks }}</p>
-    </div>
-
-</div>
-
-
-<div class="dashboard-summary">
-
-    <div class="summary-card">
-
-        <h3>Project Health</h3>
-
-        {% if overdue_tasks > 0 or blocked_tasks > 0 %}
-            <p class="health-warning">Needs Attention</p>
-
-        {% elif total_tasks == 0 %}
-            <p class="health-neutral">No Tasks Yet</p>
-
-        {% else %}
-            <p class="health-good">Healthy</p>
-        {% endif %}
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/sprint-planner">Sprint Planner</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
 
     </div>
 
-    <div class="summary-card">
+    <div class="main-content">
 
-        <h3>Completion Rate</h3>
+        <div class="dashboard-header">
 
-        {% if total_tasks > 0 %}
-            <p>
-                {{ ((completed_tasks / total_tasks) * 100) | round }}%
-            </p>
-        {% else %}
-            <p>0%</p>
-        {% endif %}
+            <div>
+                <h1>AI Project Dashboard</h1>
 
-    </div>
+                <p class="dashboard-subtitle">
+                    Welcome back, {{ session.username }}
+                </p>
+            </div>
 
-    <div class="summary-card">
+            <div class="dashboard-actions">
 
-        <h3>Focus Area</h3>
+                <a href="/add-project" class="btn-primary">
+                    + New Project
+                </a>
 
-        {% if overdue_tasks > 0 %}
-            <p>Overdue Tasks</p>
-
-        {% elif high_priority_tasks > 0 %}
-            <p>High Priority</p>
-
-        {% elif blocked_tasks > 0 %}
-            <p>Blocked Tasks</p>
-
-        {% else %}
-            <p>Keep Progressing</p>
-        {% endif %}
-
-    </div>
-
-</div>
-
-
-{% if notifications %}
-
-<div class="notifications-section">
-
-    <h2>Notifications</h2>
-
-    {% for notification in notifications %}
-
-    <div class="notification-card">
-        {{ notification }}
-    </div>
-
-    {% endfor %}
-
-</div>
-
-{% endif %}
-
-
-<div class="projects-section">
-
-    <div class="section-header">
-        <h2>Your Projects</h2>
-    </div>
-
-    {% if projects %}
-
-    <div class="projects-grid">
-
-        {% for item in projects %}
-
-        <div class="project-card">
-
-            <div class="project-top">
-
-                <div>
-                    <h3>{{ item.project[1] }}</h3>
-
-                    <span class="project-status">
-                        {{ item.project[2] }}
-                    </span>
-                </div>
-
-                <div class="project-actions">
-
-                    <a href="/project/{{ item.project[0] }}">
-                        View
-                    </a>
-
-                    <a href="/edit-project/{{ item.project[0] }}">
-                        Edit
-                    </a>
-
-                </div>
+                <a href="/add-task" class="btn-secondary">
+                    + New Task
+                </a>
 
             </div>
 
-            <div class="progress-wrapper">
+        </div>
 
-                <div class="progress-info">
-                    <span>Progress</span>
-                    <span>{{ item.completion }}%</span>
-                </div>
 
-                <div class="progress-bar">
+        <div class="stats-grid">
 
-                    <div
-                        class="progress-fill completed-fill"
-                        style="width: {{ item.completion }}%;"
-                    ></div>
-
-                </div>
-
+            <div class="stat-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects }}</p>
             </div>
 
-            <div class="project-dates">
-
-                <div>
-                    <strong>Start:</strong>
-                    {{ item.project[3] }}
-                </div>
-
-                <div>
-                    <strong>End:</strong>
-                    {{ item.project[4] }}
-                </div>
-
+            <div class="stat-card">
+                <h3>Total Tasks</h3>
+                <p>{{ total_tasks }}</p>
             </div>
 
-            <div class="project-task-preview">
+            <div class="stat-card">
+                <h3>Completed</h3>
+                <p>{{ completed_tasks }}</p>
+            </div>
 
-                {% if item.tasks %}
+            <div class="stat-card">
+                <h3>Pending</h3>
+                <p>{{ pending_tasks }}</p>
+            </div>
 
-                    {% for task in item.tasks[:3] %}
+            <div class="stat-card">
+                <h3>In Progress</h3>
+                <p>{{ in_progress_tasks }}</p>
+            </div>
 
-                    <div class="task-preview-card">
+            <div class="stat-card">
+                <h3>Blocked</h3>
+                <p>{{ blocked_tasks }}</p>
+            </div>
 
-                        <div class="task-preview-top">
+        </div>
 
-                            <span class="task-title">
-                                {{ task[0] }}
-                            </span>
 
-                            <span class="priority-badge">
-                                {{ task[1] }}
-                            </span>
+        <div class="dashboard-summary">
 
-                        </div>
+            <div class="summary-card">
 
-                        <div class="task-preview-bottom">
+                <h3>Project Health</h3>
 
-                            <span>{{ task[2] }}</span>
+                {% if overdue_tasks > 0 or blocked_tasks > 0 %}
+                    <p class="health-warning">Needs Attention</p>
 
-                            <span>{{ task[3] }}</span>
-
-                        </div>
-
-                    </div>
-
-                    {% endfor %}
+                {% elif total_tasks == 0 %}
+                    <p class="health-neutral">No Tasks Yet</p>
 
                 {% else %}
+                    <p class="health-good">Healthy</p>
+                {% endif %}
 
-                    <div class="empty-box">
-                        No tasks added yet
-                    </div>
+            </div>
 
+            <div class="summary-card">
+
+                <h3>Completion Rate</h3>
+
+                {% if total_tasks > 0 %}
+                    <p>
+                        {{ ((completed_tasks / total_tasks) * 100) | round }}%
+                    </p>
+                {% else %}
+                    <p>0%</p>
+                {% endif %}
+
+            </div>
+
+            <div class="summary-card">
+
+                <h3>Focus Area</h3>
+
+                {% if overdue_tasks > 0 %}
+                    <p>Overdue Tasks</p>
+
+                {% elif high_priority_tasks > 0 %}
+                    <p>High Priority</p>
+
+                {% elif blocked_tasks > 0 %}
+                    <p>Blocked Tasks</p>
+
+                {% else %}
+                    <p>Keep Progressing</p>
                 {% endif %}
 
             </div>
 
         </div>
 
-        {% endfor %}
+
+        {% if notifications %}
+
+        <div class="notifications-section">
+
+            <h2>Notifications</h2>
+
+            {% for notification in notifications %}
+
+            <div class="notification-card">
+                {{ notification }}
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+        <div class="projects-section">
+
+            <h2>Your Projects</h2>
+
+            {% if projects %}
+
+            <div class="projects-grid">
+
+                {% for item in projects %}
+
+                <div class="project-card">
+
+                    <div class="project-top">
+
+                        <div>
+
+                            <h3>{{ item.project[1] }}</h3>
+
+                            <span class="project-status">
+                                {{ item.project[2] }}
+                            </span>
+
+                        </div>
+
+                        <div class="project-actions">
+
+                            <a href="/project/{{ item.project[0] }}">
+                                View
+                            </a>
+
+                            <a href="/edit-project/{{ item.project[0] }}">
+                                Edit
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <div class="progress-wrapper">
+
+                        <div class="progress-info">
+
+                            <span>Progress</span>
+                            <span>{{ item.completion }}%</span>
+
+                        </div>
+
+                        <div class="progress-bar">
+
+                            <div
+                                class="progress-fill completed-fill"
+                                style="width: {{ item.completion }}%;"
+                            ></div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="project-dates">
+
+                        <div>
+                            <strong>Start:</strong>
+                            {{ item.project[3] }}
+                        </div>
+
+                        <div>
+                            <strong>End:</strong>
+                            {{ item.project[4] }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Projects Yet</h3>
+
+                <p>
+                    Create your first project to begin managing tasks.
+                </p>
+
+                <a href="/add-project" class="btn-primary">
+                    Create Project
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
 
     </div>
-
-    {% else %}
-
-    <div class="empty-box">
-        <h3>No Projects Yet</h3>
-
-        <p>
-            Create your first project to begin managing tasks,
-            timelines and AI insights.
-        </p>
-
-        <a href="/add-project" class="btn-primary">
-            Create Project
-        </a>
-    </div>
-
-    {% endif %}
 
 </div>
 
-{% endblock %}
+</body>
+</html>
