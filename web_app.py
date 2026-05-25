@@ -1090,6 +1090,7 @@ def profile():
 
 @app.route("/activity")
 def activity():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -1097,7 +1098,7 @@ def activity():
 
     activities = conn.execute("""
     SELECT *
-    FROM activities
+    FROM activity_logs
     ORDER BY id DESC
     LIMIT 50
     """).fetchall()
@@ -1108,7 +1109,6 @@ def activity():
         "activity.html",
         activities=activities
     )
-
 
 @app.route("/project-comments/<int:project_id>", methods=["GET", "POST"])
 def project_comments(project_id):
@@ -2090,27 +2090,6 @@ def delete_client(client_id):
 
     return redirect("/clients")
 
-@app.route("/activity")
-def activity():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    activities = conn.execute("""
-    SELECT *
-    FROM activity_logs
-    ORDER BY id DESC
-    LIMIT 50
-    """).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "activity.html",
-        activities=activities
-    )
 
 def create_activity(message):
 
