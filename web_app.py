@@ -1923,7 +1923,6 @@ def clients():
         clients=clients
     )
 
-
 @app.route("/add-client", methods=["GET", "POST"])
 def add_client():
 
@@ -1932,12 +1931,13 @@ def add_client():
 
     if request.method == "POST":
 
-        name = request.form["name"]
-        company = request.form["company"]
-        email = request.form["email"]
-        phone = request.form["phone"]
-        status = request.form["status"]
-        notes = request.form["notes"]
+        name = request.form.get("name", "")
+        company = request.form.get("company", "")
+        email = request.form.get("email", "")
+        phone = request.form.get("phone", "")
+        status = request.form.get("status", "Lead")
+        notes = request.form.get("notes", "")
+
         estimated_value = float(
             request.form.get("estimated_value", 0) or 0
         )
@@ -2089,6 +2089,28 @@ def delete_client(client_id):
         )
 
     return redirect("/clients")
+
+@app.route("/activity")
+def activity():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    activities = conn.execute("""
+    SELECT *
+    FROM activity_logs
+    ORDER BY id DESC
+    LIMIT 50
+    """).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "activity.html",
+        activities=activities
+    )
 
 
 if __name__ == "__main__":

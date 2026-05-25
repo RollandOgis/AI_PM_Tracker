@@ -10,42 +10,85 @@
 
 <body>
 
-<div class="container">
+<div class="layout">
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h2>AI PM</h2>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
         <a href="/kanban">Kanban</a>
         <a href="/calendar">Calendar</a>
         <a href="/clients">Clients</a>
-        <a href="/insights">AI Insights</a>
-        <a href="/activity">Activity Feed</a>
-        <a href="/sprint-planner">Sprint Planner</a>
-        <a href="/advanced-search">Advanced Search</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
         <a href="/logout">Logout</a>
 
     </div>
 
     <div class="main-content">
 
-        <div class="top-bar">
-            <h2>Recent Activity</h2>
-        </div>
+        <div class="dashboard-header">
 
-        {% for activity in activities %}
+            <div>
 
-            <div class="activity-card">
+                <h1>Activity Feed</h1>
 
-                <p>{{ activity["message"] }}</p>
-
-                <small>{{ activity["created_at"] }}</small>
+                <p class="dashboard-subtitle">
+                    Recent platform activity and actions
+                </p>
 
             </div>
 
-        {% endfor %}
+        </div>
+
+        {% if activities %}
+
+            <div class="projects-grid">
+
+                {% for activity in activities %}
+
+                    <div class="project-card">
+
+                        <div class="smart-insight">
+
+                            <strong>
+                                {{ activity["activity"] }}
+                            </strong>
+
+                        </div>
+
+                        <div class="budget-row">
+
+                            <span>Date</span>
+
+                            <strong>
+                                {{ activity["created_at"] }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Activity Yet</h3>
+
+                <p>
+                    Activity logs will appear here as you use the platform.
+                </p>
+
+            </div>
+
+        {% endif %}
 
     </div>
 
