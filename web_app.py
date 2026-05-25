@@ -1360,6 +1360,17 @@ def add_project():
     if "user_id" not in session:
         return redirect("/login")
 
+    conn = get_db_connection()
+
+    clients = conn.execute("""
+    SELECT *
+    FROM clients
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
     if request.method == "POST":
 
         name = request.form["name"]
@@ -1367,6 +1378,7 @@ def add_project():
         status = request.form["status"]
         start_date = request.form["start_date"]
         end_date = request.form["end_date"]
+        client_id = request.form.get("client_id") or None
 
         estimated_budget = float(
             request.form.get("estimated_budget", 0) or 0
@@ -1375,8 +1387,6 @@ def add_project():
         actual_cost = float(
             request.form.get("actual_cost", 0) or 0
         )
-
-        conn = get_db_connection()
 
         conn.execute("""
         INSERT INTO projects (
@@ -1387,9 +1397,10 @@ def add_project():
             end_date,
             estimated_budget,
             actual_cost,
+            client_id,
             user_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             name,
             description,
@@ -1398,6 +1409,7 @@ def add_project():
             end_date,
             estimated_budget,
             actual_cost,
+            client_id,
             session["user_id"]
         ))
 
@@ -1410,7 +1422,12 @@ def add_project():
 
         return redirect("/")
 
-    return render_template("add_project.html")
+    conn.close()
+
+    return render_template(
+        "add_project.html",
+        clients=clients
+    )
 
 
 @app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
@@ -1430,6 +1447,15 @@ def edit_project(project_id):
         conn.close()
         return redirect("/")
 
+    clients = conn.execute("""
+    SELECT *
+    FROM clients
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
     if request.method == "POST":
 
         name = request.form["name"]
@@ -1437,6 +1463,7 @@ def edit_project(project_id):
         status = request.form["status"]
         start_date = request.form["start_date"]
         end_date = request.form["end_date"]
+        client_id = request.form.get("client_id") or None
 
         estimated_budget = float(
             request.form.get("estimated_budget", 0) or 0
@@ -1454,7 +1481,8 @@ def edit_project(project_id):
             start_date = ?,
             end_date = ?,
             estimated_budget = ?,
-            actual_cost = ?
+            actual_cost = ?,
+            client_id = ?
         WHERE id = ?
         AND user_id = ?
         """, (
@@ -1465,6 +1493,7 @@ def edit_project(project_id):
             end_date,
             estimated_budget,
             actual_cost,
+            client_id,
             project_id,
             session["user_id"]
         ))
@@ -1482,7 +1511,8 @@ def edit_project(project_id):
 
     return render_template(
         "edit_project.html",
-        project=project
+        project=project,
+        clients=clients
     )
 
 @app.route("/delete-project/<int:project_id>", methods=["POST"])
@@ -1787,6 +1817,197 @@ def logout():
     session.clear()
 
     return redirect("/login")
+
+@app.route("/clients")
+def clients():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    clients = conn.execute("""
+    SELECT *
+    FROM clients
+    WHERE user_id = ?
+    ORDER BY id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "clients.html",
+        clients=clients
+    )
+
+
+@app.route("/add-client", methods=["GET", "POST"])
+def add_client():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        company = request.form["company"]
+        email = request.form["email"]
+        phone = request.form["phone"]
+        status = request.form["status"]
+        notes = request.form["notes"]
+        estimated_value = float(
+            request.form.get("estimated_value", 0) or 0
+        )
+
+        conn = get_db_connection()
+
+        conn.execute("""
+        INSERT INTO clients (
+            name,
+            company,
+            email,
+            phone,
+            status,
+            notes,
+            estimated_value,
+            user_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            name,
+            company,
+            email,
+            phone,
+            status,
+            notes,
+            estimated_value,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added client {name}"
+        )
+
+        return redirect("/clients")
+
+    return render_template("add_client.html")
+
+
+@app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
+def edit_client(client_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    client = conn.execute("""
+    SELECT *
+    FROM clients
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        client_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not client:
+        conn.close()
+        return redirect("/clients")
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        company = request.form["company"]
+        email = request.form["email"]
+        phone = request.form["phone"]
+        status = request.form["status"]
+        notes = request.form["notes"]
+        estimated_value = float(
+            request.form.get("estimated_value", 0) or 0
+        )
+
+        conn.execute("""
+        UPDATE clients
+        SET name = ?,
+            company = ?,
+            email = ?,
+            phone = ?,
+            status = ?,
+            notes = ?,
+            estimated_value = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            name,
+            company,
+            email,
+            phone,
+            status,
+            notes,
+            estimated_value,
+            client_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated client {name}"
+        )
+
+        return redirect("/clients")
+
+    conn.close()
+
+    return render_template(
+        "edit_client.html",
+        client=client
+    )
+
+
+@app.route("/delete-client/<int:client_id>", methods=["POST"])
+def delete_client(client_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    client = conn.execute("""
+    SELECT *
+    FROM clients
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        client_id,
+        session["user_id"]
+    )).fetchone()
+
+    conn.execute("""
+    DELETE FROM clients
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        client_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    if client:
+        create_activity(
+            f"{session['username']} deleted client {client['name']}"
+        )
+
+    return redirect("/clients")
 
 
 if __name__ == "__main__":

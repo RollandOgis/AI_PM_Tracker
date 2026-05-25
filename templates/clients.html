@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/clients">Clients</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Clients</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage customers and business relationships
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-client" class="btn-primary">
+                    + Add Client
+                </a>
+
+            </div>
+
+        </div>
+
+        {% if clients %}
+
+            <div class="projects-grid">
+
+                {% for client in clients %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+
+                                <h3>
+                                    {{ client.name }}
+                                </h3>
+
+                                <span class="project-status">
+                                    {{ client.status }}
+                                </span>
+
+                            </div>
+
+                            <div class="project-actions">
+
+                                <a href="/edit-client/{{ client.id }}">
+                                    Edit
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Company</span>
+
+                                <strong>
+                                    {{ client.company }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Email</span>
+
+                                <strong>
+                                    {{ client.email }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Phone</span>
+
+                                <strong>
+                                    {{ client.phone }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Estimated Value</span>
+
+                                <strong class="health-good">
+                                    £{{ "{:,.0f}".format(client.estimated_value or 0) }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                        {% if client.notes %}
+
+                            <div class="smart-insight">
+
+                                {{ client.notes }}
+
+                            </div>
+
+                        {% endif %}
+
+                        <form
+                            action="/delete-client/{{ client.id }}"
+                            method="POST"
+                        >
+
+                            <button
+                                type="submit"
+                                class="btn-danger"
+                            >
+                                Delete
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Clients Yet</h3>
+
+                <p>
+                    Add your first client to start tracking customer relationships.
+                </p>
+
+                <a href="/add-client" class="btn-primary">
+                    Add Client
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
