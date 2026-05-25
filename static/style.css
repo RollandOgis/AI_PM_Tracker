@@ -611,3 +611,105 @@ body.dark-ready {
         max-width: 100%;
     }
 }
+
+.dashboard-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin: 25px 0;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    border: 1px solid #eef2f7;
+}
+
+.summary-card h3 {
+    font-size: 15px;
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+
+.summary-card p {
+    font-size: 24px;
+    font-weight: 800;
+    color: #111827;
+}
+
+.health-good {
+    color: #16a34a !important;
+}
+
+.health-warning {
+    color: #dc2626 !important;
+}
+
+.health-neutral {
+    color: #6b7280 !important;
+}
+
+.stat-card {
+    transition: 0.25s ease;
+}
+
+.stat-card:hover,
+.project-card:hover,
+.analytics-card:hover,
+.summary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+}
+
+.project-card {
+    border-left: 5px solid #2563eb;
+}
+
+.task-card {
+    border-left: 5px solid #6366f1;
+}
+
+.empty-box {
+    border: 2px dashed #cbd5e1;
+    background: #f8fafc;
+}
+
+.notification-card {
+    border-left: 6px solid #f97316;
+}
+
+.progress-bar {
+    background: #e5e7eb;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.green,
+.completed-fill {
+    background: #22c55e;
+}
+
+.orange,
+.pending-fill {
+    background: #f97316;
+}
+
+.red,
+.blocked-fill {
+    background: #ef4444;
+}
+
+@media (max-width: 900px) {
+    .dashboard-summary {
+        grid-template-columns: 1fr;
+    }
+}

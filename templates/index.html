@@ -1,276 +1,270 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI PM Dashboard</title>
+{% extends "base.html" %}
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
+{% block content %}
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="dashboard-header">
+    <div>
+        <h1>AI Project Dashboard</h1>
+        <p class="dashboard-subtitle">
+            Welcome back, {{ session.username }}
+        </p>
+    </div>
 
-</head>
+    <div class="dashboard-actions">
+        <a href="/add-project" class="btn-primary">
+            + New Project
+        </a>
 
-<body>
+        <a href="/add-task" class="btn-secondary">
+            + New Task
+        </a>
+    </div>
+</div>
 
-<div class="container">
 
-    <div class="sidebar">
+<div class="stats-grid">
 
-        <div class="theme-toggle" onclick="toggleTheme()">
-    Toggle Theme
-        </div>
+    <div class="stat-card">
+        <h3>Total Projects</h3>
+        <p>{{ total_projects }}</p>
+    </div>
 
-        <h1>AI PM</h1>
+    <div class="stat-card">
+        <h3>Total Tasks</h3>
+        <p>{{ total_tasks }}</p>
+    </div>
 
-        <a href="/">Dashboard</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/kanban">Kanban</a>
-        <a href="/calendar">Calendar</a>
-        <a href="/insights">AI Insights</a>
-        <a href="/export-tasks">Export CSV</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/logout">Logout</a>
-        <a href="/profile">Profile</a>
-        <a href="/report">PDF Report</a>
+    <div class="stat-card">
+        <h3>Completed</h3>
+        <p>{{ completed_tasks }}</p>
+    </div>
 
-        <div class="user-box">
+    <div class="stat-card">
+        <h3>In Progress</h3>
+        <p>{{ in_progress_tasks }}</p>
+    </div>
 
-            Logged in as:
+    <div class="stat-card">
+        <h3>Pending</h3>
+        <p>{{ pending_tasks }}</p>
+    </div>
 
-            <strong>
-                {{ session.get("username", "User") }}
-            </strong>
+    <div class="stat-card">
+        <h3>Blocked</h3>
+        <p>{{ blocked_tasks }}</p>
+    </div>
 
-        </div>
+</div>
+
+
+<div class="dashboard-summary">
+
+    <div class="summary-card">
+
+        <h3>Project Health</h3>
+
+        {% if overdue_tasks > 0 or blocked_tasks > 0 %}
+            <p class="health-warning">Needs Attention</p>
+
+        {% elif total_tasks == 0 %}
+            <p class="health-neutral">No Tasks Yet</p>
+
+        {% else %}
+            <p class="health-good">Healthy</p>
+        {% endif %}
 
     </div>
 
-    <div class="main-content">
+    <div class="summary-card">
 
-        <div class="top-bar">
-            <h2>Dashboard Overview</h2>
-        </div>
+        <h3>Completion Rate</h3>
 
-        {% if notifications %}
-
-            {% for note in notifications %}
-
-                <div class="notification-card">
-                    {{ note }}
-                </div>
-
-            {% endfor %}
-
+        {% if total_tasks > 0 %}
+            <p>
+                {{ ((completed_tasks / total_tasks) * 100) | round }}%
+            </p>
+        {% else %}
+            <p>0%</p>
         {% endif %}
 
-        <div class="stats-grid">
+    </div>
 
-            <div class="stat-card">
-                <h3>Total Projects</h3>
-                <p>{{ total_projects }}</p>
-            </div>
+    <div class="summary-card">
 
-            <div class="stat-card">
-                <h3>Total Tasks</h3>
-                <p>{{ total_tasks }}</p>
-            </div>
+        <h3>Focus Area</h3>
 
-            <div class="stat-card">
-                <h3>Completed Tasks</h3>
-                <p>{{ completed_tasks }}</p>
-            </div>
+        {% if overdue_tasks > 0 %}
+            <p>Overdue Tasks</p>
 
-            <div class="stat-card">
-                <h3>Overdue</h3>
-                <p>{{ overdue_tasks }}</p>
-            </div>
+        {% elif high_priority_tasks > 0 %}
+            <p>High Priority</p>
 
-        </div>
-
-        <div class="chart-grid">
-
-            <div class="analytics-card">
-
-                <h3>Task Status Chart</h3>
-
-                <canvas id="statusChart"></canvas>
-
-            </div>
-
-            <div class="analytics-card">
-
-                <h3>Priority Chart</h3>
-
-                <canvas id="priorityChart"></canvas>
-
-            </div>
-
-        </div>
-
-        <h2>Your Projects</h2>
-
-        {% if projects %}
-
-            {% for item in projects %}
-
-                <div class="project-card">
-
-                    <h3>{{ item.project[1] }}</h3>
-
-                    <p>
-                        <strong>Status:</strong>
-                        {{ item.project[2] }}
-                    </p>
-
-                    <p>
-                        <strong>Start Date:</strong>
-                        {{ item.project[3] }}
-                    </p>
-
-                    <p>
-                        <strong>End Date:</strong>
-                        {{ item.project[4] }}
-                    </p>
-
-                    <p>
-                        <strong>Completion:</strong>
-                        {{ item.completion }}%
-                    </p>
-
-                    <div class="progress-bar">
-
-                        <div
-                            class="progress-fill green"
-                            style="width: {{ item.completion }}%;"
-                        ></div>
-
-                    </div>
-
-                    <div class="button-group">
-
-                        <a
-                            href="/project/{{ item.project[0] }}"
-                            class="view-btn"
-                        >
-                            View Project
-                        </a>
-
-                        <a
-                            href="/edit-project/{{ item.project[0] }}"
-                            class="edit-btn"
-                        >
-                            Edit Project
-                        </a>
-
-                        <form
-                            action="/delete-project/{{ item.project[0] }}"
-                            method="POST"
-                            style="display:inline;"
-                        >
-
-                            <button
-                                type="submit"
-                                class="delete-btn"
-                                onclick="return confirm('Delete this project?')"
-                            >
-                                Delete Project
-                            </button>
-
-                        </form>
-
-                    </div>
-
-                </div>
-
-            {% endfor %}
+        {% elif blocked_tasks > 0 %}
+            <p>Blocked Tasks</p>
 
         {% else %}
-
-            <div class="empty-box">
-
-                <h3>No Projects Yet</h3>
-
-                <p>
-                    Create your first project to start tracking work.
-                </p>
-
-                <a href="/add-project" class="view-btn">
-                    Add Project
-                </a>
-
-            </div>
-
+            <p>Keep Progressing</p>
         {% endif %}
 
     </div>
 
 </div>
 
-<script>
 
-const statusData = JSON.parse('{{ chart_status_data | tojson | safe }}');
-const priorityData = JSON.parse('{{ chart_priority_data | tojson | safe }}');
+{% if notifications %}
 
-const statusCtx = document.getElementById('statusChart');
+<div class="notifications-section">
 
-new Chart(statusCtx, {
-    type: 'pie',
-    data: {
-        labels: [
-            'Completed',
-            'In Progress',
-            'Pending',
-            'Blocked'
-        ],
-        datasets: [{
-            data: statusData
-        }]
-    }
-});
+    <h2>Notifications</h2>
 
-const priorityCtx = document.getElementById('priorityChart');
+    {% for notification in notifications %}
 
-new Chart(priorityCtx, {
-    type: 'bar',
-    data: {
-        labels: [
-            'High',
-            'Medium',
-            'Low'
-        ],
-        datasets: [{
-            label: 'Tasks',
-            data: priorityData
-        }]
-    }
-});
+    <div class="notification-card">
+        {{ notification }}
+    </div>
 
-</script>
+    {% endfor %}
 
-<script>
+</div>
 
-function toggleTheme() {
+{% endif %}
 
-    document.body.classList.toggle("dark-mode");
 
-    localStorage.setItem(
-        "theme",
-        document.body.classList.contains("dark-mode")
-            ? "dark"
-            : "light"
-    );
-}
+<div class="projects-section">
 
-if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark-mode");
-}
+    <div class="section-header">
+        <h2>Your Projects</h2>
+    </div>
 
-</script>
+    {% if projects %}
 
-</body>
-</html>
+    <div class="projects-grid">
+
+        {% for item in projects %}
+
+        <div class="project-card">
+
+            <div class="project-top">
+
+                <div>
+                    <h3>{{ item.project[1] }}</h3>
+
+                    <span class="project-status">
+                        {{ item.project[2] }}
+                    </span>
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/project/{{ item.project[0] }}">
+                        View
+                    </a>
+
+                    <a href="/edit-project/{{ item.project[0] }}">
+                        Edit
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="progress-wrapper">
+
+                <div class="progress-info">
+                    <span>Progress</span>
+                    <span>{{ item.completion }}%</span>
+                </div>
+
+                <div class="progress-bar">
+
+                    <div
+                        class="progress-fill completed-fill"
+                        style="width: {{ item.completion }}%;"
+                    ></div>
+
+                </div>
+
+            </div>
+
+            <div class="project-dates">
+
+                <div>
+                    <strong>Start:</strong>
+                    {{ item.project[3] }}
+                </div>
+
+                <div>
+                    <strong>End:</strong>
+                    {{ item.project[4] }}
+                </div>
+
+            </div>
+
+            <div class="project-task-preview">
+
+                {% if item.tasks %}
+
+                    {% for task in item.tasks[:3] %}
+
+                    <div class="task-preview-card">
+
+                        <div class="task-preview-top">
+
+                            <span class="task-title">
+                                {{ task[0] }}
+                            </span>
+
+                            <span class="priority-badge">
+                                {{ task[1] }}
+                            </span>
+
+                        </div>
+
+                        <div class="task-preview-bottom">
+
+                            <span>{{ task[2] }}</span>
+
+                            <span>{{ task[3] }}</span>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <div class="empty-box">
+                        No tasks added yet
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="empty-box">
+        <h3>No Projects Yet</h3>
+
+        <p>
+            Create your first project to begin managing tasks,
+            timelines and AI insights.
+        </p>
+
+        <a href="/add-project" class="btn-primary">
+            Create Project
+        </a>
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
