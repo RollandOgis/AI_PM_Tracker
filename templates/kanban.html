@@ -2,88 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kanban Board</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
-
-    <script>
-
-        async function updateTask(taskId, status) {
-
-            await fetch("/update-task-status", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    task_id: taskId,
-                    status: status
-                })
-            });
-
-            location.reload();
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-
-        function drag(ev) {
-            ev.dataTransfer.setData("taskId", ev.target.dataset.taskid);
-        }
-
-        function drop(ev, status) {
-            ev.preventDefault();
-
-            const taskId = ev.dataTransfer.getData("taskId");
-
-            updateTask(taskId, status);
-        }
-
-    </script>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="container">
+<div class="layout">
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h2>AI PM</h2>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
-        <a href="/kanban" class="active-link">Kanban</a>
+        <a href="/kanban">Kanban</a>
         <a href="/calendar">Calendar</a>
-        <a href="/insights">AI Insights</a>
-        <a href="/export-tasks">Export CSV</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/logout">Logout</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/sprint-planner">Sprint Planner</a>
+        <a href="/advanced-search">Search</a>
         <a href="/profile">Profile</a>
-        <a href="/report">PDF Report</a>
-
-        <div class="user-box">
-
-            Logged in as:
-
-            <strong>
-                {{ session.get("username", "User") }}
-            </strong>
-
-        </div>
+        <a href="/logout">Logout</a>
 
     </div>
 
     <div class="main-content">
 
-        <div class="top-bar">
-            <h2>Drag & Drop Kanban Board</h2>
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Kanban Board</h1>
+                <p class="dashboard-subtitle">
+                    Drag tasks across columns to update their status.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-task" class="btn-primary">
+                    + New Task
+                </a>
+            </div>
+
         </div>
 
         <div class="kanban-board">
@@ -92,24 +53,46 @@
 
                 <div
                     class="kanban-column"
-                    ondrop="drop(event, '{{ status }}')"
+                    ondrop="dropTask(event, '{{ status }}')"
                     ondragover="allowDrop(event)"
+                    ondragenter="dragEnter(event)"
+                    ondragleave="dragLeave(event)"
                 >
 
-                    <h3>{{ status }}</h3>
+                    <div class="kanban-column-header">
+                        <h3>{{ status }}</h3>
+
+                        <span class="kanban-count">
+                            {% set count = namespace(value=0) %}
+                            {% for task in tasks %}
+                                {% if task["status"] == status %}
+                                    {% set count.value = count.value + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ count.value }}
+                        </span>
+                    </div>
 
                     {% for task in tasks %}
 
                         {% if task["status"] == status %}
 
                             <div
-                                class="kanban-card"
+                                class="kanban-task-card"
                                 draggable="true"
-                                ondragstart="drag(event)"
-                                data-taskid="{{ task['id'] }}"
+                                ondragstart="dragTask(event)"
+                                data-task-id="{{ task['id'] }}"
                             >
 
-                                <h4>{{ task["title"] }}</h4>
+                                <div class="kanban-task-top">
+
+                                    <h4>{{ task["title"] }}</h4>
+
+                                    <span class="priority-badge priority-{{ task['priority'] | lower }}">
+                                        {{ task["priority"] }}
+                                    </span>
+
+                                </div>
 
                                 <p>
                                     <strong>Project:</strong>
@@ -117,8 +100,8 @@
                                 </p>
 
                                 <p>
-                                    <strong>Priority:</strong>
-                                    {{ task["priority"] }}
+                                    <strong>Due:</strong>
+                                    {{ task["due_date"] or "No date" }}
                                 </p>
 
                                 <p>
@@ -126,25 +109,33 @@
                                     {{ task["assigned_to"] or "Unassigned" }}
                                 </p>
 
-                                <p>
-                                    <strong>Due:</strong>
-                                    {{ task["due_date"] }}
-                                </p>
-
                                 {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
 
-                                    <div class="overdue-box">
+                                    <div class="overdue-badge">
                                         Overdue
                                     </div>
 
                                 {% endif %}
 
-                                <a
-                                    href="/edit-task/{{ task['id'] }}"
-                                    class="edit-btn"
-                                >
-                                    Edit
-                                </a>
+                                {% if task["attachment_url"] %}
+
+                                    <a
+                                        href="{{ task['attachment_url'] }}"
+                                        target="_blank"
+                                        class="attachment-link"
+                                    >
+                                        Attachment
+                                    </a>
+
+                                {% endif %}
+
+                                <div class="kanban-card-actions">
+
+                                    <a href="/edit-task/{{ task['id'] }}" class="edit-btn">
+                                        Edit
+                                    </a>
+
+                                </div>
 
                             </div>
 
@@ -161,6 +152,52 @@
     </div>
 
 </div>
+
+<script>
+    function allowDrop(event) {
+        event.preventDefault();
+    }
+
+    function dragTask(event) {
+        event.dataTransfer.setData("task_id", event.target.dataset.taskId);
+        event.target.classList.add("dragging");
+    }
+
+    function dragEnter(event) {
+        event.currentTarget.classList.add("drag-over");
+    }
+
+    function dragLeave(event) {
+        event.currentTarget.classList.remove("drag-over");
+    }
+
+    function dropTask(event, newStatus) {
+        event.preventDefault();
+
+        const taskId = event.dataTransfer.getData("task_id");
+
+        event.currentTarget.classList.remove("drag-over");
+
+        fetch("/update-task-status", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                task_id: taskId,
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert("Could not update task status.");
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
