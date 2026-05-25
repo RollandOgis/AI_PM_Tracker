@@ -721,7 +721,6 @@ def home():
         project_health_score=project_health_score,
         project_health_label=project_health_label,
         smart_insights=smart_insights,
-        delivery_insights=delivery_insights,
         upcoming_deadlines=upcoming_deadlines,
         workload_summary=workload_summary,
         total_budget=total_budget,
