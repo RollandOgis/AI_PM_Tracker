@@ -159,58 +159,94 @@ def is_overdue(due_date, status):
 
 @app.route("/")
 def home():
+
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
-    projects = conn.execute(
-        "SELECT * FROM projects WHERE user_id = ?",
-        (session["user_id"],)
-    ).fetchall()
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    ORDER BY id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
 
     all_projects = []
 
     total_tasks = 0
     completed_tasks = 0
-    in_progress_tasks = 0
     pending_tasks = 0
+    in_progress_tasks = 0
     blocked_tasks = 0
 
     high_priority_tasks = 0
     medium_priority_tasks = 0
     low_priority_tasks = 0
+
     overdue_tasks = 0
+    upcoming_deadlines = []
 
     for project in projects:
-        tasks = conn.execute(
-            "SELECT * FROM tasks WHERE project_id = ?",
-            (project["id"],)
-        ).fetchall()
+
+        tasks = conn.execute("""
+        SELECT *
+        FROM tasks
+        WHERE project_id = ?
+        ORDER BY
+            CASE
+                WHEN due_date IS NULL OR due_date = ''
+                THEN '9999-12-31'
+                ELSE due_date
+            END ASC
+        """, (
+            project["id"],
+        )).fetchall()
 
         task_list = []
 
         for task in tasks:
+
             total_tasks += 1
 
             if task["status"] == "Completed":
                 completed_tasks += 1
-            elif task["status"] == "In Progress":
-                in_progress_tasks += 1
+
             elif task["status"] == "Pending":
                 pending_tasks += 1
+
+            elif task["status"] == "In Progress":
+                in_progress_tasks += 1
+
             elif task["status"] == "Blocked":
                 blocked_tasks += 1
 
             if task["priority"] == "High":
                 high_priority_tasks += 1
+
             elif task["priority"] == "Medium":
                 medium_priority_tasks += 1
+
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
 
             if is_overdue(task["due_date"], task["status"]):
                 overdue_tasks += 1
+
+            if (
+                task["due_date"]
+                and task["status"] != "Completed"
+                and task["due_date"] >= str(date.today())
+            ):
+                upcoming_deadlines.append({
+                    "title": task["title"],
+                    "project_name": project["name"],
+                    "due_date": task["due_date"],
+                    "priority": task["priority"],
+                    "status": task["status"]
+                })
 
             task_list.append((
                 task["title"],
@@ -220,10 +256,16 @@ def home():
             ))
 
         if len(tasks) > 0:
-            completed_for_project = len(
-                [task for task in tasks if task["status"] == "Completed"]
+
+            completed_for_project = len([
+                task for task in tasks
+                if task["status"] == "Completed"
+            ])
+
+            completion = round(
+                (completed_for_project / len(tasks)) * 100
             )
-            completion = round((completed_for_project / len(tasks)) * 100)
+
         else:
             completion = 0
 
@@ -241,19 +283,92 @@ def home():
 
     conn.close()
 
+    upcoming_deadlines = sorted(
+        upcoming_deadlines,
+        key=lambda item: item["due_date"]
+    )[:5]
+
+    if total_tasks > 0:
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
+    else:
+        completion_rate = 0
+
+    if overdue_tasks > 0 or blocked_tasks > 0:
+        project_health_score = max(
+            0,
+            100 - (overdue_tasks * 15) - (blocked_tasks * 10)
+        )
+        project_health_label = "Needs Attention"
+
+    elif completion_rate >= 70:
+        project_health_score = 90
+        project_health_label = "Healthy"
+
+    elif total_tasks == 0:
+        project_health_score = 0
+        project_health_label = "No Data Yet"
+
+    else:
+        project_health_score = 65
+        project_health_label = "Stable"
+
+    smart_insights = []
+
+    if overdue_tasks > 0:
+        smart_insights.append(
+            f"You have {overdue_tasks} overdue task(s). Review these first."
+        )
+
+    if blocked_tasks > 0:
+        smart_insights.append(
+            f"{blocked_tasks} task(s) are blocked. These may need escalation."
+        )
+
+    if high_priority_tasks > 0:
+        smart_insights.append(
+            f"{high_priority_tasks} high-priority task(s) need attention."
+        )
+
+    if upcoming_deadlines:
+        smart_insights.append(
+            f"{len(upcoming_deadlines)} upcoming deadline(s) are active."
+        )
+
+    if total_tasks > 0 and completed_tasks == total_tasks:
+        smart_insights.append(
+            "All tracked tasks are complete. Great progress."
+        )
+
+    if not smart_insights:
+        smart_insights.append(
+            "Your workload currently looks balanced."
+        )
+
+    workload_summary = {
+        "active": in_progress_tasks + pending_tasks,
+        "completed": completed_tasks,
+        "blocked": blocked_tasks,
+        "overdue": overdue_tasks
+    }
+
     notifications = []
 
     if overdue_tasks > 0:
-        notifications.append(f"You have {overdue_tasks} overdue task(s).")
+        notifications.append(
+            f"You have {overdue_tasks} overdue task(s)."
+        )
 
     if blocked_tasks > 0:
-        notifications.append(f"{blocked_tasks} task(s) are currently blocked.")
+        notifications.append(
+            f"{blocked_tasks} task(s) are blocked."
+        )
 
     if high_priority_tasks > 0:
-        notifications.append(f"You have {high_priority_tasks} high-priority task(s).")
-
-    if total_tasks == 0:
-        notifications.append("No tasks yet. Add tasks to start tracking progress.")
+        notifications.append(
+            f"You have {high_priority_tasks} high-priority task(s)."
+        )
 
     return render_template(
         "index.html",
@@ -261,17 +376,23 @@ def home():
         total_projects=len(projects),
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
-        in_progress_tasks=in_progress_tasks,
         pending_tasks=pending_tasks,
+        in_progress_tasks=in_progress_tasks,
         blocked_tasks=blocked_tasks,
         high_priority_tasks=high_priority_tasks,
         medium_priority_tasks=medium_priority_tasks,
         low_priority_tasks=low_priority_tasks,
         overdue_tasks=overdue_tasks,
+        completion_rate=completion_rate,
+        project_health_score=project_health_score,
+        project_health_label=project_health_label,
+        smart_insights=smart_insights,
+        upcoming_deadlines=upcoming_deadlines,
+        workload_summary=workload_summary,
         chart_status_data=[
             completed_tasks,
-            in_progress_tasks,
             pending_tasks,
+            in_progress_tasks,
             blocked_tasks
         ],
         chart_priority_data=[

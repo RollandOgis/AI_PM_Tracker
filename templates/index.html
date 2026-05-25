@@ -96,17 +96,17 @@
 
             <div class="summary-card">
 
-                <h3>Project Health</h3>
+                <h3>Project Health Score</h3>
 
-                {% if overdue_tasks > 0 or blocked_tasks > 0 %}
-                    <p class="health-warning">Needs Attention</p>
+                <p
+                    class="{% if project_health_score >= 80 %}health-good{% elif project_health_score >= 50 %}health-neutral{% else %}health-warning{% endif %}"
+                >
+                    {{ project_health_score }}%
+                </p>
 
-                {% elif total_tasks == 0 %}
-                    <p class="health-neutral">No Tasks Yet</p>
-
-                {% else %}
-                    <p class="health-good">Healthy</p>
-                {% endif %}
+                <small>
+                    {{ project_health_label }}
+                </small>
 
             </div>
 
@@ -114,31 +114,81 @@
 
                 <h3>Completion Rate</h3>
 
-                {% if total_tasks > 0 %}
-                    <p>
-                        {{ ((completed_tasks / total_tasks) * 100) | round }}%
-                    </p>
-                {% else %}
-                    <p>0%</p>
-                {% endif %}
+                <p>{{ completion_rate }}%</p>
+
+                <small>
+                    {{ completed_tasks }} of {{ total_tasks }} tasks completed
+                </small>
 
             </div>
 
             <div class="summary-card">
 
-                <h3>Focus Area</h3>
+                <h3>Active Workload</h3>
 
-                {% if overdue_tasks > 0 %}
-                    <p>Overdue Tasks</p>
+                <p>{{ workload_summary.active }}</p>
 
-                {% elif high_priority_tasks > 0 %}
-                    <p>High Priority</p>
+                <small>
+                    {{ workload_summary.blocked }} blocked · {{ workload_summary.overdue }} overdue
+                </small>
 
-                {% elif blocked_tasks > 0 %}
-                    <p>Blocked Tasks</p>
+            </div>
+
+        </div>
+
+
+        <div class="smart-dashboard-grid">
+
+            <div class="smart-card">
+
+                <h3>Smart Insights</h3>
+
+                {% for insight in smart_insights %}
+
+                    <div class="smart-insight">
+                        {{ insight }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+            <div class="smart-card">
+
+                <h3>Upcoming Deadlines</h3>
+
+                {% if upcoming_deadlines %}
+
+                    {% for deadline in upcoming_deadlines %}
+
+                        <div class="deadline-item">
+
+                            <div>
+
+                                <strong>{{ deadline.title }}</strong>
+
+                                <p>
+                                    {{ deadline.project_name }}
+                                    ·
+                                    {{ deadline.status }}
+                                </p>
+
+                            </div>
+
+                            <span>
+                                {{ deadline.due_date }}
+                            </span>
+
+                        </div>
+
+                    {% endfor %}
 
                 {% else %}
-                    <p>Keep Progressing</p>
+
+                    <div class="smart-insight">
+                        No upcoming active deadlines.
+                    </div>
+
                 {% endif %}
 
             </div>
@@ -154,9 +204,9 @@
 
             {% for notification in notifications %}
 
-            <div class="notification-card">
-                {{ notification }}
-            </div>
+                <div class="notification-card">
+                    {{ notification }}
+                </div>
 
             {% endfor %}
 
@@ -171,93 +221,138 @@
 
             {% if projects %}
 
-            <div class="projects-grid">
+                <div class="projects-grid">
 
-                {% for item in projects %}
+                    {% for item in projects %}
 
-                <div class="project-card">
+                        <div class="project-card">
 
-                    <div class="project-top">
+                            <div class="project-top">
 
-                        <div>
+                                <div>
 
-                            <h3>{{ item.project[1] }}</h3>
+                                    <h3>{{ item.project[1] }}</h3>
 
-                            <span class="project-status">
-                                {{ item.project[2] }}
-                            </span>
+                                    <span class="project-status">
+                                        {{ item.project[2] }}
+                                    </span>
+
+                                </div>
+
+                                <div class="project-actions">
+
+                                    <a href="/project/{{ item.project[0] }}">
+                                        View
+                                    </a>
+
+                                    <a href="/edit-project/{{ item.project[0] }}">
+                                        Edit
+                                    </a>
+
+                                </div>
+
+                            </div>
+
+                            <div class="progress-wrapper">
+
+                                <div class="progress-info">
+
+                                    <span>Progress</span>
+
+                                    <span>
+                                        {{ item.completion }}%
+                                    </span>
+
+                                </div>
+
+                                <div class="progress-bar">
+
+                                    <div
+                                        class="progress-fill completed-fill"
+                                        style="width: {{ item.completion }}%;"
+                                    ></div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="project-dates">
+
+                                <div>
+                                    <strong>Start:</strong>
+                                    {{ item.project[3] }}
+                                </div>
+
+                                <div>
+                                    <strong>End:</strong>
+                                    {{ item.project[4] }}
+                                </div>
+
+                            </div>
+
+                            <div class="project-task-preview">
+
+                                {% if item.tasks %}
+
+                                    {% for task in item.tasks[:3] %}
+
+                                        <div class="task-preview-card">
+
+                                            <div class="task-preview-top">
+
+                                                <span class="task-title">
+                                                    {{ task[0] }}
+                                                </span>
+
+                                                <span class="priority-badge priority-{{ task[1]|lower }}">
+                                                    {{ task[1] }}
+                                                </span>
+
+                                            </div>
+
+                                            <div class="task-preview-bottom">
+
+                                                <span>{{ task[2] }}</span>
+
+                                                <span>{{ task[3] }}</span>
+
+                                            </div>
+
+                                        </div>
+
+                                    {% endfor %}
+
+                                {% else %}
+
+                                    <div class="empty-box">
+                                        No tasks added yet
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
 
                         </div>
 
-                        <div class="project-actions">
-
-                            <a href="/project/{{ item.project[0] }}">
-                                View
-                            </a>
-
-                            <a href="/edit-project/{{ item.project[0] }}">
-                                Edit
-                            </a>
-
-                        </div>
-
-                    </div>
-
-                    <div class="progress-wrapper">
-
-                        <div class="progress-info">
-
-                            <span>Progress</span>
-                            <span>{{ item.completion }}%</span>
-
-                        </div>
-
-                        <div class="progress-bar">
-
-                            <div
-                                class="progress-fill completed-fill"
-                                style="width: {{ item.completion }}%;"
-                            ></div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="project-dates">
-
-                        <div>
-                            <strong>Start:</strong>
-                            {{ item.project[3] }}
-                        </div>
-
-                        <div>
-                            <strong>End:</strong>
-                            {{ item.project[4] }}
-                        </div>
-
-                    </div>
+                    {% endfor %}
 
                 </div>
 
-                {% endfor %}
-
-            </div>
-
             {% else %}
 
-            <div class="empty-box">
+                <div class="empty-box">
 
-                <h3>No Projects Yet</h3>
+                    <h3>No Projects Yet</h3>
 
-                <p>
-                    Create your first project to begin managing tasks.
-                </p>
+                    <p>
+                        Create your first project to begin managing tasks.
+                    </p>
 
-                <a href="/add-project" class="btn-primary">
-                    Create Project
-                </a>
+                    <a href="/add-project" class="btn-primary">
+                        Create Project
+                    </a>
 
-            </div>
+                </div>
 
             {% endif %}
 
