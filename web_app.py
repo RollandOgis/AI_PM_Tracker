@@ -2112,6 +2112,23 @@ def activity():
         activities=activities
     )
 
+def create_activity(message):
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    INSERT INTO activity_logs (
+        activity,
+        created_at
+    )
+    VALUES (?, ?)
+    """, (
+        message,
+        str(date.today())
+    ))
+
+    conn.commit()
+    conn.close()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
