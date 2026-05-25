@@ -1143,15 +1143,25 @@ def tasks():
 
 @app.route("/add-project", methods=["GET", "POST"])
 def add_project():
+
     if "user_id" not in session:
         return redirect("/login")
 
     if request.method == "POST":
+
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
         start_date = request.form["start_date"]
         end_date = request.form["end_date"]
+
+        estimated_budget = float(
+            request.form.get("estimated_budget", 0) or 0
+        )
+
+        actual_cost = float(
+            request.form.get("actual_cost", 0) or 0
+        )
 
         conn = get_db_connection()
 
@@ -1162,15 +1172,19 @@ def add_project():
             status,
             start_date,
             end_date,
+            estimated_budget,
+            actual_cost,
             user_id
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             name,
             description,
             status,
             start_date,
             end_date,
+            estimated_budget,
+            actual_cost,
             session["user_id"]
         ))
 
@@ -1178,7 +1192,7 @@ def add_project():
         conn.close()
 
         create_activity(
-            f"{session.get('username', 'User')} created project {name}"
+            f"{session['username']} created project {name}"
         )
 
         return redirect("/")
@@ -1188,6 +1202,7 @@ def add_project():
 
 @app.route("/edit-project/<int:project_id>", methods=["GET", "POST"])
 def edit_project(project_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -1195,10 +1210,7 @@ def edit_project(project_id):
 
     project = conn.execute(
         "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (
-            project_id,
-            session["user_id"]
-        )
+        (project_id, session["user_id"])
     ).fetchone()
 
     if not project:
@@ -1206,11 +1218,20 @@ def edit_project(project_id):
         return redirect("/")
 
     if request.method == "POST":
+
         name = request.form["name"]
         description = request.form["description"]
         status = request.form["status"]
         start_date = request.form["start_date"]
         end_date = request.form["end_date"]
+
+        estimated_budget = float(
+            request.form.get("estimated_budget", 0) or 0
+        )
+
+        actual_cost = float(
+            request.form.get("actual_cost", 0) or 0
+        )
 
         conn.execute("""
         UPDATE projects
@@ -1218,7 +1239,9 @@ def edit_project(project_id):
             description = ?,
             status = ?,
             start_date = ?,
-            end_date = ?
+            end_date = ?,
+            estimated_budget = ?,
+            actual_cost = ?
         WHERE id = ?
         AND user_id = ?
         """, (
@@ -1227,6 +1250,8 @@ def edit_project(project_id):
             status,
             start_date,
             end_date,
+            estimated_budget,
+            actual_cost,
             project_id,
             session["user_id"]
         ))
@@ -1235,7 +1260,7 @@ def edit_project(project_id):
         conn.close()
 
         create_activity(
-            f"{session.get('username', 'User')} updated project {name}"
+            f"{session['username']} updated project {name}"
         )
 
         return redirect("/")
@@ -1246,7 +1271,6 @@ def edit_project(project_id):
         "edit_project.html",
         project=project
     )
-
 
 @app.route("/delete-project/<int:project_id>", methods=["POST"])
 def delete_project(project_id):
@@ -1289,6 +1313,7 @@ def delete_project(project_id):
 
 @app.route("/add-task", methods=["GET", "POST"])
 def add_task():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -1300,6 +1325,7 @@ def add_task():
     ).fetchall()
 
     if request.method == "POST":
+
         project_id = request.form["project_id"]
         title = request.form["title"]
         priority = request.form["priority"]
@@ -1307,6 +1333,18 @@ def add_task():
         due_date = request.form["due_date"]
         assigned_to = request.form["assigned_to"]
         attachment_url = request.form["attachment_url"]
+
+        estimated_hours = float(
+            request.form.get("estimated_hours", 0) or 0
+        )
+
+        actual_hours = float(
+            request.form.get("actual_hours", 0) or 0
+        )
+
+        hourly_rate = float(
+            request.form.get("hourly_rate", 0) or 0
+        )
 
         conn.execute("""
         INSERT INTO tasks (
@@ -1316,9 +1354,12 @@ def add_task():
             status,
             due_date,
             assigned_to,
-            attachment_url
+            attachment_url,
+            estimated_hours,
+            actual_hours,
+            hourly_rate
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             project_id,
             title,
@@ -1326,14 +1367,17 @@ def add_task():
             status,
             due_date,
             assigned_to,
-            attachment_url
+            attachment_url,
+            estimated_hours,
+            actual_hours,
+            hourly_rate
         ))
 
         conn.commit()
         conn.close()
 
         create_activity(
-            f"{session.get('username', 'User')} created task {title}"
+            f"{session['username']} created task {title}"
         )
 
         return redirect("/tasks")
@@ -1348,6 +1392,7 @@ def add_task():
 
 @app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
 def edit_task(task_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -1363,12 +1408,25 @@ def edit_task(task_id):
         return redirect("/tasks")
 
     if request.method == "POST":
+
         title = request.form["title"]
         priority = request.form["priority"]
         status = request.form["status"]
         due_date = request.form["due_date"]
         assigned_to = request.form["assigned_to"]
         attachment_url = request.form["attachment_url"]
+
+        estimated_hours = float(
+            request.form.get("estimated_hours", 0) or 0
+        )
+
+        actual_hours = float(
+            request.form.get("actual_hours", 0) or 0
+        )
+
+        hourly_rate = float(
+            request.form.get("hourly_rate", 0) or 0
+        )
 
         conn.execute("""
         UPDATE tasks
@@ -1377,7 +1435,10 @@ def edit_task(task_id):
             status = ?,
             due_date = ?,
             assigned_to = ?,
-            attachment_url = ?
+            attachment_url = ?,
+            estimated_hours = ?,
+            actual_hours = ?,
+            hourly_rate = ?
         WHERE id = ?
         """, (
             title,
@@ -1386,6 +1447,9 @@ def edit_task(task_id):
             due_date,
             assigned_to,
             attachment_url,
+            estimated_hours,
+            actual_hours,
+            hourly_rate,
             task_id
         ))
 
@@ -1393,7 +1457,7 @@ def edit_task(task_id):
         conn.close()
 
         create_activity(
-            f"{session.get('username', 'User')} updated task {title}"
+            f"{session['username']} updated task {title}"
         )
 
         return redirect("/tasks")
@@ -1404,7 +1468,6 @@ def edit_task(task_id):
         "edit_task.html",
         task=task
     )
-
 
 @app.route("/delete-task/<int:task_id>", methods=["POST"])
 def delete_task(task_id):

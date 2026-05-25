@@ -5,44 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Project</title>
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="container">
+<div class="layout">
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h2>AI PM</h2>
 
         <a href="/">Dashboard</a>
         <a href="/tasks">Tasks</a>
         <a href="/kanban">Kanban</a>
         <a href="/calendar">Calendar</a>
-        <a href="/insights">AI Insights</a>
-        <a href="/export-tasks">Export CSV</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/logout">Logout</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/sprint-planner">Sprint Planner</a>
+        <a href="/advanced-search">Search</a>
         <a href="/profile">Profile</a>
-        <a href="/report">PDF Report</a>
-
-        <div class="user-box">
-            Logged in as:
-            <strong>{{ session.get("username", "User") }}</strong>
-        </div>
+        <a href="/logout">Logout</a>
 
     </div>
 
     <div class="main-content">
 
-        <div class="form-card">
+        <div class="form-container">
 
-            <h2>Edit Project</h2>
+            <h1>Edit Project</h1>
 
             <form method="POST">
 
@@ -66,44 +58,32 @@
 
                 <select name="status">
 
-                    <option value="Active"
-                        {% if project['status'] == "Active" %}
-                        selected
-                        {% endif %}
-                    >
-                        Active
-                    </option>
-
-                    <option value="Planning"
-                        {% if project['status'] == "Planning" %}
-                        selected
-                        {% endif %}
+                    <option
+                        value="Planning"
+                        {% if project['status'] == 'Planning' %}selected{% endif %}
                     >
                         Planning
                     </option>
 
-                    <option value="In Progress"
-                        {% if project['status'] == "In Progress" %}
-                        selected
-                        {% endif %}
+                    <option
+                        value="In Progress"
+                        {% if project['status'] == 'In Progress' %}selected{% endif %}
                     >
                         In Progress
                     </option>
 
-                    <option value="Completed"
-                        {% if project['status'] == "Completed" %}
-                        selected
-                        {% endif %}
+                    <option
+                        value="Completed"
+                        {% if project['status'] == 'Completed' %}selected{% endif %}
                     >
                         Completed
                     </option>
 
-                    <option value="On Hold"
-                        {% if project['status'] == "On Hold" %}
-                        selected
-                        {% endif %}
+                    <option
+                        value="Blocked"
+                        {% if project['status'] == 'Blocked' %}selected{% endif %}
                     >
-                        On Hold
+                        Blocked
                     </option>
 
                 </select>
@@ -124,7 +104,28 @@
                     value="{{ project['end_date'] }}"
                 >
 
-                <button type="submit">
+                <label>Estimated Budget (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="estimated_budget"
+                    value="{{ project['estimated_budget'] }}"
+                >
+
+                <label>Actual Cost (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="actual_cost"
+                    value="{{ project['actual_cost'] }}"
+                >
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Update Project
                 </button>
 
