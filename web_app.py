@@ -97,6 +97,33 @@ ensure_column("tasks", "assigned_to", "TEXT")
 ensure_column("tasks", "attachment_url", "TEXT")
 ensure_column("users", "avatar_initials", "TEXT")
 
+def create_demo_user():
+    conn = get_db_connection()
+
+    existing_user = conn.execute(
+        "SELECT * FROM users WHERE username = ?",
+        ("demo",)
+    ).fetchone()
+
+    if not existing_user:
+        hashed_password = generate_password_hash("demo123")
+
+        conn.execute("""
+        INSERT INTO users (username, password, avatar_initials)
+        VALUES (?, ?, ?)
+        """, (
+            "demo",
+            hashed_password,
+            "DE"
+        ))
+
+        conn.commit()
+
+    conn.close()
+
+
+create_demo_user()
+
 
 def create_activity(message):
     conn = get_db_connection()
