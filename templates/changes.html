@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issue Register</title>
+    <title>Change Register</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -40,18 +40,18 @@
 
             <div>
 
-                <h1>Issue Register</h1>
+                <h1>Change Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Track active project issues and operational blockers.
+                    Track approved, pending and rejected project changes.
                 </p>
 
             </div>
 
             <div class="dashboard-actions">
 
-                <a href="/add-issue" class="btn-primary">
-                    + Add Issue
+                <a href="/add-change" class="btn-primary">
+                    + Add Change
                 </a>
 
             </div>
@@ -59,11 +59,11 @@
         </div>
 
 
-        {% if issues %}
+        {% if changes %}
 
             <div class="projects-grid">
 
-                {% for issue in issues %}
+                {% for change in changes %}
 
                     <div class="project-card">
 
@@ -72,25 +72,25 @@
                             <div>
 
                                 <h3>
-                                    {{ issue["title"] }}
+                                    {{ change["title"] }}
                                 </h3>
 
-                                {% if issue["priority"] == "High" %}
+                                {% if change["approval_status"] == "Approved" %}
 
-                                    <span class="badge badge-red">
-                                        High Priority
+                                    <span class="badge badge-green">
+                                        Approved
                                     </span>
 
-                                {% elif issue["priority"] == "Medium" %}
+                                {% elif change["approval_status"] == "Pending" %}
 
                                     <span class="badge badge-yellow">
-                                        Medium Priority
+                                        Pending
                                     </span>
 
                                 {% else %}
 
-                                    <span class="badge badge-green">
-                                        Low Priority
+                                    <span class="badge badge-red">
+                                        Rejected
                                     </span>
 
                                 {% endif %}
@@ -102,7 +102,7 @@
 
                         <div class="smart-insight">
 
-                            {{ issue["description"] }}
+                            {{ change["description"] }}
 
                         </div>
 
@@ -114,17 +114,27 @@
                                 <span>Project</span>
 
                                 <strong>
-                                    {{ issue["project_name"] or "No Project" }}
+                                    {{ change["project_name"] or "No Project" }}
                                 </strong>
 
                             </div>
 
                             <div class="budget-row">
 
-                                <span>Owner</span>
+                                <span>Impact</span>
 
                                 <strong>
-                                    {{ issue["owner"] }}
+                                    {{ change["impact"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Requested By</span>
+
+                                <strong>
+                                    {{ change["requested_by"] }}
                                 </strong>
 
                             </div>
@@ -134,7 +144,7 @@
                                 <span>Status</span>
 
                                 <strong>
-                                    {{ issue["status"] }}
+                                    {{ change["approval_status"] }}
                                 </strong>
 
                             </div>
@@ -144,7 +154,7 @@
                                 <span>Created</span>
 
                                 <strong>
-                                    {{ issue["created_at"] }}
+                                    {{ change["created_at"] }}
                                 </strong>
 
                             </div>
@@ -154,11 +164,11 @@
 
                         <div class="smart-insight">
 
-                            <strong>Resolution:</strong>
+                            <strong>Implementation Plan:</strong>
 
                             <br><br>
 
-                            {{ issue["resolution"] }}
+                            {{ change["implementation_plan"] }}
 
                         </div>
 
@@ -172,14 +182,14 @@
 
             <div class="empty-box">
 
-                <h3>No Issues Logged</h3>
+                <h3>No Change Requests</h3>
 
                 <p>
-                    Add issues to begin operational issue tracking.
+                    Add project changes to begin governance tracking.
                 </p>
 
-                <a href="/add-issue" class="btn-primary">
-                    Add First Issue
+                <a href="/add-change" class="btn-primary">
+                    Add First Change
                 </a>
 
             </div>

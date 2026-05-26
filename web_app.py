@@ -46,163 +46,208 @@ def ensure_column(table, column, column_type):
 
 def init_db():
 
-    conn = get_db_connection()
+    conn = sqlite3.connect("ai_pm_tracker.db")
+
     cursor = conn.cursor()
 
-    # USERS TABLE
+
+    # USERS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         username TEXT UNIQUE,
-        password TEXT,
-        avatar_initials TEXT
+
+        email TEXT,
+
+        password TEXT
+
     )
     """)
 
-    # PROJECTS TABLE
+
+    # PROJECTS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS projects (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+
         name TEXT,
+
         description TEXT,
-        status TEXT,
+
         start_date TEXT,
+
         end_date TEXT,
+
+        status TEXT,
+
         estimated_budget REAL DEFAULT 0,
+
         actual_cost REAL DEFAULT 0,
-        client_id INTEGER,
-        user_id INTEGER
+
+        created_at TEXT
+
     )
     """)
 
-    # TASKS TABLE
+
+    # TASKS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         project_id INTEGER,
+
         title TEXT,
-        priority TEXT,
-        status TEXT,
-        due_date TEXT,
+
+        description TEXT,
+
         assigned_to TEXT,
-        attachment_url TEXT,
-        estimated_hours REAL DEFAULT 0,
-        actual_hours REAL DEFAULT 0,
-        hourly_rate REAL DEFAULT 0
-    )
-    """)
 
-    # ACTIVITY LOGS TABLE
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS activity_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        activity TEXT,
+        priority TEXT,
+
+        status TEXT,
+
+        due_date TEXT,
+
         created_at TEXT
+
     )
     """)
 
-    # CLIENTS TABLE
+
+    # CLIENTS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS clients (
+
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+
+        user_id INTEGER,
+
+        name TEXT,
+
         company TEXT,
+
         email TEXT,
+
         phone TEXT,
-        status TEXT,
-        notes TEXT,
-        estimated_value REAL DEFAULT 0,
-        user_id INTEGER
+
+        created_at TEXT
+
     )
     """)
 
+
+    # ACTIVITIES
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS activities (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        activity TEXT,
+
+        created_at TEXT
+
+    )
+    """)
+
+
+    # RISKS
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS risks (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+
+        project_id INTEGER,
+
+        title TEXT,
+
+        description TEXT,
+
+        probability TEXT,
+
+        impact TEXT,
+
+        severity_score INTEGER,
+
+        mitigation TEXT,
+
+        owner TEXT,
+
+        status TEXT,
+
+        created_at TEXT
+
+    )
+    """)
+
+
+    # ISSUES
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS issues (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+
+        project_id INTEGER,
+
+        title TEXT,
+
+        description TEXT,
+
+        priority TEXT,
+
+        owner TEXT,
+
+        status TEXT,
+
+        resolution TEXT,
+
+        created_at TEXT
+
+    )
+    """)
+
+
+    # CHANGES
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS changes (
+
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+        user_id INTEGER,
+
+        project_id INTEGER,
+
+        title TEXT,
+
+        description TEXT,
+
+        impact TEXT,
+
+        requested_by TEXT,
+
+        approval_status TEXT,
+
+        implementation_plan TEXT,
+
+        created_at TEXT
+
+    )
+    """)
+
+
     conn.commit()
+
     conn.close()
-
-    cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS risks
-                   (
-
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
-
-                       user_id
-                       INTEGER,
-
-                       project_id
-                       INTEGER,
-
-                       title
-                       TEXT,
-
-                       description
-                       TEXT,
-
-                       probability
-                       TEXT,
-
-                       impact
-                       TEXT,
-
-                       severity_score
-                       INTEGER,
-
-                       mitigation
-                       TEXT,
-
-                       owner
-                       TEXT,
-
-                       status
-                       TEXT,
-
-                       created_at
-                       TEXT
-
-                   )
-                   """)
-    cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS issues
-                   (
-
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
-
-                       user_id
-                       INTEGER,
-
-                       project_id
-                       INTEGER,
-
-                       title
-                       TEXT,
-
-                       description
-                       TEXT,
-
-                       priority
-                       TEXT,
-
-                       owner
-                       TEXT,
-
-                       status
-                       TEXT,
-
-                       resolution
-                       TEXT,
-
-                       created_at
-                       TEXT
-
-                   )
-                   """)
 
 
 init_db()
@@ -2780,6 +2825,108 @@ def add_issue():
 
     return render_template(
         "add_issue.html",
+        projects=projects
+    )
+
+@app.route("/changes")
+def changes():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    changes = conn.execute("""
+    SELECT
+        changes.*,
+        projects.name AS project_name
+    FROM changes
+    LEFT JOIN projects
+    ON changes.project_id = projects.id
+    WHERE changes.user_id = ?
+    ORDER BY changes.created_at DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "changes.html",
+        changes=changes
+    )
+
+@app.route("/add-change", methods=["GET", "POST"])
+def add_change():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+
+        title = request.form["title"]
+
+        description = request.form["description"]
+
+        impact = request.form["impact"]
+
+        requested_by = request.form["requested_by"]
+
+        approval_status = request.form["approval_status"]
+
+        implementation_plan = request.form["implementation_plan"]
+
+        conn.execute("""
+        INSERT INTO changes (
+            user_id,
+            project_id,
+            title,
+            description,
+            impact,
+            requested_by,
+            approval_status,
+            implementation_plan,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            impact,
+            requested_by,
+            approval_status,
+            implementation_plan,
+            str(date.today())
+        ))
+
+        conn.commit()
+
+        conn.close()
+
+        create_activity(
+            f"{session['username']} submitted a change request"
+        )
+
+        return redirect("/changes")
+
+    conn.close()
+
+    return render_template(
+        "add_change.html",
         projects=projects
     )
 
