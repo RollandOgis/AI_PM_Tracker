@@ -802,37 +802,53 @@ def home():
 
 @app.route("/kanban")
 def kanban():
+
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
     tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
+    SELECT
+        tasks.*,
+        projects.name AS project_name
     FROM tasks
-    JOIN projects ON tasks.project_id = projects.id
+    JOIN projects
+    ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    ORDER BY tasks.due_date ASC
-    """, (session["user_id"],)).fetchall()
+    ORDER BY tasks.id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
 
     conn.close()
 
-    columns = {
-        "Pending": [],
-        "In Progress": [],
-        "Completed": [],
-        "Blocked": []
-    }
+    pending_tasks = [
+        task for task in tasks
+        if task["status"] == "Pending"
+    ]
 
-    for task in tasks:
-        status = task["status"] if task["status"] in columns else "Pending"
-        columns[status].append(task)
+    in_progress_tasks = [
+        task for task in tasks
+        if task["status"] == "In Progress"
+    ]
+
+    completed_tasks = [
+        task for task in tasks
+        if task["status"] == "Completed"
+    ]
+
+    blocked_tasks = [
+        task for task in tasks
+        if task["status"] == "Blocked"
+    ]
 
     return render_template(
         "kanban.html",
-        tasks=tasks,
-        columns=columns,
-        current_date=str(date.today())
+        pending_tasks=pending_tasks,
+        in_progress_tasks=in_progress_tasks,
+        completed_tasks=completed_tasks,
+        blocked_tasks=blocked_tasks
     )
 
 @app.route("/update-task-status", methods=["POST"])
