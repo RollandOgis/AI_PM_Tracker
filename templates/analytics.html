@@ -13,7 +13,6 @@
 <div class="layout">
 
     <div class="sidebar">
-
         <h2>AI PM</h2>
 
         <a href="/">Dashboard</a>
@@ -22,8 +21,8 @@
         <a href="/calendar">Calendar</a>
         <a href="/gantt">Gantt Timeline</a>
         <a href="/analytics">Analytics</a>
-        <a href="/ai-assistant">AI Assistant</a>
         <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
         <a href="/insights">Insights</a>
         <a href="/report">Reports</a>
         <a href="/activity">Activity</a>
@@ -32,25 +31,18 @@
         <a href="/add-project">Add Project</a>
         <a href="/profile">Profile</a>
         <a href="/logout">Logout</a>
-
     </div>
 
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-
                 <h1>Analytics Dashboard</h1>
-
                 <p class="dashboard-subtitle">
                     View delivery performance, workload and operational metrics.
                 </p>
-
             </div>
-
         </div>
-
 
         <div class="stats-grid">
 
@@ -81,80 +73,32 @@
 
         </div>
 
-
         <div class="smart-dashboard-grid">
 
             <div class="smart-card">
-
                 <h3>Status Breakdown</h3>
-
-                <div class="analytics-row">
-                    <span>Completed</span>
-                    <strong>{{ completed_tasks }}</strong>
-                </div>
-
-                <div class="analytics-bar">
-                    <div class="analytics-fill completed-fill"></div>
-                </div>
-
-
-                <div class="analytics-row">
-                    <span>In Progress</span>
-                    <strong>{{ progress_tasks }}</strong>
-                </div>
-
-                <div class="analytics-bar">
-                    <div class="analytics-fill pending-fill"></div>
-                </div>
-
-
-                <div class="analytics-row">
-                    <span>Pending</span>
-                    <strong>{{ pending_tasks }}</strong>
-                </div>
-
-                <div class="analytics-bar">
-                    <div class="analytics-fill warning-fill"></div>
-                </div>
-
-
-                <div class="analytics-row">
-                    <span>Blocked</span>
-                    <strong>{{ blocked_tasks }}</strong>
-                </div>
-
-                <div class="analytics-bar">
-                    <div class="analytics-fill blocked-fill"></div>
-                </div>
-
+                <canvas id="taskChart"></canvas>
             </div>
 
-
             <div class="smart-card">
-
                 <h3>Delivery Summary</h3>
 
                 {% if total_tasks > 0 %}
 
                     <div class="smart-insight">
-                        You are currently tracking
-                        <strong>{{ total_tasks }}</strong>
-                        tasks across your workspace.
+                        You are currently tracking <strong>{{ total_tasks }}</strong> tasks across your workspace.
                     </div>
 
                     <div class="smart-insight">
-                        <strong>{{ completed_tasks }}</strong>
-                        task(s) have been completed successfully.
+                        <strong>{{ completed_tasks }}</strong> task(s) have been completed successfully.
                     </div>
 
                     <div class="smart-insight">
-                        <strong>{{ progress_tasks }}</strong>
-                        task(s) are currently in progress.
+                        <strong>{{ progress_tasks }}</strong> task(s) are currently in progress.
                     </div>
 
                     <div class="smart-insight">
-                        <strong>{{ blocked_tasks }}</strong>
-                        blocked task(s) may impact delivery timelines.
+                        <strong>{{ blocked_tasks }}</strong> blocked task(s) may impact delivery timelines.
                     </div>
 
                 {% else %}
@@ -164,38 +108,28 @@
                     </div>
 
                 {% endif %}
-
             </div>
 
-
             <div class="smart-card">
-
                 <h3>Operational Insights</h3>
 
                 {% if blocked_tasks > 0 %}
-
                     <div class="alert-box alert-danger">
                         ⚠ Delivery risk detected due to blocked tasks.
                     </div>
-
                 {% endif %}
 
                 {% if pending_tasks > completed_tasks %}
-
                     <div class="alert-box alert-warning">
                         ⏳ Pending workload is currently high.
                     </div>
-
                 {% endif %}
 
                 {% if completed_tasks >= pending_tasks and total_tasks > 0 %}
-
                     <div class="smart-insight">
                         ✅ Delivery performance is looking healthy.
                     </div>
-
                 {% endif %}
-
             </div>
 
         </div>
@@ -203,6 +137,43 @@
     </div>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const completedTasks = Number("{{ completed_tasks }}");
+    const progressTasks = Number("{{ progress_tasks }}");
+    const pendingTasks = Number("{{ pending_tasks }}");
+    const blockedTasks = Number("{{ blocked_tasks }}");
+
+    const ctx = document.getElementById("taskChart");
+
+    if (ctx) {
+        new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["Completed", "In Progress", "Pending", "Blocked"],
+                datasets: [{
+                    data: [
+                        completedTasks,
+                        progressTasks,
+                        pendingTasks,
+                        blockedTasks
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "bottom"
+                    }
+                }
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
