@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/insights">Insights</a>
+        <a href="/report">Reports</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>AI Assistant</h1>
+                <p class="dashboard-subtitle">
+                    Ask about overdue tasks, blocked work, budgets and project summaries.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="smart-dashboard-grid">
+
+            <div class="smart-card">
+
+                <h3>Ask the Assistant</h3>
+
+                <form method="POST" action="/ai-assistant" class="assistant-form">
+
+                    <textarea
+                        name="prompt"
+                        rows="6"
+                        placeholder="Example: Give me a summary of my project risks"
+                        required
+                    ></textarea>
+
+                    <button type="submit" class="btn-primary">
+                        Ask AI Assistant
+                    </button>
+
+                </form>
+
+            </div>
+
+            <div class="smart-card">
+
+                <h3>Assistant Response</h3>
+
+                {% if response_message %}
+
+                    <div class="smart-insight">
+                        {{ response_message }}
+                    </div>
+
+                {% else %}
+
+                    <div class="smart-insight">
+                        Try asking: “Show overdue tasks”, “What is blocked?”, “Budget summary”, or “Give me a summary”.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1484,3 +1484,25 @@ body.dark-ready {
 .blocked-fill {
     background: #dc2626;
 }
+
+.assistant-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.assistant-form textarea {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    font-size: 15px;
+    resize: vertical;
+    min-height: 160px;
+}
+
+.assistant-form textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}

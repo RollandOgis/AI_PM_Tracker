@@ -2270,6 +2270,92 @@ def analytics():
         blocked_tasks=blocked_tasks
     )
 
+@app.route("/ai-assistant", methods=["GET", "POST"])
+def ai_assistant():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    response_message = ""
+
+    if request.method == "POST":
+
+        prompt = request.form.get("prompt", "").lower()
+
+        conn = get_db_connection()
+
+        total_tasks = conn.execute("""
+        SELECT COUNT(*) FROM tasks
+        """).fetchone()[0]
+
+        completed_tasks = conn.execute("""
+        SELECT COUNT(*) FROM tasks
+        WHERE status = 'Completed'
+        """).fetchone()[0]
+
+        overdue_tasks = conn.execute("""
+        SELECT COUNT(*) FROM tasks
+        WHERE due_date < ?
+        AND status != 'Completed'
+        """, (
+            str(date.today()),
+        )).fetchone()[0]
+
+        blocked_tasks = conn.execute("""
+        SELECT COUNT(*) FROM tasks
+        WHERE status = 'Blocked'
+        """).fetchone()[0]
+
+        over_budget_projects = conn.execute("""
+        SELECT COUNT(*) FROM projects
+        WHERE actual_cost > estimated_budget
+        """).fetchone()[0]
+
+        conn.close()
+
+        if "overdue" in prompt:
+
+            response_message = (
+                f"There are currently "
+                f"{overdue_tasks} overdue task(s)."
+            )
+
+        elif "blocked" in prompt:
+
+            response_message = (
+                f"There are currently "
+                f"{blocked_tasks} blocked task(s)."
+            )
+
+        elif "budget" in prompt:
+
+            response_message = (
+                f"There are currently "
+                f"{over_budget_projects} over-budget project(s)."
+            )
+
+        elif "summary" in prompt:
+
+            response_message = (
+                f"You currently have "
+                f"{total_tasks} total task(s), "
+                f"{completed_tasks} completed task(s), "
+                f"{overdue_tasks} overdue task(s), "
+                f"and {blocked_tasks} blocked task(s)."
+            )
+
+        else:
+
+            response_message = (
+                "I can help with summaries, overdue work, "
+                "blocked tasks and budget insights."
+            )
+
+    return render_template(
+        "ai_assistant.html",
+        response_message=response_message
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
