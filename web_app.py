@@ -244,6 +244,52 @@ def init_db():
     )
     """)
 
+    # BENEFITS
+    cursor.execute("""
+
+                   CREATE TABLE IF NOT EXISTS benefits
+                   (
+
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       expected_value
+                       TEXT,
+
+                       measurement_method
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       target_date
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+
+                   """)
+
 
     conn.commit()
 
@@ -2927,6 +2973,104 @@ def add_change():
 
     return render_template(
         "add_change.html",
+        projects=projects
+    )
+
+@app.route("/benefits")
+def benefits():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    benefits = conn.execute("""
+    SELECT
+        benefits.*,
+        projects.name AS project_name
+    FROM benefits
+    LEFT JOIN projects
+    ON benefits.project_id = projects.id
+    WHERE benefits.user_id = ?
+    ORDER BY benefits.created_at DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "benefits.html",
+        benefits=benefits
+    )
+
+@app.route("/add-benefit", methods=["GET", "POST"])
+def add_benefit():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+        title = request.form["title"]
+        description = request.form["description"]
+        expected_value = request.form["expected_value"]
+        measurement_method = request.form["measurement_method"]
+        owner = request.form["owner"]
+        status = request.form["status"]
+        target_date = request.form["target_date"]
+
+        conn.execute("""
+        INSERT INTO benefits (
+            user_id,
+            project_id,
+            title,
+            description,
+            expected_value,
+            measurement_method,
+            owner,
+            status,
+            target_date,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            expected_value,
+            measurement_method,
+            owner,
+            status,
+            target_date,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a new benefit"
+        )
+
+        return redirect("/benefits")
+
+    conn.close()
+
+    return render_template(
+        "add_benefit.html",
         projects=projects
     )
 

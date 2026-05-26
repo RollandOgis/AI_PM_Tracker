@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issue Register</title>
-
+    <title>Benefits Register</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-
 <div class="layout">
 
     <div class="sidebar">
-
         <h2>AI PM</h2>
 
         <a href="/">Dashboard</a>
@@ -32,157 +29,94 @@
         <a href="/advanced-search">Search</a>
         <a href="/export-report">Export PDF</a>
         <a href="/logout">Logout</a>
-
     </div>
 
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-
-                <h1>Issue Register</h1>
-
+                <h1>Benefits Register</h1>
                 <p class="dashboard-subtitle">
-                    Track active project issues and operational blockers.
+                    Track expected benefits, owners, measurement methods and target dates.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
-                <a href="/add-issue" class="btn-primary">
-                    + Add Issue
-                </a>
-
+                <a href="/add-benefit" class="btn-primary">+ Add Benefit</a>
             </div>
-
         </div>
 
-
-        {% if issues %}
+        {% if benefits %}
 
             <div class="projects-grid">
-
-                {% for issue in issues %}
+                {% for benefit in benefits %}
 
                     <div class="project-card">
 
                         <div class="project-top">
-
                             <div>
+                                <h3>{{ benefit["title"] }}</h3>
 
-                                <h3>
-                                    {{ issue["title"] }}
-                                </h3>
-
-                                {% if issue["priority"] == "High" %}
-
-                                    <span class="badge badge-red">
-                                        High Priority
-                                    </span>
-
-                                {% elif issue["priority"] == "Medium" %}
-
-                                    <span class="badge badge-yellow">
-                                        Medium Priority
-                                    </span>
-
+                                {% if benefit["status"] == "Realised" %}
+                                    <span class="badge badge-green">Realised</span>
+                                {% elif benefit["status"] == "At Risk" %}
+                                    <span class="badge badge-red">At Risk</span>
                                 {% else %}
-
-                                    <span class="badge badge-green">
-                                        Low Priority
-                                    </span>
-
+                                    <span class="badge badge-yellow">{{ benefit["status"] }}</span>
                                 {% endif %}
-
                             </div>
-
                         </div>
-
 
                         <div class="smart-insight">
-
-                            {{ issue["description"] }}
-
+                            {{ benefit["description"] }}
                         </div>
-
 
                         <div class="budget-section">
 
                             <div class="budget-row">
-
                                 <span>Project</span>
-
-                                <strong>
-                                    {{ issue["project_name"] or "No Project" }}
-                                </strong>
-
+                                <strong>{{ benefit["project_name"] or "No Project" }}</strong>
                             </div>
 
                             <div class="budget-row">
+                                <span>Expected Value</span>
+                                <strong>{{ benefit["expected_value"] }}</strong>
+                            </div>
 
+                            <div class="budget-row">
                                 <span>Owner</span>
-
-                                <strong>
-                                    {{ issue["owner"] }}
-                                </strong>
-
+                                <strong>{{ benefit["owner"] }}</strong>
                             </div>
 
                             <div class="budget-row">
+                                <span>Target Date</span>
+                                <strong>{{ benefit["target_date"] or "No date" }}</strong>
+                            </div>
 
+                            <div class="budget-row">
                                 <span>Status</span>
-
-                                <strong>
-                                    {{ issue["status"] }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Created</span>
-
-                                <strong>
-                                    {{ issue["created_at"] }}
-                                </strong>
-
+                                <strong>{{ benefit["status"] }}</strong>
                             </div>
 
                         </div>
 
-
                         <div class="smart-insight">
-
-                            <strong>Resolution:</strong>
-
+                            <strong>Measurement Method:</strong>
                             <br><br>
-
-                            {{ issue["resolution"] }}
-
+                            {{ benefit["measurement_method"] }}
                         </div>
 
                     </div>
 
                 {% endfor %}
-
             </div>
 
         {% else %}
 
             <div class="empty-box">
-
-                <h3>No Issues Logged</h3>
-
-                <p>
-                    Add issues to begin operational issue tracking.
-                </p>
-
-                <a href="/add-issue" class="btn-primary">
-                    Add First Issue
-                </a>
-
+                <h3>No Benefits Added</h3>
+                <p>Add benefits to track value realisation across your projects.</p>
+                <a href="/add-benefit" class="btn-primary">Add First Benefit</a>
             </div>
 
         {% endif %}
@@ -190,6 +124,5 @@
     </div>
 
 </div>
-
 </body>
 </html>
