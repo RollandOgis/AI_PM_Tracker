@@ -123,25 +123,46 @@ def init_db():
 
     # CLIENTS
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS clients (
+                   CREATE TABLE IF NOT EXISTS clients
+                   (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
 
-        user_id INTEGER,
+                       user_id
+                       INTEGER,
 
-        name TEXT,
+                       name
+                       TEXT,
 
-        company TEXT,
+                       company
+                       TEXT,
 
-        email TEXT,
+                       email
+                       TEXT,
 
-        phone TEXT,
+                       phone
+                       TEXT,
 
-        created_at TEXT
+                       status
+                       TEXT,
 
-    )
-    """)
+                       notes
+                       TEXT,
 
+                       estimated_value
+                       REAL
+                       DEFAULT
+                       0,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
 
     # ACTIVITIES
     cursor.execute("""
@@ -2176,6 +2197,7 @@ def add_client():
 
         conn.execute("""
         INSERT INTO clients (
+            user_id,
             name,
             company,
             email,
@@ -2183,10 +2205,11 @@ def add_client():
             status,
             notes,
             estimated_value,
-            user_id
+            created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
+            session["user_id"],
             name,
             company,
             email,
@@ -2194,7 +2217,7 @@ def add_client():
             status,
             notes,
             estimated_value,
-            session["user_id"]
+            str(date.today())
         ))
 
         conn.commit()
