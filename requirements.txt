@@ -5,3 +5,4 @@ Flask-SQLAlchemy
 gunicorn
 psycopg2-binary
 reportlab
+openai

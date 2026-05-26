@@ -7,6 +7,7 @@ from reportlab.pdfgen import canvas
 from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+from openai import OpenAI
 
 app = Flask(__name__)
 app.secret_key = "secretkey"
