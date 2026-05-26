@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Risk</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Add Risk</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Risk Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    required
+                >
+
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="4"
+                    required
+                ></textarea>
+
+
+                <label>Probability</label>
+
+                <select name="probability" required>
+
+                    <option value="Low">Low</option>
+
+                    <option value="Medium">Medium</option>
+
+                    <option value="High">High</option>
+
+                </select>
+
+
+                <label>Impact</label>
+
+                <select name="impact" required>
+
+                    <option value="Low">Low</option>
+
+                    <option value="Medium">Medium</option>
+
+                    <option value="High">High</option>
+
+                </select>
+
+
+                <label>Mitigation Plan</label>
+
+                <textarea
+                    name="mitigation"
+                    rows="4"
+                    required
+                ></textarea>
+
+
+                <label>Risk Owner</label>
+
+                <input
+                    type="text"
+                    name="owner"
+                    required
+                >
+
+
+                <label>Status</label>
+
+                <select name="status" required>
+
+                    <option value="Open">Open</option>
+
+                    <option value="Monitoring">Monitoring</option>
+
+                    <option value="Mitigated">Mitigated</option>
+
+                    <option value="Closed">Closed</option>
+
+                </select>
+
+
+                <button type="submit" class="btn-primary">
+                    Save Risk
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

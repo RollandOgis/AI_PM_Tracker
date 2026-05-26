@@ -119,6 +119,52 @@ def init_db():
     conn.commit()
     conn.close()
 
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS risks
+                   (
+
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       probability
+                       TEXT,
+
+                       impact
+                       TEXT,
+
+                       severity_score
+                       INTEGER,
+
+                       mitigation
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
 init_db()
 
@@ -2469,6 +2515,132 @@ def export_report():
     doc.build(elements)
 
     return redirect("/static/project_report.pdf")
+
+@app.route("/risks")
+def risks():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    risks = conn.execute("""
+    SELECT
+        risks.*,
+        projects.name AS project_name
+    FROM risks
+    LEFT JOIN projects
+    ON risks.project_id = projects.id
+    WHERE risks.user_id = ?
+    ORDER BY severity_score DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "risks.html",
+        risks=risks
+    )
+
+@app.route("/add-risk", methods=["GET", "POST"])
+def add_risk():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+
+        title = request.form["title"]
+
+        description = request.form["description"]
+
+        probability = request.form["probability"]
+
+        impact = request.form["impact"]
+
+        mitigation = request.form["mitigation"]
+
+        owner = request.form["owner"]
+
+        status = request.form["status"]
+
+        probability_map = {
+            "Low": 1,
+            "Medium": 2,
+            "High": 3
+        }
+
+        impact_map = {
+            "Low": 1,
+            "Medium": 2,
+            "High": 3
+        }
+
+        severity_score = (
+            probability_map[probability]
+            *
+            impact_map[impact]
+        )
+
+        conn.execute("""
+        INSERT INTO risks (
+            user_id,
+            project_id,
+            title,
+            description,
+            probability,
+            impact,
+            severity_score,
+            mitigation,
+            owner,
+            status,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            probability,
+            impact,
+            severity_score,
+            mitigation,
+            owner,
+            status,
+            str(date.today())
+        ))
+
+        conn.commit()
+
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a new project risk"
+        )
+
+        return redirect("/risks")
+
+    conn.close()
+
+    return render_template(
+        "add_risk.html",
+        projects=projects
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

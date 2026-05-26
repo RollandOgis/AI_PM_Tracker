@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Register</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Risk Register</h1>
+
+                <p class="dashboard-subtitle">
+                    Monitor delivery, operational and project risks.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-risk" class="btn-primary">
+                    + Add Risk
+                </a>
+
+            </div>
+
+        </div>
+
+
+        {% if risks %}
+
+            <div class="projects-grid">
+
+                {% for risk in risks %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+
+                                <h3>
+                                    {{ risk["title"] }}
+                                </h3>
+
+                                {% if risk["severity_score"] >= 6 %}
+
+                                    <span class="badge badge-red">
+                                        High Risk
+                                    </span>
+
+                                {% elif risk["severity_score"] >= 3 %}
+
+                                    <span class="badge badge-yellow">
+                                        Medium Risk
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-green">
+                                        Low Risk
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            {{ risk["description"] }}
+
+                        </div>
+
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Project</span>
+
+                                <strong>
+                                    {{ risk["project_name"] or "No Project" }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Probability</span>
+
+                                <strong>
+                                    {{ risk["probability"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Impact</span>
+
+                                <strong>
+                                    {{ risk["impact"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Severity Score</span>
+
+                                <strong>
+                                    {{ risk["severity_score"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Owner</span>
+
+                                <strong>
+                                    {{ risk["owner"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Status</span>
+
+                                <strong>
+                                    {{ risk["status"] }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Mitigation:</strong>
+
+                            <br><br>
+
+                            {{ risk["mitigation"] }}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Risks Added</h3>
+
+                <p>
+                    Add project risks to begin governance tracking.
+                </p>
+
+                <a href="/add-risk" class="btn-primary">
+                    Add First Risk
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
