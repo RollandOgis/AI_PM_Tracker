@@ -10,6 +10,12 @@ import os
 from openai import OpenAI
 
 app = Flask(__name__)
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+if openai_api_key:
+    client = OpenAI(api_key=openai_api_key)
+else:
+    client = None
 app.secret_key = "secretkey"
 
 DATABASE = "ai_pm_tracker.db"
@@ -2332,54 +2338,64 @@ def ai_assistant():
 
         conn.close()
 
-        try:
+        if client is None:
 
-            completion = client.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are an AI project management assistant. "
-                            "Help the user understand delivery risks, "
-                            "budgets, blockers, task priorities and project health. "
-                            "Keep responses practical, clear and concise."
-                        )
-                    },
-                    {
-                        "role": "user",
-                        "content": (
-                            f"""
+            response_message = (
+                "AI assistant is not connected yet. "
+                "Please add OPENAI_API_KEY "
+                "inside Render environment variables."
+            )
+
+        else:
+
+            try:
+
+                completion = client.chat.completions.create(
+                    model="gpt-4.1-mini",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are an AI project management assistant. "
+                                "Help the user understand delivery risks, "
+                                "budgets, blockers, task priorities "
+                                "and project health."
+                            )
+                        },
+                        {
+                            "role": "user",
+                            "content": (
+                                f"""
 User question:
 {prompt}
 
-Current workspace statistics:
+Project statistics:
 - Total projects: {total_projects}
 - Total tasks: {total_tasks}
 - Completed tasks: {completed_tasks}
 - Overdue tasks: {overdue_tasks}
 - Blocked tasks: {blocked_tasks}
-- High-priority open tasks: {high_priority_tasks}
+- High priority open tasks: {high_priority_tasks}
 - Over-budget projects: {over_budget_projects}
 
-Give useful project management advice based on this data.
-                            """
-                        )
-                    }
-                ]
-            )
+Give practical project management advice.
+                                """
+                            )
+                        }
+                    ]
+                )
 
-            response_message = (
-                completion.choices[0]
-                .message
-                .content
-            )
+                response_message = (
+                    completion.choices[0]
+                    .message
+                    .content
+                )
 
-        except Exception as e:
+            except Exception as e:
 
-            response_message = (
-                f"AI assistant error: {str(e)}"
-            )
+                response_message = (
+                    f"AI assistant error: {str(e)}"
+                )
 
     return render_template(
         "ai_assistant.html",
@@ -2393,6 +2409,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
