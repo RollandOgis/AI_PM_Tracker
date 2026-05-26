@@ -164,6 +164,45 @@ def init_db():
 
                    )
                    """)
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS issues
+                   (
+
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       priority
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       resolution
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
 
 
 init_db()
@@ -2639,6 +2678,108 @@ def add_risk():
 
     return render_template(
         "add_risk.html",
+        projects=projects
+    )
+
+@app.route("/issues")
+def issues():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    issues = conn.execute("""
+    SELECT
+        issues.*,
+        projects.name AS project_name
+    FROM issues
+    LEFT JOIN projects
+    ON issues.project_id = projects.id
+    WHERE issues.user_id = ?
+    ORDER BY issues.created_at DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "issues.html",
+        issues=issues
+    )
+
+@app.route("/add-issue", methods=["GET", "POST"])
+def add_issue():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+
+        title = request.form["title"]
+
+        description = request.form["description"]
+
+        priority = request.form["priority"]
+
+        owner = request.form["owner"]
+
+        status = request.form["status"]
+
+        resolution = request.form["resolution"]
+
+        conn.execute("""
+        INSERT INTO issues (
+            user_id,
+            project_id,
+            title,
+            description,
+            priority,
+            owner,
+            status,
+            resolution,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            priority,
+            owner,
+            status,
+            resolution,
+            str(date.today())
+        ))
+
+        conn.commit()
+
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a new issue"
+        )
+
+        return redirect("/issues")
+
+    conn.close()
+
+    return render_template(
+        "add_issue.html",
         projects=projects
     )
 

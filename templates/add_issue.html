@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Risk</title>
+    <title>Add Issue</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -37,7 +37,7 @@
 
         <div class="form-container">
 
-            <h1>Add Risk</h1>
+            <h1>Add Issue</h1>
 
             <form method="POST">
 
@@ -56,7 +56,7 @@
                 </select>
 
 
-                <label>Risk Title</label>
+                <label>Issue Title</label>
 
                 <input
                     type="text"
@@ -74,22 +74,9 @@
                 ></textarea>
 
 
-                <label>Probability</label>
+                <label>Priority</label>
 
-                <select name="probability" required>
-
-                    <option value="Low">Low</option>
-
-                    <option value="Medium">Medium</option>
-
-                    <option value="High">High</option>
-
-                </select>
-
-
-                <label>Impact</label>
-
-                <select name="impact" required>
+                <select name="priority" required>
 
                     <option value="Low">Low</option>
 
@@ -100,16 +87,7 @@
                 </select>
 
 
-                <label>Mitigation Plan</label>
-
-                <textarea
-                    name="mitigation"
-                    rows="4"
-                    required
-                ></textarea>
-
-
-                <label>Risk Owner</label>
+                <label>Issue Owner</label>
 
                 <input
                     type="text"
@@ -124,17 +102,26 @@
 
                     <option value="Open">Open</option>
 
-                    <option value="Monitoring">Monitoring</option>
+                    <option value="Investigating">Investigating</option>
 
-                    <option value="Mitigated">Mitigated</option>
+                    <option value="Resolved">Resolved</option>
 
                     <option value="Closed">Closed</option>
 
                 </select>
 
 
+                <label>Resolution Plan</label>
+
+                <textarea
+                    name="resolution"
+                    rows="4"
+                    required
+                ></textarea>
+
+
                 <button type="submit" class="btn-primary">
-                    Save Risk
+                    Save Issue
                 </button>
 
             </form>

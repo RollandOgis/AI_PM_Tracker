@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Risk Register</title>
+    <title>Issue Register</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -39,18 +39,18 @@
 
             <div>
 
-                <h1>Risk Register</h1>
+                <h1>Issue Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Monitor delivery, operational and project risks.
+                    Track active project issues and operational blockers.
                 </p>
 
             </div>
 
             <div class="dashboard-actions">
 
-                <a href="/add-risk" class="btn-primary">
-                    + Add Risk
+                <a href="/add-issue" class="btn-primary">
+                    + Add Issue
                 </a>
 
             </div>
@@ -58,11 +58,11 @@
         </div>
 
 
-        {% if risks %}
+        {% if issues %}
 
             <div class="projects-grid">
 
-                {% for risk in risks %}
+                {% for issue in issues %}
 
                     <div class="project-card">
 
@@ -71,25 +71,25 @@
                             <div>
 
                                 <h3>
-                                    {{ risk["title"] }}
+                                    {{ issue["title"] }}
                                 </h3>
 
-                                {% if risk["severity_score"] >= 6 %}
+                                {% if issue["priority"] == "High" %}
 
                                     <span class="badge badge-red">
-                                        High Risk
+                                        High Priority
                                     </span>
 
-                                {% elif risk["severity_score"] >= 3 %}
+                                {% elif issue["priority"] == "Medium" %}
 
                                     <span class="badge badge-yellow">
-                                        Medium Risk
+                                        Medium Priority
                                     </span>
 
                                 {% else %}
 
                                     <span class="badge badge-green">
-                                        Low Risk
+                                        Low Priority
                                     </span>
 
                                 {% endif %}
@@ -101,7 +101,7 @@
 
                         <div class="smart-insight">
 
-                            {{ risk["description"] }}
+                            {{ issue["description"] }}
 
                         </div>
 
@@ -113,37 +113,7 @@
                                 <span>Project</span>
 
                                 <strong>
-                                    {{ risk["project_name"] or "No Project" }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Probability</span>
-
-                                <strong>
-                                    {{ risk["probability"] }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Impact</span>
-
-                                <strong>
-                                    {{ risk["impact"] }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Severity Score</span>
-
-                                <strong>
-                                    {{ risk["severity_score"] }}
+                                    {{ issue["project_name"] or "No Project" }}
                                 </strong>
 
                             </div>
@@ -153,7 +123,7 @@
                                 <span>Owner</span>
 
                                 <strong>
-                                    {{ risk["owner"] }}
+                                    {{ issue["owner"] }}
                                 </strong>
 
                             </div>
@@ -163,7 +133,17 @@
                                 <span>Status</span>
 
                                 <strong>
-                                    {{ risk["status"] }}
+                                    {{ issue["status"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Created</span>
+
+                                <strong>
+                                    {{ issue["created_at"] }}
                                 </strong>
 
                             </div>
@@ -173,11 +153,11 @@
 
                         <div class="smart-insight">
 
-                            <strong>Mitigation:</strong>
+                            <strong>Resolution:</strong>
 
                             <br><br>
 
-                            {{ risk["mitigation"] }}
+                            {{ issue["resolution"] }}
 
                         </div>
 
@@ -191,14 +171,14 @@
 
             <div class="empty-box">
 
-                <h3>No Risks Added</h3>
+                <h3>No Issues Logged</h3>
 
                 <p>
-                    Add project risks to begin governance tracking.
+                    Add issues to begin operational issue tracking.
                 </p>
 
-                <a href="/add-risk" class="btn-primary">
-                    Add First Risk
+                <a href="/add-issue" class="btn-primary">
+                    Add First Issue
                 </a>
 
             </div>
