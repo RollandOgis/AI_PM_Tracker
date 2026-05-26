@@ -8,6 +8,9 @@ from datetime import date
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from openai import OpenAI
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import letter
 
 app = Flask(__name__)
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -2402,6 +2405,70 @@ Give practical project management advice.
         "ai_assistant.html",
         response_message=response_message
     )
+
+@app.route("/export-report")
+def export_report():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    total_projects = conn.execute("""
+    SELECT COUNT(*) FROM projects
+    """).fetchone()[0]
+
+    total_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    """).fetchone()[0]
+
+    completed_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    WHERE status = 'Completed'
+    """).fetchone()[0]
+
+    blocked_tasks = conn.execute("""
+    SELECT COUNT(*) FROM tasks
+    WHERE status = 'Blocked'
+    """).fetchone()[0]
+
+    conn.close()
+
+    report_path = "static/project_report.pdf"
+
+    doc = SimpleDocTemplate(
+        report_path,
+        pagesize=letter
+    )
+
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    title = Paragraph(
+        "AI Project Management Report",
+        styles["Title"]
+    )
+
+    elements.append(title)
+
+    elements.append(Spacer(1, 20))
+
+    summary = Paragraph(
+        f"""
+        Total Projects: {total_projects}<br/>
+        Total Tasks: {total_tasks}<br/>
+        Completed Tasks: {completed_tasks}<br/>
+        Blocked Tasks: {blocked_tasks}
+        """,
+        styles["BodyText"]
+    )
+
+    elements.append(summary)
+
+    doc.build(elements)
+
+    return redirect("/static/project_report.pdf")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
