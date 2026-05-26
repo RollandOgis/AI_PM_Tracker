@@ -835,9 +835,9 @@ def kanban():
         current_date=str(date.today())
     )
 
-
 @app.route("/update-task-status", methods=["POST"])
 def update_task_status():
+
     if "user_id" not in session:
         return jsonify({"success": False, "message": "Not logged in"}), 401
 
@@ -858,35 +858,20 @@ def update_task_status():
 
     conn = get_db_connection()
 
-    task = conn.execute("""
-    SELECT tasks.id, tasks.title
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.id = ?
-    AND projects.user_id = ?
+    conn.execute("""
+    UPDATE tasks
+    SET status = ?
+    WHERE id = ?
     """, (
-        task_id,
-        session["user_id"]
-    )).fetchone()
-
-    if not task:
-        conn.close()
-        return jsonify({"success": False, "message": "Task not found"}), 404
-
-    conn.execute(
-        "UPDATE tasks SET status = ? WHERE id = ?",
-        (
-            new_status,
-            task_id
-        )
-    )
+        new_status,
+        task_id
+    ))
 
     conn.commit()
     conn.close()
 
     create_activity(
-        f"{session.get('username', 'User')} moved task {task['title']} to {new_status}"
+        f"{session['username']} moved task #{task_id} to {new_status}"
     )
 
     return jsonify({"success": True})
