@@ -1510,15 +1510,15 @@ body.dark-ready {
 .kanban-board {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-top: 20px;
+    gap: 22px;
+    margin-top: 25px;
 }
 
 .kanban-column {
     background: #f8fafc;
-    border-radius: 16px;
+    border-radius: 18px;
     padding: 18px;
-    min-height: 500px;
+    min-height: 520px;
     border: 1px solid #e5e7eb;
 }
 
@@ -1528,7 +1528,7 @@ body.dark-ready {
 }
 
 .task-list {
-    min-height: 420px;
+    min-height: 450px;
 }
 
 .task-card {
@@ -1564,17 +1564,13 @@ body.dark-ready {
 }
 
 @media (max-width: 1100px) {
-
     .kanban-board {
         grid-template-columns: repeat(2, 1fr);
     }
-
 }
 
 @media (max-width: 700px) {
-
     .kanban-board {
         grid-template-columns: 1fr;
     }
-
 }
