@@ -2281,21 +2281,24 @@ def ai_assistant():
 
     if request.method == "POST":
 
-        prompt = request.form.get("prompt", "").lower()
+        prompt = request.form.get("prompt", "")
 
         conn = get_db_connection()
 
         total_tasks = conn.execute("""
-        SELECT COUNT(*) FROM tasks
+        SELECT COUNT(*)
+        FROM tasks
         """).fetchone()[0]
 
         completed_tasks = conn.execute("""
-        SELECT COUNT(*) FROM tasks
+        SELECT COUNT(*)
+        FROM tasks
         WHERE status = 'Completed'
         """).fetchone()[0]
 
         overdue_tasks = conn.execute("""
-        SELECT COUNT(*) FROM tasks
+        SELECT COUNT(*)
+        FROM tasks
         WHERE due_date < ?
         AND status != 'Completed'
         """, (
@@ -2303,53 +2306,79 @@ def ai_assistant():
         )).fetchone()[0]
 
         blocked_tasks = conn.execute("""
-        SELECT COUNT(*) FROM tasks
+        SELECT COUNT(*)
+        FROM tasks
         WHERE status = 'Blocked'
         """).fetchone()[0]
 
+        high_priority_tasks = conn.execute("""
+        SELECT COUNT(*)
+        FROM tasks
+        WHERE priority = 'High'
+        AND status != 'Completed'
+        """).fetchone()[0]
+
+        total_projects = conn.execute("""
+        SELECT COUNT(*)
+        FROM projects
+        """).fetchone()[0]
+
         over_budget_projects = conn.execute("""
-        SELECT COUNT(*) FROM projects
-        WHERE actual_cost > estimated_budget
+        SELECT COUNT(*)
+        FROM projects
+        WHERE estimated_budget > 0
+        AND actual_cost > estimated_budget
         """).fetchone()[0]
 
         conn.close()
 
-        if "overdue" in prompt:
+        try:
 
-            response_message = (
-                f"There are currently "
-                f"{overdue_tasks} overdue task(s)."
+            completion = client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an AI project management assistant. "
+                            "Help the user understand delivery risks, "
+                            "budgets, blockers, task priorities and project health. "
+                            "Keep responses practical, clear and concise."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"""
+User question:
+{prompt}
+
+Current workspace statistics:
+- Total projects: {total_projects}
+- Total tasks: {total_tasks}
+- Completed tasks: {completed_tasks}
+- Overdue tasks: {overdue_tasks}
+- Blocked tasks: {blocked_tasks}
+- High-priority open tasks: {high_priority_tasks}
+- Over-budget projects: {over_budget_projects}
+
+Give useful project management advice based on this data.
+                            """
+                        )
+                    }
+                ]
             )
 
-        elif "blocked" in prompt:
-
             response_message = (
-                f"There are currently "
-                f"{blocked_tasks} blocked task(s)."
+                completion.choices[0]
+                .message
+                .content
             )
 
-        elif "budget" in prompt:
+        except Exception as e:
 
             response_message = (
-                f"There are currently "
-                f"{over_budget_projects} over-budget project(s)."
-            )
-
-        elif "summary" in prompt:
-
-            response_message = (
-                f"You currently have "
-                f"{total_tasks} total task(s), "
-                f"{completed_tasks} completed task(s), "
-                f"{overdue_tasks} overdue task(s), "
-                f"and {blocked_tasks} blocked task(s)."
-            )
-
-        else:
-
-            response_message = (
-                "I can help with summaries, overdue work, "
-                "blocked tasks and budget insights."
+                f"AI assistant error: {str(e)}"
             )
 
     return render_template(
@@ -2364,3 +2393,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
