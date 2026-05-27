@@ -5,6 +5,7 @@ from io import StringIO, BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from datetime import date
+from datetime import date, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from openai import OpenAI
@@ -2239,22 +2240,25 @@ def activity():
 
 def create_activity(activity_text):
 
-    conn = get_db_connection()
+    try:
+        conn = get_db_connection()
 
-    conn.execute("""
-    INSERT INTO activities (
-        activity,
-        created_at
-    )
-    VALUES (?, ?)
-    """, (
-        activity_text,
-        str(datetime.now())
-    ))
+        conn.execute("""
+        INSERT INTO activities (
+            activity,
+            created_at
+        )
+        VALUES (?, ?)
+        """, (
+            activity_text,
+            str(datetime.now())
+        ))
 
-    conn.commit()
+        conn.commit()
+        conn.close()
 
-    conn.close()
+    except Exception as e:
+        print("Activity logging failed:", e)
 
 
 @app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
