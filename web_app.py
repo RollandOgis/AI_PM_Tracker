@@ -3226,6 +3226,129 @@ def delete_risk(risk_id):
 
     return redirect("/risks")
 
+@app.route("/edit-issue/<int:issue_id>", methods=["GET", "POST"])
+def edit_issue(issue_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    issue = conn.execute("""
+    SELECT *
+    FROM issues
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        issue_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not issue:
+        conn.close()
+        return redirect("/issues")
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        priority = request.form.get("priority", "Medium")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+        resolution = request.form.get("resolution", "")
+
+        conn.execute("""
+        UPDATE issues
+        SET
+            project_id = ?,
+            title = ?,
+            description = ?,
+            priority = ?,
+            owner = ?,
+            status = ?,
+            resolution = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            project_id,
+            title,
+            description,
+            priority,
+            owner,
+            status,
+            resolution,
+            issue_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated an issue"
+        )
+
+        return redirect("/issues")
+
+    conn.close()
+
+    return render_template(
+        "edit_issue.html",
+        issue=issue,
+        projects=projects
+    )
+
+
+@app.route("/delete-issue/<int:issue_id>")
+def delete_issue(issue_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    issue = conn.execute("""
+    SELECT *
+    FROM issues
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        issue_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not issue:
+        conn.close()
+        return redirect("/issues")
+
+    conn.execute("""
+    DELETE FROM issues
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        issue_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted an issue"
+    )
+
+    return redirect("/issues")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Issue</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Issue</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == issue['project_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Issue Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    value="{{ issue['title'] }}"
+                    required
+                >
+
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="4"
+                    required
+                >{{ issue['description'] }}</textarea>
+
+
+                <label>Priority</label>
+
+                <select name="priority" required>
+
+                    <option
+                        value="Low"
+                        {% if issue['priority'] == 'Low' %}selected{% endif %}
+                    >
+                        Low
+                    </option>
+
+                    <option
+                        value="Medium"
+                        {% if issue['priority'] == 'Medium' %}selected{% endif %}
+                    >
+                        Medium
+                    </option>
+
+                    <option
+                        value="High"
+                        {% if issue['priority'] == 'High' %}selected{% endif %}
+                    >
+                        High
+                    </option>
+
+                </select>
+
+
+                <label>Issue Owner</label>
+
+                <input
+                    type="text"
+                    name="owner"
+                    value="{{ issue['owner'] }}"
+                    required
+                >
+
+
+                <label>Status</label>
+
+                <select name="status" required>
+
+                    <option
+                        value="Open"
+                        {% if issue['status'] == 'Open' %}selected{% endif %}
+                    >
+                        Open
+                    </option>
+
+                    <option
+                        value="Investigating"
+                        {% if issue['status'] == 'Investigating' %}selected{% endif %}
+                    >
+                        Investigating
+                    </option>
+
+                    <option
+                        value="Resolved"
+                        {% if issue['status'] == 'Resolved' %}selected{% endif %}
+                    >
+                        Resolved
+                    </option>
+
+                    <option
+                        value="Closed"
+                        {% if issue['status'] == 'Closed' %}selected{% endif %}
+                    >
+                        Closed
+                    </option>
+
+                </select>
+
+
+                <label>Resolution Plan</label>
+
+                <textarea
+                    name="resolution"
+                    rows="4"
+                    required
+                >{{ issue['resolution'] }}</textarea>
+
+
+                <button type="submit" class="btn-primary">
+                    Update Issue
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

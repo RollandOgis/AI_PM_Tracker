@@ -59,7 +59,6 @@
 
         </div>
 
-
         {% if issues %}
 
             <div class="projects-grid">
@@ -72,86 +71,62 @@
 
                             <div>
 
-                                <h3>
-                                    {{ issue["title"] }}
-                                </h3>
+                                <h3>{{ issue["title"] }}</h3>
 
                                 {% if issue["priority"] == "High" %}
-
-                                    <span class="badge badge-red">
-                                        High Priority
-                                    </span>
-
+                                    <span class="badge badge-red">High Priority</span>
                                 {% elif issue["priority"] == "Medium" %}
-
-                                    <span class="badge badge-yellow">
-                                        Medium Priority
-                                    </span>
-
+                                    <span class="badge badge-yellow">Medium Priority</span>
                                 {% else %}
-
-                                    <span class="badge badge-green">
-                                        Low Priority
-                                    </span>
-
+                                    <span class="badge badge-green">Low Priority</span>
                                 {% endif %}
 
                             </div>
 
                         </div>
 
-
                         <div class="smart-insight">
-
                             {{ issue["description"] }}
-
                         </div>
-
 
                         <div class="budget-section">
 
                             <div class="budget-row">
-
                                 <span>Project</span>
-
-                                <strong>
-                                    {{ issue["project_name"] or "No Project" }}
-                                </strong>
-
+                                <strong>{{ issue["project_name"] or "No Project" }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Owner</span>
-
-                                <strong>
-                                    {{ issue["owner"] }}
-                                </strong>
-
+                                <strong>{{ issue["owner"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Status</span>
-
-                                <strong>
-                                    {{ issue["status"] }}
-                                </strong>
-
+                                <strong>{{ issue["status"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Created</span>
-
-                                <strong>
-                                    {{ issue["created_at"] }}
-                                </strong>
-
+                                <strong>{{ issue["created_at"] }}</strong>
                             </div>
 
                         </div>
 
+                        <div class="project-actions">
+
+                            <a href="/edit-issue/{{ issue['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-issue/{{ issue['id'] }}"
+                                onclick="return confirm('Delete this issue?')"
+                            >
+                                Delete
+                            </a>
+
+                        </div>
 
                         <div class="smart-insight">
 
