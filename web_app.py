@@ -166,17 +166,23 @@ def init_db():
 
     # ACTIVITIES
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS activities (
+                   CREATE TABLE IF NOT EXISTS activities
+                   (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
 
-        activity TEXT,
+                       activity
+                       TEXT,
 
-        created_at TEXT
+                       created_at
+                       TEXT
 
-    )
-    """)
-
+                   )
+                   """)
 
     # RISKS
     cursor.execute("""
@@ -1385,28 +1391,6 @@ def profile():
     )
 
 
-@app.route("/activity")
-def activity():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    activities = conn.execute("""
-    SELECT *
-    FROM activity_logs
-    ORDER BY id DESC
-    LIMIT 50
-    """).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "activity.html",
-        activities=activities
-    )
-
 @app.route("/project-comments/<int:project_id>", methods=["GET", "POST"])
 def project_comments(project_id):
     if "user_id" not in session:
@@ -2174,62 +2158,47 @@ def clients():
         clients=clients
     )
 
-@app.route("/add-client", methods=["GET", "POST"])
-def add_client():
+@app.route("/activity")
+def activity():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    if request.method == "POST":
+    conn = get_db_connection()
 
-        name = request.form.get("name", "")
-        company = request.form.get("company", "")
-        email = request.form.get("email", "")
-        phone = request.form.get("phone", "")
-        status = request.form.get("status", "Lead")
-        notes = request.form.get("notes", "")
+    activities = conn.execute("""
+    SELECT *
+    FROM activities
+    ORDER BY id DESC
+    LIMIT 100
+    """).fetchall()
 
-        estimated_value = float(
-            request.form.get("estimated_value", 0) or 0
-        )
+    conn.close()
 
-        conn = get_db_connection()
+    return render_template(
+        "activity.html",
+        activities=activities
+    )
 
-        conn.execute("""
-        INSERT INTO clients (
-            user_id,
-            name,
-            company,
-            email,
-            phone,
-            status,
-            notes,
-            estimated_value,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            session["user_id"],
-            name,
-            company,
-            email,
-            phone,
-            status,
-            notes,
-            estimated_value,
-            str(date.today())
-        ))
 
-        conn.commit()
-        conn.close()
+def create_activity(activity_text):
 
-        create_activity(
-            f"{session['username']} added client {name}"
-        )
+    conn = get_db_connection()
 
-        return redirect("/clients")
+    conn.execute("""
+    INSERT INTO activities (
+        activity,
+        created_at
+    )
+    VALUES (?, ?)
+    """, (
+        activity_text,
+        str(datetime.now())
+    ))
 
-    return render_template("add_client.html")
+    conn.commit()
+
+    conn.close()
 
 
 @app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
