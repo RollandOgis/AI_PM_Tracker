@@ -59,7 +59,6 @@
 
         </div>
 
-
         {% if changes %}
 
             <div class="projects-grid">
@@ -159,6 +158,22 @@
                                 </strong>
 
                             </div>
+
+                        </div>
+
+
+                        <div class="project-actions">
+
+                            <a href="/edit-change/{{ change['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-change/{{ change['id'] }}"
+                                onclick="return confirm('Delete this change request?')"
+                            >
+                                Delete
+                            </a>
 
                         </div>
 

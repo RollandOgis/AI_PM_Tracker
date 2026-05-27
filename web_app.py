@@ -3349,6 +3349,210 @@ def delete_issue(issue_id):
 
     return redirect("/issues")
 
+@app.route("/edit-change/<int:change_id>", methods=["GET", "POST"])
+def edit_change(change_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    change = conn.execute("""
+    SELECT *
+    FROM changes
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        change_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not change:
+        conn.close()
+        return redirect("/changes")
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        conn.execute("""
+        UPDATE changes
+        SET
+            project_id = ?,
+            title = ?,
+            description = ?,
+            impact = ?,
+            requested_by = ?,
+            approval_status = ?,
+            implementation_plan = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            request.form.get("project_id"),
+            request.form.get("title", ""),
+            request.form.get("description", ""),
+            request.form.get("impact", "Medium"),
+            request.form.get("requested_by", ""),
+            request.form.get("approval_status", "Pending"),
+            request.form.get("implementation_plan", ""),
+            change_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a change request"
+        )
+
+        return redirect("/changes")
+
+    conn.close()
+
+    return render_template(
+        "edit_change.html",
+        change=change,
+        projects=projects
+    )
+
+
+@app.route("/delete-change/<int:change_id>")
+def delete_change(change_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    DELETE FROM changes
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        change_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a change request"
+    )
+
+    return redirect("/changes")
+
+@app.route("/edit-benefit/<int:benefit_id>", methods=["GET", "POST"])
+def edit_benefit(benefit_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    benefit = conn.execute("""
+    SELECT *
+    FROM benefits
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        benefit_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not benefit:
+        conn.close()
+        return redirect("/benefits")
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        conn.execute("""
+        UPDATE benefits
+        SET
+            project_id = ?,
+            title = ?,
+            description = ?,
+            expected_value = ?,
+            measurement_method = ?,
+            owner = ?,
+            status = ?,
+            target_date = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            request.form.get("project_id"),
+            request.form.get("title", ""),
+            request.form.get("description", ""),
+            request.form.get("expected_value", ""),
+            request.form.get("measurement_method", ""),
+            request.form.get("owner", ""),
+            request.form.get("status", "Planned"),
+            request.form.get("target_date", ""),
+            benefit_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a benefit"
+        )
+
+        return redirect("/benefits")
+
+    conn.close()
+
+    return render_template(
+        "edit_benefit.html",
+        benefit=benefit,
+        projects=projects
+    )
+
+
+@app.route("/delete-benefit/<int:benefit_id>")
+def delete_benefit(benefit_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    DELETE FROM benefits
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        benefit_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a benefit"
+    )
+
+    return redirect("/benefits")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

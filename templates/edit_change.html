@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Change Request</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Change Request</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == change['project_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Change Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    value="{{ change['title'] }}"
+                    required
+                >
+
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="4"
+                    required
+                >{{ change['description'] }}</textarea>
+
+
+                <label>Impact</label>
+
+                <select name="impact" required>
+
+                    <option
+                        value="Low"
+                        {% if change['impact'] == 'Low' %}selected{% endif %}
+                    >
+                        Low
+                    </option>
+
+                    <option
+                        value="Medium"
+                        {% if change['impact'] == 'Medium' %}selected{% endif %}
+                    >
+                        Medium
+                    </option>
+
+                    <option
+                        value="High"
+                        {% if change['impact'] == 'High' %}selected{% endif %}
+                    >
+                        High
+                    </option>
+
+                </select>
+
+
+                <label>Requested By</label>
+
+                <input
+                    type="text"
+                    name="requested_by"
+                    value="{{ change['requested_by'] }}"
+                    required
+                >
+
+
+                <label>Approval Status</label>
+
+                <select name="approval_status" required>
+
+                    <option
+                        value="Pending"
+                        {% if change['approval_status'] == 'Pending' %}selected{% endif %}
+                    >
+                        Pending
+                    </option>
+
+                    <option
+                        value="Approved"
+                        {% if change['approval_status'] == 'Approved' %}selected{% endif %}
+                    >
+                        Approved
+                    </option>
+
+                    <option
+                        value="Rejected"
+                        {% if change['approval_status'] == 'Rejected' %}selected{% endif %}
+                    >
+                        Rejected
+                    </option>
+
+                </select>
+
+
+                <label>Implementation Plan</label>
+
+                <textarea
+                    name="implementation_plan"
+                    rows="4"
+                    required
+                >{{ change['implementation_plan'] }}</textarea>
+
+
+                <button type="submit" class="btn-primary">
+                    Update Change Request
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
