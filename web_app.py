@@ -2207,10 +2207,6 @@ def add_client():
         conn.commit()
         conn.close()
 
-        create_activity(
-            f"{session['username']} added a client"
-        )
-
         return redirect("/clients")
 
     return render_template("add_client.html")
