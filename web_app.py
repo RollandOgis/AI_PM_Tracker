@@ -3713,6 +3713,95 @@ def add_team_member():
 
     return render_template("add_team_member.html")
 
+@app.route("/edit-team-member/<int:member_id>", methods=["GET", "POST"])
+def edit_team_member(member_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    member = conn.execute("""
+    SELECT *
+    FROM team_members
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        member_id,
+        session["user_id"]
+    )).fetchone()
+
+    if not member:
+        conn.close()
+        return redirect("/team")
+
+    if request.method == "POST":
+
+        conn.execute("""
+        UPDATE team_members
+        SET
+            name = ?,
+            role = ?,
+            email = ?,
+            phone = ?,
+            skills = ?,
+            status = ?
+        WHERE id = ?
+        AND user_id = ?
+        """, (
+            request.form.get("name", ""),
+            request.form.get("role", ""),
+            request.form.get("email", ""),
+            request.form.get("phone", ""),
+            request.form.get("skills", ""),
+            request.form.get("status", "Active"),
+            member_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a team member"
+        )
+
+        return redirect("/team")
+
+    conn.close()
+
+    return render_template(
+        "edit_team_member.html",
+        member=member
+    )
+
+
+@app.route("/delete-team-member/<int:member_id>")
+def delete_team_member(member_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    DELETE FROM team_members
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        member_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a team member"
+    )
+
+    return redirect("/team")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

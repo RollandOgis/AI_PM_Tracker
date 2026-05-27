@@ -160,6 +160,22 @@
                         </div>
 
 
+                        <div class="project-actions">
+
+                            <a href="/edit-team-member/{{ member['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-team-member/{{ member['id'] }}"
+                                onclick="return confirm('Delete this team member?')"
+                            >
+                                Delete
+                            </a>
+
+                        </div>
+
+
                         <div class="smart-insight">
 
                             <strong>Skills:</strong>
