@@ -1741,9 +1741,17 @@ def add_project():
         name = request.form.get("name", "")
         description = request.form.get("description", "")
         status = request.form.get("status", "Planning")
-        budget = request.form.get("budget", 0)
-        deadline = request.form.get("deadline", "")
+        start_date = request.form.get("start_date", "")
+        end_date = request.form.get("end_date", "")
         client_id = request.form.get("client_id")
+
+        estimated_budget = float(
+            request.form.get("estimated_budget", 0) or 0
+        )
+
+        actual_cost = float(
+            request.form.get("actual_cost", 0) or 0
+        )
 
         conn.execute("""
         INSERT INTO projects (
@@ -1751,19 +1759,25 @@ def add_project():
             client_id,
             name,
             description,
+            start_date,
+            end_date,
             status,
-            budget,
-            deadline
+            estimated_budget,
+            actual_cost,
+            created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             session["user_id"],
             client_id if client_id else None,
             name,
             description,
+            start_date,
+            end_date,
             status,
-            budget,
-            deadline
+            estimated_budget,
+            actual_cost,
+            str(date.today())
         ))
 
         conn.commit()
@@ -1819,9 +1833,17 @@ def edit_project(project_id):
         name = request.form.get("name", "")
         description = request.form.get("description", "")
         status = request.form.get("status", "Planning")
-        budget = request.form.get("budget", 0)
-        deadline = request.form.get("deadline", "")
+        start_date = request.form.get("start_date", "")
+        end_date = request.form.get("end_date", "")
         client_id = request.form.get("client_id")
+
+        estimated_budget = float(
+            request.form.get("estimated_budget", 0) or 0
+        )
+
+        actual_cost = float(
+            request.form.get("actual_cost", 0) or 0
+        )
 
         conn.execute("""
         UPDATE projects
@@ -1829,18 +1851,22 @@ def edit_project(project_id):
             client_id = ?,
             name = ?,
             description = ?,
+            start_date = ?,
+            end_date = ?,
             status = ?,
-            budget = ?,
-            deadline = ?
+            estimated_budget = ?,
+            actual_cost = ?
         WHERE id = ?
         AND user_id = ?
         """, (
             client_id if client_id else None,
             name,
             description,
+            start_date,
+            end_date,
             status,
-            budget,
-            deadline,
+            estimated_budget,
+            actual_cost,
             project_id,
             session["user_id"]
         ))

@@ -77,18 +77,31 @@
 
                     {% for client in clients %}
 
-                        <option
-                            value="{{ client['id'] }}"
-                            {% if project['client_id'] == client['id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ client['name'] }}
+                        {% if project['client_id'] == client['id'] %}
 
-                            {% if client['company'] %}
-                                - {{ client['company'] }}
-                            {% endif %}
-                        </option>
+                            <option value="{{ client['id'] }}" selected>
+
+                                {{ client['name'] }}
+
+                                {% if client['company'] %}
+                                    - {{ client['company'] }}
+                                {% endif %}
+
+                            </option>
+
+                        {% else %}
+
+                            <option value="{{ client['id'] }}">
+
+                                {{ client['name'] }}
+
+                                {% if client['company'] %}
+                                    - {{ client['company'] }}
+                                {% endif %}
+
+                            </option>
+
+                        {% endif %}
 
                     {% endfor %}
 
@@ -108,61 +121,68 @@
 
                 <select name="status">
 
-                    <option
-                        value="Planning"
-                        {% if project['status'] == 'Planning' %}
-                            selected
-                        {% endif %}
-                    >
-                        Planning
-                    </option>
+                    {% if project['status'] == 'Planning' %}
+                        <option value="Planning" selected>Planning</option>
+                    {% else %}
+                        <option value="Planning">Planning</option>
+                    {% endif %}
 
-                    <option
-                        value="In Progress"
-                        {% if project['status'] == 'In Progress' %}
-                            selected
-                        {% endif %}
-                    >
-                        In Progress
-                    </option>
+                    {% if project['status'] == 'In Progress' %}
+                        <option value="In Progress" selected>In Progress</option>
+                    {% else %}
+                        <option value="In Progress">In Progress</option>
+                    {% endif %}
 
-                    <option
-                        value="Completed"
-                        {% if project['status'] == 'Completed' %}
-                            selected
-                        {% endif %}
-                    >
-                        Completed
-                    </option>
+                    {% if project['status'] == 'Completed' %}
+                        <option value="Completed" selected>Completed</option>
+                    {% else %}
+                        <option value="Completed">Completed</option>
+                    {% endif %}
 
-                    <option
-                        value="On Hold"
-                        {% if project['status'] == 'On Hold' %}
-                            selected
-                        {% endif %}
-                    >
-                        On Hold
-                    </option>
+                    {% if project['status'] == 'On Hold' %}
+                        <option value="On Hold" selected>On Hold</option>
+                    {% else %}
+                        <option value="On Hold">On Hold</option>
+                    {% endif %}
 
                 </select>
 
 
-                <label>Budget (£)</label>
+                <label>Start Date</label>
+
+                <input
+                    type="date"
+                    name="start_date"
+                    value="{{ project['start_date'] }}"
+                >
+
+
+                <label>End Date</label>
+
+                <input
+                    type="date"
+                    name="end_date"
+                    value="{{ project['end_date'] }}"
+                >
+
+
+                <label>Estimated Budget (£)</label>
 
                 <input
                     type="number"
                     step="0.01"
-                    name="budget"
-                    value="{{ project['budget'] }}"
+                    name="estimated_budget"
+                    value="{{ project['estimated_budget'] }}"
                 >
 
 
-                <label>Deadline</label>
+                <label>Actual Cost (£)</label>
 
                 <input
-                    type="date"
-                    name="deadline"
-                    value="{{ project['deadline'] }}"
+                    type="number"
+                    step="0.01"
+                    name="actual_cost"
+                    value="{{ project['actual_cost'] }}"
                 >
 
 
