@@ -164,6 +164,21 @@ def init_db():
                    )
                    """)
 
+    try:
+        cursor.execute("ALTER TABLE clients ADD COLUMN status TEXT DEFAULT 'Lead'")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE clients ADD COLUMN notes TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE clients ADD COLUMN estimated_value REAL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
+
     # ACTIVITIES
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS activities
