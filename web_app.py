@@ -2267,7 +2267,6 @@ def create_activity(activity_text):
     except Exception as e:
         print("Activity logging failed:", e)
 
-
 @app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
 def edit_client(client_id):
 
@@ -2292,19 +2291,21 @@ def edit_client(client_id):
 
     if request.method == "POST":
 
-        name = request.form["name"]
-        company = request.form["company"]
-        email = request.form["email"]
-        phone = request.form["phone"]
-        status = request.form["status"]
-        notes = request.form["notes"]
+        name = request.form.get("name", "")
+        company = request.form.get("company", "")
+        email = request.form.get("email", "")
+        phone = request.form.get("phone", "")
+        status = request.form.get("status", "Lead")
+        notes = request.form.get("notes", "")
+
         estimated_value = float(
             request.form.get("estimated_value", 0) or 0
         )
 
         conn.execute("""
         UPDATE clients
-        SET name = ?,
+        SET
+            name = ?,
             company = ?,
             email = ?,
             phone = ?,
@@ -2329,7 +2330,7 @@ def edit_client(client_id):
         conn.close()
 
         create_activity(
-            f"{session['username']} updated client {name}"
+            f"{session['username']} updated a client"
         )
 
         return redirect("/clients")
@@ -2342,23 +2343,13 @@ def edit_client(client_id):
     )
 
 
-@app.route("/delete-client/<int:client_id>", methods=["POST"])
+@app.route("/delete-client/<int:client_id>")
 def delete_client(client_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
-
-    client = conn.execute("""
-    SELECT *
-    FROM clients
-    WHERE id = ?
-    AND user_id = ?
-    """, (
-        client_id,
-        session["user_id"]
-    )).fetchone()
 
     conn.execute("""
     DELETE FROM clients
@@ -2372,10 +2363,9 @@ def delete_client(client_id):
     conn.commit()
     conn.close()
 
-    if client:
-        create_activity(
-            f"{session['username']} deleted client {client['name']}"
-        )
+    create_activity(
+        f"{session['username']} deleted a client"
+    )
 
     return redirect("/clients")
 

@@ -2,9 +2,141 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Client</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Client</h1>
+
+            <form method="POST">
+
+                <label>Client Name</label>
+
+                <input
+                    type="text"
+                    name="name"
+                    value="{{ client['name'] }}"
+                    required
+                >
+
+
+                <label>Company</label>
+
+                <input
+                    type="text"
+                    name="company"
+                    value="{{ client['company'] }}"
+                >
+
+
+                <label>Email</label>
+
+                <input
+                    type="email"
+                    name="email"
+                    value="{{ client['email'] }}"
+                >
+
+
+                <label>Phone</label>
+
+                <input
+                    type="text"
+                    name="phone"
+                    value="{{ client['phone'] }}"
+                >
+
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option
+                        value="Lead"
+                        {% if client['status'] == 'Lead' %}selected{% endif %}
+                    >
+                        Lead
+                    </option>
+
+                    <option
+                        value="Active"
+                        {% if client['status'] == 'Active' %}selected{% endif %}
+                    >
+                        Active
+                    </option>
+
+                    <option
+                        value="Completed"
+                        {% if client['status'] == 'Completed' %}selected{% endif %}
+                    >
+                        Completed
+                    </option>
+
+                </select>
+
+
+                <label>Estimated Value (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="estimated_value"
+                    value="{{ client['estimated_value'] }}"
+                >
+
+
+                <label>Notes</label>
+
+                <textarea
+                    name="notes"
+                    rows="5"
+                >{{ client['notes'] }}</textarea>
+
+
+                <button type="submit" class="btn-primary">
+                    Update Client
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
 
 </body>
 </html>
