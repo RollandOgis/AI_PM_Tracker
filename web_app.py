@@ -3768,13 +3768,83 @@ def team():
         session["user_id"],
     )).fetchall()
 
+    team_data = []
+
+    for member in members:
+
+        total_tasks = conn.execute("""
+        SELECT COUNT(*)
+        FROM task_team_members
+        JOIN tasks
+        ON task_team_members.task_id = tasks.id
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE task_team_members.team_member_id = ?
+        AND projects.user_id = ?
+        """, (
+            member["id"],
+            session["user_id"]
+        )).fetchone()[0]
+
+        completed_tasks = conn.execute("""
+        SELECT COUNT(*)
+        FROM task_team_members
+        JOIN tasks
+        ON task_team_members.task_id = tasks.id
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE task_team_members.team_member_id = ?
+        AND projects.user_id = ?
+        AND tasks.status = 'Completed'
+        """, (
+            member["id"],
+            session["user_id"]
+        )).fetchone()[0]
+
+        active_tasks = conn.execute("""
+        SELECT COUNT(*)
+        FROM task_team_members
+        JOIN tasks
+        ON task_team_members.task_id = tasks.id
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE task_team_members.team_member_id = ?
+        AND projects.user_id = ?
+        AND tasks.status != 'Completed'
+        """, (
+            member["id"],
+            session["user_id"]
+        )).fetchone()[0]
+
+        blocked_tasks = conn.execute("""
+        SELECT COUNT(*)
+        FROM task_team_members
+        JOIN tasks
+        ON task_team_members.task_id = tasks.id
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE task_team_members.team_member_id = ?
+        AND projects.user_id = ?
+        AND tasks.status = 'Blocked'
+        """, (
+            member["id"],
+            session["user_id"]
+        )).fetchone()[0]
+
+        team_data.append({
+            "member": member,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "active_tasks": active_tasks,
+            "blocked_tasks": blocked_tasks
+        })
+
     conn.close()
 
     return render_template(
         "team.html",
-        members=members
+        team_data=team_data
     )
-
 
 @app.route("/add-team-member", methods=["GET", "POST"])
 def add_team_member():

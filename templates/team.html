@@ -22,159 +22,117 @@
         <a href="/calendar">Calendar</a>
         <a href="/gantt">Gantt Timeline</a>
         <a href="/analytics">Analytics</a>
-
         <a href="/clients">Clients</a>
         <a href="/team">Team Members</a>
-
         <a href="/ai-assistant">AI Assistant</a>
-
         <a href="/risks">Risk Register</a>
         <a href="/issues">Issue Register</a>
         <a href="/changes">Change Register</a>
         <a href="/benefits">Benefits Register</a>
-
-        <a href="/insights">Insights</a>
-        <a href="/report">Reports</a>
-
         <a href="/activity">Activity</a>
         <a href="/advanced-search">Search</a>
-
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
-
         <a href="/profile">Profile</a>
-
         <a href="/logout">Logout</a>
 
     </div>
-
 
     <div class="main-content">
 
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Team Members</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage project contributors, roles and delivery ownership.
+                    Manage project contributors, roles and workload.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-team-member" class="btn-primary">
                     + Add Team Member
                 </a>
-
             </div>
 
         </div>
 
-
-        {% if members %}
+        {% if team_data %}
 
             <div class="projects-grid">
 
-                {% for member in members %}
+                {% for item in team_data %}
 
                     <div class="project-card">
 
                         <div class="project-top">
 
                             <div>
+                                <h3>{{ item["member"]["name"] }}</h3>
 
-                                <h3>
-                                    {{ member["name"] }}
-                                </h3>
-
-                                {% if member["status"] == "Active" %}
-
-                                    <span class="badge badge-green">
-                                        Active
-                                    </span>
-
-                                {% elif member["status"] == "Unavailable" %}
-
-                                    <span class="badge badge-yellow">
-                                        Unavailable
-                                    </span>
-
+                                {% if item["member"]["status"] == "Active" %}
+                                    <span class="badge badge-green">Active</span>
+                                {% elif item["member"]["status"] == "Unavailable" %}
+                                    <span class="badge badge-yellow">Unavailable</span>
                                 {% else %}
-
                                     <span class="badge badge-red">
-                                        {{ member["status"] }}
+                                        {{ item["member"]["status"] }}
                                     </span>
-
                                 {% endif %}
-
                             </div>
 
                         </div>
-
 
                         <div class="budget-section">
 
                             <div class="budget-row">
-
                                 <span>Role</span>
-
-                                <strong>
-                                    {{ member["role"] or "N/A" }}
-                                </strong>
-
+                                <strong>{{ item["member"]["role"] or "N/A" }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Email</span>
-
-                                <strong>
-                                    {{ member["email"] or "N/A" }}
-                                </strong>
-
+                                <strong>{{ item["member"]["email"] or "N/A" }}</strong>
                             </div>
 
                             <div class="budget-row">
-
-                                <span>Phone</span>
-
-                                <strong>
-                                    {{ member["phone"] or "N/A" }}
-                                </strong>
-
+                                <span>Total Tasks</span>
+                                <strong>{{ item["total_tasks"] }}</strong>
                             </div>
 
                             <div class="budget-row">
+                                <span>Active Tasks</span>
+                                <strong>{{ item["active_tasks"] }}</strong>
+                            </div>
 
-                                <span>Created</span>
+                            <div class="budget-row">
+                                <span>Completed Tasks</span>
+                                <strong>{{ item["completed_tasks"] }}</strong>
+                            </div>
 
-                                <strong>
-                                    {{ member["created_at"] or "N/A" }}
-                                </strong>
-
+                            <div class="budget-row">
+                                <span>Blocked Tasks</span>
+                                <strong>{{ item["blocked_tasks"] }}</strong>
                             </div>
 
                         </div>
 
+                        {% if item["active_tasks"] >= 5 %}
 
-                        <div class="project-actions">
+                            <div class="alert-box alert-warning">
+                                High workload detected.
+                            </div>
 
-                            <a href="/edit-team-member/{{ member['id'] }}">
-                                Edit
-                            </a>
+                        {% endif %}
 
-                            <a
-                                href="/delete-team-member/{{ member['id'] }}"
-                                onclick="return confirm('Delete this team member?')"
-                            >
-                                Delete
-                            </a>
+                        {% if item["blocked_tasks"] > 0 %}
 
-                        </div>
+                            <div class="alert-box alert-danger">
+                                Blocked work needs attention.
+                            </div>
 
+                        {% endif %}
 
                         <div class="smart-insight">
 
@@ -182,7 +140,22 @@
 
                             <br><br>
 
-                            {{ member["skills"] or "No skills added." }}
+                            {{ item["member"]["skills"] or "No skills added." }}
+
+                        </div>
+
+                        <div class="project-actions">
+
+                            <a href="/edit-team-member/{{ item['member']['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-team-member/{{ item['member']['id'] }}"
+                                onclick="return confirm('Delete this team member?')"
+                            >
+                                Delete
+                            </a>
 
                         </div>
 
@@ -199,7 +172,7 @@
                 <h3>No Team Members Added</h3>
 
                 <p>
-                    Add team members so projects, tasks and governance items can have clear owners.
+                    Add team members so projects and tasks can have clear owners.
                 </p>
 
                 <a href="/add-team-member" class="btn-primary">
