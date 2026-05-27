@@ -4,7 +4,6 @@ import csv
 from io import StringIO, BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from datetime import date
 from datetime import date, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
