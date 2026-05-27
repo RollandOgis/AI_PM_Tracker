@@ -20,15 +20,34 @@
         <a href="/tasks">Tasks</a>
         <a href="/kanban">Kanban</a>
         <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+
+        <a href="/clients">Clients</a>
+        <a href="/team">Team Members</a>
+
+        <a href="/ai-assistant">AI Assistant</a>
+
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+
         <a href="/insights">Insights</a>
         <a href="/report">Reports</a>
+
         <a href="/activity">Activity</a>
-        <a href="/sprint-planner">Sprint Planner</a>
         <a href="/advanced-search">Search</a>
+
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+
         <a href="/profile">Profile</a>
+
         <a href="/logout">Logout</a>
 
     </div>
+
 
     <div class="main-content">
 
@@ -37,6 +56,26 @@
             <h1>Edit Task</h1>
 
             <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if task['project_id'] == project['id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
 
                 <label>Task Title</label>
 
@@ -47,74 +86,14 @@
                     required
                 >
 
-                <label>Priority</label>
 
-                <select name="priority">
+                <label>Description</label>
 
-                    <option
-                        value="High"
-                        {% if task['priority'] == 'High' %}selected{% endif %}
-                    >
-                        High
-                    </option>
+                <textarea
+                    name="description"
+                    rows="5"
+                >{{ task['description'] }}</textarea>
 
-                    <option
-                        value="Medium"
-                        {% if task['priority'] == 'Medium' %}selected{% endif %}
-                    >
-                        Medium
-                    </option>
-
-                    <option
-                        value="Low"
-                        {% if task['priority'] == 'Low' %}selected{% endif %}
-                    >
-                        Low
-                    </option>
-
-                </select>
-
-                <label>Status</label>
-
-                <select name="status">
-
-                    <option
-                        value="Pending"
-                        {% if task['status'] == 'Pending' %}selected{% endif %}
-                    >
-                        Pending
-                    </option>
-
-                    <option
-                        value="In Progress"
-                        {% if task['status'] == 'In Progress' %}selected{% endif %}
-                    >
-                        In Progress
-                    </option>
-
-                    <option
-                        value="Completed"
-                        {% if task['status'] == 'Completed' %}selected{% endif %}
-                    >
-                        Completed
-                    </option>
-
-                    <option
-                        value="Blocked"
-                        {% if task['status'] == 'Blocked' %}selected{% endif %}
-                    >
-                        Blocked
-                    </option>
-
-                </select>
-
-                <label>Due Date</label>
-
-                <input
-                    type="date"
-                    name="due_date"
-                    value="{{ task['due_date'] }}"
-                >
 
                 <label>Assigned To</label>
 
@@ -124,13 +103,113 @@
                     value="{{ task['assigned_to'] }}"
                 >
 
-                <label>Attachment URL</label>
+
+                <label>Team Member</label>
+
+                <select name="team_member_id">
+
+                    <option value="">
+                        No Team Member
+                    </option>
+
+                    {% for member in team_members %}
+
+                        <option
+                            value="{{ member['id'] }}"
+                            {% if task['team_member_id'] == member['id'] %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ member['name'] }}
+
+                            {% if member['role'] %}
+                                - {{ member['role'] }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Priority</label>
+
+                <select name="priority">
+
+                    <option
+                        value="Low"
+                        {% if task['priority'] == 'Low' %}
+                            selected
+                        {% endif %}
+                    >
+                        Low
+                    </option>
+
+                    <option
+                        value="Medium"
+                        {% if task['priority'] == 'Medium' %}
+                            selected
+                        {% endif %}
+                    >
+                        Medium
+                    </option>
+
+                    <option
+                        value="High"
+                        {% if task['priority'] == 'High' %}
+                            selected
+                        {% endif %}
+                    >
+                        High
+                    </option>
+
+                </select>
+
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option
+                        value="Pending"
+                        {% if task['status'] == 'Pending' %}
+                            selected
+                        {% endif %}
+                    >
+                        Pending
+                    </option>
+
+                    <option
+                        value="In Progress"
+                        {% if task['status'] == 'In Progress' %}
+                            selected
+                        {% endif %}
+                    >
+                        In Progress
+                    </option>
+
+                    <option
+                        value="Completed"
+                        {% if task['status'] == 'Completed' %}
+                            selected
+                        {% endif %}
+                    >
+                        Completed
+                    </option>
+
+                </select>
+
+
+                <label>Due Date</label>
 
                 <input
-                    type="url"
-                    name="attachment_url"
-                    value="{{ task['attachment_url'] }}"
+                    type="date"
+                    name="due_date"
+                    value="{{ task['due_date'] }}"
                 >
+
 
                 <label>Estimated Hours</label>
 
@@ -141,6 +220,7 @@
                     value="{{ task['estimated_hours'] }}"
                 >
 
+
                 <label>Actual Hours</label>
 
                 <input
@@ -149,6 +229,7 @@
                     name="actual_hours"
                     value="{{ task['actual_hours'] }}"
                 >
+
 
                 <label>Hourly Rate (£)</label>
 
@@ -159,10 +240,8 @@
                     value="{{ task['hourly_rate'] }}"
                 >
 
-                <button
-                    type="submit"
-                    class="btn-primary"
-                >
+
+                <button type="submit" class="btn-primary">
                     Update Task
                 </button>
 

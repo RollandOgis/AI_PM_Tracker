@@ -94,6 +94,11 @@ def init_db():
     )
     """)
 
+    try:
+        cursor.execute("ALTER TABLE projects ADD COLUMN client_id INTEGER")
+    except sqlite3.OperationalError:
+        pass
+
 
     # TASKS
     cursor.execute("""
@@ -119,6 +124,10 @@ def init_db():
 
     )
     """)
+    try:
+        cursor.execute("ALTER TABLE tasks ADD COLUMN team_member_id INTEGER")
+    except sqlite3.OperationalError:
+        pass
 
 
     # CLIENTS
@@ -445,18 +454,17 @@ def home():
     conn = get_db_connection()
 
     projects = conn.execute("""
-    SELECT
-        projects.*,
-        clients.name AS client_name,
-        clients.company AS client_company
-    FROM projects
-    LEFT JOIN clients
-    ON projects.client_id = clients.id
-    WHERE projects.user_id = ?
-    ORDER BY projects.id DESC
-    """, (
-        session["user_id"],
-    )).fetchall()
+            SELECT projects.*,
+                clients.name    AS client_name,
+                clients.company AS client_company
+            FROM projects
+            LEFT JOIN clients
+                      ON projects.client_id = clients.id
+            WHERE projects.user_id = ?
+            ORDER BY projects.id DESC
+            """, (
+            session["user_id"],
+            )).fetchall()
 
     clients = conn.execute("""
     SELECT *
@@ -745,6 +753,7 @@ def home():
                 project["status"],
                 project["start_date"],
                 project["end_date"]
+
             ),
             "tasks": task_list,
             "completion": completion,
@@ -1729,51 +1738,39 @@ def add_project():
 
     if request.method == "POST":
 
-        name = request.form["name"]
-        description = request.form["description"]
-        status = request.form["status"]
-        start_date = request.form["start_date"]
-        end_date = request.form["end_date"]
-        client_id = request.form.get("client_id") or None
-
-        estimated_budget = float(
-            request.form.get("estimated_budget", 0) or 0
-        )
-
-        actual_cost = float(
-            request.form.get("actual_cost", 0) or 0
-        )
+        name = request.form.get("name", "")
+        description = request.form.get("description", "")
+        status = request.form.get("status", "Planning")
+        budget = request.form.get("budget", 0)
+        deadline = request.form.get("deadline", "")
+        client_id = request.form.get("client_id")
 
         conn.execute("""
         INSERT INTO projects (
+            user_id,
+            client_id,
             name,
             description,
             status,
-            start_date,
-            end_date,
-            estimated_budget,
-            actual_cost,
-            client_id,
-            user_id
+            budget,
+            deadline
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
+            session["user_id"],
+            client_id if client_id else None,
             name,
             description,
             status,
-            start_date,
-            end_date,
-            estimated_budget,
-            actual_cost,
-            client_id,
-            session["user_id"]
+            budget,
+            deadline
         ))
 
         conn.commit()
         conn.close()
 
         create_activity(
-            f"{session['username']} created project {name}"
+            f"{session['username']} added a project"
         )
 
         return redirect("/")
@@ -1794,10 +1791,15 @@ def edit_project(project_id):
 
     conn = get_db_connection()
 
-    project = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (project_id, session["user_id"])
-    ).fetchone()
+    project = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE id = ?
+    AND user_id = ?
+    """, (
+        project_id,
+        session["user_id"]
+    )).fetchone()
 
     if not project:
         conn.close()
@@ -1814,42 +1816,31 @@ def edit_project(project_id):
 
     if request.method == "POST":
 
-        name = request.form["name"]
-        description = request.form["description"]
-        status = request.form["status"]
-        start_date = request.form["start_date"]
-        end_date = request.form["end_date"]
-        client_id = request.form.get("client_id") or None
-
-        estimated_budget = float(
-            request.form.get("estimated_budget", 0) or 0
-        )
-
-        actual_cost = float(
-            request.form.get("actual_cost", 0) or 0
-        )
+        name = request.form.get("name", "")
+        description = request.form.get("description", "")
+        status = request.form.get("status", "Planning")
+        budget = request.form.get("budget", 0)
+        deadline = request.form.get("deadline", "")
+        client_id = request.form.get("client_id")
 
         conn.execute("""
         UPDATE projects
-        SET name = ?,
+        SET
+            client_id = ?,
+            name = ?,
             description = ?,
             status = ?,
-            start_date = ?,
-            end_date = ?,
-            estimated_budget = ?,
-            actual_cost = ?,
-            client_id = ?
+            budget = ?,
+            deadline = ?
         WHERE id = ?
         AND user_id = ?
         """, (
+            client_id if client_id else None,
             name,
             description,
             status,
-            start_date,
-            end_date,
-            estimated_budget,
-            actual_cost,
-            client_id,
+            budget,
+            deadline,
             project_id,
             session["user_id"]
         ))
@@ -1858,7 +1849,7 @@ def edit_project(project_id):
         conn.close()
 
         create_activity(
-            f"{session['username']} updated project {name}"
+            f"{session['username']} updated a project"
         )
 
         return redirect("/")
@@ -1918,20 +1909,34 @@ def add_task():
 
     conn = get_db_connection()
 
-    projects = conn.execute(
-        "SELECT * FROM projects WHERE user_id = ?",
-        (session["user_id"],)
-    ).fetchall()
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    team_members = conn.execute("""
+    SELECT *
+    FROM team_members
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
 
     if request.method == "POST":
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        priority = request.form["priority"]
-        status = request.form["status"]
-        due_date = request.form["due_date"]
-        assigned_to = request.form["assigned_to"]
-        attachment_url = request.form["attachment_url"]
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        assigned_to = request.form.get("assigned_to", "")
+        team_member_id = request.form.get("team_member_id")
+        priority = request.form.get("priority", "Medium")
+        status = request.form.get("status", "Pending")
+        due_date = request.form.get("due_date", "")
 
         estimated_hours = float(
             request.form.get("estimated_hours", 0) or 0
@@ -1949,34 +1954,38 @@ def add_task():
         INSERT INTO tasks (
             project_id,
             title,
+            description,
+            assigned_to,
+            team_member_id,
             priority,
             status,
             due_date,
-            assigned_to,
-            attachment_url,
             estimated_hours,
             actual_hours,
-            hourly_rate
+            hourly_rate,
+            created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             project_id,
             title,
+            description,
+            assigned_to,
+            team_member_id if team_member_id else None,
             priority,
             status,
             due_date,
-            assigned_to,
-            attachment_url,
             estimated_hours,
             actual_hours,
-            hourly_rate
+            hourly_rate,
+            str(date.today())
         ))
 
         conn.commit()
         conn.close()
 
         create_activity(
-            f"{session['username']} created task {title}"
+            f"{session['username']} added a task"
         )
 
         return redirect("/tasks")
@@ -1985,9 +1994,9 @@ def add_task():
 
     return render_template(
         "add_task.html",
-        projects=projects
+        projects=projects,
+        team_members=team_members
     )
-
 
 @app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
 def edit_task(task_id):
@@ -1997,23 +2006,51 @@ def edit_task(task_id):
 
     conn = get_db_connection()
 
-    task = conn.execute(
-        "SELECT * FROM tasks WHERE id = ?",
-        (task_id,)
-    ).fetchone()
+    task = conn.execute("""
+    SELECT
+        tasks.*
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE tasks.id = ?
+    AND projects.user_id = ?
+    """, (
+        task_id,
+        session["user_id"]
+    )).fetchone()
 
     if not task:
         conn.close()
         return redirect("/tasks")
 
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    team_members = conn.execute("""
+    SELECT *
+    FROM team_members
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
     if request.method == "POST":
 
-        title = request.form["title"]
-        priority = request.form["priority"]
-        status = request.form["status"]
-        due_date = request.form["due_date"]
-        assigned_to = request.form["assigned_to"]
-        attachment_url = request.form["attachment_url"]
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        assigned_to = request.form.get("assigned_to", "")
+        team_member_id = request.form.get("team_member_id")
+        priority = request.form.get("priority", "Medium")
+        status = request.form.get("status", "Pending")
+        due_date = request.form.get("due_date", "")
 
         estimated_hours = float(
             request.form.get("estimated_hours", 0) or 0
@@ -2029,23 +2066,28 @@ def edit_task(task_id):
 
         conn.execute("""
         UPDATE tasks
-        SET title = ?,
+        SET
+            project_id = ?,
+            title = ?,
+            description = ?,
+            assigned_to = ?,
+            team_member_id = ?,
             priority = ?,
             status = ?,
             due_date = ?,
-            assigned_to = ?,
-            attachment_url = ?,
             estimated_hours = ?,
             actual_hours = ?,
             hourly_rate = ?
         WHERE id = ?
         """, (
+            project_id,
             title,
+            description,
+            assigned_to,
+            team_member_id if team_member_id else None,
             priority,
             status,
             due_date,
-            assigned_to,
-            attachment_url,
             estimated_hours,
             actual_hours,
             hourly_rate,
@@ -2056,7 +2098,7 @@ def edit_task(task_id):
         conn.close()
 
         create_activity(
-            f"{session['username']} updated task {title}"
+            f"{session['username']} updated a task"
         )
 
         return redirect("/tasks")
@@ -2065,7 +2107,9 @@ def edit_task(task_id):
 
     return render_template(
         "edit_task.html",
-        task=task
+        task=task,
+        projects=projects,
+        team_members=team_members
     )
 
 @app.route("/delete-task/<int:task_id>", methods=["POST"])

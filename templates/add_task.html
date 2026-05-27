@@ -20,21 +20,40 @@
         <a href="/tasks">Tasks</a>
         <a href="/kanban">Kanban</a>
         <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+
+        <a href="/clients">Clients</a>
+        <a href="/team">Team Members</a>
+
+        <a href="/ai-assistant">AI Assistant</a>
+
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+
         <a href="/insights">Insights</a>
         <a href="/report">Reports</a>
+
         <a href="/activity">Activity</a>
-        <a href="/sprint-planner">Sprint Planner</a>
         <a href="/advanced-search">Search</a>
+
+        <a href="/add-task">Add Task</a>
+        <a href="/add-project">Add Project</a>
+
         <a href="/profile">Profile</a>
+
         <a href="/logout">Logout</a>
 
     </div>
+
 
     <div class="main-content">
 
         <div class="form-container">
 
-            <h1>Create Task</h1>
+            <h1>Add Task</h1>
 
             <form method="POST">
 
@@ -52,6 +71,7 @@
 
                 </select>
 
+
                 <label>Task Title</label>
 
                 <input
@@ -60,23 +80,67 @@
                     required
                 >
 
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="5"
+                ></textarea>
+
+
+                <label>Assigned To</label>
+
+                <input
+                    type="text"
+                    name="assigned_to"
+                    placeholder="Optional manual assignment"
+                >
+
+
+                <label>Team Member</label>
+
+                <select name="team_member_id">
+
+                    <option value="">
+                        No Team Member
+                    </option>
+
+                    {% for member in team_members %}
+
+                        <option value="{{ member['id'] }}">
+
+                            {{ member['name'] }}
+
+                            {% if member['role'] %}
+                                - {{ member['role'] }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
                 <label>Priority</label>
 
                 <select name="priority">
 
-                    <option value="High">
-                        High
+                    <option value="Low">
+                        Low
                     </option>
 
                     <option value="Medium">
                         Medium
                     </option>
 
-                    <option value="Low">
-                        Low
+                    <option value="High">
+                        High
                     </option>
 
                 </select>
+
 
                 <label>Status</label>
 
@@ -94,11 +158,8 @@
                         Completed
                     </option>
 
-                    <option value="Blocked">
-                        Blocked
-                    </option>
-
                 </select>
+
 
                 <label>Due Date</label>
 
@@ -107,19 +168,6 @@
                     name="due_date"
                 >
 
-                <label>Assigned To</label>
-
-                <input
-                    type="text"
-                    name="assigned_to"
-                >
-
-                <label>Attachment URL</label>
-
-                <input
-                    type="url"
-                    name="attachment_url"
-                >
 
                 <label>Estimated Hours</label>
 
@@ -127,8 +175,8 @@
                     type="number"
                     step="0.1"
                     name="estimated_hours"
-                    value="0"
                 >
+
 
                 <label>Actual Hours</label>
 
@@ -136,8 +184,8 @@
                     type="number"
                     step="0.1"
                     name="actual_hours"
-                    value="0"
                 >
+
 
                 <label>Hourly Rate (£)</label>
 
@@ -145,13 +193,10 @@
                     type="number"
                     step="0.01"
                     name="hourly_rate"
-                    value="0"
                 >
 
-                <button
-                    type="submit"
-                    class="btn-primary"
-                >
+
+                <button type="submit" class="btn-primary">
                     Create Task
                 </button>
 
