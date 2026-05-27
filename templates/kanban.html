@@ -12,7 +12,7 @@
 
 <div class="layout">
 
-     <div class="sidebar">
+    <div class="sidebar">
 
         <h2>AI PM</h2>
 
@@ -22,28 +22,18 @@
         <a href="/calendar">Calendar</a>
         <a href="/gantt">Gantt Timeline</a>
         <a href="/analytics">Analytics</a>
-
         <a href="/clients">Clients</a>
         <a href="/team">Team Members</a>
-
         <a href="/ai-assistant">AI Assistant</a>
-
         <a href="/risks">Risk Register</a>
         <a href="/issues">Issue Register</a>
         <a href="/changes">Change Register</a>
         <a href="/benefits">Benefits Register</a>
-
-        <a href="/insights">Insights</a>
-        <a href="/report">Reports</a>
-
         <a href="/activity">Activity</a>
         <a href="/advanced-search">Search</a>
-
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
-
         <a href="/profile">Profile</a>
-
         <a href="/logout">Logout</a>
 
     </div>
@@ -51,171 +41,79 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-
                 <h1>Kanban Board</h1>
-
                 <p class="dashboard-subtitle">
-                    Drag tasks between workflow stages to update delivery status.
+                    Drag tasks between workflow stages and view team ownership.
                 </p>
-
             </div>
-
         </div>
-
 
         <div class="kanban-board">
 
-            <!-- Pending -->
-            <div class="kanban-column">
+            {% for status, items in grouped_tasks.items() %}
 
-                <h3>Pending</h3>
+                <div class="kanban-column">
 
-                <div class="task-list"
-                     data-status="Pending">
+                    <h3>{{ status }}</h3>
 
-                    {% for task in pending_tasks %}
+                    <div class="task-list" data-status="{{ status }}">
 
-                    <div class="task-card"
-                         draggable="true"
-                         data-task-id="{{ task.id }}">
+                        {% for item in items %}
 
-                        <h4>
-                            {{ task.title }}
-                        </h4>
+                            <div
+                                class="task-card"
+                                draggable="true"
+                                data-task-id="{{ item['task']['id'] }}"
+                            >
 
-                        <p>
-                            {{ task.description }}
-                        </p>
+                                <h4>{{ item["task"]["title"] }}</h4>
 
-                        <small>
-                            Priority:
-                            {{ task.priority }}
-                        </small>
+                                <p>
+                                    {{ item["task"]["project_name"] }}
+                                </p>
 
-                    </div>
+                                <small>
+                                    Priority: {{ item["task"]["priority"] }}
+                                </small>
 
-                    {% endfor %}
+                                {% if item["team_members"] %}
 
-                </div>
+                                    <div class="smart-insight">
+                                        <strong>Team:</strong>
 
-            </div>
+                                        <ul class="ai-list">
+                                            {% for member in item["team_members"] %}
+                                                <li>{{ member }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
 
+                                {% elif item["task"]["assigned_to"] %}
 
-            <!-- In Progress -->
-            <div class="kanban-column">
+                                    <div class="smart-insight">
+                                        <strong>Assigned To:</strong>
+                                        <br>
+                                        {{ item["task"]["assigned_to"] }}
+                                    </div>
 
-                <h3>In Progress</h3>
+                                {% endif %}
 
-                <div class="task-list"
-                     data-status="In Progress">
+                            </div>
 
-                    {% for task in in_progress_tasks %}
-
-                    <div class="task-card"
-                         draggable="true"
-                         data-task-id="{{ task.id }}">
-
-                        <h4>
-                            {{ task.title }}
-                        </h4>
-
-                        <p>
-                            {{ task.description }}
-                        </p>
-
-                        <small>
-                            Priority:
-                            {{ task.priority }}
-                        </small>
+                        {% endfor %}
 
                     </div>
 
-                    {% endfor %}
-
                 </div>
 
-            </div>
-
-
-            <!-- Completed -->
-            <div class="kanban-column">
-
-                <h3>Completed</h3>
-
-                <div class="task-list"
-                     data-status="Completed">
-
-                    {% for task in completed_tasks %}
-
-                    <div class="task-card"
-                         draggable="true"
-                         data-task-id="{{ task.id }}">
-
-                        <h4>
-                            {{ task.title }}
-                        </h4>
-
-                        <p>
-                            {{ task.description }}
-                        </p>
-
-                        <small>
-                            Priority:
-                            {{ task.priority }}
-                        </small>
-
-                    </div>
-
-                    {% endfor %}
-
-                </div>
-
-            </div>
-
-
-            <!-- Blocked -->
-            <div class="kanban-column">
-
-                <h3>Blocked</h3>
-
-                <div class="task-list"
-                     data-status="Blocked">
-
-                    {% for task in blocked_tasks %}
-
-                    <div class="task-card"
-                         draggable="true"
-                         data-task-id="{{ task.id }}">
-
-                        <h4>
-                            {{ task.title }}
-                        </h4>
-
-                        <p>
-                            {{ task.description }}
-                        </p>
-
-                        <small>
-                            Priority:
-                            {{ task.priority }}
-                        </small>
-
-                    </div>
-
-                    {% endfor %}
-
-                </div>
-
-            </div>
+            {% endfor %}
 
         </div>
 
     </div>
 
 </div>
-
 
 <script>
 
@@ -224,27 +122,20 @@ let draggedTask = null;
 document.querySelectorAll(".task-card").forEach(card => {
 
     card.addEventListener("dragstart", () => {
-
         draggedTask = card;
-
         card.style.opacity = "0.5";
-
     });
 
     card.addEventListener("dragend", () => {
-
         card.style.opacity = "1";
-
     });
 
 });
 
 document.querySelectorAll(".task-list").forEach(column => {
 
-    column.addEventListener("dragover", (e) => {
-
-        e.preventDefault();
-
+    column.addEventListener("dragover", (event) => {
+        event.preventDefault();
     });
 
     column.addEventListener("drop", async () => {
@@ -254,41 +145,30 @@ document.querySelectorAll(".task-list").forEach(column => {
         column.appendChild(draggedTask);
 
         const taskId = draggedTask.dataset.taskId;
-
         const newStatus = column.dataset.status;
 
         try {
 
-            const response = await fetch(
-                "/update-task-status",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        task_id: taskId,
-                        status: newStatus
-                    })
-                }
-            );
+            const response = await fetch("/update-task-status", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    task_id: taskId,
+                    status: newStatus
+                })
+            });
 
             const data = await response.json();
 
             if (!data.success) {
-
-                alert("Could not update task.");
-
+                alert("Could not update task status.");
             }
 
         } catch (error) {
-
             console.log(error);
-
             alert("An error occurred.");
-
         }
 
     });

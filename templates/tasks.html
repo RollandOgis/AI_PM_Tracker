@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tasks</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -47,157 +48,177 @@
 
     </div>
 
+
     <div class="main-content">
 
         <div class="dashboard-header">
+
             <div>
-                <h1>Task Management</h1>
-                <p class="dashboard-subtitle">Track workload, priorities and delivery progress</p>
+
+                <h1>Tasks</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage delivery tasks and team ownership.
+                </p>
+
             </div>
 
             <div class="dashboard-actions">
-                <a href="/add-task" class="btn-primary">+ Add Task</a>
+
+                <a href="/add-task" class="btn-primary">
+                    + Add Task
+                </a>
+
             </div>
+
         </div>
 
-        <form method="GET" action="/tasks" class="search-form">
-            <input type="text" name="search" placeholder="Search tasks or projects" value="{{ search or '' }}">
 
-            <select name="status">
-                <option value="">All Statuses</option>
-
-                {% if status_filter == "Pending" %}
-                    <option value="Pending" selected>Pending</option>
-                {% else %}
-                    <option value="Pending">Pending</option>
-                {% endif %}
-
-                {% if status_filter == "In Progress" %}
-                    <option value="In Progress" selected>In Progress</option>
-                {% else %}
-                    <option value="In Progress">In Progress</option>
-                {% endif %}
-
-                {% if status_filter == "Completed" %}
-                    <option value="Completed" selected>Completed</option>
-                {% else %}
-                    <option value="Completed">Completed</option>
-                {% endif %}
-
-                {% if status_filter == "Blocked" %}
-                    <option value="Blocked" selected>Blocked</option>
-                {% else %}
-                    <option value="Blocked">Blocked</option>
-                {% endif %}
-            </select>
-
-            <select name="priority">
-                <option value="">All Priorities</option>
-
-                {% if priority_filter == "High" %}
-                    <option value="High" selected>High</option>
-                {% else %}
-                    <option value="High">High</option>
-                {% endif %}
-
-                {% if priority_filter == "Medium" %}
-                    <option value="Medium" selected>Medium</option>
-                {% else %}
-                    <option value="Medium">Medium</option>
-                {% endif %}
-
-                {% if priority_filter == "Low" %}
-                    <option value="Low" selected>Low</option>
-                {% else %}
-                    <option value="Low">Low</option>
-                {% endif %}
-            </select>
-
-            <button type="submit" class="btn-primary">Filter</button>
-        </form>
-
-        {% if tasks %}
+        {% if all_tasks %}
 
             <div class="projects-grid">
 
-                {% for task in tasks %}
+                {% for item in all_tasks %}
 
                     <div class="project-card">
 
                         <div class="project-top">
+
                             <div>
-                                <h3>{{ task["title"] }}</h3>
 
-                                <div class="task-badges">
+                                <h3>
+                                    {{ item["task"]["title"] }}
+                                </h3>
 
-                                    {% if task["status"] == "Completed" %}
-                                        <span class="badge badge-green">{{ task["status"] }}</span>
-                                    {% elif task["status"] == "Blocked" %}
-                                        <span class="badge badge-red">{{ task["status"] }}</span>
-                                    {% elif task["status"] == "In Progress" %}
-                                        <span class="badge badge-blue">{{ task["status"] }}</span>
-                                    {% else %}
-                                        <span class="badge badge-yellow">{{ task["status"] }}</span>
-                                    {% endif %}
+                                <span class="project-status">
+                                    {{ item["task"]["status"] }}
+                                </span>
 
-                                    {% if task["priority"] == "High" %}
-                                        <span class="badge badge-red">{{ task["priority"] }}</span>
-                                    {% elif task["priority"] == "Medium" %}
-                                        <span class="badge badge-yellow">{{ task["priority"] }}</span>
-                                    {% else %}
-                                        <span class="badge badge-green">{{ task["priority"] }}</span>
-                                    {% endif %}
-
-                                </div>
                             </div>
 
                             <div class="project-actions">
-                                <a href="/edit-task/{{ task['id'] }}">Edit</a>
 
-                                <form action="/delete-task/{{ task['id'] }}" method="POST">
-                                    <button type="submit" class="link-button">Delete</button>
-                                </form>
+                                <a href="/edit-task/{{ item['task']['id'] }}">
+                                    Edit
+                                </a>
+
                             </div>
+
                         </div>
 
-                        <div class="smart-insight">
-                            <strong>Project:</strong> {{ task["project_name"] }}
-                        </div>
-
-                        {% if task["assigned_to"] %}
-                            <div class="smart-insight">
-                                <strong>Assigned To:</strong> {{ task["assigned_to"] }}
-                            </div>
-                        {% endif %}
 
                         <div class="budget-section">
+
                             <div class="budget-row">
+
+                                <span>Project</span>
+
+                                <strong>
+                                    {{ item["task"]["project_name"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Priority</span>
+
+                                <strong>
+                                    {{ item["task"]["priority"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
                                 <span>Due Date</span>
-                                <strong>{{ task["due_date"] or "No date" }}</strong>
+
+                                <strong>
+                                    {{ item["task"]["due_date"] or "N/A" }}
+                                </strong>
+
                             </div>
 
-                            <div class="budget-row">
-                                <span>Estimated Hours</span>
-                                <strong>{{ task["estimated_hours"] or 0 }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Actual Hours</span>
-                                <strong>{{ task["actual_hours"] or 0 }}</strong>
-                            </div>
                         </div>
 
-                        {% if task["status"] != "Completed" %}
-                            {% if task["due_date"] and task["due_date"] < current_date %}
-                                <div class="alert-box alert-danger">
-                                    ⚠ Overdue Task
-                                </div>
-                            {% elif task["due_date"] %}
-                                <div class="alert-box alert-warning">
-                                    ⏳ Due Soon
-                                </div>
-                            {% endif %}
+
+                        {% if item["team_members"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Team Members:</strong>
+
+                                <ul class="ai-list">
+
+                                    {% for member in item["team_members"] %}
+
+                                        <li>{{ member }}</li>
+
+                                    {% endfor %}
+
+                                </ul>
+
+                            </div>
+
+                        {% elif item["task"]["assigned_to"] %}
+
+                            <div class="smart-insight">
+
+                                <strong>Assigned To:</strong>
+
+                                <br><br>
+
+                                {{ item["task"]["assigned_to"] }}
+
+                            </div>
+
                         {% endif %}
+
+
+                        <div class="smart-insight">
+
+                            <strong>Description:</strong>
+
+                            <br><br>
+
+                            {{ item["task"]["description"] or "No description provided." }}
+
+                        </div>
+
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Estimated Hours</span>
+
+                                <strong>
+                                    {{ item["task"]["estimated_hours"] or 0 }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Actual Hours</span>
+
+                                <strong>
+                                    {{ item["task"]["actual_hours"] or 0 }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Hourly Rate</span>
+
+                                <strong>
+                                    £{{ item["task"]["hourly_rate"] or 0 }}
+                                </strong>
+
+                            </div>
+
+                        </div>
 
                     </div>
 
@@ -208,9 +229,17 @@
         {% else %}
 
             <div class="empty-box">
+
                 <h3>No Tasks Yet</h3>
-                <p>Create tasks to begin managing project delivery.</p>
-                <a href="/add-task" class="btn-primary">Create First Task</a>
+
+                <p>
+                    Create your first task to begin tracking delivery work.
+                </p>
+
+                <a href="/add-task" class="btn-primary">
+                    Add Task
+                </a>
+
             </div>
 
         {% endif %}

@@ -1097,34 +1097,57 @@ def kanban():
         session["user_id"],
     )).fetchall()
 
+    grouped_tasks = {
+        "Pending": [],
+        "In Progress": [],
+        "Completed": []
+    }
+
+    for task in tasks:
+
+        members = conn.execute("""
+        SELECT
+            team_members.name,
+            team_members.role
+        FROM task_team_members
+        JOIN team_members
+        ON task_team_members.team_member_id = team_members.id
+        WHERE task_team_members.task_id = ?
+        """, (
+            task["id"],
+        )).fetchall()
+
+        team_members = []
+
+        for member in members:
+
+            if member["role"]:
+
+                team_members.append(
+                    f"{member['name']} - {member['role']}"
+                )
+
+            else:
+
+                team_members.append(
+                    member["name"]
+                )
+
+        task_data = {
+            "task": task,
+            "team_members": team_members
+        }
+
+        status = task["status"]
+
+        if status in grouped_tasks:
+            grouped_tasks[status].append(task_data)
+
     conn.close()
-
-    pending_tasks = [
-        task for task in tasks
-        if task["status"] == "Pending"
-    ]
-
-    in_progress_tasks = [
-        task for task in tasks
-        if task["status"] == "In Progress"
-    ]
-
-    completed_tasks = [
-        task for task in tasks
-        if task["status"] == "Completed"
-    ]
-
-    blocked_tasks = [
-        task for task in tasks
-        if task["status"] == "Blocked"
-    ]
 
     return render_template(
         "kanban.html",
-        pending_tasks=pending_tasks,
-        in_progress_tasks=in_progress_tasks,
-        completed_tasks=completed_tasks,
-        blocked_tasks=blocked_tasks
+        grouped_tasks=grouped_tasks
     )
 
 @app.route("/update-task-status", methods=["POST"])
@@ -1663,20 +1686,15 @@ def project_detail(project_id):
         completion=completion
     )
 
-
 @app.route("/tasks")
 def tasks():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    search = request.args.get("search", "")
-    status_filter = request.args.get("status", "")
-    priority_filter = request.args.get("priority", "")
-
     conn = get_db_connection()
 
-    query = """
+    tasks = conn.execute("""
     SELECT
         tasks.*,
         projects.name AS project_name
@@ -1684,59 +1702,53 @@ def tasks():
     JOIN projects
     ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    """
+    ORDER BY tasks.id DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
 
-    params = [session["user_id"]]
+    all_tasks = []
 
-    if search:
-        query += """
-        AND (
-            tasks.title LIKE ?
-            OR projects.name LIKE ?
-            OR tasks.status LIKE ?
-            OR tasks.priority LIKE ?
-            OR tasks.assigned_to LIKE ?
-        )
-        """
+    for task in tasks:
 
-        search_term = f"%{search}%"
+        members = conn.execute("""
+        SELECT
+            team_members.name,
+            team_members.role
+        FROM task_team_members
+        JOIN team_members
+        ON task_team_members.team_member_id = team_members.id
+        WHERE task_team_members.task_id = ?
+        """, (
+            task["id"],
+        )).fetchall()
 
-        params.extend([
-            search_term,
-            search_term,
-            search_term,
-            search_term,
-            search_term
-        ])
+        team_members = []
 
-    if status_filter:
-        query += " AND tasks.status = ?"
-        params.append(status_filter)
+        for member in members:
 
-    if priority_filter:
-        query += " AND tasks.priority = ?"
-        params.append(priority_filter)
+            if member["role"]:
 
-    query += """
-    ORDER BY
-        CASE
-            WHEN tasks.due_date IS NULL OR tasks.due_date = ''
-            THEN '9999-12-31'
-            ELSE tasks.due_date
-        END ASC
-    """
+                team_members.append(
+                    f"{member['name']} - {member['role']}"
+                )
 
-    tasks = conn.execute(query, params).fetchall()
+            else:
+
+                team_members.append(
+                    member["name"]
+                )
+
+        all_tasks.append({
+            "task": task,
+            "team_members": team_members
+        })
 
     conn.close()
 
     return render_template(
         "tasks.html",
-        tasks=tasks,
-        search=search,
-        status_filter=status_filter,
-        priority_filter=priority_filter,
-        current_date=str(date.today())
+        all_tasks=all_tasks
     )
 
 
