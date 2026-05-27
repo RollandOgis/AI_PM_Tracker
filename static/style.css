@@ -1585,3 +1585,8 @@ body.dark-ready {
     margin-top: 0;
     padding-top: 0;
 }
+
+.form-container select[multiple] {
+    min-height: 140px;
+    padding: 12px;
+}

@@ -380,6 +380,27 @@ def init_db():
                    )
                    """)
 
+    # TASK TEAM MEMBERS TABLE
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS task_team_members
+                   (
+
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
+
+                       task_id
+                       INTEGER,
+
+                       team_member_id
+                       INTEGER
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -1959,10 +1980,11 @@ def add_task():
         title = request.form.get("title", "")
         description = request.form.get("description", "")
         assigned_to = request.form.get("assigned_to", "")
-        team_member_id = request.form.get("team_member_id")
         priority = request.form.get("priority", "Medium")
         status = request.form.get("status", "Pending")
         due_date = request.form.get("due_date", "")
+
+        selected_team_members = request.form.getlist("team_member_ids")
 
         estimated_hours = float(
             request.form.get("estimated_hours", 0) or 0
@@ -1976,13 +1998,12 @@ def add_task():
             request.form.get("hourly_rate", 0) or 0
         )
 
-        conn.execute("""
+        cursor = conn.execute("""
         INSERT INTO tasks (
             project_id,
             title,
             description,
             assigned_to,
-            team_member_id,
             priority,
             status,
             due_date,
@@ -1991,13 +2012,12 @@ def add_task():
             hourly_rate,
             created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             project_id,
             title,
             description,
             assigned_to,
-            team_member_id if team_member_id else None,
             priority,
             status,
             due_date,
@@ -2006,6 +2026,21 @@ def add_task():
             hourly_rate,
             str(date.today())
         ))
+
+        task_id = cursor.lastrowid
+
+        for member_id in selected_team_members:
+
+            conn.execute("""
+            INSERT INTO task_team_members (
+                task_id,
+                team_member_id
+            )
+            VALUES (?, ?)
+            """, (
+                task_id,
+                member_id
+            ))
 
         conn.commit()
         conn.close()
@@ -2067,16 +2102,30 @@ def edit_task(task_id):
         session["user_id"],
     )).fetchall()
 
+    selected_members = conn.execute("""
+    SELECT team_member_id
+    FROM task_team_members
+    WHERE task_id = ?
+    """, (
+        task_id,
+    )).fetchall()
+
+    selected_member_ids = [
+        member["team_member_id"]
+        for member in selected_members
+    ]
+
     if request.method == "POST":
 
         project_id = request.form.get("project_id")
         title = request.form.get("title", "")
         description = request.form.get("description", "")
         assigned_to = request.form.get("assigned_to", "")
-        team_member_id = request.form.get("team_member_id")
         priority = request.form.get("priority", "Medium")
         status = request.form.get("status", "Pending")
         due_date = request.form.get("due_date", "")
+
+        selected_team_members = request.form.getlist("team_member_ids")
 
         estimated_hours = float(
             request.form.get("estimated_hours", 0) or 0
@@ -2097,7 +2146,6 @@ def edit_task(task_id):
             title = ?,
             description = ?,
             assigned_to = ?,
-            team_member_id = ?,
             priority = ?,
             status = ?,
             due_date = ?,
@@ -2110,7 +2158,6 @@ def edit_task(task_id):
             title,
             description,
             assigned_to,
-            team_member_id if team_member_id else None,
             priority,
             status,
             due_date,
@@ -2119,6 +2166,26 @@ def edit_task(task_id):
             hourly_rate,
             task_id
         ))
+
+        conn.execute("""
+        DELETE FROM task_team_members
+        WHERE task_id = ?
+        """, (
+            task_id,
+        ))
+
+        for member_id in selected_team_members:
+
+            conn.execute("""
+            INSERT INTO task_team_members (
+                task_id,
+                team_member_id
+            )
+            VALUES (?, ?)
+            """, (
+                task_id,
+                member_id
+            ))
 
         conn.commit()
         conn.close()
@@ -2135,7 +2202,8 @@ def edit_task(task_id):
         "edit_task.html",
         task=task,
         projects=projects,
-        team_members=team_members
+        team_members=team_members,
+        selected_member_ids=selected_member_ids
     )
 
 @app.route("/delete-task/<int:task_id>", methods=["POST"])

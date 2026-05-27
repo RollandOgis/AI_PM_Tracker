@@ -22,32 +22,23 @@
         <a href="/calendar">Calendar</a>
         <a href="/gantt">Gantt Timeline</a>
         <a href="/analytics">Analytics</a>
-
         <a href="/clients">Clients</a>
         <a href="/team">Team Members</a>
-
         <a href="/ai-assistant">AI Assistant</a>
-
         <a href="/risks">Risk Register</a>
         <a href="/issues">Issue Register</a>
         <a href="/changes">Change Register</a>
         <a href="/benefits">Benefits Register</a>
-
         <a href="/insights">Insights</a>
         <a href="/report">Reports</a>
-
         <a href="/activity">Activity</a>
         <a href="/advanced-search">Search</a>
-
         <a href="/add-task">Add Task</a>
         <a href="/add-project">Add Project</a>
-
         <a href="/profile">Profile</a>
-
         <a href="/logout">Logout</a>
 
     </div>
-
 
     <div class="main-content">
 
@@ -98,13 +89,9 @@
                 >
 
 
-                <label>Team Member</label>
+                <label>Team Members</label>
 
-                <select name="team_member_id">
-
-                    <option value="">
-                        No Team Member
-                    </option>
+                <select name="team_member_ids" multiple>
 
                     {% for member in team_members %}
 
@@ -121,6 +108,10 @@
                     {% endfor %}
 
                 </select>
+
+                <small>
+                    Hold Ctrl on Windows or Command on Mac to select multiple team members.
+                </small>
 
 
                 <label>Priority</label>
