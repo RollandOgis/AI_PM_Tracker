@@ -3097,6 +3097,135 @@ def add_benefit():
         projects=projects
     )
 
+@app.route("/edit-risk/<int:risk_id>", methods=["GET", "POST"])
+def edit_risk(risk_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    risk = conn.execute("""
+    SELECT *
+    FROM risks
+    WHERE id = ?
+    """, (
+        risk_id,
+    )).fetchone()
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+
+        title = request.form["title"]
+
+        description = request.form["description"]
+
+        probability = request.form["probability"]
+
+        impact = request.form["impact"]
+
+        mitigation = request.form["mitigation"]
+
+        owner = request.form["owner"]
+
+        status = request.form["status"]
+
+        probability_map = {
+            "Low": 1,
+            "Medium": 2,
+            "High": 3
+        }
+
+        impact_map = {
+            "Low": 1,
+            "Medium": 2,
+            "High": 3
+        }
+
+        severity_score = (
+            probability_map[probability]
+            *
+            impact_map[impact]
+        )
+
+        conn.execute("""
+        UPDATE risks
+        SET
+            project_id = ?,
+            title = ?,
+            description = ?,
+            probability = ?,
+            impact = ?,
+            severity_score = ?,
+            mitigation = ?,
+            owner = ?,
+            status = ?
+        WHERE id = ?
+        """, (
+            project_id,
+            title,
+            description,
+            probability,
+            impact,
+            severity_score,
+            mitigation,
+            owner,
+            status,
+            risk_id
+        ))
+
+        conn.commit()
+
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a risk"
+        )
+
+        return redirect("/risks")
+
+    conn.close()
+
+    return render_template(
+        "edit_risk.html",
+        risk=risk,
+        projects=projects
+    )
+
+@app.route("/delete-risk/<int:risk_id>")
+def delete_risk(risk_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    conn.execute("""
+    DELETE FROM risks
+    WHERE id = ?
+    """, (
+        risk_id,
+    ))
+
+    conn.commit()
+
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a risk"
+    )
+
+    return redirect("/risks")
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

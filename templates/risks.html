@@ -173,6 +173,22 @@
                         </div>
 
 
+                        <div class="project-actions">
+
+                            <a href="/edit-risk/{{ risk['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-risk/{{ risk['id'] }}"
+                                onclick="return confirm('Delete this risk?')"
+                            >
+                                Delete
+                            </a>
+
+                        </div>
+
+
                         <div class="smart-insight">
 
                             <strong>Mitigation:</strong>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Risk</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Risk</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == risk['project_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Risk Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    value="{{ risk['title'] }}"
+                    required
+                >
+
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="4"
+                    required
+                >{{ risk['description'] }}</textarea>
+
+
+                <label>Probability</label>
+
+                <select name="probability" required>
+
+                    <option
+                        value="Low"
+                        {% if risk['probability'] == 'Low' %}selected{% endif %}
+                    >
+                        Low
+                    </option>
+
+                    <option
+                        value="Medium"
+                        {% if risk['probability'] == 'Medium' %}selected{% endif %}
+                    >
+                        Medium
+                    </option>
+
+                    <option
+                        value="High"
+                        {% if risk['probability'] == 'High' %}selected{% endif %}
+                    >
+                        High
+                    </option>
+
+                </select>
+
+
+                <label>Impact</label>
+
+                <select name="impact" required>
+
+                    <option
+                        value="Low"
+                        {% if risk['impact'] == 'Low' %}selected{% endif %}
+                    >
+                        Low
+                    </option>
+
+                    <option
+                        value="Medium"
+                        {% if risk['impact'] == 'Medium' %}selected{% endif %}
+                    >
+                        Medium
+                    </option>
+
+                    <option
+                        value="High"
+                        {% if risk['impact'] == 'High' %}selected{% endif %}
+                    >
+                        High
+                    </option>
+
+                </select>
+
+
+                <label>Mitigation Plan</label>
+
+                <textarea
+                    name="mitigation"
+                    rows="4"
+                    required
+                >{{ risk['mitigation'] }}</textarea>
+
+
+                <label>Risk Owner</label>
+
+                <input
+                    type="text"
+                    name="owner"
+                    value="{{ risk['owner'] }}"
+                    required
+                >
+
+
+                <label>Status</label>
+
+                <select name="status" required>
+
+                    <option
+                        value="Open"
+                        {% if risk['status'] == 'Open' %}selected{% endif %}
+                    >
+                        Open
+                    </option>
+
+                    <option
+                        value="Monitoring"
+                        {% if risk['status'] == 'Monitoring' %}selected{% endif %}
+                    >
+                        Monitoring
+                    </option>
+
+                    <option
+                        value="Mitigated"
+                        {% if risk['status'] == 'Mitigated' %}selected{% endif %}
+                    >
+                        Mitigated
+                    </option>
+
+                    <option
+                        value="Closed"
+                        {% if risk['status'] == 'Closed' %}selected{% endif %}
+                    >
+                        Closed
+                    </option>
+
+                </select>
+
+
+                <button type="submit" class="btn-primary">
+                    Update Risk
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
