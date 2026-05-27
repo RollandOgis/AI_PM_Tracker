@@ -2159,6 +2159,61 @@ def clients():
         clients=clients
     )
 
+@app.route("/add-client", methods=["GET", "POST"])
+def add_client():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "")
+        company = request.form.get("company", "")
+        email = request.form.get("email", "")
+        phone = request.form.get("phone", "")
+        status = request.form.get("status", "Lead")
+        notes = request.form.get("notes", "")
+
+        estimated_value = float(
+            request.form.get("estimated_value", 0) or 0
+        )
+
+        conn = get_db_connection()
+
+        conn.execute("""
+        INSERT INTO clients (
+            name,
+            company,
+            email,
+            phone,
+            status,
+            notes,
+            estimated_value,
+            user_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            name,
+            company,
+            email,
+            phone,
+            status,
+            notes,
+            estimated_value,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a client"
+        )
+
+        return redirect("/clients")
+
+    return render_template("add_client.html")
+
 @app.route("/activity")
 def activity():
 
