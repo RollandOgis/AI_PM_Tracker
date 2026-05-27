@@ -1574,3 +1574,14 @@ body.dark-ready {
         grid-template-columns: 1fr;
     }
 }
+
+.main-content {
+    padding-top: 30px;
+}
+
+.calendar-container,
+.calendar-section,
+.calendar-wrapper {
+    margin-top: 0;
+    padding-top: 0;
+}
