@@ -2218,6 +2218,7 @@ def logout():
 
     return redirect("/login")
 
+
 @app.route("/clients")
 def clients():
 
