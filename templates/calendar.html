@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar - AI PM Tracker</title>
+    <title>Calendar</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="container">
+<div class="layout">
 
-     <div class="sidebar">
+    <div class="sidebar">
 
         <h2>AI PM</h2>
 
@@ -47,64 +48,45 @@
 
     </div>
 
-        <div class="user-box">
-            Logged in as:
-            <strong>{{ session.get("username", "User") }}</strong>
-        </div>
-    </div>
 
     <div class="main-content">
 
-        <div class="top-bar">
+        <div class="dashboard-header">
+
             <div>
-                <h2>Calendar View</h2>
-                <p>Tasks grouped by due dates.</p>
+                <h1>Calendar</h1>
+
+                <p class="dashboard-subtitle">
+                    View upcoming project and task deadlines.
+                </p>
             </div>
 
-            <a href="/add-task" class="view-btn">Add Task</a>
         </div>
 
-        {% if tasks %}
 
-            <div class="calendar-grid">
+        {% if calendar_items %}
 
-                {% for task in tasks %}
+            <div class="calendar-list">
+
+                {% for item in calendar_items %}
 
                     <div class="calendar-card">
 
-                        <div class="calendar-card-left">
-                            <h3>{{ task["title"] }}</h3>
+                        <div>
+
+                            <h3>
+                                {{ item["title"] }}
+                            </h3>
 
                             <p>
-                                <strong>Project:</strong>
-                                {{ task["project_name"] }}
+                                {{ item["type"] }}
                             </p>
 
-                            <p>
-                                <strong>Status:</strong>
-                                {{ task["status"] }}
-                            </p>
-
-                            <p>
-                                <strong>Priority:</strong>
-                                {{ task["priority"] }}
-                            </p>
-
-                            <p>
-                                <strong>Assigned To:</strong>
-                                {{ task["assigned_to"] or "Unassigned" }}
-                            </p>
                         </div>
 
-                        <div class="calendar-date">
-                            <strong>Due</strong>
-
-                            <span>{{ task["due_date"] }}</span>
-
-                            {% if task["due_date"] and task["due_date"] < current_date and task["status"] != "Completed" %}
-                                <small class="overdue-badge">Overdue</small>
-                            {% endif %}
-                        </div>
+                        <span>
+                            {{ item["date"] }}
+                        </span>
 
                     </div>
 
@@ -115,9 +97,13 @@
         {% else %}
 
             <div class="empty-box">
-                <h3>No Scheduled Tasks</h3>
-                <p>Add tasks with due dates to see them here.</p>
-                <a href="/add-task" class="view-btn">Add Task</a>
+
+                <h3>No Calendar Items</h3>
+
+                <p>
+                    Project and task deadlines will appear here.
+                </p>
+
             </div>
 
         {% endif %}
