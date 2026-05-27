@@ -2380,24 +2380,6 @@ def delete_client(client_id):
     return redirect("/clients")
 
 
-def create_activity(message):
-
-    conn = get_db_connection()
-
-    conn.execute("""
-    INSERT INTO activity_logs (
-        activity,
-        created_at
-    )
-    VALUES (?, ?)
-    """, (
-        message,
-        str(date.today())
-    ))
-
-    conn.commit()
-    conn.close()
-
 @app.route("/advanced-search")
 def advanced_search():
 
