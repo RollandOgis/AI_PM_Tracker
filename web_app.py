@@ -375,20 +375,6 @@ def create_demo_user():
 
 create_demo_user()
 
-def create_activity(message):
-    conn = get_db_connection()
-
-    conn.execute("""
-    INSERT INTO activities (message, created_at)
-    VALUES (?, ?)
-    """, (
-        message,
-        str(date.today())
-    ))
-
-    conn.commit()
-    conn.close()
-
 
 def is_overdue(due_date, status):
     if not due_date:
