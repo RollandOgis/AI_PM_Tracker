@@ -2240,6 +2240,18 @@ def create_activity(activity_text):
         conn = get_db_connection()
 
         conn.execute("""
+        CREATE TABLE IF NOT EXISTS activities (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            activity TEXT,
+
+            created_at TEXT
+
+        )
+        """)
+
+        conn.execute("""
         INSERT INTO activities (
             activity,
             created_at
