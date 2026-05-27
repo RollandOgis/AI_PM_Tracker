@@ -332,6 +332,45 @@ def init_db():
 
                    """)
 
+    # TEAM MEMBERS TABLE
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS team_members
+                   (
+
+                       id
+                       INTEGER
+                       PRIMARY
+                       KEY
+                       AUTOINCREMENT,
+
+                       user_id
+                       INTEGER,
+
+                       name
+                       TEXT,
+
+                       role
+                       TEXT,
+
+                       email
+                       TEXT,
+
+                       phone
+                       TEXT,
+
+                       skills
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -3560,6 +3599,75 @@ def delete_benefit(benefit_id):
     )
 
     return redirect("/benefits")
+
+@app.route("/team")
+def team():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    members = conn.execute("""
+    SELECT *
+    FROM team_members
+    WHERE user_id = ?
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "team.html",
+        members=members
+    )
+
+
+@app.route("/add-team-member", methods=["GET", "POST"])
+def add_team_member():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        conn.execute("""
+        INSERT INTO team_members (
+            user_id,
+            name,
+            role,
+            email,
+            phone,
+            skills,
+            status,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            request.form.get("name", ""),
+            request.form.get("role", ""),
+            request.form.get("email", ""),
+            request.form.get("phone", ""),
+            request.form.get("skills", ""),
+            request.form.get("status", "Active"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a team member"
+        )
+
+        return redirect("/team")
+
+    return render_template("add_team_member.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

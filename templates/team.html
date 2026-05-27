@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Members</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <div class="sidebar">
+
+        <h2>AI PM</h2>
+
+        <a href="/">Dashboard</a>
+        <a href="/tasks">Tasks</a>
+        <a href="/kanban">Kanban</a>
+        <a href="/calendar">Calendar</a>
+        <a href="/gantt">Gantt Timeline</a>
+        <a href="/analytics">Analytics</a>
+        <a href="/clients">Clients</a>
+        <a href="/team">Team Members</a>
+        <a href="/ai-assistant">AI Assistant</a>
+        <a href="/risks">Risk Register</a>
+        <a href="/issues">Issue Register</a>
+        <a href="/changes">Change Register</a>
+        <a href="/benefits">Benefits Register</a>
+        <a href="/activity">Activity</a>
+        <a href="/advanced-search">Search</a>
+        <a href="/export-report">Export PDF</a>
+        <a href="/logout">Logout</a>
+
+    </div>
+
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Team Members</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage project contributors, roles and delivery ownership.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-team-member" class="btn-primary">
+                    + Add Team Member
+                </a>
+
+            </div>
+
+        </div>
+
+
+        {% if members %}
+
+            <div class="projects-grid">
+
+                {% for member in members %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+
+                                <h3>
+                                    {{ member["name"] }}
+                                </h3>
+
+                                {% if member["status"] == "Active" %}
+
+                                    <span class="badge badge-green">
+                                        Active
+                                    </span>
+
+                                {% elif member["status"] == "Unavailable" %}
+
+                                    <span class="badge badge-yellow">
+                                        Unavailable
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-red">
+                                        {{ member["status"] }}
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Role</span>
+
+                                <strong>
+                                    {{ member["role"] or "N/A" }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Email</span>
+
+                                <strong>
+                                    {{ member["email"] or "N/A" }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Phone</span>
+
+                                <strong>
+                                    {{ member["phone"] or "N/A" }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Created</span>
+
+                                <strong>
+                                    {{ member["created_at"] or "N/A" }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Skills:</strong>
+
+                            <br><br>
+
+                            {{ member["skills"] or "No skills added." }}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Team Members Added</h3>
+
+                <p>
+                    Add team members so projects, tasks and governance items can have clear owners.
+                </p>
+
+                <a href="/add-team-member" class="btn-primary">
+                    Add First Team Member
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
