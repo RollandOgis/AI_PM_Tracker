@@ -421,38 +421,7 @@ ensure_column("projects", "client_id", "INTEGER")
 
 
 def create_demo_user():
-    conn = get_db_connection()
-
-    hashed_password = generate_password_hash("demo123")
-
-    existing_user = conn.execute(
-        "SELECT * FROM users WHERE username = ?",
-        ("demo",)
-    ).fetchone()
-
-    if existing_user:
-        conn.execute("""
-        UPDATE users
-        SET password = ?,
-            avatar_initials = ?
-        WHERE username = ?
-        """, (
-            hashed_password,
-            "DE",
-            "demo"
-        ))
-    else:
-        conn.execute("""
-        INSERT INTO users (username, password, avatar_initials)
-        VALUES (?, ?, ?)
-        """, (
-            "demo",
-            hashed_password,
-            "DE"
-        ))
-
-    conn.commit()
-    conn.close()
+    pass
 
 
 create_demo_user()
