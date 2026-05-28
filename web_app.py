@@ -2641,23 +2641,55 @@ def export_report():
 
     conn = get_db_connection()
 
-    total_projects = conn.execute("""
-    SELECT COUNT(*) FROM projects
-    """).fetchone()[0]
+    cursor = conn.cursor()
 
-    total_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    """).fetchone()[0]
+    cursor.execute("""
+    SELECT COUNT(*)
+    FROM projects
+    WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
 
-    completed_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    WHERE status = 'Completed'
-    """).fetchone()[0]
+    total_projects = cursor.fetchone()[0]
 
-    blocked_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    WHERE status = 'Blocked'
-    """).fetchone()[0]
+    cursor.execute("""
+    SELECT COUNT(*)
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_tasks = cursor.fetchone()[0]
+
+    cursor.execute("""
+    SELECT COUNT(*)
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = %s
+    AND tasks.status = 'Completed'
+    """, (
+        session["user_id"],
+    ))
+
+    completed_tasks = cursor.fetchone()[0]
+
+    cursor.execute("""
+    SELECT COUNT(*)
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = %s
+    AND tasks.status = 'Blocked'
+    """, (
+        session["user_id"],
+    ))
+
+    blocked_tasks = cursor.fetchone()[0]
 
     conn.close()
 
@@ -2678,7 +2710,6 @@ def export_report():
     )
 
     elements.append(title)
-
     elements.append(Spacer(1, 20))
 
     summary = Paragraph(
