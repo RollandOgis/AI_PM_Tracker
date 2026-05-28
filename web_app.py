@@ -702,25 +702,79 @@ def home():
 
     return render_template(
         "index.html",
+
         projects=all_projects,
+
         total_projects=len(projects),
+
         total_tasks=total_tasks,
+
         completed_tasks=completed_tasks,
+
         pending_tasks=pending_tasks,
+
         in_progress_tasks=in_progress_tasks,
+
         blocked_tasks=blocked_tasks,
-        total_budget=total_budget,
-        total_actual_cost=total_actual_cost,
-        total_remaining_budget=(
-            total_budget - total_actual_cost
-        ),
-        total_clients=total_clients,
-        total_client_value=total_client_value,
-        active_clients_count=len(active_clients),
-        smart_insights=[],
-        delivery_insights=[],
+
+        high_priority_tasks=high_priority_tasks,
+
+        medium_priority_tasks=medium_priority_tasks,
+
+        low_priority_tasks=low_priority_tasks,
+
+        overdue_tasks=overdue_tasks,
+
+        completion_rate=completion_rate,
+
+        project_health_score=0,
+
+        project_health_label="No Data Yet",
+
+        smart_insights=smart_insights,
+
+        delivery_insights=delivery_insights,
+
         upcoming_deadlines=upcoming_deadlines,
-        notifications=[]
+
+        workload_summary=workload_summary,
+
+        total_budget=0,
+
+        total_actual_cost=0,
+
+        total_remaining_budget=0,
+
+        over_budget_projects=0,
+
+        budget_usage_percent=0,
+
+        profitability_score=0,
+
+        financial_health_label="No Data Yet",
+
+        total_clients=0,
+
+        total_client_value=0,
+
+        active_clients_count=0,
+
+        chart_status_data=[
+            completed_tasks,
+            pending_tasks,
+            in_progress_tasks,
+            blocked_tasks
+        ],
+
+        chart_priority_data=[
+            high_priority_tasks,
+            medium_priority_tasks,
+            low_priority_tasks
+        ],
+
+        notifications=[],
+
+        current_date=str(date.today())
     )
 
 @app.route("/kanban")
