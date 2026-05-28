@@ -2414,29 +2414,72 @@ def analytics():
 
     conn = get_db_connection()
 
-    total_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    """).fetchone()[0]
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
-    completed_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    WHERE status = 'Completed'
-    """).fetchone()[0]
+    cursor.execute("""
+    SELECT
+        tasks.*,
+        projects.name AS project_name
+    FROM tasks
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
 
-    pending_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    WHERE status = 'Pending'
-    """).fetchone()[0]
+    tasks = cursor.fetchall()
 
-    progress_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    WHERE status = 'In Progress'
-    """).fetchone()[0]
+    total_tasks = len(tasks)
 
-    blocked_tasks = conn.execute("""
-    SELECT COUNT(*) FROM tasks
-    WHERE status = 'Blocked'
-    """).fetchone()[0]
+    completed_tasks = 0
+    pending_tasks = 0
+    in_progress_tasks = 0
+    blocked_tasks = 0
+
+    high_priority = 0
+    medium_priority = 0
+    low_priority = 0
+
+    overdue_tasks = 0
+
+    for task in tasks:
+
+        if task["status"] == "Completed":
+            completed_tasks += 1
+
+        elif task["status"] == "Pending":
+            pending_tasks += 1
+
+        elif task["status"] == "In Progress":
+            in_progress_tasks += 1
+
+        elif task["status"] == "Blocked":
+            blocked_tasks += 1
+
+        if task["priority"] == "High":
+            high_priority += 1
+
+        elif task["priority"] == "Medium":
+            medium_priority += 1
+
+        elif task["priority"] == "Low":
+            low_priority += 1
+
+        if is_overdue(
+            task["due_date"],
+            task["status"]
+        ):
+            overdue_tasks += 1
+
+    if total_tasks > 0:
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
+    else:
+        completion_rate = 0
 
     conn.close()
 
@@ -2445,8 +2488,24 @@ def analytics():
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
         pending_tasks=pending_tasks,
-        progress_tasks=progress_tasks,
-        blocked_tasks=blocked_tasks
+        in_progress_tasks=in_progress_tasks,
+        blocked_tasks=blocked_tasks,
+        high_priority=high_priority,
+        medium_priority=medium_priority,
+        low_priority=low_priority,
+        overdue_tasks=overdue_tasks,
+        completion_rate=completion_rate,
+        chart_status_data=[
+            completed_tasks,
+            pending_tasks,
+            in_progress_tasks,
+            blocked_tasks
+        ],
+        chart_priority_data=[
+            high_priority,
+            medium_priority,
+            low_priority
+        ]
     )
 
 @app.route("/ai-assistant", methods=["GET", "POST"])
