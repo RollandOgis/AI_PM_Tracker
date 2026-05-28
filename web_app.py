@@ -68,15 +68,6 @@ def get_db_connection():
     return PostgresConnectionWrapper(raw_conn)
 
 
-def get_db_connection():
-
-    database_url = os.environ.get("DATABASE_URL")
-
-    conn = psycopg2.connect(database_url)
-
-    return PostgresConnectionWrapper(conn)
-
-
 def ensure_column(table, column, column_type):
     pass
 
