@@ -441,18 +441,24 @@ def home():
 
     conn = get_db_connection()
 
-    projects = conn.execute("""
-            SELECT projects.*,
-                clients.name    AS client_name,
-                clients.company AS client_company
-            FROM projects
-            LEFT JOIN clients
-                      ON projects.client_id = clients.id
-            WHERE projects.user_id = ?
-            ORDER BY projects.id DESC
-            """, (
-            session["user_id"],
-            )).fetchall()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    projects_query = """
+                     SELECT projects.*, \
+                            clients.name    AS client_name, \
+                            clients.company AS client_company
+                     FROM projects
+                              LEFT JOIN clients
+                                        ON projects.client_id = clients.id
+                     WHERE projects.user_id = %s
+                     ORDER BY projects.id DESC \
+                     """
+
+    cursor.execute(projects_query, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
 
     clients = conn.execute("""
     SELECT *
