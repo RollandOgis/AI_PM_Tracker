@@ -89,10 +89,20 @@ def init_db():
 
         email TEXT,
 
-        password TEXT
+        password TEXT,
+
+        avatar_initials TEXT
 
     )
     """)
+
+    try:
+        cursor.execute("""
+        ALTER TABLE users
+        ADD COLUMN avatar_initials TEXT
+        """)
+    except Exception:
+        pass
 
 
     # PROJECTS
@@ -155,7 +165,15 @@ def init_db():
 
         created_at TEXT,
 
-        team_member_id INTEGER
+        team_member_id INTEGER,
+
+        attachment_url TEXT,
+
+        estimated_hours REAL DEFAULT 0,
+
+        actual_hours REAL DEFAULT 0,
+
+        hourly_rate REAL DEFAULT 0
 
     )
     """)
@@ -164,6 +182,38 @@ def init_db():
         cursor.execute("""
         ALTER TABLE tasks
         ADD COLUMN team_member_id INTEGER
+        """)
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("""
+        ALTER TABLE tasks
+        ADD COLUMN attachment_url TEXT
+        """)
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("""
+        ALTER TABLE tasks
+        ADD COLUMN estimated_hours REAL DEFAULT 0
+        """)
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("""
+        ALTER TABLE tasks
+        ADD COLUMN actual_hours REAL DEFAULT 0
+        """)
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("""
+        ALTER TABLE tasks
+        ADD COLUMN hourly_rate REAL DEFAULT 0
         """)
     except Exception:
         pass
@@ -375,18 +425,6 @@ def init_db():
 
 
 init_db()
-
-ensure_column("tasks", "assigned_to", "TEXT")
-ensure_column("tasks", "attachment_url", "TEXT")
-ensure_column("tasks", "estimated_hours", "REAL DEFAULT 0")
-ensure_column("tasks", "actual_hours", "REAL DEFAULT 0")
-ensure_column("tasks", "hourly_rate", "REAL DEFAULT 0")
-
-ensure_column("users", "avatar_initials", "TEXT")
-
-ensure_column("projects", "estimated_budget", "REAL DEFAULT 0")
-ensure_column("projects", "actual_cost", "REAL DEFAULT 0")
-ensure_column("projects", "client_id", "INTEGER")
 
 
 def create_demo_user():
