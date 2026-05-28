@@ -39,17 +39,7 @@ def get_db_connection():
 
 
 def ensure_column(table, column, column_type):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(f"PRAGMA table_info({table})")
-    columns = [row["name"] for row in cursor.fetchall()]
-
-    if column not in columns:
-        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
-
-    conn.commit()
-    conn.close()
+    pass
 
 
 def init_db():
