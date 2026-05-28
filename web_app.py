@@ -33,6 +33,7 @@ class PostgresConnectionWrapper:
         self.conn = conn
 
     def execute(self, query, params=None):
+
         cursor = self.conn.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor
         )
@@ -46,11 +47,25 @@ class PostgresConnectionWrapper:
     def commit(self):
         self.conn.commit()
 
+    def rollback(self):
+        self.conn.rollback()
+
     def close(self):
         self.conn.close()
 
     def cursor(self, *args, **kwargs):
         return self.conn.cursor(*args, **kwargs)
+
+
+def get_db_connection():
+
+    database_url = os.environ.get("DATABASE_URL")
+
+    raw_conn = psycopg2.connect(database_url)
+
+    raw_conn.autocommit = True
+
+    return PostgresConnectionWrapper(raw_conn)
 
 
 def get_db_connection():
