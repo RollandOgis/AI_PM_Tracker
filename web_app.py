@@ -27,15 +27,39 @@ app.secret_key = "secretkey"
 DATABASE = "ai_pm_tracker.db"
 
 
+class PostgresConnectionWrapper:
+
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, query, params=None):
+        cursor = self.conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        query = query.replace("?", "%s")
+
+        cursor.execute(query, params or ())
+
+        return cursor
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
+    def cursor(self, *args, **kwargs):
+        return self.conn.cursor(*args, **kwargs)
+
+
 def get_db_connection():
 
     database_url = os.environ.get("DATABASE_URL")
 
     conn = psycopg2.connect(database_url)
 
-    conn.autocommit = True
-
-    return conn
+    return PostgresConnectionWrapper(conn)
 
 
 def ensure_column(table, column, column_type):
