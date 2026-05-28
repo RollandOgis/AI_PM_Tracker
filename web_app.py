@@ -435,6 +435,7 @@ def is_overdue(due_date, status):
 
 @app.route("/")
 def home():
+    return redirect("/login")
 
     if "user_id" not in session:
         return redirect("/login")
