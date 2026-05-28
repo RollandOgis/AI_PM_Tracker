@@ -44,7 +44,7 @@ def ensure_column(table, column, column_type):
 
 def init_db():
 
-    conn = sqlite3.connect("ai_pm_tracker.db")
+    conn = get_db_connection()
 
     cursor = conn.cursor()
 
@@ -53,7 +53,7 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
         username TEXT UNIQUE,
 
@@ -69,7 +69,7 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS projects (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
         user_id INTEGER,
 
@@ -87,14 +87,19 @@ def init_db():
 
         actual_cost REAL DEFAULT 0,
 
-        created_at TEXT
+        created_at TEXT,
+
+        client_id INTEGER
 
     )
     """)
 
     try:
-        cursor.execute("ALTER TABLE projects ADD COLUMN client_id INTEGER")
-    except sqlite3.OperationalError:
+        cursor.execute("""
+        ALTER TABLE projects
+        ADD COLUMN client_id INTEGER
+        """)
+    except Exception:
         pass
 
 
@@ -102,7 +107,7 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
         project_id INTEGER,
 
@@ -118,99 +123,69 @@ def init_db():
 
         due_date TEXT,
 
-        created_at TEXT
+        created_at TEXT,
+
+        team_member_id INTEGER
 
     )
     """)
+
     try:
-        cursor.execute("ALTER TABLE tasks ADD COLUMN team_member_id INTEGER")
-    except sqlite3.OperationalError:
+        cursor.execute("""
+        ALTER TABLE tasks
+        ADD COLUMN team_member_id INTEGER
+        """)
+    except Exception:
         pass
 
 
     # CLIENTS
     cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS clients
-                   (
+    CREATE TABLE IF NOT EXISTS clients (
 
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
-                       user_id
-                       INTEGER,
+        user_id INTEGER,
 
-                       name
-                       TEXT,
+        name TEXT,
 
-                       company
-                       TEXT,
+        company TEXT,
 
-                       email
-                       TEXT,
+        email TEXT,
 
-                       phone
-                       TEXT,
+        phone TEXT,
 
-                       status
-                       TEXT,
+        status TEXT DEFAULT 'Lead',
 
-                       notes
-                       TEXT,
+        notes TEXT DEFAULT '',
 
-                       estimated_value
-                       REAL
-                       DEFAULT
-                       0,
+        estimated_value REAL DEFAULT 0,
 
-                       created_at
-                       TEXT
+        created_at TEXT
 
-                   )
-                   """)
+    )
+    """)
 
-    try:
-        cursor.execute("ALTER TABLE clients ADD COLUMN status TEXT DEFAULT 'Lead'")
-    except sqlite3.OperationalError:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE clients ADD COLUMN notes TEXT DEFAULT ''")
-    except sqlite3.OperationalError:
-        pass
-
-    try:
-        cursor.execute("ALTER TABLE clients ADD COLUMN estimated_value REAL DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass
 
     # ACTIVITIES
     cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS activities
-                   (
+    CREATE TABLE IF NOT EXISTS activities (
 
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
-                       activity
-                       TEXT,
+        activity TEXT,
 
-                       created_at
-                       TEXT
+        created_at TEXT
 
-                   )
-                   """)
+    )
+    """)
+
 
     # RISKS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS risks (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
         user_id INTEGER,
 
@@ -242,7 +217,7 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS issues (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
         user_id INTEGER,
 
@@ -270,7 +245,7 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS changes (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
         user_id INTEGER,
 
@@ -293,111 +268,75 @@ def init_db():
     )
     """)
 
+
     # BENEFITS
     cursor.execute("""
+    CREATE TABLE IF NOT EXISTS benefits (
 
-                   CREATE TABLE IF NOT EXISTS benefits
-                   (
+        id SERIAL PRIMARY KEY,
 
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
+        user_id INTEGER,
 
-                       user_id
-                       INTEGER,
+        project_id INTEGER,
 
-                       project_id
-                       INTEGER,
+        title TEXT,
 
-                       title
-                       TEXT,
+        description TEXT,
 
-                       description
-                       TEXT,
+        expected_value TEXT,
 
-                       expected_value
-                       TEXT,
+        measurement_method TEXT,
 
-                       measurement_method
-                       TEXT,
+        owner TEXT,
 
-                       owner
-                       TEXT,
+        status TEXT,
 
-                       status
-                       TEXT,
+        target_date TEXT,
 
-                       target_date
-                       TEXT,
+        created_at TEXT
 
-                       created_at
-                       TEXT
+    )
+    """)
 
-                   )
 
-                   """)
-
-    # TEAM MEMBERS TABLE
-
+    # TEAM MEMBERS
     cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS team_members
-                   (
+    CREATE TABLE IF NOT EXISTS team_members (
 
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
-                       user_id
-                       INTEGER,
+        user_id INTEGER,
 
-                       name
-                       TEXT,
+        name TEXT,
 
-                       role
-                       TEXT,
+        role TEXT,
 
-                       email
-                       TEXT,
+        email TEXT,
 
-                       phone
-                       TEXT,
+        phone TEXT,
 
-                       skills
-                       TEXT,
+        skills TEXT,
 
-                       status
-                       TEXT,
+        status TEXT,
 
-                       created_at
-                       TEXT
+        created_at TEXT
 
-                   )
-                   """)
+    )
+    """)
 
-    # TASK TEAM MEMBERS TABLE
 
+    # TASK TEAM MEMBERS
     cursor.execute("""
-                   CREATE TABLE IF NOT EXISTS task_team_members
-                   (
+    CREATE TABLE IF NOT EXISTS task_team_members (
 
-                       id
-                       INTEGER
-                       PRIMARY
-                       KEY
-                       AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
 
-                       task_id
-                       INTEGER,
+        task_id INTEGER,
 
-                       team_member_id
-                       INTEGER
+        team_member_id INTEGER
 
-                   )
-                   """)
+    )
+    """)
 
 
     conn.commit()
