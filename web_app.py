@@ -418,6 +418,77 @@ def init_db():
     )
     """)
 
+    # ASSUMPTIONS
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS assumptions
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
+    # DEPENDENCIES
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS dependencies
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       target_date
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -3839,6 +3910,72 @@ def delete_team_member(member_id):
     )
 
     return redirect("/team")
+
+@app.route("/raid")
+def raid():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT *
+    FROM risks
+    WHERE user_id = %s
+    ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    risks = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT *
+    FROM assumptions
+    WHERE user_id = %s
+    ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    assumptions = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT *
+    FROM issues
+    WHERE user_id = %s
+    ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    issues = cursor.fetchall()
+
+    cursor.execute("""
+    SELECT *
+    FROM dependencies
+    WHERE user_id = %s
+    ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    dependencies = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "raid.html",
+        risks=risks,
+        assumptions=assumptions,
+        issues=issues,
+        dependencies=dependencies
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
