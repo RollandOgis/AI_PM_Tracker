@@ -432,30 +432,22 @@ def home():
     active_clients = set()
 
     upcoming_deadlines = []
+    smart_insights = []
+    delivery_insights = []
+    notifications = []
 
     for client in clients:
-
-        total_client_value += float(
-            client["estimated_value"] or 0
-        )
+        total_client_value += float(client["estimated_value"] or 0)
 
     for project in projects:
 
-        estimated_budget = float(
-            project["estimated_budget"] or 0
-        )
-
-        base_actual_cost = float(
-            project["actual_cost"] or 0
-        )
+        estimated_budget = float(project["estimated_budget"] or 0)
+        base_actual_cost = float(project["actual_cost"] or 0)
 
         total_budget += estimated_budget
 
         if project["client_name"]:
-
-            active_clients.add(
-                project["client_name"]
-            )
+            active_clients.add(project["client_name"])
 
         cursor.execute("""
         SELECT *
@@ -463,8 +455,7 @@ def home():
         WHERE project_id = %s
         ORDER BY
             CASE
-                WHEN due_date IS NULL
-                OR due_date = ''
+                WHEN due_date IS NULL OR due_date = ''
                 THEN '9999-12-31'
                 ELSE due_date
             END ASC
@@ -481,44 +472,28 @@ def home():
 
             total_tasks += 1
 
-            task_actual_hours = float(
-                task["actual_hours"] or 0
-            )
+            task_actual_hours = float(task["actual_hours"] or 0)
+            task_hourly_rate = float(task["hourly_rate"] or 0)
 
-            task_hourly_rate = float(
-                task["hourly_rate"] or 0
-            )
-
-            task_actual_cost_total += (
-                task_actual_hours
-                * task_hourly_rate
-            )
+            task_actual_cost_total += task_actual_hours * task_hourly_rate
 
             if task["status"] == "Completed":
                 completed_tasks += 1
-
             elif task["status"] == "Pending":
                 pending_tasks += 1
-
             elif task["status"] == "In Progress":
                 in_progress_tasks += 1
-
             elif task["status"] == "Blocked":
                 blocked_tasks += 1
 
             if task["priority"] == "High":
                 high_priority_tasks += 1
-
             elif task["priority"] == "Medium":
                 medium_priority_tasks += 1
-
             elif task["priority"] == "Low":
                 low_priority_tasks += 1
 
-            if is_overdue(
-                task["due_date"],
-                task["status"]
-            ):
+            if is_overdue(task["due_date"], task["status"]):
                 overdue_tasks += 1
 
             if (
@@ -526,7 +501,6 @@ def home():
                 and task["status"] != "Completed"
                 and task["due_date"] >= str(date.today())
             ):
-
                 upcoming_deadlines.append({
                     "title": task["title"],
                     "project_name": project["name"],
@@ -542,50 +516,25 @@ def home():
                 task["due_date"]
             ))
 
-        actual_cost = (
-            base_actual_cost
-            + task_actual_cost_total
-        )
-
+        actual_cost = base_actual_cost + task_actual_cost_total
         total_actual_cost += actual_cost
 
-        remaining_budget = (
-            estimated_budget
-            - actual_cost
-        )
+        remaining_budget = estimated_budget - actual_cost
 
-        if (
-            estimated_budget > 0
-            and actual_cost > estimated_budget
-        ):
+        if estimated_budget > 0 and actual_cost > estimated_budget:
             over_budget_projects += 1
 
         if estimated_budget > 0:
-
-            budget_used_percent = round(
-                (
-                    actual_cost
-                    / estimated_budget
-                ) * 100
-            )
-
+            budget_used_percent = round((actual_cost / estimated_budget) * 100)
         else:
             budget_used_percent = 0
 
         if len(tasks) > 0:
-
             completed_for_project = len([
                 task for task in tasks
                 if task["status"] == "Completed"
             ])
-
-            completion = round(
-                (
-                    completed_for_project
-                    / len(tasks)
-                ) * 100
-            )
-
+            completion = round((completed_for_project / len(tasks)) * 100)
         else:
             completion = 0
 
@@ -595,19 +544,13 @@ def home():
             risk_score += 25
 
         if budget_used_percent > 100:
-
             risk_score += 30
-
         elif budget_used_percent > 80:
-
             risk_score += 15
 
         project_overdue_tasks = len([
             task for task in tasks
-            if is_overdue(
-                task["due_date"],
-                task["status"]
-            )
+            if is_overdue(task["due_date"], task["status"])
         ])
 
         risk_score += project_overdue_tasks * 10
@@ -621,61 +564,36 @@ def home():
 
         project_high_priority = len([
             task for task in tasks
-            if (
-                task["priority"] == "High"
-                and task["status"] != "Completed"
-            )
+            if task["priority"] == "High" and task["status"] != "Completed"
         ])
 
         risk_score += project_high_priority * 5
 
         if risk_score >= 70:
-
             risk_label = "Critical Risk"
-
         elif risk_score >= 45:
-
             risk_label = "High Risk"
-
         elif risk_score >= 20:
-
             risk_label = "Medium Risk"
-
         else:
-
             risk_label = "Low Risk"
 
         ai_recommendation = []
 
         if project_overdue_tasks > 0:
-
-            ai_recommendation.append(
-                "Resolve overdue tasks immediately."
-            )
+            ai_recommendation.append("Resolve overdue tasks immediately.")
 
         if project_blocked_tasks > 0:
-
-            ai_recommendation.append(
-                "Blocked tasks require escalation."
-            )
+            ai_recommendation.append("Blocked tasks require escalation.")
 
         if budget_used_percent > 90:
-
-            ai_recommendation.append(
-                "Budget usage is critically high."
-            )
+            ai_recommendation.append("Budget usage is critically high.")
 
         if completion < 30:
-
-            ai_recommendation.append(
-                "Project delivery pace is behind schedule."
-            )
+            ai_recommendation.append("Project delivery pace is behind schedule.")
 
         if not ai_recommendation:
-
-            ai_recommendation.append(
-                "Project performance currently appears stable."
-            )
+            ai_recommendation.append("Project performance currently appears stable.")
 
         all_projects.append({
             "project": (
@@ -700,80 +618,164 @@ def home():
 
     conn.close()
 
+    upcoming_deadlines = sorted(
+        upcoming_deadlines,
+        key=lambda item: item["due_date"]
+    )[:5]
+
+    if total_tasks > 0:
+        completion_rate = round((completed_tasks / total_tasks) * 100)
+    else:
+        completion_rate = 0
+
+    total_remaining_budget = total_budget - total_actual_cost
+
+    if total_budget > 0:
+        budget_usage_percent = round((total_actual_cost / total_budget) * 100)
+        profitability_score = round((total_remaining_budget / total_budget) * 100)
+    else:
+        budget_usage_percent = 0
+        profitability_score = 0
+
+    if profitability_score >= 50:
+        financial_health_label = "Strong"
+    elif profitability_score >= 20:
+        financial_health_label = "Stable"
+    elif profitability_score >= 0:
+        financial_health_label = "At Risk"
+    else:
+        financial_health_label = "Over Budget"
+
+    if overdue_tasks > 0 or blocked_tasks > 0 or over_budget_projects > 0:
+        project_health_score = max(
+            0,
+            100
+            - (overdue_tasks * 15)
+            - (blocked_tasks * 10)
+            - (over_budget_projects * 15)
+        )
+        project_health_label = "Needs Attention"
+    elif completion_rate >= 70:
+        project_health_score = 90
+        project_health_label = "Healthy"
+    elif total_tasks == 0:
+        project_health_score = 0
+        project_health_label = "No Data Yet"
+    else:
+        project_health_score = 65
+        project_health_label = "Stable"
+
+    if overdue_tasks > 0:
+        smart_insights.append(f"You have {overdue_tasks} overdue task(s).")
+
+    if blocked_tasks > 0:
+        smart_insights.append(f"{blocked_tasks} task(s) are blocked.")
+
+    if over_budget_projects > 0:
+        smart_insights.append(f"{over_budget_projects} project(s) are over budget.")
+
+    if high_priority_tasks > 0:
+        smart_insights.append(f"{high_priority_tasks} high-priority task(s) need attention.")
+
+    if upcoming_deadlines:
+        smart_insights.append(f"{len(upcoming_deadlines)} upcoming deadline(s) are active.")
+
+    if not smart_insights:
+        smart_insights.append("No major delivery risks detected right now.")
+
+    if overdue_tasks > 0:
+        delivery_insights.append({
+            "title": "Overdue Delivery Risk",
+            "message": f"{overdue_tasks} task(s) are overdue and may delay delivery.",
+            "level": "High"
+        })
+
+    if blocked_tasks > 0:
+        delivery_insights.append({
+            "title": "Blocked Work",
+            "message": f"{blocked_tasks} blocked task(s) need escalation.",
+            "level": "High"
+        })
+
+    if high_priority_tasks > 0:
+        delivery_insights.append({
+            "title": "Priority Pressure",
+            "message": f"{high_priority_tasks} high-priority task(s) need attention.",
+            "level": "Medium"
+        })
+
+    if over_budget_projects > 0:
+        delivery_insights.append({
+            "title": "Budget Pressure",
+            "message": f"{over_budget_projects} project(s) are over budget.",
+            "level": "High"
+        })
+
+    if not delivery_insights:
+        delivery_insights.append({
+            "title": "Stable Delivery",
+            "message": "No major delivery risks detected right now.",
+            "level": "Low"
+        })
+
+    workload_summary = {
+        "active": in_progress_tasks + pending_tasks,
+        "completed": completed_tasks,
+        "blocked": blocked_tasks,
+        "overdue": overdue_tasks
+    }
+
+    if overdue_tasks > 0:
+        notifications.append(f"You have {overdue_tasks} overdue task(s).")
+
+    if blocked_tasks > 0:
+        notifications.append(f"{blocked_tasks} task(s) are blocked.")
+
+    if over_budget_projects > 0:
+        notifications.append(f"{over_budget_projects} project(s) are over budget.")
+
     return render_template(
         "index.html",
-
         projects=all_projects,
-
         total_projects=len(projects),
-
         total_tasks=total_tasks,
-
         completed_tasks=completed_tasks,
-
         pending_tasks=pending_tasks,
-
         in_progress_tasks=in_progress_tasks,
-
         blocked_tasks=blocked_tasks,
-
         high_priority_tasks=high_priority_tasks,
-
         medium_priority_tasks=medium_priority_tasks,
-
         low_priority_tasks=low_priority_tasks,
-
         overdue_tasks=overdue_tasks,
-
         completion_rate=completion_rate,
-
-        project_health_score=0,
-
-        project_health_label="No Data Yet",
-
+        project_health_score=project_health_score,
+        project_health_label=project_health_label,
         smart_insights=smart_insights,
-
         delivery_insights=delivery_insights,
-
         upcoming_deadlines=upcoming_deadlines,
-
         workload_summary=workload_summary,
-
-        total_budget=0,
-
-        total_actual_cost=0,
-
-        total_remaining_budget=0,
-
-        over_budget_projects=0,
-
-        budget_usage_percent=0,
-
-        profitability_score=0,
-
-        financial_health_label="No Data Yet",
-
-        total_clients=0,
-
-        total_client_value=0,
-
-        active_clients_count=0,
-
+        total_budget=total_budget,
+        total_actual_cost=total_actual_cost,
+        total_remaining_budget=total_remaining_budget,
+        over_budget_projects=over_budget_projects,
+        budget_usage_percent=budget_usage_percent,
+        profitability_score=profitability_score,
+        financial_health_label=financial_health_label,
+        total_clients=total_clients,
+        total_client_value=total_client_value,
+        active_clients_count=len(active_clients),
         chart_status_data=[
             completed_tasks,
             pending_tasks,
             in_progress_tasks,
             blocked_tasks
         ],
-
         chart_priority_data=[
             high_priority_tasks,
             medium_priority_tasks,
             low_priority_tasks
         ],
-
-        notifications=[],
-
+        notifications=notifications,
         current_date=str(date.today())
     )
 
