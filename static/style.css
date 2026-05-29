@@ -1944,3 +1944,25 @@ body.dark-ready {
     background: #dcfce7;
     color: #15803d;
 }
+
+/* FINAL KANBAN OVERRIDE */
+.kanban-board {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(280px, 1fr)) !important;
+    gap: 24px !important;
+    width: 100% !important;
+    align-items: start !important;
+}
+
+.kanban-column {
+    background: #f8fafc !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 18px !important;
+    padding: 20px !important;
+    min-height: 520px !important;
+}
+
+.task-card {
+    width: auto !important;
+    max-width: 100% !important;
+}
