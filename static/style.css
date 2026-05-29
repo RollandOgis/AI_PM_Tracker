@@ -1632,3 +1632,13 @@ body.dark-ready {
         gap: 12px;
     }
 }
+
+.sidebar-section {
+    margin: 22px 0 8px;
+    padding: 0 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
