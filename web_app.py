@@ -3691,77 +3691,91 @@ def team():
 
     conn = get_db_connection()
 
-    members = conn.execute("""
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
     SELECT *
     FROM team_members
-    WHERE user_id = ?
+    WHERE user_id = %s
     ORDER BY name ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    members = cursor.fetchall()
 
     team_data = []
 
     for member in members:
 
-        total_tasks = conn.execute("""
-        SELECT COUNT(*)
+        cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
         FROM task_team_members
         JOIN tasks
         ON task_team_members.task_id = tasks.id
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = ?
-        AND projects.user_id = ?
+        WHERE task_team_members.team_member_id = %s
+        AND projects.user_id = %s
         """, (
             member["id"],
             session["user_id"]
-        )).fetchone()[0]
+        ))
 
-        completed_tasks = conn.execute("""
-        SELECT COUNT(*)
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
         FROM task_team_members
         JOIN tasks
         ON task_team_members.task_id = tasks.id
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = ?
-        AND projects.user_id = ?
+        WHERE task_team_members.team_member_id = %s
+        AND projects.user_id = %s
         AND tasks.status = 'Completed'
         """, (
             member["id"],
             session["user_id"]
-        )).fetchone()[0]
+        ))
 
-        active_tasks = conn.execute("""
-        SELECT COUNT(*)
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+        SELECT COUNT(*) AS active_tasks
         FROM task_team_members
         JOIN tasks
         ON task_team_members.task_id = tasks.id
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = ?
-        AND projects.user_id = ?
+        WHERE task_team_members.team_member_id = %s
+        AND projects.user_id = %s
         AND tasks.status != 'Completed'
         """, (
             member["id"],
             session["user_id"]
-        )).fetchone()[0]
+        ))
 
-        blocked_tasks = conn.execute("""
-        SELECT COUNT(*)
+        active_tasks = cursor.fetchone()["active_tasks"]
+
+        cursor.execute("""
+        SELECT COUNT(*) AS blocked_tasks
         FROM task_team_members
         JOIN tasks
         ON task_team_members.task_id = tasks.id
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = ?
-        AND projects.user_id = ?
+        WHERE task_team_members.team_member_id = %s
+        AND projects.user_id = %s
         AND tasks.status = 'Blocked'
         """, (
             member["id"],
             session["user_id"]
-        )).fetchone()[0]
+        ))
+
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
         team_data.append({
             "member": member,
