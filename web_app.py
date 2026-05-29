@@ -828,7 +828,6 @@ def home():
             "ai_recommendation": ai_recommendation
         })
 
-    conn.close()
 
     upcoming_deadlines = sorted(
         upcoming_deadlines,
