@@ -241,9 +241,32 @@
                                 </div>
 
                                 <div class="project-actions">
-                                    <a href="/project/{{ item['project'][0] }}">View</a>
-                                    <a href="/edit-project/{{ item['project'][0] }}">Edit</a>
-                                </div>
+
+    <a href="/project/{{ item['project'][0] }}">
+        View
+    </a>
+
+    <a href="/edit-project/{{ item['project'][0] }}">
+        Edit
+    </a>
+
+    <form
+        action="/delete-project/{{ item['project'][0] }}"
+        method="POST"
+        style="display:inline;"
+        onsubmit="return confirm('Delete this project and all associated tasks?');"
+    >
+
+        <button
+            type="submit"
+            class="link-button"
+        >
+            Delete
+        </button>
+
+    </form>
+
+</div>
 
                             </div>
 

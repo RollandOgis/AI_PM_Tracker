@@ -1642,3 +1642,18 @@ body.dark-ready {
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
+
+.link-button {
+    background: none;
+    border: none;
+    color: #2563eb;
+    cursor: pointer;
+    font-size: inherit;
+    padding: 0;
+    margin-left: 10px;
+    text-decoration: none;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
