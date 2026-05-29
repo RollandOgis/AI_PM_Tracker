@@ -61,13 +61,24 @@
 
                             </div>
 
-                            <div class="project-actions">
+                           <div class="project-actions">
 
-                                <a href="/edit-task/{{ item['task']['id'] }}">
-                                    Edit
-                                </a>
+    <a href="/edit-task/{{ item['task']['id'] }}">
+        Edit
+    </a>
 
-                            </div>
+    <form
+        action="/delete-task/{{ item['task']['id'] }}"
+        method="POST"
+        class="inline-form"
+        onsubmit="return confirm('Delete this task?');"
+    >
+        <button type="submit" class="link-button">
+            Delete
+        </button>
+    </form>
+
+</div>
 
                         </div>
 

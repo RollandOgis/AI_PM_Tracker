@@ -98,3 +98,30 @@ Examples:
 - [ ] Excel Export
 - [ ] Power BI Export
 - [ ] Executive Dashboard
+
+## Project Management Enhancements
+
+- [ ] Add Team Member Phone Numbers
+- [ ] Add Department Field
+- [ ] Add Availability Status
+- [ ] Add Daily Capacity (%)
+- [ ] Add Hourly Rate (£)
+- [ ] Add Team Member Profile Photos
+
+## Project Enhancements
+
+- [ ] Project Sponsor
+- [ ] Project Health Status
+- [ ] Milestones
+- [ ] Key Deliverables
+- [ ] Project Objectives
+- [ ] Success Criteria
+- [ ] Lessons Learned
+- [ ] Project Closure Report
+
+## Resource Management
+
+- [ ] Resource Utilisation Dashboard
+- [ ] Team Capacity Planning
+- [ ] Workload Balancing
+- [ ] Resource Forecasting
