@@ -1834,3 +1834,33 @@ body.dark-ready {
     text-align: left;
 }
 
+.kanban-board {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(260px, 1fr)) !important;
+    gap: 24px !important;
+    align-items: start !important;
+    width: 100% !important;
+}
+
+.kanban-column {
+    background: #f8fafc !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 18px !important;
+    padding: 18px !important;
+    min-height: 500px !important;
+}
+
+.task-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+}
+
+.task-card {
+    background: #ffffff !important;
+    border-left: 5px solid #2563eb !important;
+    border-radius: 14px !important;
+    padding: 18px !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06) !important;
+}
+
