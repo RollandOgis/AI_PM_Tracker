@@ -2371,7 +2371,6 @@ def activity():
 def create_activity(activity_text):
 
     try:
-
         conn = get_db_connection()
 
         cursor = conn.cursor()
@@ -2388,11 +2387,9 @@ def create_activity(activity_text):
         ))
 
         conn.commit()
-
         conn.close()
 
     except Exception as e:
-
         print("Activity logging failed:", e)
 
 
