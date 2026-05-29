@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Add Dependency</h2>
+
+<form method="POST">
+
+    <select name="project_id" required>
+        {% for project in projects %}
+        <option value="{{ project.id }}">
+            {{ project.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <input type="text"
+           name="title"
+           placeholder="Title"
+           required>
+
+    <textarea name="description"
+              placeholder="Description"></textarea>
+
+    <input type="text"
+           name="owner"
+           placeholder="Owner">
+
+    <input type="date"
+           name="target_date">
+
+    <select name="status">
+        <option>Open</option>
+        <option>Closed</option>
+    </select>
+
+    <button type="submit">
+        Save Dependency
+    </button>
+
+</form>
+
+{% endblock %}

@@ -489,6 +489,79 @@ def init_db():
                    )
                    """)
 
+    # ASSUMPTIONS
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS assumptions
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
+    # DEPENDENCIES
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS dependencies
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       target_date
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -1036,26 +1109,51 @@ def update_task_status():
 
 @app.route("/calendar")
 def calendar():
+
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT
+        tasks.*,
+        projects.name AS project_name
     FROM tasks
-    JOIN projects ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
+    JOIN projects
+    ON tasks.project_id = projects.id
+    WHERE projects.user_id = %s
     AND tasks.due_date IS NOT NULL
     AND tasks.due_date != ''
     ORDER BY tasks.due_date ASC
-    """, (session["user_id"],)).fetchall()
+    """, (
+        session["user_id"],
+    ))
+
+    tasks = cursor.fetchall()
+
+    calendar_items = []
+
+    for task in tasks:
+
+        calendar_items.append({
+            "title": task["title"],
+            "date": task["due_date"],
+            "type": "Task",
+            "project_name": task["project_name"],
+            "status": task["status"]
+        })
 
     conn.close()
 
     return render_template(
         "calendar.html",
         tasks=tasks,
+        calendar_items=calendar_items,
         current_date=str(date.today())
     )
 
@@ -2250,12 +2348,18 @@ def activity():
 
     conn = get_db_connection()
 
-    activities = conn.execute("""
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
     SELECT *
     FROM activities
     ORDER BY id DESC
-    LIMIT 100
-    """).fetchall()
+    LIMIT 50
+    """)
+
+    activities = cursor.fetchall()
 
     conn.close()
 
@@ -2263,6 +2367,7 @@ def activity():
         "activity.html",
         activities=activities
     )
+
 
 
 def create_activity(activity_text):
