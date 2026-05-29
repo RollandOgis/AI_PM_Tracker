@@ -250,12 +250,16 @@
         Edit
     </a>
 
-    <form
-        action="/delete-project/{{ item['project'][0] }}"
-        method="POST"
-        style="display:inline;"
-        onsubmit="return confirm('Delete this project and all associated tasks?');"
-    >
+    <form action="/delete-project/{{ item['project'][0] }}"
+      method="POST"
+      style="display:inline;"
+      onsubmit="return confirm('Delete this project and all associated tasks?');">
+
+    <button type="submit" class="link-button">
+        Delete
+    </button>
+
+    </form>
 
         <button
             type="submit"
