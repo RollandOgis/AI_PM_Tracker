@@ -11,17 +11,21 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
         <div class="dashboard-header">
+
             <div>
                 <h1>Kanban Board</h1>
+
                 <p class="dashboard-subtitle">
                     Drag tasks between workflow stages and view team ownership.
                 </p>
             </div>
+
         </div>
 
         <div class="kanban-board">
@@ -30,7 +34,10 @@
 
                 <div class="kanban-column">
 
-                    <h3>{{ status }}</h3>
+                    <h3>
+                        {{ status }}
+                        ({{ items|length }})
+                    </h3>
 
                     <div class="task-list" data-status="{{ status }}">
 
@@ -44,17 +51,54 @@
 
                                 <h4>{{ item["task"]["title"] }}</h4>
 
-                                <p>
+                                <p class="kanban-project">
                                     {{ item["task"]["project_name"] }}
                                 </p>
 
-                                <small>
-                                    Priority: {{ item["task"]["priority"] }}
-                                </small>
+                                <div class="kanban-badges">
+
+                                    <span class="priority-badge
+                                        {% if item['task']['priority'] == 'High' %}
+                                            high
+                                        {% elif item['task']['priority'] == 'Medium' %}
+                                            medium
+                                        {% else %}
+                                            low
+                                        {% endif %}
+                                    ">
+                                        {{ item["task"]["priority"] }}
+                                    </span>
+
+                                    <span class="status-badge
+                                        {% if item['task']['status'] == 'Completed' %}
+                                            completed
+                                        {% elif item['task']['status'] == 'In Progress' %}
+                                            progress
+                                        {% else %}
+                                            pending
+                                        {% endif %}
+                                    ">
+                                        {{ item["task"]["status"] }}
+                                    </span>
+
+                                </div>
+
+                                {% if item["task"]["due_date"] %}
+                                <p class="kanban-date">
+                                    Due: {{ item["task"]["due_date"] }}
+                                </p>
+                                {% endif %}
+
+                                {% if item["task"]["description"] %}
+                                <p class="kanban-description">
+                                    {{ item["task"]["description"] }}
+                                </p>
+                                {% endif %}
 
                                 {% if item["team_members"] %}
 
                                     <div class="smart-insight">
+
                                         <strong>Team:</strong>
 
                                         <ul class="ai-list">
@@ -62,14 +106,18 @@
                                                 <li>{{ member }}</li>
                                             {% endfor %}
                                         </ul>
+
                                     </div>
 
                                 {% elif item["task"]["assigned_to"] %}
 
                                     <div class="smart-insight">
+
                                         <strong>Assigned To:</strong>
                                         <br>
+
                                         {{ item["task"]["assigned_to"] }}
+
                                     </div>
 
                                 {% endif %}
@@ -142,8 +190,10 @@ document.querySelectorAll(".task-list").forEach(column => {
             }
 
         } catch (error) {
+
             console.log(error);
             alert("An error occurred.");
+
         }
 
     });

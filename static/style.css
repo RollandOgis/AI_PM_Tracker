@@ -1966,3 +1966,28 @@ body.dark-ready {
     width: auto !important;
     max-width: 100% !important;
 }
+
+.kanban-project{
+    color:#6b7280;
+    margin-bottom:10px;
+}
+
+.kanban-badges{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+}
+
+.kanban-date{
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:10px;
+}
+
+.kanban-description{
+    font-size:14px;
+    color:#4b5563;
+    margin-bottom:12px;
+    line-height:1.5;
+}
