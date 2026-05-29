@@ -1,43 +1,74 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Dependency</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
 
-{% block content %}
+<div class="container">
 
-<h2>Add Dependency</h2>
+    <h2>Add Dependency</h2>
 
-<form method="POST">
+    <form method="POST">
 
-    <select name="project_id" required>
-        {% for project in projects %}
-        <option value="{{ project.id }}">
-            {{ project.name }}
-        </option>
-        {% endfor %}
-    </select>
+        <label>Project</label>
+        <select name="project_id" required>
+            {% for project in projects %}
+            <option value="{{ project.id }}">
+                {{ project.name }}
+            </option>
+            {% endfor %}
+        </select>
 
-    <input type="text"
-           name="title"
-           placeholder="Title"
-           required>
+        <br><br>
 
-    <textarea name="description"
-              placeholder="Description"></textarea>
+        <label>Title</label>
+        <input type="text"
+               name="title"
+               placeholder="Title"
+               required>
 
-    <input type="text"
-           name="owner"
-           placeholder="Owner">
+        <br><br>
 
-    <input type="date"
-           name="target_date">
+        <label>Description</label>
+        <textarea name="description"
+                  placeholder="Description"></textarea>
 
-    <select name="status">
-        <option>Open</option>
-        <option>Closed</option>
-    </select>
+        <br><br>
 
-    <button type="submit">
-        Save Dependency
-    </button>
+        <label>Owner</label>
+        <input type="text"
+               name="owner"
+               placeholder="Owner">
 
-</form>
+        <br><br>
 
-{% endblock %}
+        <label>Target Date</label>
+        <input type="date"
+               name="target_date">
+
+        <br><br>
+
+        <label>Status</label>
+        <select name="status">
+            <option value="Open">Open</option>
+            <option value="Closed">Closed</option>
+        </select>
+
+        <br><br>
+
+        <button type="submit">
+            Save Dependency
+        </button>
+
+    </form>
+
+    <br>
+
+    <a href="/raid">Back to RAID Log</a>
+
+</div>
+
+</body>
+</html>
