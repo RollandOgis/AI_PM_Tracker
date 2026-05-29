@@ -4088,6 +4088,95 @@ def raid():
         dependencies=dependencies
     )
 
+@app.route("/add-assumption", methods=["GET", "POST"])
+def add_assumption():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = %s
+    ORDER BY name ASC
+    """, (session["user_id"],))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+        INSERT INTO assumptions (
+            user_id, project_id, title, description, owner, status, created_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("description"),
+            request.form.get("owner"),
+            request.form.get("status"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/raid")
+
+    conn.close()
+
+    return render_template("add_assumption.html", projects=projects)
+
+@app.route("/add-dependency", methods=["GET", "POST"])
+def add_dependency():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = %s
+    ORDER BY name ASC
+    """, (session["user_id"],))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+        INSERT INTO dependencies (
+            user_id, project_id, title, description, owner, status, target_date, created_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("description"),
+            request.form.get("owner"),
+            request.form.get("status"),
+            request.form.get("target_date"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/raid")
+
+    conn.close()
+
+    return render_template("add_dependency.html", projects=projects)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
