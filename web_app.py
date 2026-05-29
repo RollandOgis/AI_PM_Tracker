@@ -2356,7 +2356,7 @@ def activity():
     SELECT *
     FROM activities
     ORDER BY id DESC
-    LIMIT 50
+    LIMIT 100
     """)
 
     activities = cursor.fetchall()
@@ -2368,41 +2368,33 @@ def activity():
         activities=activities
     )
 
-
-
 def create_activity(activity_text):
 
     try:
+
         conn = get_db_connection()
 
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS activities (
+        cursor = conn.cursor()
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            activity TEXT,
-
-            created_at TEXT
-
-        )
-        """)
-
-        conn.execute("""
+        cursor.execute("""
         INSERT INTO activities (
             activity,
             created_at
         )
-        VALUES (?, ?)
+        VALUES (%s, %s)
         """, (
             activity_text,
             str(datetime.now())
         ))
 
         conn.commit()
+
         conn.close()
 
     except Exception as e:
+
         print("Activity logging failed:", e)
+
 
 @app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
 def edit_client(client_id):
