@@ -2372,7 +2372,6 @@ def create_activity(activity_text):
 
     try:
         conn = get_db_connection()
-
         cursor = conn.cursor()
 
         cursor.execute("""
