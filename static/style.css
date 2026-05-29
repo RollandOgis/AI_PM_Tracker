@@ -1863,4 +1863,84 @@ body.dark-ready {
     padding: 18px !important;
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06) !important;
 }
+/* Calendar override */
+.calendar-list,
+.projects-grid {
+    align-items: stretch;
+}
 
+.calendar-card,
+.calendar-page .project-card {
+    min-height: 180px !important;
+}
+
+.calendar-card .budget-row,
+.calendar-page .budget-row {
+    display: grid !important;
+    grid-template-columns: 80px 1fr !important;
+    gap: 14px !important;
+    align-items: start !important;
+    margin-bottom: 10px !important;
+}
+
+.calendar-card .budget-row span,
+.calendar-page .budget-row span {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+}
+
+.calendar-card .budget-row strong,
+.calendar-page .budget-row strong {
+    text-align: left !important;
+    font-weight: 700 !important;
+    color: #111827 !important;
+}
+
+.calendar-card h3,
+.calendar-page .project-card h3 {
+    margin-bottom: 18px !important;
+}
+
+.calendar-page .projects-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+}
+
+.status-badge,
+.priority-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    width: fit-content;
+}
+
+.completed {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.pending {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.high {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.medium {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.low {
+    background: #dcfce7;
+    color: #15803d;
+}
