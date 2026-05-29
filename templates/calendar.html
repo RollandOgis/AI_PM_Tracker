@@ -11,20 +11,18 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
 
-    <div class="main-content">
+    {% include "sidebar.html" %}
+
+    <div class="main-content calendar-page">
 
         <div class="dashboard-header">
-
             <div>
                 <h1>Calendar</h1>
-
                 <p class="dashboard-subtitle">
                     Upcoming task deadlines.
                 </p>
             </div>
-
         </div>
 
         {% if tasks %}
@@ -39,49 +37,47 @@
 
                         <div class="budget-section">
 
-    <div class="budget-row calendar-row">
-        <span>Project</span>
-        <strong>{{ task["project_name"] }}</strong>
-    </div>
+                            <div class="budget-row calendar-row">
+                                <span>Project</span>
+                                <strong>{{ task["project_name"] }}</strong>
+                            </div>
 
-    <div class="budget-row">
-        <span>Due Date</span>
-        <strong>{{ task["due_date"] }}</strong>
-    </div>
+                            <div class="budget-row">
+                                <span>Due Date</span>
+                                <strong>{{ task["due_date"] }}</strong>
+                            </div>
 
-    <div class="budget-row">
-        <span>Status</span>
+                            <div class="budget-row">
+                                <span>Status</span>
 
-        <span class="status-badge
-            {% if task['status'] == 'Completed' %}
-                completed
-            {% elif task['status'] == 'In Progress' %}
-                progress
-            {% else %}
-                pending
-            {% endif %}
-        ">
-            {{ task["status"] }}
-        </span>
-    </div>
+                                <span class="status-badge
+                                    {% if task['status'] == 'Completed' %}
+                                        completed
+                                    {% elif task['status'] == 'In Progress' %}
+                                        progress
+                                    {% else %}
+                                        pending
+                                    {% endif %}
+                                ">
+                                    {{ task["status"] }}
+                                </span>
+                            </div>
 
-    <div class="budget-row">
-        <span>Priority</span>
+                            <div class="budget-row">
+                                <span>Priority</span>
 
-        <span class="priority-badge
-            {% if task['priority'] == 'High' %}
-                high
-            {% elif task['priority'] == 'Medium' %}
-                medium
-            {% else %}
-                low
-            {% endif %}
-        ">
-            {{ task["priority"] }}
-        </span>
-    </div>
-
-</div>
+                                <span class="priority-badge
+                                    {% if task['priority'] == 'High' %}
+                                        high
+                                    {% elif task['priority'] == 'Medium' %}
+                                        medium
+                                    {% else %}
+                                        low
+                                    {% endif %}
+                                ">
+                                    {{ task["priority"] }}
+                                </span>
+                            </div>
 
                         </div>
 
@@ -94,13 +90,8 @@
         {% else %}
 
             <div class="empty-box">
-
                 <h3>No Upcoming Tasks</h3>
-
-                <p>
-                    Tasks with due dates will appear here.
-                </p>
-
+                <p>Tasks with due dates will appear here.</p>
             </div>
 
         {% endif %}
