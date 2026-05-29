@@ -228,7 +228,7 @@
                     {% for item in projects %}
 
                         <div class="project-card">
-                            
+
 
                             <div class="project-top">
 
@@ -242,35 +242,21 @@
 
                                 <div class="project-actions">
 
-    <a href="/project/{{ item['project'][0] }}">
-        View
-    </a>
+    <a href="/project/{{ item['project'][0] }}">View</a>
 
-    <a href="/edit-project/{{ item['project'][0] }}">
-        Edit
-    </a>
+    <a href="/edit-project/{{ item['project'][0] }}">Edit</a>
 
-    <form action="/delete-project/{{ item['project'][0] }}"
-      method="POST"
-      style="display:inline;"
-      onsubmit="return confirm('Delete this project and all associated tasks?');">
-
-    <button type="submit" class="link-button">
-        Delete
-    </button>
-
-    </form>
-
-        <button
-            type="submit"
-            class="link-button"
-        >
-            Delete
-        </button>
-
+    <form
+        action="/delete-project/{{ item['project'][0] }}"
+        method="POST"
+        class="inline-form"
+        onsubmit="return confirm('Delete this project and all associated tasks?');"
+    >
+        <button type="submit" class="link-button">Delete</button>
     </form>
 
 </div>
+
 
                             </div>
 

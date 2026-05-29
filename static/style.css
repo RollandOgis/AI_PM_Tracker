@@ -1678,3 +1678,24 @@ body.dark-ready {
 .link-button:hover {
     text-decoration: underline;
 }
+
+.inline-form {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #2563eb;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+    padding: 0;
+    margin: 0;
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
