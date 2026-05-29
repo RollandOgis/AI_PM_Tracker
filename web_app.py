@@ -955,7 +955,7 @@ def home():
                        session["user_id"],
                    ))
 
-    open_risks = cursor.fetchone()[0]
+    open_risks = cursor.fetchone()["open_risks"]
 
     cursor.execute("""
                    SELECT COUNT(*) AS open_issues
@@ -966,7 +966,9 @@ def home():
                        session["user_id"],
                    ))
 
-    open_issues = cursor.fetchone()[0]
+    open_issues = cursor.fetchone()["open_issues"]
+
+    conn.close()
 
     return render_template(
         "index.html",
