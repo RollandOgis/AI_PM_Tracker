@@ -1717,3 +1717,67 @@ body.dark-ready {
 .completed-fill {
     background: #22c55e;
 }
+
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(260px, 1fr));
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+}
+
+.kanban-column {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 18px;
+    min-height: 500px;
+}
+
+.kanban-column h3 {
+    margin-bottom: 18px;
+    font-size: 20px;
+    color: #111827;
+}
+
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.task-card {
+    background: #ffffff;
+    border-left: 5px solid #2563eb;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+}
+
+.task-card h4 {
+    margin-bottom: 10px;
+    font-size: 17px;
+    color: #111827;
+}
+
+.task-card p {
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+
+.task-card small {
+    color: #2563eb;
+    font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+    .kanban-board {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .kanban-board {
+        grid-template-columns: 1fr;
+    }
+}
