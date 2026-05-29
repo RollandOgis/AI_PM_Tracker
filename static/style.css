@@ -1816,3 +1816,9 @@ body.dark-ready {
         grid-column: span 1;
     }
 }
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 22px;
+}
