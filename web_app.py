@@ -946,11 +946,35 @@ def home():
     if over_budget_projects > 0:
         notifications.append(f"{over_budget_projects} project(s) are over budget.")
 
+    cursor.execute("""
+                   SELECT COUNT(*) AS open_risks
+                   FROM risks
+                   WHERE user_id = %s
+                     AND status != 'Closed'
+                   """, (
+                       session["user_id"],
+                   ))
+
+    open_risks = cursor.fetchone()["open_risks"]
+
+    cursor.execute("""
+                   SELECT COUNT(*) AS open_issues
+                   FROM issues
+                   WHERE user_id = %s
+                     AND status != 'Closed'
+                   """, (
+                       session["user_id"],
+                   ))
+
+    open_issues = cursor.fetchone()["open_issues"]
+
     return render_template(
         "index.html",
         projects=all_projects,
         total_projects=len(projects),
         total_tasks=total_tasks,
+        open_risks=open_risks,
+        open_issues=open_issues,
         completed_tasks=completed_tasks,
         pending_tasks=pending_tasks,
         in_progress_tasks=in_progress_tasks,
