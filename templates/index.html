@@ -309,20 +309,23 @@
                             </div>
 
 
-                            <div class="progress-wrapper">
+                        <div class="progress-wrapper">
 
-                                <div class="progress-info">
-                                    <span>Progress</span>
-                                    <span>{{ item["completion"] }}%</span>
-                                </div>
+    <div class="progress-info">
+        <span>Progress</span>
+        <span>{{ item["completion"] }}%</span>
+    </div>
 
-                                <div class="progress-bar">
-                                    <div
-                                        class="progress-fill completed-fill"
-                                    ></div>
-                                </div>
+    <div class="progress-bar">
 
-                            </div>
+        <div
+            class="progress-fill completed-fill"
+            data-width="{{ item['completion'] }}"
+        ></div>
+
+    </div>
+
+</div>
 
 
                             <div class="project-dates">
