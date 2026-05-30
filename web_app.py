@@ -3594,7 +3594,14 @@ def changes():
     LEFT JOIN projects
     ON changes.project_id = projects.id
     WHERE changes.user_id = ?
-    ORDER BY changes.created_at DESC
+    ORDER BY
+        CASE
+            WHEN changes.approval_status = 'Pending' THEN 1
+            WHEN changes.approval_status = 'Approved' THEN 2
+            WHEN changes.approval_status = 'Rejected' THEN 3
+            ELSE 4
+        END,
+        changes.created_at DESC
     """, (
         session["user_id"],
     )).fetchall()
