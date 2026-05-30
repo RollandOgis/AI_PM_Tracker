@@ -5107,6 +5107,110 @@ def add_decision():
         projects=projects
     )
 
+@app.route("/actions")
+def actions():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT
+        actions.*,
+        projects.name AS project_name
+    FROM actions
+    LEFT JOIN projects
+    ON actions.project_id = projects.id
+    WHERE actions.user_id = %s
+    ORDER BY
+        CASE
+            WHEN actions.status = 'Completed' THEN 4
+            WHEN actions.status = 'Blocked' THEN 1
+            WHEN actions.priority = 'High' THEN 2
+            WHEN actions.status = 'In Progress' THEN 3
+            ELSE 5
+        END,
+        actions.due_date ASC
+    """, (
+        session["user_id"],
+    ))
+
+    actions = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "actions.html",
+        actions=actions
+    )
+
+@app.route("/add-action", methods=["GET", "POST"])
+def add_action():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = %s
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+        INSERT INTO actions (
+            user_id,
+            project_id,
+            title,
+            description,
+            owner,
+            priority,
+            status,
+            due_date,
+            created_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("description"),
+            request.form.get("owner"),
+            request.form.get("priority"),
+            request.form.get("status"),
+            request.form.get("due_date"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/actions")
+
+    conn.close()
+
+    return render_template(
+        "add_action.html",
+        projects=projects
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

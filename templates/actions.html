@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action Log</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include 'sidebar.html' %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Action Log</h1>
+
+                <p class="dashboard-subtitle">
+                    Track project actions, ownership and completion status.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-action" class="btn-primary">
+                    + Add Action
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Actions</h3>
+                <p>{{ actions|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completed</h3>
+                <p>
+                    {{ actions | selectattr("status", "equalto", "Completed") | list | length }}
+                </p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>In Progress</h3>
+                <p>
+                    {{ actions | selectattr("status", "equalto", "In Progress") | list | length }}
+                </p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Open</h3>
+                <p>
+                    {{ actions | selectattr("status", "equalto", "Open") | list | length }}
+                </p>
+            </div>
+
+        </div>
+
+        {% if actions %}
+
+        {% set top_action = actions[0] %}
+
+        <div class="smart-card">
+
+            <h3>Next Priority Action</h3>
+
+            <div class="smart-insight">
+
+                <strong>{{ top_action["title"] }}</strong>
+
+                <p>Owner: {{ top_action["owner"] }}</p>
+
+                <p>Priority: {{ top_action["priority"] }}</p>
+
+                <p>Due Date: {{ top_action["due_date"] }}</p>
+
+                <p>Status: {{ top_action["status"] }}</p>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for action in actions %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ action["title"] }}</h3>
+
+                        {% if action["priority"] == "High" %}
+                            <span class="badge badge-red">High Priority</span>
+                        {% elif action["priority"] == "Medium" %}
+                            <span class="badge badge-yellow">Medium Priority</span>
+                        {% else %}
+                            <span class="badge badge-green">Low Priority</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ action["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ action["owner"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Priority</span>
+                        <strong>{{ action["priority"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ action["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Due Date</span>
+                        <strong>{{ action["due_date"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Description:</strong>
+
+                    <br><br>
+
+                    {{ action["description"] }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Actions Logged</h3>
+
+            <p>
+                Add actions to begin action tracking.
+            </p>
+
+            <a href="/add-action" class="btn-primary">
+                Add First Action
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

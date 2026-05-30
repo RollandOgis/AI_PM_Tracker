@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Action</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Action</h1>
+                <p class="dashboard-subtitle">
+                    Track project actions, owners, priorities and due dates.
+                </p>
+            </div>
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Action Title</label>
+                <input type="text" name="title" required>
+
+                <label>Description</label>
+                <textarea name="description" rows="5"></textarea>
+
+                <label>Owner</label>
+                <input type="text" name="owner">
+
+                <label>Priority</label>
+                <select name="priority">
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Blocked">Blocked</option>
+                </select>
+
+                <label>Due Date</label>
+                <input type="date" name="due_date">
+
+                <button type="submit" class="btn-primary">
+                    Save Action
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
