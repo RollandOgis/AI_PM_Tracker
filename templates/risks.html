@@ -112,6 +112,64 @@
 
         </div>
 
+        <div class="stats-grid">
+
+    <div class="stat-card red-card">
+        <h3>Open Risks</h3>
+        <p>
+            {{ risks | rejectattr("status", "equalto", "Closed") | list | length }}
+        </p>
+    </div>
+
+    <div class="stat-card green-card">
+        <h3>Closed Risks</h3>
+        <p>
+            {{ risks | selectattr("status", "equalto", "Closed") | list | length }}
+        </p>
+    </div>
+
+    <div class="stat-card amber-card">
+        <h3>Mitigated Risks</h3>
+        <p>
+            {{ risks | selectattr("status", "equalto", "Mitigated") | list | length }}
+        </p>
+    </div>
+
+</div>
+
+        {% if risks %}
+
+<div class="smart-card">
+
+    <h3>Highest Risk</h3>
+
+    {% set top_risk = risks[0] %}
+
+    <div class="smart-insight">
+
+        <strong>{{ top_risk["title"] }}</strong>
+
+        <p>
+            Severity Score:
+            {{ top_risk["severity_score"] }}
+        </p>
+
+        <p>
+            Owner:
+            {{ top_risk["owner"] }}
+        </p>
+
+        <p>
+            Status:
+            {{ top_risk["status"] }}
+        </p>
+
+    </div>
+
+</div>
+
+{% endif %}
+
         {% if risks %}
 
             <div class="projects-grid">
