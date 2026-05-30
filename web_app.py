@@ -3364,6 +3364,8 @@ def export_report():
 
     top_issues = cursor.fetchall()
 
+
+
     conn.close()
 
     completion_percentage = 0
@@ -3597,6 +3599,34 @@ def export_report():
         content.append(
             Paragraph(
                 "No issues recorded.",
+                styles["BodyText"]
+            )
+        )
+
+    content.append(Spacer(1, 15))
+
+    content.append(
+        Paragraph(
+            "Top Risks",
+            styles["Heading2"]
+        )
+    )
+
+    if top_risks:
+
+        for risk in top_risks:
+            content.append(
+                Paragraph(
+                    f"- {risk['title']}",
+                    styles["BodyText"]
+                )
+            )
+
+    else:
+
+        content.append(
+            Paragraph(
+                "No risks recorded.",
                 styles["BodyText"]
             )
         )
