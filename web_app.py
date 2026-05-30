@@ -3829,68 +3829,84 @@ def team():
     for member in members:
 
         cursor.execute("""
-        SELECT COUNT(*) AS total_tasks
-        FROM task_team_members
-        JOIN tasks
-        ON task_team_members.task_id = tasks.id
+        SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+        FROM tasks
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = %s
-        AND projects.user_id = %s
+        LEFT JOIN task_team_members
+        ON task_team_members.task_id = tasks.id
+        WHERE projects.user_id = %s
+        AND (
+            tasks.assigned_to = %s
+            OR task_team_members.team_member_id = %s
+        )
         """, (
-            member["id"],
-            session["user_id"]
+            session["user_id"],
+            member["name"],
+            member["id"]
         ))
 
         total_tasks = cursor.fetchone()["total_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(*) AS completed_tasks
-        FROM task_team_members
-        JOIN tasks
-        ON task_team_members.task_id = tasks.id
+        SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
+        FROM tasks
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = %s
-        AND projects.user_id = %s
+        LEFT JOIN task_team_members
+        ON task_team_members.task_id = tasks.id
+        WHERE projects.user_id = %s
         AND tasks.status = 'Completed'
+        AND (
+            tasks.assigned_to = %s
+            OR task_team_members.team_member_id = %s
+        )
         """, (
-            member["id"],
-            session["user_id"]
+            session["user_id"],
+            member["name"],
+            member["id"]
         ))
 
         completed_tasks = cursor.fetchone()["completed_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(*) AS active_tasks
-        FROM task_team_members
-        JOIN tasks
-        ON task_team_members.task_id = tasks.id
+        SELECT COUNT(DISTINCT tasks.id) AS active_tasks
+        FROM tasks
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = %s
-        AND projects.user_id = %s
+        LEFT JOIN task_team_members
+        ON task_team_members.task_id = tasks.id
+        WHERE projects.user_id = %s
         AND tasks.status != 'Completed'
+        AND (
+            tasks.assigned_to = %s
+            OR task_team_members.team_member_id = %s
+        )
         """, (
-            member["id"],
-            session["user_id"]
+            session["user_id"],
+            member["name"],
+            member["id"]
         ))
 
         active_tasks = cursor.fetchone()["active_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(*) AS blocked_tasks
-        FROM task_team_members
-        JOIN tasks
-        ON task_team_members.task_id = tasks.id
+        SELECT COUNT(DISTINCT tasks.id) AS blocked_tasks
+        FROM tasks
         JOIN projects
         ON tasks.project_id = projects.id
-        WHERE task_team_members.team_member_id = %s
-        AND projects.user_id = %s
+        LEFT JOIN task_team_members
+        ON task_team_members.task_id = tasks.id
+        WHERE projects.user_id = %s
         AND tasks.status = 'Blocked'
+        AND (
+            tasks.assigned_to = %s
+            OR task_team_members.team_member_id = %s
+        )
         """, (
-            member["id"],
-            session["user_id"]
+            session["user_id"],
+            member["name"],
+            member["id"]
         ))
 
         blocked_tasks = cursor.fetchone()["blocked_tasks"]
