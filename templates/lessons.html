@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lessons Learned Register</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include 'sidebar.html' %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Lessons Learned Register</h1>
+
+                <p class="dashboard-subtitle">
+                    Capture knowledge and improve future project delivery.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-lesson" class="btn-primary">
+                    + Add Lesson
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Lessons</h3>
+                <p>{{ lessons|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Implemented</h3>
+                <p>
+                    {{ lessons | selectattr("status", "equalto", "Implemented") | list | length }}
+                </p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Open</h3>
+                <p>
+                    {{ lessons | selectattr("status", "equalto", "Open") | list | length }}
+                </p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Archived</h3>
+                <p>
+                    {{ lessons | selectattr("status", "equalto", "Archived") | list | length }}
+                </p>
+            </div>
+
+        </div>
+
+        {% if lessons %}
+
+        {% set latest_lesson = lessons[0] %}
+
+        <div class="smart-card">
+
+            <h3>Latest Lesson</h3>
+
+            <div class="smart-insight">
+
+                <strong>{{ latest_lesson["title"] }}</strong>
+
+                <p>Owner: {{ latest_lesson["owner"] }}</p>
+
+                <p>Status: {{ latest_lesson["status"] }}</p>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for lesson in lessons %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ lesson["title"] }}</h3>
+
+                        {% if lesson["status"] == "Implemented" %}
+                            <span class="badge badge-green">Implemented</span>
+                        {% elif lesson["status"] == "Open" %}
+                            <span class="badge badge-yellow">Open</span>
+                        {% else %}
+                            <span class="badge badge-red">Archived</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ lesson["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ lesson["owner"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ lesson["status"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>What Happened:</strong>
+                    <br><br>
+                    {{ lesson["what_happened"] }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>What Went Well:</strong>
+                    <br><br>
+                    {{ lesson["what_went_well"] }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>What Went Wrong:</strong>
+                    <br><br>
+                    {{ lesson["what_went_wrong"] }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Recommendation:</strong>
+                    <br><br>
+                    {{ lesson["recommendation"] }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Lessons Recorded</h3>
+
+            <p>
+                Add lessons learned to improve future projects.
+            </p>
+
+            <a href="/add-lesson" class="btn-primary">
+                Add First Lesson
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

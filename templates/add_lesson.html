@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Lesson Learned</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Add Lesson Learned</h1>
+
+                <p class="dashboard-subtitle">
+                    Capture project lessons and continuous improvement opportunities.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Lesson Title</label>
+                <input type="text" name="title" required>
+
+                <label>What Happened</label>
+                <textarea name="what_happened" rows="4"></textarea>
+
+                <label>What Went Well</label>
+                <textarea name="what_went_well" rows="4"></textarea>
+
+                <label>What Went Wrong</label>
+                <textarea name="what_went_wrong" rows="4"></textarea>
+
+                <label>Recommendation</label>
+                <textarea name="recommendation" rows="4"></textarea>
+
+                <label>Owner</label>
+                <input type="text" name="owner">
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Open">Open</option>
+                    <option value="Implemented">Implemented</option>
+                    <option value="Archived">Archived</option>
+                </select>
+
+                <button type="submit" class="btn-primary">
+                    Save Lesson
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

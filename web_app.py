@@ -5211,6 +5211,104 @@ def add_action():
         projects=projects
     )
 
+@app.route("/lessons")
+def lessons():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT
+        lessons.*,
+        projects.name AS project_name
+    FROM lessons
+    LEFT JOIN projects
+    ON lessons.project_id = projects.id
+    WHERE lessons.user_id = %s
+    ORDER BY lessons.created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    lessons = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "lessons.html",
+        lessons=lessons
+    )
+
+@app.route("/add-lesson", methods=["GET", "POST"])
+def add_lesson():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = %s
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+        INSERT INTO lessons (
+            user_id,
+            project_id,
+            title,
+            what_happened,
+            what_went_well,
+            what_went_wrong,
+            recommendation,
+            owner,
+            status,
+            created_at
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("what_happened"),
+            request.form.get("what_went_well"),
+            request.form.get("what_went_wrong"),
+            request.form.get("recommendation"),
+            request.form.get("owner"),
+            request.form.get("status"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/lessons")
+
+    conn.close()
+
+    return render_template(
+        "add_lesson.html",
+        projects=projects
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
