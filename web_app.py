@@ -6110,6 +6110,34 @@ def executive_dashboard():
     else:
         executive_status = "Red"
 
+    cursor.execute("""
+                   SELECT COUNT(*) AS total_assumptions
+                   FROM assumptions
+                   WHERE user_id = %s
+                   """, (session["user_id"],))
+    total_assumptions = cursor.fetchone()["total_assumptions"]
+
+    cursor.execute("""
+                   SELECT COUNT(*) AS total_dependencies
+                   FROM dependencies
+                   WHERE user_id = %s
+                   """, (session["user_id"],))
+    total_dependencies = cursor.fetchone()["total_dependencies"]
+
+    raid_total = (
+            total_risks +
+            total_assumptions +
+            total_issues +
+            total_dependencies
+    )
+
+    if raid_total <= 5:
+        raid_health = "Green"
+    elif raid_total <= 12:
+        raid_health = "Amber"
+    else:
+        raid_health = "Red"
+
     conn.close()
 
     return render_template(
@@ -6126,6 +6154,10 @@ def executive_dashboard():
         resource_health=resource_health,
         risk_health=risk_health,
         benefits_health=benefits_health,
+        total_assumptions=total_assumptions,
+        total_dependencies=total_dependencies,
+        raid_total=raid_total,
+        raid_health=raid_health,
         overall_executive_health=overall_executive_health,
         executive_status=executive_status
     )
