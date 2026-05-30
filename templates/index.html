@@ -35,108 +35,106 @@
 
         <div class="stats-grid">
 
-            <div class="stat-card">
-                <h3>Total Projects</h3>
-                <p>{{ total_projects }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Total Projects</h3>
+        <p>{{ total_projects }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Total Tasks</h3>
-                <p>{{ total_tasks }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Total Tasks</h3>
+        <p>{{ total_tasks }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Completed</h3>
-                <p>{{ completed_tasks }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Completed</h3>
+        <p>{{ completed_tasks }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Pending</h3>
-                <p>{{ pending_tasks }}</p>
-            </div>
+    <div class="stat-card amber-card">
+        <h3>Pending</h3>
+        <p>{{ pending_tasks }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Total Budget</h3>
-                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
-            </div>
+    <div class="stat-card blue-card">
+        <h3>Total Budget</h3>
+        <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Total Cost</h3>
-                <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
-            </div>
+    <div class="stat-card blue-card">
+        <h3>Total Cost</h3>
+        <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Remaining Budget</h3>
-                <p>£{{ "{:,.0f}".format(total_remaining_budget) }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Remaining Budget</h3>
+        <p>£{{ "{:,.0f}".format(total_remaining_budget) }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Total Clients</h3>
-                <p>{{ total_clients }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Total Clients</h3>
+        <p>{{ total_clients }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Active Clients</h3>
-                <p>{{ active_clients_count }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Active Clients</h3>
+        <p>{{ active_clients_count }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Client Portfolio</h3>
-                <p>£{{ "{:,.0f}".format(total_client_value) }}</p>
-            </div>
+    <div class="stat-card green-card">
+        <h3>Client Portfolio</h3>
+        <p>£{{ "{:,.0f}".format(total_client_value) }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Open Risks</h3>
-                <p>{{ open_risks }}</p>
-            </div>
+    <div class="stat-card red-card">
+        <h3>Open Risks</h3>
+        <p>{{ open_risks }}</p>
+    </div>
 
-            <div class="stat-card">
-                <h3>Open Issues</h3>
-                <p>{{ open_issues }}</p>
+    <div class="stat-card red-card">
+        <h3>Open Issues</h3>
+        <p>{{ open_issues }}</p>
+    </div>
 
-            </div>
-
-        </div>
+</div>
 
 
         <div class="dashboard-summary">
 
-            <div class="summary-card">
-                <h3>Project Health Score</h3>
+    <div class="summary-card blue-card">
+        <h3>Project Health Score</h3>
 
-                {% if project_health_score >= 80 %}
-                    <p class="health-good">{{ project_health_score }}%</p>
-                {% elif project_health_score >= 50 %}
-                    <p class="health-neutral">{{ project_health_score }}%</p>
-                {% else %}
-                    <p class="health-warning">{{ project_health_score }}%</p>
-                {% endif %}
+        {% if project_health_score >= 80 %}
+            <p class="health-good">{{ project_health_score }}%</p>
+        {% elif project_health_score >= 50 %}
+            <p class="health-neutral">{{ project_health_score }}%</p>
+        {% else %}
+            <p class="health-warning">{{ project_health_score }}%</p>
+        {% endif %}
 
-                <small>{{ project_health_label }}</small>
-            </div>
+        <small>{{ project_health_label }}</small>
+    </div>
 
-            <div class="summary-card">
-                <h3>Financial Health</h3>
+    <div class="summary-card green-card">
+        <h3>Financial Health</h3>
 
-                {% if profitability_score >= 50 %}
-                    <p class="health-good">{{ profitability_score }}%</p>
-                {% elif profitability_score >= 0 %}
-                    <p class="health-neutral">{{ profitability_score }}%</p>
-                {% else %}
-                    <p class="health-warning">{{ profitability_score }}%</p>
-                {% endif %}
+        {% if profitability_score >= 50 %}
+            <p class="health-good">{{ profitability_score }}%</p>
+        {% elif profitability_score >= 0 %}
+            <p class="health-neutral">{{ profitability_score }}%</p>
+        {% else %}
+            <p class="health-warning">{{ profitability_score }}%</p>
+        {% endif %}
 
-                <small>{{ financial_health_label }}</small>
-            </div>
+        <small>{{ financial_health_label }}</small>
+    </div>
 
-            <div class="summary-card">
-                <h3>Budget Usage</h3>
-                <p>{{ budget_usage_percent }}%</p>
-                <small>Portfolio burn rate</small>
-            </div>
+    <div class="summary-card amber-card">
+        <h3>Budget Usage</h3>
+        <p>{{ budget_usage_percent }}%</p>
+        <small>Portfolio burn rate</small>
+    </div>
 
-        </div>
-
+</div>
 
         <div class="smart-dashboard-grid">
 

@@ -1991,3 +1991,43 @@ body.dark-ready {
     margin-bottom:12px;
     line-height:1.5;
 }
+
+.green-card {
+    border-left: 6px solid #22c55e;
+    background: #f0fdf4;
+}
+
+.amber-card {
+    border-left: 6px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.red-card {
+    border-left: 6px solid #ef4444;
+    background: #fef2f2;
+}
+
+.blue-card {
+    border-left: 6px solid #3b82f6;
+    background: #eff6ff;
+}
+
+.green-card {
+    border-left: 6px solid #22c55e;
+    background: #f0fdf4;
+}
+
+.amber-card {
+    border-left: 6px solid #f59e0b;
+    background: #fffbeb;
+}
+
+.red-card {
+    border-left: 6px solid #ef4444;
+    background: #fef2f2;
+}
+
+.blue-card {
+    border-left: 6px solid #3b82f6;
+    background: #eff6ff;
+}
