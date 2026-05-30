@@ -5942,12 +5942,47 @@ def project_health():
 
         })
 
-    conn.close()
+        total_projects = len(project_scores)
 
-    return render_template(
-        "project_health.html",
-        project_scores=project_scores
-    )
+        healthy_projects = len([
+            project for project in project_scores
+            if project["status"] == "Green"
+        ])
+
+        monitor_projects = len([
+            project for project in project_scores
+            if project["status"] == "Amber"
+        ])
+
+        at_risk_projects = len([
+            project for project in project_scores
+            if project["status"] == "Red"
+        ])
+
+        if total_projects > 0:
+
+            average_health_score = round(
+                sum(
+                    project["overall_health"]
+                    for project in project_scores
+                ) / total_projects
+            )
+
+        else:
+
+            average_health_score = 0
+
+        conn.close()
+
+        return render_template(
+            "project_health.html",
+            project_scores=project_scores,
+            total_projects=total_projects,
+            healthy_projects=healthy_projects,
+            monitor_projects=monitor_projects,
+            at_risk_projects=at_risk_projects,
+            average_health_score=average_health_score
+        )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

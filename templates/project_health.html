@@ -30,73 +30,177 @@
 
         </div>
 
-        <div class="projects-grid">
+        <div class="stats-grid">
 
-            {% for project in project_scores %}
+            <div class="stat-card blue-card">
 
-                <div class="project-card">
+                <h3>Total Projects</h3>
 
-                    <h3>
-                        {{ project["project_name"] }}
-                    </h3>
+                <p>{{ total_projects }}</p>
 
-                    <div class="budget-section">
+            </div>
 
-                        <div class="budget-row">
-                            <span>Schedule Score</span>
-                            <strong>
-                                {{ project["schedule_score"] }}%
-                            </strong>
+            <div class="stat-card green-card">
+
+                <h3>Healthy</h3>
+
+                <p>{{ healthy_projects }}</p>
+
+            </div>
+
+            <div class="stat-card amber-card">
+
+                <h3>Monitor</h3>
+
+                <p>{{ monitor_projects }}</p>
+
+            </div>
+
+            <div class="stat-card red-card">
+
+                <h3>At Risk</h3>
+
+                <p>{{ at_risk_projects }}</p>
+
+            </div>
+
+        </div>
+
+        <div class="project-card">
+
+            <h3>Average Portfolio Health</h3>
+
+            <div class="smart-insight">
+
+                <strong>
+                    {{ average_health_score }}%
+                </strong>
+
+            </div>
+
+        </div>
+
+        {% if project_scores %}
+
+            <div class="projects-grid">
+
+                {% for project in project_scores %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+
+                                <h3>
+                                    {{ project["project_name"] }}
+                                </h3>
+
+                                {% if project["status"] == "Green" %}
+
+                                    <span class="badge badge-green">
+                                        Healthy
+                                    </span>
+
+                                {% elif project["status"] == "Amber" %}
+
+                                    <span class="badge badge-yellow">
+                                        Monitor
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-red">
+                                        At Risk
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
                         </div>
 
-                        <div class="budget-row">
-                            <span>Risk Score</span>
-                            <strong>
-                                {{ project["risk_score"] }}%
-                            </strong>
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Schedule Score</span>
+
+                                <strong>
+                                    {{ project["schedule_score"] }}%
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Risk Score</span>
+
+                                <strong>
+                                    {{ project["risk_score"] }}%
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Budget Score</span>
+
+                                <strong>
+                                    {{ project["budget_score"] }}%
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Overall Health</span>
+
+                                <strong>
+                                    {{ project["overall_health"] }}%
+                                </strong>
+
+                            </div>
+
                         </div>
 
-                        <div class="budget-row">
-                            <span>Budget Score</span>
-                            <strong>
-                                {{ project["budget_score"] }}%
-                            </strong>
-                        </div>
+                        <div class="smart-insight">
 
-                        <div class="budget-row">
-                            <span>Overall Health</span>
-                            <strong>
-                                {{ project["overall_health"] }}%
-                            </strong>
+                            {% if project["status"] == "Green" %}
+
+                                Project performance is healthy across schedule, budget and risk indicators.
+
+                            {% elif project["status"] == "Amber" %}
+
+                                Project requires monitoring to prevent performance deterioration.
+
+                            {% else %}
+
+                                Project requires management attention and recovery actions.
+
+                            {% endif %}
+
                         </div>
 
                     </div>
 
-                    {% if project["status"] == "Green" %}
+                {% endfor %}
 
-                        <span class="badge badge-green">
-                            Healthy
-                        </span>
+            </div>
 
-                    {% elif project["status"] == "Amber" %}
+        {% else %}
 
-                        <span class="badge badge-yellow">
-                            Monitor
-                        </span>
+            <div class="empty-box">
 
-                    {% else %}
+                <h3>No Projects Found</h3>
 
-                        <span class="badge badge-red">
-                            At Risk
-                        </span>
+                <p>
+                    Add projects to generate health scores.
+                </p>
 
-                    {% endif %}
+            </div>
 
-                </div>
-
-            {% endfor %}
-
-        </div>
+        {% endif %}
 
     </div>
 
