@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Decision</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Decision</h1>
+                <p class="dashboard-subtitle">
+                    Record key project decisions and governance outcomes.
+                </p>
+            </div>
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Decision Title</label>
+                <input type="text" name="title" required>
+
+                <label>Decision Maker</label>
+                <input type="text" name="decision_maker">
+
+                <label>Impact</label>
+                <textarea name="impact" rows="3"></textarea>
+
+                <label>Reason</label>
+                <textarea name="reason" rows="5"></textarea>
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Approved">Approved</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+
+                <label>Decision Date</label>
+                <input type="date" name="decision_date">
+
+                <button type="submit" class="btn-primary">
+                    Save Decision
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -4970,6 +4970,102 @@ def add_stakeholder():
         projects=projects
     )
 
+@app.route("/decisions")
+def decisions():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT
+        decisions.*,
+        projects.name AS project_name
+    FROM decisions
+    LEFT JOIN projects
+    ON decisions.project_id = projects.id
+    WHERE decisions.user_id = %s
+    ORDER BY decisions.decision_date DESC
+    """, (
+        session["user_id"],
+    ))
+
+    decisions = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "decisions.html",
+        decisions=decisions
+    )
+
+@app.route("/add-decision", methods=["GET", "POST"])
+def add_decision():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = %s
+    ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+        INSERT INTO decisions (
+            user_id,
+            project_id,
+            title,
+            decision_maker,
+            impact,
+            reason,
+            status,
+            decision_date,
+            created_at
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("decision_maker"),
+            request.form.get("impact"),
+            request.form.get("reason"),
+            request.form.get("status"),
+            request.form.get("decision_date"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/decisions")
+
+    conn.close()
+
+    return render_template(
+        "add_decision.html",
+        projects=projects
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
