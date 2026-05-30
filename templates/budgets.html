@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budgets</title>
+    <title>Budget Management</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -41,29 +41,58 @@
 
         </div>
 
-       <div class="stats-grid">
+        <div class="stats-grid">
 
-    <div class="stat-card blue-card">
-        <h3>Total Budget</h3>
-        <p>£{{ "{:,.0f}".format(total_budget) }}</p>
-    </div>
+            <div class="stat-card blue-card">
+                <h3>Total Budget</h3>
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+            </div>
 
-    <div class="stat-card red-card">
-        <h3>Actual Cost</h3>
-        <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
-    </div>
+            <div class="stat-card red-card">
+                <h3>Actual Cost</h3>
+                <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
+            </div>
 
-    <div class="stat-card amber-card">
-        <h3>Remaining Budget</h3>
-        <p>£{{ "{:,.0f}".format(remaining_budget) }}</p>
-    </div>
+            <div class="stat-card amber-card">
+                <h3>Remaining Budget</h3>
+                <p>£{{ "{:,.0f}".format(remaining_budget) }}</p>
+            </div>
 
-    <div class="stat-card green-card">
-        <h3>Budget Usage</h3>
-        <p>{{ budget_usage }}%</p>
-    </div>
+            <div class="stat-card green-card">
+                <h3>Budget Usage</h3>
+                <p>{{ budget_usage }}%</p>
+            </div>
 
-</div>
+        </div>
+
+        <div class="project-card">
+
+            <h3>Budget Health Summary</h3>
+
+            <div class="smart-insight">
+
+                <p>
+                    Financial Health:
+                    <strong>{{ financial_health }}</strong>
+                </p>
+
+                <p>
+                    Budget Usage:
+                    <strong>{{ budget_usage }}%</strong>
+                </p>
+
+                <p>
+                    Over Budget Projects:
+                    <strong>{{ over_budget_count }}</strong>
+                </p>
+
+                <p>
+                    {{ financial_health_message }}
+                </p>
+
+            </div>
+
+        </div>
 
         {% if budgets %}
 
@@ -106,63 +135,45 @@
                         <div class="budget-section">
 
                             <div class="budget-row">
-
                                 <span>Budget</span>
-
                                 <strong>
                                     £{{ budget["budget_amount"] }}
                                 </strong>
-
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Actual Cost</span>
-
                                 <strong>
                                     £{{ budget["actual_cost"] }}
                                 </strong>
-
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Forecast Cost</span>
-
                                 <strong>
                                     £{{ budget["forecast_cost"] }}
                                 </strong>
-
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Variance</span>
-
                                 <strong>
                                     £{{ variance }}
                                 </strong>
-
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Approved By</span>
-
                                 <strong>
                                     {{ budget["approved_by"] }}
                                 </strong>
-
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Status</span>
-
                                 <strong>
                                     {{ budget["status"] }}
                                 </strong>
-
                             </div>
 
                         </div>

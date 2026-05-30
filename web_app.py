@@ -5694,6 +5694,18 @@ def budgets():
     else:
         budget_usage = 0
 
+    if budget_usage <= 70:
+        financial_health = "Green"
+        financial_health_message = "Financial position is healthy."
+
+    elif budget_usage <= 90:
+        financial_health = "Amber"
+        financial_health_message = "Budget usage requires monitoring."
+
+    else:
+        financial_health = "Red"
+        financial_health_message = "Budget usage is high and requires attention."
+
     conn.close()
 
     return render_template(
@@ -5704,7 +5716,9 @@ def budgets():
         total_forecast_cost=total_forecast_cost,
         remaining_budget=remaining_budget,
         budget_usage=budget_usage,
-        over_budget_count=over_budget_count
+        over_budget_count=over_budget_count,
+        financial_health=financial_health,
+        financial_health_message=financial_health_message
     )
 
 @app.route("/add-budget", methods=["GET", "POST"])
