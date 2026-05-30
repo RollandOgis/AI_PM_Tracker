@@ -2399,3 +2399,15 @@ body.dark-ready {
     }
 
 }
+
+.workload-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 25px 0;
+    align-items: stretch;
+}
+
+.workload-summary-grid .project-card {
+    height: 100%;
+}
