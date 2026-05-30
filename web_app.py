@@ -983,6 +983,24 @@ def home():
     else:
         issue_card_class = "red-card"
 
+    health_score = 100
+
+    health_score -= (overdue_tasks * 10)
+    health_score -= (blocked_tasks * 5)
+    health_score -= (open_risks * 5)
+    health_score -= (open_issues * 3)
+
+    health_score = max(0, min(100, health_score))
+
+    if health_score >= 80:
+        health_status = "Excellent"
+    elif health_score >= 60:
+        health_status = "Stable"
+    elif health_score >= 40:
+        health_status = "At Risk"
+    else:
+        health_status = "Critical"
+
     conn.close()
 
     return render_template(
@@ -1003,8 +1021,8 @@ def home():
         low_priority_tasks=low_priority_tasks,
         overdue_tasks=overdue_tasks,
         completion_rate=completion_rate,
-        project_health_score=project_health_score,
-        project_health_label=project_health_label,
+        project_health_score=health_score,
+        project_health_label=health_status,
         smart_insights=smart_insights,
         delivery_insights=delivery_insights,
         upcoming_deadlines=upcoming_deadlines,
