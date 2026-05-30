@@ -3710,9 +3710,32 @@ def benefits():
 
     conn.close()
 
+    def clean_value(value):
+        if not value:
+            return 0
+
+        value = str(value)
+        value = value.replace("£", "")
+        value = value.replace(",", "")
+        value = value.strip()
+
+        try:
+            return float(value)
+        except:
+            return 0
+
+    if benefits:
+        top_benefit = max(
+            benefits,
+            key=lambda benefit: clean_value(benefit["expected_value"])
+        )
+    else:
+        top_benefit = None
+
     return render_template(
         "benefits.html",
-        benefits=benefits
+        benefits=benefits,
+        top_benefit=top_benefit
     )
 
 @app.route("/add-benefit", methods=["GET", "POST"])
