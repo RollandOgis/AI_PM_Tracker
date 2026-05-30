@@ -967,6 +967,22 @@ def home():
 
     open_issues = cursor.fetchone()["open_issues"]
 
+    # Risk card colour
+    if open_risks == 0:
+        risk_card_class = "green-card"
+    elif open_risks <= 3:
+        risk_card_class = "amber-card"
+    else:
+        risk_card_class = "red-card"
+
+    # Issue card colour
+    if open_issues == 0:
+        issue_card_class = "green-card"
+    elif open_issues <= 3:
+        issue_card_class = "amber-card"
+    else:
+        issue_card_class = "red-card"
+
     conn.close()
 
     return render_template(
@@ -975,6 +991,8 @@ def home():
         total_projects=len(projects),
         total_tasks=total_tasks,
         open_risks=open_risks,
+        risk_card_class=risk_card_class,
+        issue_card_class=issue_card_class,
         open_issues=open_issues,
         completed_tasks=completed_tasks,
         pending_tasks=pending_tasks,

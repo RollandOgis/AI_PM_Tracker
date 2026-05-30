@@ -85,14 +85,14 @@
         <p>£{{ "{:,.0f}".format(total_client_value) }}</p>
     </div>
 
-    <div class="stat-card red-card">
-        <h3>Open Risks</h3>
-        <p>{{ open_risks }}</p>
+    <div class="stat-card {{ risk_card_class }}">
+    <h3>Open Risks</h3>
+    <p>{{ open_risks }}</p>
     </div>
 
-    <div class="stat-card red-card">
-        <h3>Open Issues</h3>
-        <p>{{ open_issues }}</p>
+    <div class="stat-card {{ issue_card_class }}">
+    <h3>Open Issues</h3>
+    <p>{{ open_issues }}</p>
     </div>
 
 </div>
