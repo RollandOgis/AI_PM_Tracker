@@ -11,185 +11,127 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
                 <h1>RAID Log</h1>
-
                 <p class="dashboard-subtitle">
                     Track project risks, assumptions, issues and dependencies in one governance view.
                 </p>
             </div>
-
         </div>
-
 
         <div class="stats-grid">
 
-            <div class="stat-card">
+            <div class="stat-card red-card">
                 <h3>Risks</h3>
                 <p>{{ risks|length }}</p>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card blue-card">
                 <h3>Assumptions</h3>
                 <p>{{ assumptions|length }}</p>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card amber-card">
                 <h3>Issues</h3>
                 <p>{{ issues|length }}</p>
             </div>
 
-            <div class="stat-card">
+            <div class="stat-card green-card">
                 <h3>Dependencies</h3>
                 <p>{{ dependencies|length }}</p>
             </div>
 
         </div>
 
+        <div class="raid-grid">
 
-        <div class="smart-dashboard-grid">
-
-            <div class="smart-card">
-
+            <div class="raid-card risk-card">
                 <h3>Risks</h3>
 
                 {% if risks %}
-
                     {% for risk in risks %}
-
-                        <div class="smart-insight">
+                        <div class="raid-item">
                             <strong>{{ risk["title"] }}</strong>
-
                             <p>{{ risk["description"] }}</p>
 
                             <small>
-                                Probability: {{ risk["probability"] }}
-                                |
-                                Impact: {{ risk["impact"] }}
-                                |
+                                Probability: {{ risk["probability"] }} |
+                                Impact: {{ risk["impact"] }} |
                                 Status: {{ risk["status"] }}
                             </small>
                         </div>
-
                     {% endfor %}
-
                 {% else %}
-
-                    <div class="smart-insight">
-                        No risks recorded.
-                    </div>
-
+                    <div class="raid-empty">No risks recorded.</div>
                 {% endif %}
-
             </div>
 
-
-            <div class="smart-card">
-
+            <div class="raid-card assumption-card">
                 <h3>Assumptions</h3>
 
                 {% if assumptions %}
-
                     {% for assumption in assumptions %}
-
-                        <div class="smart-insight">
+                        <div class="raid-item">
                             <strong>{{ assumption["title"] }}</strong>
-
                             <p>{{ assumption["description"] }}</p>
 
                             <small>
-                                Owner: {{ assumption["owner"] }}
-                                |
+                                Owner: {{ assumption["owner"] }} |
                                 Status: {{ assumption["status"] }}
                             </small>
                         </div>
-
                     {% endfor %}
-
                 {% else %}
-
-                    <div class="smart-insight">
-                        No assumptions recorded.
-                    </div>
-
+                    <div class="raid-empty">No assumptions recorded.</div>
                 {% endif %}
-
             </div>
 
-
-            <div class="smart-card">
-
+            <div class="raid-card issue-card">
                 <h3>Issues</h3>
 
                 {% if issues %}
-
                     {% for issue in issues %}
-
-                        <div class="smart-insight">
+                        <div class="raid-item">
                             <strong>{{ issue["title"] }}</strong>
-
                             <p>{{ issue["description"] }}</p>
 
                             <small>
-                                Priority: {{ issue["priority"] }}
-                                |
-                                Owner: {{ issue["owner"] }}
-                                |
+                                Priority: {{ issue["priority"] }} |
+                                Owner: {{ issue["owner"] }} |
                                 Status: {{ issue["status"] }}
                             </small>
                         </div>
-
                     {% endfor %}
-
                 {% else %}
-
-                    <div class="smart-insight">
-                        No issues recorded.
-                    </div>
-
+                    <div class="raid-empty">No issues recorded.</div>
                 {% endif %}
-
             </div>
 
-
-            <div class="smart-card">
-
+            <div class="raid-card dependency-card">
                 <h3>Dependencies</h3>
 
                 {% if dependencies %}
-
                     {% for dependency in dependencies %}
-
-                        <div class="smart-insight">
+                        <div class="raid-item">
                             <strong>{{ dependency["title"] }}</strong>
-
                             <p>{{ dependency["description"] }}</p>
 
                             <small>
-                                Owner: {{ dependency["owner"] }}
-                                |
-                                Status: {{ dependency["status"] }}
-                                |
+                                Owner: {{ dependency["owner"] }} |
+                                Status: {{ dependency["status"] }} |
                                 Target: {{ dependency["target_date"] or "N/A" }}
                             </small>
                         </div>
-
                     {% endfor %}
-
                 {% else %}
-
-                    <div class="smart-insight">
-                        No dependencies recorded.
-                    </div>
-
+                    <div class="raid-empty">No dependencies recorded.</div>
                 {% endif %}
-
             </div>
 
         </div>

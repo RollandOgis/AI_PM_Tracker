@@ -2031,3 +2031,77 @@ body.dark-ready {
     border-left: 6px solid #3b82f6;
     background: #eff6ff;
 }
+
+.raid-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-top: 28px;
+}
+
+.raid-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    min-height: 280px;
+}
+
+.raid-card h3 {
+    margin-bottom: 18px;
+    font-size: 22px;
+}
+
+.risk-card {
+    border-top: 6px solid #ef4444;
+}
+
+.assumption-card {
+    border-top: 6px solid #3b82f6;
+}
+
+.issue-card {
+    border-top: 6px solid #f59e0b;
+}
+
+.dependency-card {
+    border-top: 6px solid #22c55e;
+}
+
+.raid-item {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    border: 1px solid #e5e7eb;
+}
+
+.raid-item strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #111827;
+}
+
+.raid-item p {
+    margin-bottom: 10px;
+    color: #4b5563;
+    line-height: 1.5;
+}
+
+.raid-item small {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.raid-empty {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 18px;
+    color: #6b7280;
+}
+
+@media (max-width: 900px) {
+    .raid-grid {
+        grid-template-columns: 1fr;
+    }
+}
