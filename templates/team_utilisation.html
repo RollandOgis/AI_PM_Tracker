@@ -102,37 +102,71 @@
 
             {% for item in utilisation_data %}
 
-            <div class="project-card">
+           <div class="project-card">
 
-                <div class="project-top">
+    <h3>Resource Health Summary</h3>
 
-                    <div>
+    <div class="smart-insight">
 
-                        <h3>{{ item["name"] }}</h3>
+        <p>
+            Average Utilisation:
+            <strong>{{ average_utilisation }}%</strong>
+        </p>
 
-                        {% if item["utilisation"] >= 80 %}
+        <p>
+            Available Capacity:
+            <strong>{{ average_capacity }}%</strong>
+        </p>
 
-                            <span class="badge badge-red">
-                                Overloaded
-                            </span>
+        <p>
+            Most Loaded Resource:
+            <strong>{{ most_loaded["name"] }}</strong>
+            ({{ most_loaded["utilisation"] }}%)
+        </p>
 
-                        {% elif item["utilisation"] >= 50 %}
+    </div>
 
-                            <span class="badge badge-yellow">
-                                Balanced
-                            </span>
+    <div class="budget-section">
 
-                        {% else %}
+        <div class="budget-row">
+            <span>Overloaded Resources</span>
+            <strong>{{ overloaded_count }}</strong>
+        </div>
 
-                            <span class="badge badge-green">
-                                Capacity Available
-                            </span>
+        <div class="budget-row">
+            <span>Balanced Resources</span>
+            <strong>{{ balanced_count }}</strong>
+        </div>
 
-                        {% endif %}
+        <div class="budget-row">
+            <span>Available Resources</span>
+            <strong>{{ available_count }}</strong>
+        </div>
 
-                    </div>
+    </div>
 
-                </div>
+    <div class="smart-insight">
+
+        {% if overloaded_count > 0 %}
+
+            Recommendation:
+            Redistribute workload from overloaded resources.
+
+        {% elif available_count > balanced_count %}
+
+            Recommendation:
+            Team currently has spare delivery capacity.
+
+        {% else %}
+
+            Recommendation:
+            Resource allocation is healthy.
+
+        {% endif %}
+
+    </div>
+
+</div>
 
                 <p>{{ item["role"] }}</p>
 
