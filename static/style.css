@@ -2285,3 +2285,22 @@ body.dark-ready {
     font-weight: 700;
 }
 
+.heat-low {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.heat-medium {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.heat-high {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.heat-critical {
+    background: #fee2e2;
+    color: #b91c1c;
+}
