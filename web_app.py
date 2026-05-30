@@ -3702,8 +3702,8 @@ def benefits():
     FROM benefits
     LEFT JOIN projects
     ON benefits.project_id = projects.id
-    WHERE benefits.user_id = ?
-    ORDER BY CAST(expected_value AS REAL) DESC
+    WHERE benefits.user_id = %s
+    ORDER BY benefits.created_at DESC
     """, (
         session["user_id"],
     )).fetchall()
@@ -4578,14 +4578,19 @@ def add_assumption():
         return redirect("/login")
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
     SELECT *
     FROM projects
     WHERE user_id = %s
     ORDER BY name ASC
-    """, (session["user_id"],))
+    """, (
+        session["user_id"],
+    ))
 
     projects = cursor.fetchall()
 
@@ -4593,7 +4598,13 @@ def add_assumption():
 
         cursor.execute("""
         INSERT INTO assumptions (
-            user_id, project_id, title, description, owner, status, created_at
+            user_id,
+            project_id,
+            title,
+            description,
+            owner,
+            status,
+            created_at
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (
@@ -4613,7 +4624,10 @@ def add_assumption():
 
     conn.close()
 
-    return render_template("add_assumption.html", projects=projects)
+    return render_template(
+        "add_assumption.html",
+        projects=projects
+    )
 
 @app.route("/add-dependency", methods=["GET", "POST"])
 def add_dependency():
