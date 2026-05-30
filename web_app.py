@@ -4915,12 +4915,33 @@ def team_utilisation():
             "utilisation": 0
         }
 
+    overloaded_count = len([
+        x for x in utilisation_data
+        if x["utilisation"] >= 80
+    ])
+
+    balanced_count = len([
+        x for x in utilisation_data
+        if 40 <= x["utilisation"] < 80
+    ])
+
+    available_count = len([
+        x for x in utilisation_data
+        if x["utilisation"] < 40
+    ])
+
+    average_capacity = 100 - average_utilisation
+
     conn.close()
 
     return render_template(
         "team_utilisation.html",
         utilisation_data=utilisation_data,
         average_utilisation=average_utilisation,
+        average_capacity=average_capacity,
+        overloaded_count=overloaded_count,
+        balanced_count=balanced_count,
+        available_count=available_count,
         most_loaded=most_loaded
     )
 
