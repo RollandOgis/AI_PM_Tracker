@@ -3703,7 +3703,7 @@ def benefits():
     LEFT JOIN projects
     ON benefits.project_id = projects.id
     WHERE benefits.user_id = ?
-    ORDER BY benefits.created_at DESC
+    ORDER BY CAST(expected_value AS REAL) DESC
     """, (
         session["user_id"],
     )).fetchall()
