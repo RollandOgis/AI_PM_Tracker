@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stakeholder Register</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include 'sidebar.html' %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Stakeholder Register</h1>
+
+                <p class="dashboard-subtitle">
+                    Track stakeholder influence, engagement and communication plans.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-stakeholder" class="btn-primary">
+                    + Add Stakeholder
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Stakeholders</h3>
+                <p>{{ stakeholders|length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>High Influence</h3>
+                <p>
+                    {{ stakeholders | selectattr("influence", "equalto", "High") | list | length }}
+                </p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Monitor</h3>
+                <p>
+                    {{ stakeholders | selectattr("status", "equalto", "Monitor") | list | length }}
+                </p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active</h3>
+                <p>
+                    {{ stakeholders | selectattr("status", "equalto", "Active") | list | length }}
+                </p>
+            </div>
+
+        </div>
+
+        {% if stakeholders %}
+
+        {% set top_stakeholder = stakeholders[0] %}
+
+        <div class="smart-card">
+
+            <h3>Key Stakeholder</h3>
+
+            <div class="smart-insight">
+
+                <strong>{{ top_stakeholder["name"] }}</strong>
+
+                <p>Role: {{ top_stakeholder["role"] }}</p>
+
+                <p>Influence: {{ top_stakeholder["influence"] }}</p>
+
+                <p>Interest: {{ top_stakeholder["interest"] }}</p>
+
+                <p>Status: {{ top_stakeholder["status"] }}</p>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for stakeholder in stakeholders %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ stakeholder["name"] }}</h3>
+
+                        {% if stakeholder["influence"] == "High" %}
+                            <span class="badge badge-red">High Influence</span>
+                        {% elif stakeholder["influence"] == "Medium" %}
+                            <span class="badge badge-yellow">Medium Influence</span>
+                        {% else %}
+                            <span class="badge badge-green">Low Influence</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ stakeholder["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>{{ stakeholder["role"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Influence</span>
+                        <strong>{{ stakeholder["influence"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Interest</span>
+                        <strong>{{ stakeholder["interest"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ stakeholder["owner"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ stakeholder["status"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Communication Plan:</strong>
+
+                    <br><br>
+
+                    {{ stakeholder["communication_plan"] }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Stakeholders Added</h3>
+
+            <p>
+                Add stakeholders to begin stakeholder management.
+            </p>
+
+            <a href="/add-stakeholder" class="btn-primary">
+                Add First Stakeholder
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

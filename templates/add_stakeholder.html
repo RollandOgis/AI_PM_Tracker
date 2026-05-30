@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Stakeholder</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Stakeholder</h1>
+                <p class="dashboard-subtitle">
+                    Record key stakeholders and engagement plans.
+                </p>
+            </div>
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Stakeholder Name</label>
+                <input type="text" name="name" required>
+
+                <label>Role</label>
+                <input type="text" name="role">
+
+                <label>Influence</label>
+                <select name="influence">
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+
+                <label>Interest</label>
+                <select name="interest">
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+
+                <label>Communication Plan</label>
+                <textarea name="communication_plan" rows="5"></textarea>
+
+                <label>Owner</label>
+                <input type="text" name="owner">
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Active">Active</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+
+                <button type="submit" class="btn-primary">
+                    Save Stakeholder
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
