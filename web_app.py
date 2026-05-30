@@ -1200,6 +1200,7 @@ def calendar():
         current_date=str(date.today())
     )
 
+
 @app.route("/report")
 def report():
     if "user_id" not in session:
@@ -1227,11 +1228,24 @@ def report():
     """, (session["user_id"],)).fetchall()
 
     total_tasks = len(tasks)
-    completed_tasks = len([task for task in tasks if task["status"] == "Completed"])
-    overdue_tasks = len([task for task in tasks if is_overdue(task["due_date"], task["status"])])
+
+    completed_tasks = len([
+        task for task in tasks
+        if task["status"] == "Completed"
+    ])
+
+    overdue_tasks = len([
+        task for task in tasks
+        if is_overdue(
+            task["due_date"],
+            task["status"]
+        )
+    ])
 
     if total_tasks > 0:
-        completion_rate = round((completed_tasks / total_tasks) * 100)
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
     else:
         completion_rate = 0
 
@@ -1248,64 +1262,234 @@ def report():
         current_date=str(date.today())
     )
 
+
 @app.route("/pdf-report")
 def pdf_report():
+
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (session["user_id"],)).fetchall()
+
     tasks = conn.execute("""
     SELECT tasks.*, projects.name AS project_name
     FROM tasks
-    JOIN projects ON tasks.project_id = projects.id
+    JOIN projects
+    ON tasks.project_id = projects.id
     WHERE projects.user_id = ?
-    ORDER BY tasks.due_date ASC
+    """, (session["user_id"],)).fetchall()
+
+    risks = conn.execute("""
+    SELECT *
+    FROM risks
+    WHERE user_id = ?
+    """, (session["user_id"],)).fetchall()
+
+    issues = conn.execute("""
+    SELECT *
+    FROM issues
+    WHERE user_id = ?
     """, (session["user_id"],)).fetchall()
 
     conn.close()
 
+    total_projects = len(projects)
+    total_tasks = len(tasks)
+
+    completed_tasks = len([
+        t for t in tasks
+        if t["status"] == "Completed"
+    ])
+
+    pending_tasks = len([
+        t for t in tasks
+        if t["status"] == "Pending"
+    ])
+
+    open_risks = len(risks)
+    open_issues = len(issues)
+
+    completion_rate = 0
+
+    if total_tasks > 0:
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
+
     buffer = BytesIO()
+
     pdf = canvas.Canvas(buffer, pagesize=A4)
 
     width, height = A4
     y = height - 50
 
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(50, y, "AI PM Tracker Report")
+    # TITLE
 
-    y -= 35
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.drawString(
+        50,
+        y,
+        "AI Project Management Executive Report"
+    )
+
+    y -= 30
+
     pdf.setFont("Helvetica", 11)
-    pdf.drawString(50, y, f"Generated: {str(date.today())}")
+    pdf.drawString(
+        50,
+        y,
+        f"Generated: {date.today()}"
+    )
 
-    y -= 35
-    pdf.setFont("Helvetica-Bold", 13)
-    pdf.drawString(50, y, "Tasks")
+    # EXECUTIVE SUMMARY
+
+    y -= 50
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, y, "Executive Summary")
 
     y -= 25
+
+    pdf.setFont("Helvetica", 11)
+
+    pdf.drawString(
+        50,
+        y,
+        f"Projects Managed: {total_projects}"
+    )
+
+    y -= 18
+
+    pdf.drawString(
+        50,
+        y,
+        f"Total Tasks: {total_tasks}"
+    )
+
+    y -= 18
+
+    pdf.drawString(
+        50,
+        y,
+        f"Completion Rate: {completion_rate}%"
+    )
+
+    # DELIVERY HEALTH
+
+    y -= 40
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, y, "Delivery Health")
+
+    y -= 25
+
+    pdf.setFont("Helvetica", 11)
+
+    pdf.drawString(
+        50,
+        y,
+        f"Completed Tasks: {completed_tasks}"
+    )
+
+    y -= 18
+
+    pdf.drawString(
+        50,
+        y,
+        f"Pending Tasks: {pending_tasks}"
+    )
+
+    # RAID SUMMARY
+
+    y -= 40
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, y, "RAID Summary")
+
+    y -= 25
+
+    pdf.setFont("Helvetica", 11)
+
+    pdf.drawString(
+        50,
+        y,
+        f"Open Risks: {open_risks}"
+    )
+
+    y -= 18
+
+    pdf.drawString(
+        50,
+        y,
+        f"Open Issues: {open_issues}"
+    )
+
+    # PROJECTS
+
+    y -= 40
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, y, "Project Portfolio")
+
+    y -= 25
+
     pdf.setFont("Helvetica", 10)
 
-    if not tasks:
-        pdf.drawString(50, y, "No tasks found.")
-    else:
-        for task in tasks:
-            if y < 70:
-                pdf.showPage()
-                y = height - 50
-                pdf.setFont("Helvetica", 10)
+    for project in projects:
 
-            line = f"{task['project_name']} | {task['title']} | {task['priority']} | {task['status']} | Due: {task['due_date']}"
-            pdf.drawString(50, y, line[:115])
-            y -= 18
+        if y < 80:
+            pdf.showPage()
+            y = height - 50
+
+        pdf.drawString(
+            60,
+            y,
+            f"{project['name']} ({project['status']})"
+        )
+
+        y -= 18
+
+    # TOP TASKS
+
+    y -= 20
+
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, y, "Upcoming Tasks")
+
+    y -= 25
+
+    pdf.setFont("Helvetica", 10)
+
+    for task in tasks[:10]:
+
+        if y < 80:
+            pdf.showPage()
+            y = height - 50
+
+        pdf.drawString(
+            60,
+            y,
+            f"{task['title']} | {task['status']} | {task['project_name']}"
+        )
+
+        y -= 18
 
     pdf.save()
+
     buffer.seek(0)
 
     return Response(
         buffer.getvalue(),
         mimetype="application/pdf",
         headers={
-            "Content-Disposition": "attachment; filename=ai_pm_tracker_report.pdf"
+            "Content-Disposition":
+            "attachment; filename=executive_project_report.pdf"
         }
     )
 
@@ -4237,6 +4421,86 @@ def add_dependency():
     conn.close()
 
     return render_template("add_dependency.html", projects=projects)
+
+@app.route("/team-utilisation")
+def team_utilisation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (session["user_id"],))
+
+    members = cursor.fetchall()
+
+    utilisation_data = []
+
+    for member in members:
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM task_team_members
+            JOIN tasks
+            ON task_team_members.task_id = tasks.id
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE task_team_members.team_member_id = %s
+            AND projects.user_id = %s
+        """, (
+            member["id"],
+            session["user_id"]
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        utilisation = min(total_tasks * 10, 100)
+
+        utilisation_data.append({
+            "name": member["name"],
+            "role": member["role"],
+            "total_tasks": total_tasks,
+            "utilisation": utilisation
+        })
+
+    if utilisation_data:
+
+        average_utilisation = round(
+            sum(x["utilisation"] for x in utilisation_data)
+            / len(utilisation_data)
+        )
+
+        most_loaded = max(
+            utilisation_data,
+            key=lambda x: x["utilisation"]
+        )
+
+    else:
+
+        average_utilisation = 0
+
+        most_loaded = {
+            "name": "N/A",
+            "utilisation": 0
+        }
+
+    conn.close()
+
+    return render_template(
+        "team_utilisation.html",
+        utilisation_data=utilisation_data,
+        average_utilisation=average_utilisation,
+        most_loaded=most_loaded
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

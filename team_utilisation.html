@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Utilisation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Team Utilisation</h1>
+                <p class="dashboard-subtitle">
+                    Monitor workload, capacity and resource balance across the delivery team.
+                </p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Team Members</h3>
+                <p>{{ utilisation_data|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Average Utilisation</h3>
+                <p>{{ average_utilisation }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Most Loaded Resource</h3>
+                <p style="font-size:20px;">
+                    {{ most_loaded["name"] }}
+                </p>
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for item in utilisation_data %}
+
+                <div class="project-card">
+
+                    <h3>{{ item["name"] }}</h3>
+
+                    <p>
+                        {{ item["role"] }}
+                    </p>
+
+                    <div class="budget-section">
+
+                        <div class="budget-row">
+                            <span>Total Tasks</span>
+                            <strong>
+                                {{ item["total_tasks"] }}
+                            </strong>
+                        </div>
+
+                        <div class="budget-row">
+
+                            <span>Utilisation</span>
+
+                            {% if item["utilisation"] >= 80 %}
+                                <strong class="health-warning">
+                                    {{ item["utilisation"] }}%
+                                </strong>
+
+                            {% elif item["utilisation"] >= 50 %}
+                                <strong class="health-neutral">
+                                    {{ item["utilisation"] }}%
+                                </strong>
+
+                            {% else %}
+                                <strong class="health-good">
+                                    {{ item["utilisation"] }}%
+                                </strong>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                    <div class="progress-wrapper">
+
+                        <div class="progress-bar">
+
+                            <div
+                                class="progress-fill completed-fill"
+                                data-width="{{ item['utilisation'] }}"
+                            >
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {% if item["utilisation"] >= 80 %}
+
+                        <div class="smart-insight">
+                            High workload. Consider redistributing tasks.
+                        </div>
+
+                    {% elif item["utilisation"] >= 50 %}
+
+                        <div class="smart-insight">
+                            Balanced workload.
+                        </div>
+
+                    {% else %}
+
+                        <div class="smart-insight">
+                            Available capacity.
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+document.querySelectorAll(".progress-fill").forEach(function(bar) {
+
+    bar.style.width = bar.dataset.width + "%";
+
+});
+
+</script>
+
+</body>
+</html>
