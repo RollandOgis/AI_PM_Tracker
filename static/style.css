@@ -2105,3 +2105,89 @@ body.dark-ready {
         grid-template-columns: 1fr;
     }
 }
+.gantt-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.gantt-row {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    align-items: center;
+}
+
+.gantt-info h3 {
+    margin-bottom: 8px;
+    color: #111827;
+}
+
+.gantt-info p {
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.gantt-info small {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.gantt-track-section {
+    width: 100%;
+}
+
+.gantt-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.gantt-track {
+    width: 100%;
+    height: 32px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.gantt-bar {
+    height: 100%;
+    border-radius: 999px;
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    transition: width 0.5s ease;
+}
+
+.gantt-completed {
+    background: #22c55e;
+}
+
+.gantt-progress {
+    background: #3b82f6;
+}
+
+.gantt-blocked {
+    background: #ef4444;
+}
+
+.gantt-pending {
+    background: #f59e0b;
+}
+
+@media (max-width: 900px) {
+    .gantt-row {
+        grid-template-columns: 1fr;
+    }
+}

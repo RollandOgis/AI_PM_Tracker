@@ -11,28 +11,25 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Gantt Timeline</h1>
 
                 <p class="dashboard-subtitle">
-                    View project schedules, timelines and delivery windows.
+                    View project schedules, timelines and delivery progress.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-project" class="btn-primary">
                     + Add Project
                 </a>
-
             </div>
 
         </div>
@@ -47,17 +44,12 @@
 
                         <div class="gantt-info">
 
-                            <h3>
-                                {{ project["name"] }}
-                            </h3>
+                            <h3>{{ project["name"] }}</h3>
 
                             {% if project["client_name"] %}
-
                                 <p>
-                                    Client:
-                                    {{ project["client_name"] }}
+                                    Client: {{ project["client_name"] }}
                                 </p>
-
                             {% endif %}
 
                             <small>
@@ -68,45 +60,37 @@
 
                         </div>
 
-                        <div class="gantt-track">
+                        <div class="gantt-track-section">
 
-                            {% if project["status"] == "Completed" %}
+                            <div class="gantt-meta">
 
-                                <div
-                                    class="gantt-bar gantt-completed"
-                                    style="width: 100%;"
-                                >
-                                    Completed
-                                </div>
+                                <span>{{ project["status"] }}</span>
 
-                            {% elif project["status"] == "In Progress" %}
+                                <strong>
+                                    {{ project["progress"] }}%
+                                </strong>
 
-                                <div
-                                    class="gantt-bar gantt-progress"
-                                    style="width: 65%;"
-                                >
-                                    In Progress
-                                </div>
+                            </div>
 
-                            {% elif project["status"] == "Blocked" %}
+                            <div class="gantt-track">
 
                                 <div
-                                    class="gantt-bar gantt-blocked"
-                                    style="width: 45%;"
+                                    class="gantt-bar
+                                    {% if project['status'] == 'Completed' %}
+                                        gantt-completed
+                                    {% elif project['status'] == 'In Progress' %}
+                                        gantt-progress
+                                    {% elif project['status'] == 'Blocked' %}
+                                        gantt-blocked
+                                    {% else %}
+                                        gantt-pending
+                                    {% endif %}"
+                                    data-width="{{ project['progress'] }}"
                                 >
-                                    Blocked
+                                    {{ project["progress"] }}%
                                 </div>
 
-                            {% else %}
-
-                                <div
-                                    class="gantt-bar gantt-pending"
-                                    style="width: 25%;"
-                                >
-                                    Pending
-                                </div>
-
-                            {% endif %}
+                            </div>
 
                         </div>
 
@@ -137,6 +121,12 @@
     </div>
 
 </div>
+
+<script>
+    document.querySelectorAll(".gantt-bar").forEach(function(bar) {
+        bar.style.width = bar.dataset.width + "%";
+    });
+</script>
 
 </body>
 </html>

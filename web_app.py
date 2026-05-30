@@ -2771,14 +2771,18 @@ def gantt():
 
     conn = get_db_connection()
 
-    projects = conn.execute("""
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
     SELECT
         projects.*,
         clients.name AS client_name
     FROM projects
     LEFT JOIN clients
     ON projects.client_id = clients.id
-    WHERE projects.user_id = ?
+    WHERE projects.user_id = %s
     ORDER BY
         CASE
             WHEN projects.start_date IS NULL OR projects.start_date = ''
@@ -2787,13 +2791,55 @@ def gantt():
         END ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
+
+    gantt_projects = []
+
+    for project in projects:
+
+        cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        WHERE project_id = %s
+        """, (
+            project["id"],
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        WHERE project_id = %s
+        AND status = 'Completed'
+        """, (
+            project["id"],
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        if total_tasks > 0:
+            progress = round((completed_tasks / total_tasks) * 100)
+        else:
+            progress = 0
+
+        gantt_projects.append({
+            "id": project["id"],
+            "name": project["name"],
+            "status": project["status"],
+            "client_name": project["client_name"],
+            "start_date": project["start_date"],
+            "end_date": project["end_date"],
+            "progress": progress
+        })
 
     conn.close()
 
     return render_template(
         "gantt.html",
-        projects=projects,
+        projects=gantt_projects,
         current_date=str(date.today())
     )
 
