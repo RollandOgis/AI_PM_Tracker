@@ -54,43 +54,47 @@
 
         </div>
 
-        <div class="smart-card">
+        <div class="workload-summary-grid">
 
-            <h3>Resource Health Summary</h3>
+            <div class="project-card">
 
-            <div class="smart-insight">
+                <h3>Resource Health Summary</h3>
 
-                <p>
-                    Average Utilisation:
-                    <strong>{{ average_utilisation }}%</strong>
-                </p>
+                <div class="smart-insight">
 
-                <p>
-                    Available Capacity:
-                    <strong>{{ average_capacity }}%</strong>
-                </p>
+                    <p>
+                        Average Utilisation:
+                        <strong>{{ average_utilisation }}%</strong>
+                    </p>
 
-                <p>
-                    Most Loaded Resource:
-                    <strong>{{ most_loaded["name"] }}</strong>
-                    ({{ most_loaded["utilisation"] }}%)
-                </p>
+                    <p>
+                        Available Capacity:
+                        <strong>{{ average_capacity }}%</strong>
+                    </p>
+
+                    <p>
+                        Most Loaded Resource:
+                        <strong>{{ most_loaded["name"] }}</strong>
+                        ({{ most_loaded["utilisation"] }}%)
+                    </p>
+
+                </div>
 
             </div>
 
-        </div>
+            <div class="project-card">
 
-        <div class="smart-card">
+                <h3>Smart Workload Insights</h3>
 
-            <h3>Smart Workload Insights</h3>
+                {% for insight in smart_insights %}
 
-            {% for insight in smart_insights %}
+                    <div class="smart-insight">
+                        {{ insight }}
+                    </div>
 
-                <div class="smart-insight">
-                    {{ insight }}
-                </div>
+                {% endfor %}
 
-            {% endfor %}
+            </div>
 
         </div>
 
@@ -107,17 +111,23 @@
                         <h3>{{ item["name"] }}</h3>
 
                         {% if item["utilisation"] >= 80 %}
+
                             <span class="badge badge-red">
                                 Overloaded
                             </span>
+
                         {% elif item["utilisation"] >= 50 %}
+
                             <span class="badge badge-yellow">
                                 Balanced
                             </span>
+
                         {% else %}
+
                             <span class="badge badge-green">
                                 Capacity Available
                             </span>
+
                         {% endif %}
 
                     </div>
@@ -129,53 +139,62 @@
                 <div class="budget-section">
 
                     <div class="budget-row">
+
                         <span>Total Tasks</span>
-                        <strong>{{ item["total_tasks"] }}</strong>
+
+                        <strong>
+                            {{ item["total_tasks"] }}
+                        </strong>
+
                     </div>
 
                     <div class="budget-row">
+
                         <span>Utilisation</span>
 
                         {% if item["utilisation"] >= 80 %}
+
                             <strong class="health-warning">
                                 {{ item["utilisation"] }}%
                             </strong>
+
                         {% elif item["utilisation"] >= 50 %}
+
                             <strong class="health-neutral">
                                 {{ item["utilisation"] }}%
                             </strong>
+
                         {% else %}
+
                             <strong class="health-good">
                                 {{ item["utilisation"] }}%
                             </strong>
+
                         {% endif %}
 
                     </div>
 
                     <div class="budget-row">
+
                         <span>Available Capacity</span>
+
                         <strong>
                             {{ 100 - item["utilisation"] }}%
                         </strong>
+
                     </div>
 
                 </div>
 
                 <div class="progress-wrapper">
 
-                   <div class="progress-fill"
-                    data-width="{{ item['utilisation'] }}">
-                   </div>
+                    <div
+                        class="progress-fill"
+                        data-width="{{ item['utilisation'] }}"
+                    >
+                    </div>
 
-                        <script>
-                         document.querySelectorAll(".progress-fill").forEach(function(bar) {
-                          bar.style.width = bar.dataset.width + "%";
-                          });
-                        </script>
-
-                         </div>
-
-            </div>
+                </div>
 
                 {% if item["utilisation"] >= 80 %}
 
@@ -206,6 +225,16 @@
     </div>
 
 </div>
+
+<script>
+
+document.querySelectorAll(".progress-fill").forEach(function(bar) {
+
+    bar.style.width = bar.dataset.width + "%";
+
+});
+
+</script>
 
 </body>
 </html>
