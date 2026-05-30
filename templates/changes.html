@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -37,7 +38,65 @@
 
         </div>
 
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Changes</h3>
+                <p>{{ changes|length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Pending</h3>
+                <p>{{ changes | selectattr("approval_status","equalto","Pending") | list | length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Approved</h3>
+                <p>{{ changes | selectattr("approval_status","equalto","Approved") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Rejected</h3>
+                <p>{{ changes | selectattr("approval_status","equalto","Rejected") | list | length }}</p>
+            </div>
+
+        </div>
+
         {% if changes %}
+
+            {% set latest_change = changes[0] %}
+
+            <div class="smart-card">
+
+                <h3>Latest Change Request</h3>
+
+                <div class="smart-insight">
+
+                    <strong>{{ latest_change["title"] }}</strong>
+
+                    <p>
+                        Project:
+                        {{ latest_change["project_name"] or "No Project" }}
+                    </p>
+
+                    <p>
+                        Requested By:
+                        {{ latest_change["requested_by"] }}
+                    </p>
+
+                    <p>
+                        Status:
+                        {{ latest_change["approval_status"] }}
+                    </p>
+
+                    <p>
+                        Impact:
+                        {{ latest_change["impact"] }}
+                    </p>
+
+                </div>
+
+            </div>
 
             <div class="projects-grid">
 
@@ -77,68 +136,40 @@
 
                         </div>
 
-
                         <div class="smart-insight">
 
                             {{ change["description"] }}
 
                         </div>
 
-
                         <div class="budget-section">
 
                             <div class="budget-row">
-
                                 <span>Project</span>
-
-                                <strong>
-                                    {{ change["project_name"] or "No Project" }}
-                                </strong>
-
+                                <strong>{{ change["project_name"] or "No Project" }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Impact</span>
-
-                                <strong>
-                                    {{ change["impact"] }}
-                                </strong>
-
+                                <strong>{{ change["impact"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Requested By</span>
-
-                                <strong>
-                                    {{ change["requested_by"] }}
-                                </strong>
-
+                                <strong>{{ change["requested_by"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Status</span>
-
-                                <strong>
-                                    {{ change["approval_status"] }}
-                                </strong>
-
+                                <strong>{{ change["approval_status"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Created</span>
-
-                                <strong>
-                                    {{ change["created_at"] }}
-                                </strong>
-
+                                <strong>{{ change["created_at"] }}</strong>
                             </div>
 
                         </div>
-
 
                         <div class="project-actions">
 
@@ -155,14 +186,13 @@
 
                         </div>
 
-
                         <div class="smart-insight">
 
                             <strong>Implementation Plan:</strong>
 
                             <br><br>
 
-                            {{ change["implementation_plan"] }}
+                            {{ change["implementation_plan"] or "No implementation plan provided." }}
 
                         </div>
 
