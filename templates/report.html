@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Report - AI PM Tracker</title>
+    <title>Executive Report - AI PM Tracker</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
             background: #f4f6f8;
             margin: 0;
             padding: 20px;
+            color: #111827;
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: auto;
         }
 
@@ -24,7 +26,12 @@
 
         h1 {
             margin: 0;
-            color: #222;
+            color: #111827;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-top: 8px;
         }
 
         .nav a,
@@ -35,7 +42,7 @@
             text-decoration: none;
             background: #2563eb;
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
         }
 
@@ -44,45 +51,82 @@
             background: #1d4ed8;
         }
 
+        .section {
+            margin-top: 30px;
+        }
+
+        .section h2 {
+            margin-bottom: 15px;
+            color: #111827;
+        }
+
         .cards {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+            gap: 18px;
             margin-bottom: 25px;
         }
 
         .card {
             background: white;
-            padding: 18px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
         }
 
         .card h3 {
             margin: 0 0 10px;
-            color: #555;
-            font-size: 15px;
+            color: #6b7280;
+            font-size: 14px;
         }
 
         .card p {
             margin: 0;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: bold;
-            color: #111;
+            color: #111827;
+        }
+
+        .green-card {
+            border-left: 6px solid #22c55e;
+            background: #f0fdf4;
+        }
+
+        .amber-card {
+            border-left: 6px solid #f59e0b;
+            background: #fffbeb;
+        }
+
+        .red-card {
+            border-left: 6px solid #ef4444;
+            background: #fef2f2;
+        }
+
+        .blue-card {
+            border-left: 6px solid #3b82f6;
+            background: #eff6ff;
+        }
+
+        .summary-box {
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            line-height: 1.7;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
-            border-radius: 10px;
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
         }
 
         th, td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
+            padding: 13px;
+            border-bottom: 1px solid #e5e7eb;
             text-align: left;
             font-size: 14px;
         }
@@ -96,15 +140,43 @@
             background: #f9fafb;
         }
 
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-amber {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
         .empty {
             background: white;
             padding: 25px;
-            border-radius: 10px;
+            border-radius: 14px;
             text-align: center;
             color: #666;
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 900px) {
             .top-bar {
                 display: block;
             }
@@ -128,12 +200,19 @@
         }
     </style>
 </head>
+
 <body>
 
 <div class="container">
 
     <div class="top-bar">
-        <h1>Project Report</h1>
+
+        <div>
+            <h1>Executive Project Report</h1>
+            <p class="subtitle">
+                Portfolio performance report generated on {{ current_date }}
+            </p>
+        </div>
 
         <div class="nav">
             <a href="/">Dashboard</a>
@@ -142,75 +221,165 @@
             <a href="/calendar">Calendar</a>
             <a href="/clients">Clients</a>
             <a href="/pdf-report">Download PDF</a>
-            <a href="/report">Report</a>
             <a href="/export-tasks">Export CSV</a>
         </div>
+
     </div>
 
-    <p>Report generated on: {{ current_date }}</p>
+    <div class="section">
 
-    <div class="cards">
-        <div class="card">
-            <h3>Total Tasks</h3>
-            <p>{{ total_tasks }}</p>
+        <div class="cards">
+
+            <div class="card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ projects|length }}</p>
+            </div>
+
+            <div class="card green-card">
+                <h3>Total Tasks</h3>
+                <p>{{ total_tasks }}</p>
+            </div>
+
+            <div class="card green-card">
+                <h3>Completed Tasks</h3>
+                <p>{{ completed_tasks }}</p>
+            </div>
+
+            <div class="card red-card">
+                <h3>Overdue Tasks</h3>
+                <p>{{ overdue_tasks }}</p>
+            </div>
+
+            <div class="card blue-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
+            </div>
+
         </div>
 
-        <div class="card">
-            <h3>Completed Tasks</h3>
-            <p>{{ completed_tasks }}</p>
-        </div>
+    </div>
 
-        <div class="card">
-            <h3>Overdue Tasks</h3>
-            <p>{{ overdue_tasks }}</p>
-        </div>
+    <div class="section">
+        <h2>Executive Summary</h2>
 
-        <div class="card">
-            <h3>Completion Rate</h3>
-            <p>{{ completion_rate }}%</p>
+        <div class="summary-box">
+            <p>
+                This report provides a high-level overview of the current project portfolio,
+                including task completion, delivery progress, overdue work, and upcoming
+                project activity.
+            </p>
+
+            <p>
+                The portfolio currently contains <strong>{{ projects|length }}</strong> project(s)
+                and <strong>{{ total_tasks }}</strong> task(s), with an overall completion rate of
+                <strong>{{ completion_rate }}%</strong>.
+            </p>
+
+            {% if overdue_tasks > 0 %}
+                <p>
+                    <strong>Attention required:</strong> There are {{ overdue_tasks }} overdue task(s)
+                    that may affect delivery timelines.
+                </p>
+            {% else %}
+                <p>
+                    No overdue tasks are currently recorded.
+                </p>
+            {% endif %}
         </div>
     </div>
 
-    <h2>Tasks</h2>
+    <div class="section">
+        <h2>Project Portfolio</h2>
 
-    {% if tasks %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Project</th>
-                    <th>Task</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Due Date</th>
-                    <th>Assigned To</th>
-                    <th>Attachment</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for task in tasks %}
+        {% if projects %}
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ task["project_name"] }}</td>
-                        <td>{{ task["title"] }}</td>
-                        <td>{{ task["priority"] }}</td>
-                        <td>{{ task["status"] }}</td>
-                        <td>{{ task["due_date"] }}</td>
-                        <td>{{ task["assigned_to"] or "Unassigned" }}</td>
-                        <td>
-                            {% if task["attachment_url"] %}
-                                <a href="{{ task['attachment_url'] }}" target="_blank">Open</a>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <div class="empty">
-            No tasks found for this report.
-        </div>
-    {% endif %}
+                </thead>
+
+                <tbody>
+                    {% for project in projects %}
+                        <tr>
+                            <td>{{ project["name"] }}</td>
+                            <td>
+                                {% if project["status"] == "Completed" %}
+                                    <span class="badge badge-green">Completed</span>
+                                {% elif project["status"] == "In Progress" %}
+                                    <span class="badge badge-blue">In Progress</span>
+                                {% else %}
+                                    <span class="badge badge-amber">{{ project["status"] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ project["start_date"] }}</td>
+                            <td>{{ project["end_date"] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty">No projects found.</div>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <h2>Task Delivery Summary</h2>
+
+        {% if tasks %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Task</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th>Assigned To</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for task in tasks %}
+                        <tr>
+                            <td>{{ task["project_name"] }}</td>
+                            <td>{{ task["title"] }}</td>
+
+                            <td>
+                                {% if task["priority"] == "High" %}
+                                    <span class="badge badge-red">High</span>
+                                {% elif task["priority"] == "Medium" %}
+                                    <span class="badge badge-amber">Medium</span>
+                                {% else %}
+                                    <span class="badge badge-green">Low</span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if task["status"] == "Completed" %}
+                                    <span class="badge badge-green">Completed</span>
+                                {% elif task["status"] == "In Progress" %}
+                                    <span class="badge badge-blue">In Progress</span>
+                                {% else %}
+                                    <span class="badge badge-amber">{{ task["status"] }}</span>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ task["due_date"] }}</td>
+                            <td>{{ task["assigned_to"] or "Unassigned" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty">
+                No tasks found for this report.
+            </div>
+        {% endif %}
+    </div>
 
 </div>
 
