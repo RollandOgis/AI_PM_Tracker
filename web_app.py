@@ -4439,7 +4439,9 @@ def team_utilisation():
         FROM team_members
         WHERE user_id = %s
         ORDER BY name
-    """, (session["user_id"],))
+    """, (
+        session["user_id"],
+    ))
 
     members = cursor.fetchall()
 
@@ -4448,17 +4450,21 @@ def team_utilisation():
     for member in members:
 
         cursor.execute("""
-            SELECT COUNT(*) AS total_tasks
-            FROM task_team_members
-            JOIN tasks
-            ON task_team_members.task_id = tasks.id
+            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+            FROM tasks
             JOIN projects
             ON tasks.project_id = projects.id
-            WHERE task_team_members.team_member_id = %s
-            AND projects.user_id = %s
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
         """, (
-            member["id"],
-            session["user_id"]
+            session["user_id"],
+            member["name"],
+            member["id"]
         ))
 
         total_tasks = cursor.fetchone()["total_tasks"]
@@ -4475,13 +4481,13 @@ def team_utilisation():
     if utilisation_data:
 
         average_utilisation = round(
-            sum(x["utilisation"] for x in utilisation_data)
+            sum(item["utilisation"] for item in utilisation_data)
             / len(utilisation_data)
         )
 
         most_loaded = max(
             utilisation_data,
-            key=lambda x: x["utilisation"]
+            key=lambda item: item["utilisation"]
         )
 
     else:
