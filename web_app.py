@@ -5984,6 +5984,152 @@ def project_health():
             average_health_score=average_health_score
         )
 
+@app.route("/executive-dashboard")
+def executive_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (session["user_id"],))
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (session["user_id"],))
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Completed'
+    """, (session["user_id"],))
+    completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    if total_tasks > 0:
+        portfolio_health = round((completed_tasks / total_tasks) * 100)
+    else:
+        portfolio_health = 0
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_risks
+        FROM risks
+        WHERE user_id = %s
+    """, (session["user_id"],))
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS high_risks
+        FROM risks
+        WHERE user_id = %s
+        AND severity_score >= 6
+    """, (session["user_id"],))
+    high_risks = cursor.fetchone()["high_risks"]
+
+    risk_health = max(100 - (high_risks * 20), 0)
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_benefits
+        FROM benefits
+        WHERE user_id = %s
+    """, (session["user_id"],))
+    total_benefits = cursor.fetchone()["total_benefits"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS realised_benefits
+        FROM benefits
+        WHERE user_id = %s
+        AND status = 'Realised'
+    """, (session["user_id"],))
+    realised_benefits = cursor.fetchone()["realised_benefits"]
+
+    if total_benefits > 0:
+        benefits_health = round((realised_benefits / total_benefits) * 100)
+    else:
+        benefits_health = 0
+
+    cursor.execute("""
+        SELECT
+            SUM(budget_amount) AS total_budget,
+            SUM(actual_cost) AS total_actual
+        FROM budgets
+        WHERE user_id = %s
+    """, (session["user_id"],))
+    budget_data = cursor.fetchone()
+
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual = float(budget_data["total_actual"] or 0)
+
+    if total_budget > 0:
+        financial_health = max(100 - round((total_actual / total_budget) * 100), 0)
+    else:
+        financial_health = 0
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_team_members
+        FROM team_members
+        WHERE user_id = %s
+    """, (session["user_id"],))
+    total_team_members = cursor.fetchone()["total_team_members"]
+
+    resource_health = 100
+
+    if total_team_members == 0:
+        resource_health = 0
+
+    overall_executive_health = round(
+        (
+            portfolio_health +
+            financial_health +
+            resource_health +
+            risk_health +
+            benefits_health
+        ) / 5
+    )
+
+    if overall_executive_health >= 75:
+        executive_status = "Green"
+    elif overall_executive_health >= 50:
+        executive_status = "Amber"
+    else:
+        executive_status = "Red"
+
+    conn.close()
+
+    return render_template(
+        "executive_dashboard.html",
+        total_projects=total_projects,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        total_risks=total_risks,
+        high_risks=high_risks,
+        total_benefits=total_benefits,
+        realised_benefits=realised_benefits,
+        portfolio_health=portfolio_health,
+        financial_health=financial_health,
+        resource_health=resource_health,
+        risk_health=risk_health,
+        benefits_health=benefits_health,
+        overall_executive_health=overall_executive_health,
+        executive_status=executive_status
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Executive Dashboard</h1>
+
+                <p class="dashboard-subtitle">
+                    Enterprise portfolio overview across delivery, governance, finance, resources and benefits.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+
+                <h3>Projects</h3>
+
+                <p>{{ total_projects }}</p>
+
+            </div>
+
+            <div class="stat-card green-card">
+
+                <h3>Portfolio Health</h3>
+
+                <p>{{ portfolio_health }}%</p>
+
+            </div>
+
+            <div class="stat-card amber-card">
+
+                <h3>Financial Health</h3>
+
+                <p>{{ financial_health }}%</p>
+
+            </div>
+
+            <div class="stat-card red-card">
+
+                <h3>Risk Health</h3>
+
+                <p>{{ risk_health }}%</p>
+
+            </div>
+
+        </div>
+
+        <div class="workload-summary-grid">
+
+            <div class="project-card">
+
+                <h3>Executive Health Summary</h3>
+
+                <div class="smart-insight">
+
+                    <p>
+
+                        Overall Executive Health:
+
+                        <strong>
+                            {{ overall_executive_health }}%
+                        </strong>
+
+                    </p>
+
+                    <p>
+
+                        Status:
+
+                        <strong>
+                            {{ executive_status }}
+                        </strong>
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Executive Recommendation</h3>
+
+                <div class="smart-insight">
+
+                    {% if executive_status == "Green" %}
+
+                        Portfolio performance is healthy. Continue monitoring delivery, finances and risks.
+
+                    {% elif executive_status == "Amber" %}
+
+                        Portfolio performance is moderate. Focus attention on risk exposure, delivery slippage and budget consumption.
+
+                    {% else %}
+
+                        Portfolio performance requires immediate management intervention and recovery planning.
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            <div class="project-card">
+
+                <h3>Portfolio Performance</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Total Tasks</span>
+                        <strong>{{ total_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completed Tasks</span>
+                        <strong>{{ completed_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Portfolio Health</span>
+                        <strong>{{ portfolio_health }}%</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Risk Overview</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Total Risks</span>
+                        <strong>{{ total_risks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>High Risks</span>
+                        <strong>{{ high_risks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Health</span>
+                        <strong>{{ risk_health }}%</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Benefits Overview</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Total Benefits</span>
+                        <strong>{{ total_benefits }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Realised Benefits</span>
+                        <strong>{{ realised_benefits }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Benefits Health</span>
+                        <strong>{{ benefits_health }}%</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Resource Overview</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Resource Health</span>
+                        <strong>{{ resource_health }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Executive Status</span>
+                        <strong>{{ executive_status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Financial Health</span>
+                        <strong>{{ financial_health }}%</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
