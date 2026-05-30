@@ -2191,3 +2191,32 @@ body.dark-ready {
         grid-template-columns: 1fr;
     }
 }
+
+.heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.heatmap-table th,
+.heatmap-table td {
+    border: 1px solid #ddd;
+    padding: 18px;
+    text-align: center;
+}
+
+.heat-green {
+    background: #22c55e;
+}
+
+.heat-yellow {
+    background: #facc15;
+}
+
+.heat-orange {
+    background: #f97316;
+}
+
+.heat-red {
+    background: #ef4444;
+}

@@ -37,6 +37,68 @@
 
         </div>
 
+                <div class="stats-grid">
+
+            <div class="stat-card red-card">
+                <h3>Total Risks</h3>
+                <p>{{ risks|length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>High Risks</h3>
+                <p>{{ risks | selectattr("severity_score", "ge", 6) | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Medium Risks</h3>
+                <p>{{ risks | selectattr("severity_score", "ge", 3) | rejectattr("severity_score", "ge", 6) | list | length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Low Risks</h3>
+                <p>{{ risks | rejectattr("severity_score", "ge", 3) | list | length }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Risk Heatmap</h3>
+
+            <table class="heatmap-table">
+                <tr>
+                    <th></th>
+                    <th>Low Impact</th>
+                    <th>Medium Impact</th>
+                    <th>High Impact</th>
+                </tr>
+
+                <tr>
+                    <th>Low Probability</th>
+                    <td class="heat-green"></td>
+                    <td class="heat-yellow"></td>
+                    <td class="heat-orange"></td>
+                </tr>
+
+                <tr>
+                    <th>Medium Probability</th>
+                    <td class="heat-yellow"></td>
+                    <td class="heat-orange"></td>
+                    <td class="heat-red"></td>
+                </tr>
+
+                <tr>
+                    <th>High Probability</th>
+                    <td class="heat-orange"></td>
+                    <td class="heat-red"></td>
+                    <td class="heat-red"></td>
+                </tr>
+            </table>
+
+        </div>
+
+        {% if risks %}
+
 
         {% if risks %}
 
