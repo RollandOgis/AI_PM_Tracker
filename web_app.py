@@ -6138,6 +6138,24 @@ def executive_dashboard():
     else:
         raid_health = "Red"
 
+    cursor.execute("""
+                   SELECT COUNT(*) AS healthy_projects
+                   FROM projects
+                   WHERE user_id = %s
+                     AND status = 'Completed'
+                   """, (session["user_id"],))
+
+    healthy_projects = cursor.fetchone()["healthy_projects"]
+
+    cursor.execute("""
+                   SELECT COUNT(*) AS active_projects
+                   FROM projects
+                   WHERE user_id = %s
+                     AND status = 'In Progress'
+                   """, (session["user_id"],))
+
+    active_projects = cursor.fetchone()["active_projects"]
+
     conn.close()
 
     return render_template(
