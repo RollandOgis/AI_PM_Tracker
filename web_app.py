@@ -562,6 +562,50 @@ def init_db():
                    )
                    """)
 
+    # Stakeholders table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS stakeholders
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       name
+                       TEXT,
+
+                       role
+                       TEXT,
+
+                       influence
+                       TEXT,
+
+                       interest
+                       TEXT,
+
+                       communication_plan
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -4796,6 +4840,93 @@ def team_utilisation():
         utilisation_data=utilisation_data,
         average_utilisation=average_utilisation,
         most_loaded=most_loaded
+    )
+
+@app.route("/stakeholders")
+def stakeholders():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    stakeholders = conn.execute("""
+    SELECT
+        stakeholders.*,
+        projects.name AS project_name
+    FROM stakeholders
+    LEFT JOIN projects
+    ON stakeholders.project_id = projects.id
+    WHERE stakeholders.user_id = %s
+    ORDER BY stakeholders.created_at DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "stakeholders.html",
+        stakeholders=stakeholders
+    )
+
+@app.route("/add-stakeholder", methods=["GET", "POST"])
+def add_stakeholder():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = %s
+    ORDER BY name ASC
+    """, (session["user_id"],))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+        INSERT INTO stakeholders (
+            user_id,
+            project_id,
+            name,
+            role,
+            influence,
+            interest,
+            communication_plan,
+            owner,
+            status,
+            created_at
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("name"),
+            request.form.get("role"),
+            request.form.get("influence"),
+            request.form.get("interest"),
+            request.form.get("communication_plan"),
+            request.form.get("owner"),
+            request.form.get("status"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/stakeholders")
+
+    conn.close()
+
+    return render_template(
+        "add_stakeholder.html",
+        projects=projects
     )
 
 if __name__ == "__main__":
