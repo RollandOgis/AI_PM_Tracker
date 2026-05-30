@@ -3911,12 +3911,18 @@ def team():
 
         blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
+        if total_tasks > 0:
+            utilisation = round((active_tasks / total_tasks) * 100)
+        else:
+            utilisation = 0
+
         team_data.append({
             "member": member,
             "total_tasks": total_tasks,
             "completed_tasks": completed_tasks,
             "active_tasks": active_tasks,
-            "blocked_tasks": blocked_tasks
+            "blocked_tasks": blocked_tasks,
+            "utilisation": utilisation
         })
 
     conn.close()
