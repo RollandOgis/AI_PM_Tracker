@@ -3482,7 +3482,13 @@ def issues():
     LEFT JOIN projects
     ON issues.project_id = projects.id
     WHERE issues.user_id = ?
-    ORDER BY issues.created_at DESC
+    ORDER BY
+        CASE
+            WHEN issues.priority = 'High' THEN 1
+            WHEN issues.priority = 'Medium' THEN 2
+            ELSE 3
+        END,
+        issues.created_at DESC
     """, (
         session["user_id"],
     )).fetchall()
