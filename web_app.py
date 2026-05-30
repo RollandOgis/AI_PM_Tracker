@@ -3484,6 +3484,10 @@ def issues():
     WHERE issues.user_id = ?
     ORDER BY
         CASE
+            WHEN issues.status IN ('Resolved', 'Closed') THEN 2
+            ELSE 1
+        END,
+        CASE
             WHEN issues.priority = 'High' THEN 1
             WHEN issues.priority = 'Medium' THEN 2
             ELSE 3
