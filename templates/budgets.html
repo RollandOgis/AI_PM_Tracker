@@ -163,125 +163,106 @@
                     budget["budget_amount"] -
                     budget["actual_cost"] %}
 
-                    <div class="project-card">
+                   <div class="project-card">
 
-                        <div class="project-top">
+    <div class="project-top">
 
-                            <div>
+        <div>
 
-                                <h3>
-                                    {{ budget["project_name"] }}
-                                </h3>
+            <h3>
+                {{ budget["project_name"] }}
+            </h3>
 
-                                {% if variance >= 0 %}
+            {% if variance >= 0 %}
 
-                                    <span class="badge badge-green">
-                                        On Budget
-                                    </span>
+                <span class="badge badge-green">
+                    On Budget
+                </span>
 
-                                {% else %}
+            {% else %}
 
-                                    <span class="badge badge-red">
-                                        Over Budget
-                                    </span>
+                <span class="badge badge-red">
+                    Over Budget
+                </span>
 
-                                {% endif %}
+            {% endif %}
 
-                            </div>
-
-                        </div>
-
-                        <div class="budget-section">
-
-    <div class="budget-row">
-
-        <span>Budget</span>
-
-        <strong>
-            £{{ budget["budget_amount"] }}
-        </strong>
+        </div>
 
     </div>
 
-    <div class="budget-row">
+    <div class="budget-section">
 
-        <span>Actual Cost</span>
+        <div class="budget-row">
+            <span>Budget</span>
+            <strong>
+                £{{ "{:,.0f}".format(budget["budget_amount"]) }}
+            </strong>
+        </div>
 
-        <strong>
-            £{{ budget["actual_cost"] }}
-        </strong>
+        <div class="budget-row">
+            <span>Actual Cost</span>
+            <strong>
+                £{{ "{:,.0f}".format(budget["actual_cost"]) }}
+            </strong>
+        </div>
 
-    </div>
+        <div class="budget-row">
+            <span>Forecast Cost</span>
+            <strong>
+                £{{ "{:,.0f}".format(budget["forecast_cost"]) }}
+            </strong>
+        </div>
 
-    <div class="budget-row">
+        <div class="budget-row">
+            <span>Variance</span>
+            <strong>
+                £{{ "{:,.0f}".format(variance) }}
+            </strong>
+        </div>
 
-        <span>Forecast Cost</span>
+        <div class="budget-row">
+            <span>Approved By</span>
+            <strong>
+                {{ budget["approved_by"] }}
+            </strong>
+        </div>
 
-        <strong>
-            £{{ budget["forecast_cost"] }}
-        </strong>
-
-    </div>
-
-    <div class="budget-row">
-
-        <span>Variance</span>
-
-        <strong>
-            £{{ variance }}
-        </strong>
-
-    </div>
-
-    <div class="budget-row">
-
-        <span>Approved By</span>
-
-        <strong>
-            {{ budget["approved_by"] }}
-        </strong>
-
-    </div>
-
-    <div class="budget-row">
-
-        <span>Status</span>
-
-        <strong>
-            {{ budget["status"] }}
-        </strong>
+        <div class="budget-row">
+            <span>Status</span>
+            <strong>
+                {{ budget["status"] }}
+            </strong>
+        </div>
 
     </div>
-
-</div>
-
-<div class="smart-insight">
-
-    <strong>
-        Remaining Budget:
-        £{{ "{:,.0f}".format(variance) }}
-    </strong>
-
-</div>
-
-{% if variance < 0 %}
-
-    <div class="alert-box alert-danger">
-
-        Budget exceeded.
-        Review project spend immediately.
-
-    </div>
-
-{% else %}
 
     <div class="smart-insight">
 
-        Project remains within budget allocation.
+        <strong>
+            Remaining Budget:
+            £{{ "{:,.0f}".format(variance) }}
+        </strong>
 
     </div>
 
-{% endif %}
+    {% if variance < 0 %}
+
+        <div class="alert-box alert-danger">
+            Budget exceeded. Review project spend immediately.
+        </div>
+
+    {% else %}
+
+        <div class="smart-insight">
+            Project remains within budget allocation.
+        </div>
+
+    {% endif %}
+
+</div>
+
+
 
                     </div>
 
