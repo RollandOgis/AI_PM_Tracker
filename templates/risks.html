@@ -43,23 +43,17 @@
 
             <div class="stat-card red-card">
                 <h3>High Risks</h3>
-                <p>
-                    {{ risks | selectattr("severity_score", "ge", 6) | list | length }}
-                </p>
+                <p>{{ risks | selectattr("severity_score", "ge", 6) | list | length }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Medium Risks</h3>
-                <p>
-                    {{ risks | selectattr("severity_score", "ge", 3) | rejectattr("severity_score", "ge", 6) | list | length }}
-                </p>
+                <p>{{ risks | selectattr("severity_score", "ge", 3) | rejectattr("severity_score", "ge", 6) | list | length }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Low Risks</h3>
-                <p>
-                    {{ risks | rejectattr("severity_score", "ge", 3) | list | length }}
-                </p>
+                <p>{{ risks | rejectattr("severity_score", "ge", 3) | list | length }}</p>
             </div>
 
         </div>
@@ -114,61 +108,60 @@
 
         <div class="stats-grid">
 
-    <div class="stat-card red-card">
-        <h3>Open Risks</h3>
-        <p>
-            {{ risks | rejectattr("status", "equalto", "Closed") | list | length }}
-        </p>
-    </div>
+            <div class="stat-card red-card">
+                <h3>Open Risks</h3>
+                <p>{{ risks | rejectattr("status", "equalto", "Closed") | list | length }}</p>
+            </div>
 
-    <div class="stat-card green-card">
-        <h3>Closed Risks</h3>
-        <p>
-            {{ risks | selectattr("status", "equalto", "Closed") | list | length }}
-        </p>
-    </div>
+            <div class="stat-card green-card">
+                <h3>Closed Risks</h3>
+                <p>{{ risks | selectattr("status", "equalto", "Closed") | list | length }}</p>
+            </div>
 
-    <div class="stat-card amber-card">
-        <h3>Mitigated Risks</h3>
-        <p>
-            {{ risks | selectattr("status", "equalto", "Mitigated") | list | length }}
-        </p>
-    </div>
+            <div class="stat-card amber-card">
+                <h3>Mitigated Risks</h3>
+                <p>{{ risks | selectattr("status", "equalto", "Mitigated") | list | length }}</p>
+            </div>
 
-</div>
+        </div>
 
         {% if risks %}
 
-<div class="smart-card">
+            <div class="smart-card highest-risk-card">
 
-    <h3>Highest Risk</h3>
+                <h3>Highest Risk</h3>
 
-    {% set top_risk = risks[0] %}
+                {% set top_risk = risks[0] %}
 
-    <div class="smart-insight">
+                <div class="smart-insight">
 
-        <strong>{{ top_risk["title"] }}</strong>
+                    <strong>{{ top_risk["title"] }}</strong>
 
-        <p>
-            Severity Score:
-            {{ top_risk["severity_score"] }}
-        </p>
+                    <p>
+                        Severity Score:
+                        {{ top_risk["severity_score"] }}
+                    </p>
 
-        <p>
-            Owner:
-            {{ top_risk["owner"] }}
-        </p>
+                    <p>
+                        Owner:
+                        {{ top_risk["owner"] }}
+                    </p>
 
-        <p>
-            Status:
-            {{ top_risk["status"] }}
-        </p>
+                    <p>
+                        Status:
+                        {{ top_risk["status"] }}
+                    </p>
 
-    </div>
+                    <p>
+                        Project:
+                        {{ top_risk["project_name"] or "No Project" }}
+                    </p>
 
-</div>
+                </div>
 
-{% endif %}
+            </div>
+
+        {% endif %}
 
         {% if risks %}
 
@@ -182,28 +175,20 @@
 
                             <div>
 
-                                <h3>
-                                    {{ risk["title"] }}
-                                </h3>
+                                <h3>{{ risk["title"] }}</h3>
 
                                 {% if risk["severity_score"] >= 6 %}
-
                                     <span class="badge badge-red">
                                         High Risk
                                     </span>
-
                                 {% elif risk["severity_score"] >= 3 %}
-
                                     <span class="badge badge-yellow">
                                         Medium Risk
                                     </span>
-
                                 {% else %}
-
                                     <span class="badge badge-green">
                                         Low Risk
                                     </span>
-
                                 {% endif %}
 
                             </div>
@@ -217,63 +202,33 @@
                         <div class="budget-section">
 
                             <div class="budget-row">
-
                                 <span>Project</span>
-
-                                <strong>
-                                    {{ risk["project_name"] or "No Project" }}
-                                </strong>
-
+                                <strong>{{ risk["project_name"] or "No Project" }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Probability</span>
-
-                                <strong>
-                                    {{ risk["probability"] }}
-                                </strong>
-
+                                <strong>{{ risk["probability"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Impact</span>
-
-                                <strong>
-                                    {{ risk["impact"] }}
-                                </strong>
-
+                                <strong>{{ risk["impact"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Severity Score</span>
-
-                                <strong>
-                                    {{ risk["severity_score"] }}
-                                </strong>
-
+                                <strong>{{ risk["severity_score"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Owner</span>
-
-                                <strong>
-                                    {{ risk["owner"] }}
-                                </strong>
-
+                                <strong>{{ risk["owner"] }}</strong>
                             </div>
 
                             <div class="budget-row">
-
                                 <span>Status</span>
-
-                                <strong>
-                                    {{ risk["status"] }}
-                                </strong>
-
+                                <strong>{{ risk["status"] }}</strong>
                             </div>
 
                         </div>
