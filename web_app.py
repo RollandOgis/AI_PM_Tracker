@@ -3521,6 +3521,21 @@ def export_report():
             styles["Heading2"]
         )
     )
+
+    content.append(
+        Paragraph(
+            f"Team Members: {total_team_members}",
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+        Paragraph(
+            f"Available Resources: {total_team_members}",
+            styles["BodyText"]
+        )
+    )
+
     content.append(Spacer(1, 15))
 
     content.append(
@@ -3557,21 +3572,6 @@ def export_report():
             styles["BodyText"]
         )
     )
-    content.append(
-        Paragraph(
-            f"Team Members: {total_team_members}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Available Resources: {total_team_members}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 15))
 
     content.append(Spacer(1, 15))
 
