@@ -80,7 +80,32 @@
 
         </div>
 
+        <div class="project-card">
+
+    <h3>Portfolio Health Recommendation</h3>
+
+    <div class="smart-insight">
+
+        {% if average_health_score >= 75 %}
+
+            Portfolio health is strong. Continue monitoring delivery, risks and budget performance.
+
+        {% elif average_health_score >= 50 %}
+
+            Portfolio health is moderate. Review amber projects and focus on risks, budget pressure and delivery progress.
+
+        {% else %}
+
+            Portfolio health is weak. Immediate management attention is required across schedule, budget and risk areas.
+
+        {% endif %}
+
+    </div>
+
+</div>
+
         {% if project_scores %}
+
 
             <div class="projects-grid">
 
