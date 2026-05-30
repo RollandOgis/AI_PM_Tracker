@@ -80,6 +80,20 @@
 
         </div>
 
+        <div class="smart-card">
+
+            <h3>Smart Workload Insights</h3>
+
+            {% for insight in smart_insights %}
+
+                <div class="smart-insight">
+                    {{ insight }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
         <div class="projects-grid">
 
             {% for item in utilisation_data %}
@@ -149,13 +163,19 @@
 
                 <div class="progress-wrapper">
 
-                    <div
-                        class="progress-fill"
-                        style="width: {{ item['utilisation'] }}%;"
-                    >
-                    </div>
+                   <div class="progress-fill"
+                    data-width="{{ item['utilisation'] }}">
+                   </div>
 
-                </div>
+                        <script>
+                         document.querySelectorAll(".progress-fill").forEach(function(bar) {
+                          bar.style.width = bar.dataset.width + "%";
+                          });
+                        </script>
+
+                         </div>
+
+            </div>
 
                 {% if item["utilisation"] >= 80 %}
 

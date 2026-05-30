@@ -4916,21 +4916,47 @@ def team_utilisation():
         }
 
     overloaded_count = len([
-        x for x in utilisation_data
-        if x["utilisation"] >= 80
+        item for item in utilisation_data
+        if item["utilisation"] >= 80
     ])
 
     balanced_count = len([
-        x for x in utilisation_data
-        if 40 <= x["utilisation"] < 80
+        item for item in utilisation_data
+        if 40 <= item["utilisation"] < 80
     ])
 
     available_count = len([
-        x for x in utilisation_data
-        if x["utilisation"] < 40
+        item for item in utilisation_data
+        if item["utilisation"] < 40
     ])
 
     average_capacity = 100 - average_utilisation
+
+    smart_insights = []
+
+    for member in utilisation_data:
+
+        if member["utilisation"] >= 80:
+
+            smart_insights.append(
+                f'{member["name"]} is overloaded at {member["utilisation"]}% utilisation.'
+            )
+
+        elif member["utilisation"] < 40:
+
+            smart_insights.append(
+                f'{member["name"]} has {100 - member["utilisation"]}% available capacity.'
+            )
+
+    if balanced_count > 0:
+
+        smart_insights.append(
+            f'{balanced_count} team member(s) are operating within a balanced workload range.'
+        )
+
+    smart_insights.append(
+        f'Average team utilisation is {average_utilisation}%.'
+    )
 
     conn.close()
 
@@ -4942,7 +4968,8 @@ def team_utilisation():
         overloaded_count=overloaded_count,
         balanced_count=balanced_count,
         available_count=available_count,
-        most_loaded=most_loaded
+        most_loaded=most_loaded,
+        smart_insights=smart_insights
     )
 
 @app.route("/stakeholders")
