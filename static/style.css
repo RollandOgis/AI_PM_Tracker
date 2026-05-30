@@ -2220,3 +2220,44 @@ body.dark-ready {
 .heat-red {
     background: #ef4444;
 }
+
+.risk-heatmap-card {
+    margin: 26px 0;
+}
+
+.heatmap-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.heatmap-table th,
+.heatmap-table td {
+    border: 1px solid #e5e7eb;
+    padding: 18px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.heat-green {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.heat-yellow {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.heat-orange {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.heat-red {
+    background: #fee2e2;
+    color: #b91c1c;
+}
