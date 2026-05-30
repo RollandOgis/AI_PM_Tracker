@@ -606,6 +606,47 @@ def init_db():
                    )
                    """)
 
+    # Decisions table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS decisions
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       decision_maker
+                       TEXT,
+
+                       impact
+                       TEXT,
+
+                       reason
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       decision_date
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
