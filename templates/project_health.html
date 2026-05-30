@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Health</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Project Health Dashboard</h1>
+
+                <p class="dashboard-subtitle">
+                    Portfolio-wide project health scoring.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for project in project_scores %}
+
+                <div class="project-card">
+
+                    <h3>
+                        {{ project["project_name"] }}
+                    </h3>
+
+                    <div class="budget-section">
+
+                        <div class="budget-row">
+                            <span>Schedule Score</span>
+                            <strong>
+                                {{ project["schedule_score"] }}%
+                            </strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Risk Score</span>
+                            <strong>
+                                {{ project["risk_score"] }}%
+                            </strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Budget Score</span>
+                            <strong>
+                                {{ project["budget_score"] }}%
+                            </strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Overall Health</span>
+                            <strong>
+                                {{ project["overall_health"] }}%
+                            </strong>
+                        </div>
+
+                    </div>
+
+                    {% if project["status"] == "Green" %}
+
+                        <span class="badge badge-green">
+                            Healthy
+                        </span>
+
+                    {% elif project["status"] == "Amber" %}
+
+                        <span class="badge badge-yellow">
+                            Monitor
+                        </span>
+
+                    {% else %}
+
+                        <span class="badge badge-red">
+                            At Risk
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

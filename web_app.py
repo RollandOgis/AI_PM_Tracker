@@ -725,6 +725,9 @@ def init_db():
                    """)
 
 
+
+
+
     conn.commit()
 
     conn.close()
@@ -5802,6 +5805,148 @@ def add_budget():
     return render_template(
         "add_budget.html",
         projects=projects
+    )
+
+@app.route("/project-health")
+def project_health():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    project_scores = []
+
+    for project in projects:
+
+        project_id = project["id"]
+
+        # Tasks
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (project_id,))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (project_id,))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        # Risks
+
+        cursor.execute("""
+            SELECT COUNT(*) AS risk_count
+            FROM risks
+            WHERE project_id = %s
+        """, (project_id,))
+
+        risk_count = cursor.fetchone()["risk_count"]
+
+        # Budget
+
+        cursor.execute("""
+            SELECT *
+            FROM budgets
+            WHERE project_id = %s
+            LIMIT 1
+        """, (project_id,))
+
+        budget = cursor.fetchone()
+
+        schedule_score = 100
+
+        if total_tasks > 0:
+            schedule_score = round(
+                (completed_tasks / total_tasks) * 100
+            )
+
+        risk_score = max(
+            100 - (risk_count * 10),
+            0
+        )
+
+        budget_score = 100
+
+        if budget:
+
+            budget_amount = float(
+                budget["budget_amount"] or 0
+            )
+
+            actual_cost = float(
+                budget["actual_cost"] or 0
+            )
+
+            if budget_amount > 0:
+
+                budget_score = max(
+                    100 - round(
+                        (actual_cost / budget_amount) * 100
+                    ),
+                    0
+                )
+
+        overall_health = round(
+            (
+                schedule_score +
+                risk_score +
+                budget_score
+            ) / 3
+        )
+
+        if overall_health >= 75:
+            status = "Green"
+
+        elif overall_health >= 50:
+            status = "Amber"
+
+        else:
+            status = "Red"
+
+        project_scores.append({
+
+            "project_name": project["name"],
+
+            "schedule_score": schedule_score,
+
+            "risk_score": risk_score,
+
+            "budget_score": budget_score,
+
+            "overall_health": overall_health,
+
+            "status": status
+
+        })
+
+    conn.close()
+
+    return render_template(
+        "project_health.html",
+        project_scores=project_scores
     )
 
 if __name__ == "__main__":
