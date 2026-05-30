@@ -4934,29 +4934,44 @@ def team_utilisation():
 
     smart_insights = []
 
-    for member in utilisation_data:
-
-        if member["utilisation"] >= 80:
-
-            smart_insights.append(
-                f'{member["name"]} is overloaded at {member["utilisation"]}% utilisation.'
-            )
-
-        elif member["utilisation"] < 40:
-
-            smart_insights.append(
-                f'{member["name"]} has {100 - member["utilisation"]}% available capacity.'
-            )
+    if overloaded_count > 0:
+        smart_insights.append(
+            f"{overloaded_count} team member(s) are overloaded and may require workload redistribution."
+        )
 
     if balanced_count > 0:
-
         smart_insights.append(
-            f'{balanced_count} team member(s) are operating within a balanced workload range.'
+            f"{balanced_count} team member(s) are operating within a balanced workload range."
+        )
+
+    if available_count > 0:
+        smart_insights.append(
+            f"{available_count} team member(s) have spare capacity available."
         )
 
     smart_insights.append(
-        f'Average team utilisation is {average_utilisation}%.'
+        f"Average team utilisation is {average_utilisation}%."
     )
+
+    if average_capacity > 50:
+
+        smart_insights.append(
+            "The team currently has significant delivery capacity available."
+        )
+
+    elif average_capacity > 25:
+
+        smart_insights.append(
+            "The team has moderate spare capacity available."
+        )
+
+    else:
+
+        smart_insights.append(
+            "The team is approaching full utilisation."
+        )
+
+
 
     conn.close()
 
