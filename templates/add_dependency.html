@@ -4,22 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Dependency</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Dependency</h1>
+                <p class="dashboard-subtitle">
+                    Record project dependencies that may affect delivery timelines or milestones.
+                </p>
+            </div>
+        </div>
+
         <div class="form-container">
-            <h1>Add Dependency</h1>
 
             <form method="POST">
+
                 <label>Project</label>
                 <select name="project_id" required>
                     {% for project in projects %}
-                        <option value="{{ project['id'] }}">{{ project['name'] }}</option>
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
                     {% endfor %}
                 </select>
 
@@ -27,7 +42,7 @@
                 <input type="text" name="title" required>
 
                 <label>Description</label>
-                <textarea name="description" rows="5"></textarea>
+                <textarea name="description" rows="5" required></textarea>
 
                 <label>Owner</label>
                 <input type="text" name="owner">
@@ -46,9 +61,13 @@
                 <button type="submit" class="btn-primary">
                     Save Dependency
                 </button>
+
             </form>
+
         </div>
+
     </div>
+
 </div>
 
 </body>

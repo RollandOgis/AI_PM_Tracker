@@ -2304,3 +2304,15 @@ body.dark-ready {
     background: #fee2e2;
     color: #b91c1c;
 }
+
+.smart-card {
+    margin-bottom: 28px;
+}
+
+.heatmap-table {
+    margin-bottom: 12px;
+}
+
+.projects-grid {
+    margin-top: 28px;
+}

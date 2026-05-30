@@ -4636,14 +4636,19 @@ def add_dependency():
         return redirect("/login")
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
     SELECT *
     FROM projects
     WHERE user_id = %s
     ORDER BY name ASC
-    """, (session["user_id"],))
+    """, (
+        session["user_id"],
+    ))
 
     projects = cursor.fetchall()
 
@@ -4651,7 +4656,14 @@ def add_dependency():
 
         cursor.execute("""
         INSERT INTO dependencies (
-            user_id, project_id, title, description, owner, status, target_date, created_at
+            user_id,
+            project_id,
+            title,
+            description,
+            owner,
+            status,
+            target_date,
+            created_at
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
@@ -4672,7 +4684,10 @@ def add_dependency():
 
     conn.close()
 
-    return render_template("add_dependency.html", projects=projects)
+    return render_template(
+        "add_dependency.html",
+        projects=projects
+    )
 
 @app.route("/team-utilisation")
 def team_utilisation():
