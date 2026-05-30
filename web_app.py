@@ -3226,14 +3226,11 @@ def export_report():
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-    # Portfolio Metrics
-
     cursor.execute("""
         SELECT COUNT(*) AS total_projects
         FROM projects
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_projects = cursor.fetchone()["total_projects"]
 
     cursor.execute("""
@@ -3243,7 +3240,6 @@ def export_report():
         ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
     """, (session["user_id"],))
-
     total_tasks = cursor.fetchone()["total_tasks"]
 
     cursor.execute("""
@@ -3254,17 +3250,13 @@ def export_report():
         WHERE projects.user_id = %s
         AND tasks.status = 'Completed'
     """, (session["user_id"],))
-
     completed_tasks = cursor.fetchone()["completed_tasks"]
-
-    # Governance Metrics
 
     cursor.execute("""
         SELECT COUNT(*) AS total_risks
         FROM risks
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_risks = cursor.fetchone()["total_risks"]
 
     cursor.execute("""
@@ -3272,7 +3264,6 @@ def export_report():
         FROM issues
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_issues = cursor.fetchone()["total_issues"]
 
     cursor.execute("""
@@ -3280,27 +3271,44 @@ def export_report():
         FROM changes
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_changes = cursor.fetchone()["total_changes"]
-
-    # Benefits
 
     cursor.execute("""
         SELECT COUNT(*) AS total_benefits
         FROM benefits
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_benefits = cursor.fetchone()["total_benefits"]
 
-    # Team
+    cursor.execute("""
+        SELECT COUNT(*) AS realised_benefits
+        FROM benefits
+        WHERE user_id = %s
+        AND status = 'Realised'
+    """, (session["user_id"],))
+    realised_benefits = cursor.fetchone()["realised_benefits"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS in_progress_benefits
+        FROM benefits
+        WHERE user_id = %s
+        AND status = 'In Progress'
+    """, (session["user_id"],))
+    in_progress_benefits = cursor.fetchone()["in_progress_benefits"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS at_risk_benefits
+        FROM benefits
+        WHERE user_id = %s
+        AND status = 'At Risk'
+    """, (session["user_id"],))
+    at_risk_benefits = cursor.fetchone()["at_risk_benefits"]
 
     cursor.execute("""
         SELECT COUNT(*) AS total_team_members
         FROM team_members
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_team_members = cursor.fetchone()["total_team_members"]
 
     conn.close()
@@ -3312,6 +3320,13 @@ def export_report():
             (completed_tasks / total_tasks) * 100
         )
 
+    if completion_percentage >= 75:
+        portfolio_health = "Green"
+    elif completion_percentage >= 40:
+        portfolio_health = "Amber"
+    else:
+        portfolio_health = "Red"
+
     pdf_buffer = BytesIO()
 
     doc = SimpleDocTemplate(pdf_buffer)
@@ -3319,8 +3334,6 @@ def export_report():
     styles = getSampleStyleSheet()
 
     content = []
-
-    # Title
 
     content.append(
         Paragraph(
@@ -3337,8 +3350,6 @@ def export_report():
     )
 
     content.append(Spacer(1, 20))
-
-    # Portfolio Summary
 
     content.append(
         Paragraph(
@@ -3375,9 +3386,14 @@ def export_report():
         )
     )
 
-    content.append(Spacer(1, 15))
+    content.append(
+        Paragraph(
+            f"Portfolio Health: {portfolio_health}",
+            styles["BodyText"]
+        )
+    )
 
-    # Governance Summary
+    content.append(Spacer(1, 15))
 
     content.append(
         Paragraph(
@@ -3409,8 +3425,6 @@ def export_report():
 
     content.append(Spacer(1, 15))
 
-    # Benefits Summary
-
     content.append(
         Paragraph(
             "Benefits Summary",
@@ -3425,9 +3439,28 @@ def export_report():
         )
     )
 
-    content.append(Spacer(1, 15))
+    content.append(
+        Paragraph(
+            f"Realised Benefits: {realised_benefits}",
+            styles["BodyText"]
+        )
+    )
 
-    # Team Summary
+    content.append(
+        Paragraph(
+            f"In Progress Benefits: {in_progress_benefits}",
+            styles["BodyText"]
+        )
+    )
+
+    content.append(
+        Paragraph(
+            f"At Risk Benefits: {at_risk_benefits}",
+            styles["BodyText"]
+        )
+    )
+
+    content.append(Spacer(1, 15))
 
     content.append(
         Paragraph(
@@ -3443,9 +3476,14 @@ def export_report():
         )
     )
 
-    content.append(Spacer(1, 15))
+    content.append(
+        Paragraph(
+            "Team utilisation dashboard available within the application.",
+            styles["BodyText"]
+        )
+    )
 
-    # Executive Commentary
+    content.append(Spacer(1, 15))
 
     content.append(
         Paragraph(
@@ -3455,27 +3493,19 @@ def export_report():
     )
 
     if completion_percentage >= 75:
-
         commentary = (
             "Portfolio performance is healthy. "
-            "Project delivery is progressing well "
-            "with a strong completion rate."
+            "Project delivery is progressing well with a strong completion rate."
         )
-
     elif completion_percentage >= 40:
-
         commentary = (
             "Portfolio delivery is progressing steadily. "
-            "Management attention should focus on "
-            "risks, issues and upcoming milestones."
+            "Management attention should focus on risks, issues and upcoming milestones."
         )
-
     else:
-
         commentary = (
             "Portfolio performance requires attention. "
-            "Project delivery and governance controls "
-            "should be reviewed."
+            "Project delivery and governance controls should be reviewed."
         )
 
     content.append(
