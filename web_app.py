@@ -3686,6 +3686,7 @@ def add_change():
         "add_change.html",
         projects=projects
     )
+
 @app.route("/benefits")
 def benefits():
 
@@ -3702,9 +3703,7 @@ def benefits():
     LEFT JOIN projects
     ON benefits.project_id = projects.id
     WHERE benefits.user_id = ?
-    ORDER BY
-        benefits.value_score DESC,
-        benefits.created_at DESC
+    ORDER BY benefits.created_at DESC
     """, (
         session["user_id"],
     )).fetchall()
