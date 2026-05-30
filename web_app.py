@@ -647,6 +647,47 @@ def init_db():
                    )
                    """)
 
+    # Actions table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS actions
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       priority
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       due_date
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
