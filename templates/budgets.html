@@ -193,81 +193,73 @@
 
                         <div class="budget-section">
 
-                            <div class="budget-row">
+    <div class="budget-row">
 
-                                <span>Budget</span>
+        <span>Budget</span>
 
-                                <strong>
-                                    £{{ budget["budget_amount"] }}
-                                </strong>
+        <strong>
+            £{{ budget["budget_amount"] }}
+        </strong>
 
-                            </div>
+    </div>
 
-                            <div class="budget-row">
+    <div class="budget-row">
 
-                                <span>Actual Cost</span>
+        <span>Actual Cost</span>
 
-                                <strong>
-                                    £{{ budget["actual_cost"] }}
-                                </strong>
+        <strong>
+            £{{ budget["actual_cost"] }}
+        </strong>
 
-                            </div>
+    </div>
 
-                            <div class="budget-row">
+    <div class="budget-row">
 
-                                <span>Forecast Cost</span>
+        <span>Forecast Cost</span>
 
-                                <strong>
-                                    £{{ budget["forecast_cost"] }}
-                                </strong>
+        <strong>
+            £{{ budget["forecast_cost"] }}
+        </strong>
 
-                            </div>
+    </div>
 
-                            <div class="budget-row">
+    <div class="budget-row">
 
-                                <span>Variance</span>
+        <span>Variance</span>
 
-                                <strong>
-                                    £{{ variance }}
-                                </strong>
+        <strong>
+            £{{ variance }}
+        </strong>
 
-                            </div>
-                            <div class="smart-insight">
+    </div>
 
-                                <strong>
-                                    Remaining Budget:
-                                 £{{ variance }}
-                                </strong>
+    <div class="budget-row">
 
-                            </div>
+        <span>Approved By</span>
 
-                            <div class="budget-row">
+        <strong>
+            {{ budget["approved_by"] }}
+        </strong>
 
-                                <span>Approved By</span>
+    </div>
 
-                                <strong>
-                                    {{ budget["approved_by"] }}
-                                </strong>
+    <div class="budget-row">
 
-                            </div>
+        <span>Status</span>
 
-                            <div class="budget-row">
+        <strong>
+            {{ budget["status"] }}
+        </strong>
 
-                                <span>Status</span>
+    </div>
 
-                                <strong>
-                                    {{ budget["status"] }}
-                                </strong>
-
-                            </div>
-
-                        </div>
+</div>
 
 <div class="smart-insight">
 
     <strong>
         Remaining Budget:
-        £{{ variance }}
+        £{{ "{:,.0f}".format(variance) }}
     </strong>
 
 </div>
