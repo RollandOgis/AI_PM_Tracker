@@ -19,17 +19,21 @@
         <div class="dashboard-header">
 
             <div>
+
                 <h1>Risk Register</h1>
 
                 <p class="dashboard-subtitle">
                     Monitor delivery, operational and project risks.
                 </p>
+
             </div>
 
             <div class="dashboard-actions">
+
                 <a href="/add-risk" class="btn-primary">
                     + Add Risk
                 </a>
+
             </div>
 
         </div>
@@ -43,66 +47,26 @@
 
             <div class="stat-card red-card">
                 <h3>High Risks</h3>
-                <p>{{ risks | selectattr("severity_score", "ge", 6) | list | length }}</p>
+                <p>
+                    {{ risks | selectattr("severity_score", "ge", 6) | list | length }}
+                </p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Medium Risks</h3>
-                <p>{{ risks | selectattr("severity_score", "ge", 3) | rejectattr("severity_score", "ge", 6) | list | length }}</p>
+                <p>
+                    {{ risks | selectattr("severity_score", "ge", 3)
+                             | rejectattr("severity_score", "ge", 6)
+                             | list | length }}
+                </p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Low Risks</h3>
-                <p>{{ risks | rejectattr("severity_score", "ge", 3) | list | length }}</p>
+                <p>
+                    {{ risks | rejectattr("severity_score", "ge", 3) | list | length }}
+                </p>
             </div>
-
-        </div>
-
-        <div class="smart-card risk-heatmap-card">
-
-            <h3>Risk Heatmap</h3>
-
-            <p class="dashboard-subtitle">
-                Probability and impact view of current risk exposure.
-            </p>
-
-            <table class="heatmap-table">
-
-                <thead>
-                    <tr>
-                        <th>Probability / Impact</th>
-                        <th>Low Impact</th>
-                        <th>Medium Impact</th>
-                        <th>High Impact</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <tr>
-                        <th>High Probability</th>
-                        <td class="heat-orange">High</td>
-                        <td class="heat-red">Critical</td>
-                        <td class="heat-red">Critical</td>
-                    </tr>
-
-                    <tr>
-                        <th>Medium Probability</th>
-                        <td class="heat-yellow">Medium</td>
-                        <td class="heat-orange">High</td>
-                        <td class="heat-red">Critical</td>
-                    </tr>
-
-                    <tr>
-                        <th>Low Probability</th>
-                        <td class="heat-green">Low</td>
-                        <td class="heat-yellow">Medium</td>
-                        <td class="heat-orange">High</td>
-                    </tr>
-
-                </tbody>
-
-            </table>
 
         </div>
 
@@ -110,58 +74,106 @@
 
             <div class="stat-card red-card">
                 <h3>Open Risks</h3>
-                <p>{{ risks | rejectattr("status", "equalto", "Closed") | list | length }}</p>
+                <p>
+                    {{ risks | rejectattr("status", "equalto", "Closed") | list | length }}
+                </p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Closed Risks</h3>
-                <p>{{ risks | selectattr("status", "equalto", "Closed") | list | length }}</p>
+                <p>
+                    {{ risks | selectattr("status", "equalto", "Closed") | list | length }}
+                </p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Mitigated Risks</h3>
-                <p>{{ risks | selectattr("status", "equalto", "Mitigated") | list | length }}</p>
+                <p>
+                    {{ risks | selectattr("status", "equalto", "Mitigated") | list | length }}
+                </p>
             </div>
 
         </div>
 
         {% if risks %}
 
-            <div class="smart-card highest-risk-card">
+        <div class="smart-card">
 
-                <h3>Highest Risk</h3>
+            <h3>Highest Risk</h3>
 
-                {% set top_risk = risks[0] %}
+            {% set top_risk = risks[0] %}
 
-                <div class="smart-insight">
+            <div class="smart-insight">
 
-                    <strong>{{ top_risk["title"] }}</strong>
+                <strong>{{ top_risk["title"] }}</strong>
 
-                    <p>
-                        Severity Score:
-                        {{ top_risk["severity_score"] }}
-                    </p>
+                <p>
+                    Severity Score:
+                    {{ top_risk["severity_score"] }}
+                </p>
 
-                    <p>
-                        Owner:
-                        {{ top_risk["owner"] }}
-                    </p>
+                <p>
+                    Owner:
+                    {{ top_risk["owner"] }}
+                </p>
 
-                    <p>
-                        Status:
-                        {{ top_risk["status"] }}
-                    </p>
+                <p>
+                    Status:
+                    {{ top_risk["status"] }}
+                </p>
 
-                    <p>
-                        Project:
-                        {{ top_risk["project_name"] or "No Project" }}
-                    </p>
-
-                </div>
+                <p>
+                    Project:
+                    {{ top_risk["project_name"] or "No Project" }}
+                </p>
 
             </div>
 
+        </div>
+
         {% endif %}
+
+        <div class="smart-card">
+
+            <h3>Risk Heatmap</h3>
+
+            <p>
+                Probability and impact view of current risk exposure.
+            </p>
+
+            <table class="heatmap-table">
+
+                <tr>
+                    <th>Probability / Impact</th>
+                    <th>Low Impact</th>
+                    <th>Medium Impact</th>
+                    <th>High Impact</th>
+                </tr>
+
+                <tr>
+                    <th>High Probability</th>
+                    <td class="heat-high">High</td>
+                    <td class="heat-critical">Critical</td>
+                    <td class="heat-critical">Critical</td>
+                </tr>
+
+                <tr>
+                    <th>Medium Probability</th>
+                    <td class="heat-medium">Medium</td>
+                    <td class="heat-high">High</td>
+                    <td class="heat-critical">Critical</td>
+                </tr>
+
+                <tr>
+                    <th>Low Probability</th>
+                    <td class="heat-low">Low</td>
+                    <td class="heat-medium">Medium</td>
+                    <td class="heat-high">High</td>
+                </tr>
+
+            </table>
+
+        </div>
 
         {% if risks %}
 
@@ -178,17 +190,23 @@
                                 <h3>{{ risk["title"] }}</h3>
 
                                 {% if risk["severity_score"] >= 6 %}
+
                                     <span class="badge badge-red">
                                         High Risk
                                     </span>
+
                                 {% elif risk["severity_score"] >= 3 %}
+
                                     <span class="badge badge-yellow">
                                         Medium Risk
                                     </span>
+
                                 {% else %}
+
                                     <span class="badge badge-green">
                                         Low Risk
                                     </span>
+
                                 {% endif %}
 
                             </div>
@@ -196,7 +214,9 @@
                         </div>
 
                         <div class="smart-insight">
+
                             {{ risk["description"] }}
+
                         </div>
 
                         <div class="budget-section">
