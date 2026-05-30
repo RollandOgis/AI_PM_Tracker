@@ -41,19 +41,29 @@
 
         </div>
 
-        <div class="stats-grid">
+       <div class="stats-grid">
 
-            <div class="stat-card blue-card">
+    <div class="stat-card blue-card">
+        <h3>Total Budget</h3>
+        <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+    </div>
 
-                <h3>Total Budgets</h3>
+    <div class="stat-card red-card">
+        <h3>Actual Cost</h3>
+        <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
+    </div>
 
-                <p>
-                    {{ budgets|length }}
-                </p>
+    <div class="stat-card amber-card">
+        <h3>Remaining Budget</h3>
+        <p>£{{ "{:,.0f}".format(remaining_budget) }}</p>
+    </div>
 
-            </div>
+    <div class="stat-card green-card">
+        <h3>Budget Usage</h3>
+        <p>{{ budget_usage }}%</p>
+    </div>
 
-        </div>
+</div>
 
         {% if budgets %}
 

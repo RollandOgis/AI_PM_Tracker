@@ -5669,11 +5669,42 @@ def budgets():
 
     budgets = cursor.fetchall()
 
+    total_budget = 0
+    total_actual_cost = 0
+    total_forecast_cost = 0
+    over_budget_count = 0
+
+    for budget in budgets:
+
+        budget_amount = float(budget["budget_amount"] or 0)
+        actual_cost = float(budget["actual_cost"] or 0)
+        forecast_cost = float(budget["forecast_cost"] or 0)
+
+        total_budget += budget_amount
+        total_actual_cost += actual_cost
+        total_forecast_cost += forecast_cost
+
+        if actual_cost > budget_amount:
+            over_budget_count += 1
+
+    remaining_budget = total_budget - total_actual_cost
+
+    if total_budget > 0:
+        budget_usage = round((total_actual_cost / total_budget) * 100)
+    else:
+        budget_usage = 0
+
     conn.close()
 
     return render_template(
         "budgets.html",
-        budgets=budgets
+        budgets=budgets,
+        total_budget=total_budget,
+        total_actual_cost=total_actual_cost,
+        total_forecast_cost=total_forecast_cost,
+        remaining_budget=remaining_budget,
+        budget_usage=budget_usage,
+        over_budget_count=over_budget_count
     )
 
 @app.route("/add-budget", methods=["GET", "POST"])
