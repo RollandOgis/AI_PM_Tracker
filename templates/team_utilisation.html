@@ -38,10 +38,8 @@
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Most Loaded Resource</h3>
-                <p style="font-size:20px;">
-                    {{ most_loaded["name"] }}
-                </p>
+                <h3>Most Loaded</h3>
+                <p style="font-size: 24px;">{{ most_loaded["name"] }}</p>
             </div>
 
         </div>
@@ -54,75 +52,47 @@
 
                     <h3>{{ item["name"] }}</h3>
 
-                    <p>
-                        {{ item["role"] }}
-                    </p>
+                    <p>{{ item["role"] }}</p>
 
                     <div class="budget-section">
 
                         <div class="budget-row">
                             <span>Total Tasks</span>
-                            <strong>
-                                {{ item["total_tasks"] }}
-                            </strong>
+                            <strong>{{ item["total_tasks"] }}</strong>
                         </div>
 
                         <div class="budget-row">
-
                             <span>Utilisation</span>
 
                             {% if item["utilisation"] >= 80 %}
-                                <strong class="health-warning">
-                                    {{ item["utilisation"] }}%
-                                </strong>
-
+                                <strong class="health-warning">{{ item["utilisation"] }}%</strong>
                             {% elif item["utilisation"] >= 50 %}
-                                <strong class="health-neutral">
-                                    {{ item["utilisation"] }}%
-                                </strong>
-
+                                <strong class="health-neutral">{{ item["utilisation"] }}%</strong>
                             {% else %}
-                                <strong class="health-good">
-                                    {{ item["utilisation"] }}%
-                                </strong>
+                                <strong class="health-good">{{ item["utilisation"] }}%</strong>
                             {% endif %}
-
                         </div>
 
                     </div>
 
                     <div class="progress-wrapper">
-
-                        <div class="progress-bar">
-
-                            <div
-                                class="progress-fill completed-fill"
-                                data-width="{{ item['utilisation'] }}"
-                            >
-                            </div>
-
+                        <div class="progress-fill"
+                             style="width: {{ item['utilisation'] }}%;">
                         </div>
-
                     </div>
 
                     {% if item["utilisation"] >= 80 %}
-
                         <div class="smart-insight">
                             High workload. Consider redistributing tasks.
                         </div>
-
                     {% elif item["utilisation"] >= 50 %}
-
                         <div class="smart-insight">
                             Balanced workload.
                         </div>
-
                     {% else %}
-
                         <div class="smart-insight">
                             Available capacity.
                         </div>
-
                     {% endif %}
 
                 </div>
@@ -134,16 +104,6 @@
     </div>
 
 </div>
-
-<script>
-
-document.querySelectorAll(".progress-fill").forEach(function(bar) {
-
-    bar.style.width = bar.dataset.width + "%";
-
-});
-
-</script>
 
 </body>
 </html>
