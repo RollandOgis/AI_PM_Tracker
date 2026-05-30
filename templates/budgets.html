@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budgets</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Budget Management</h1>
+
+                <p class="dashboard-subtitle">
+                    Monitor project budgets, spend and financial health.
+                </p>
+
+            </div>
+
+            <div>
+
+                <a
+                    href="/add-budget"
+                    class="btn-primary"
+                >
+                    + Add Budget
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+
+                <h3>Total Budgets</h3>
+
+                <p>
+                    {{ budgets|length }}
+                </p>
+
+            </div>
+
+        </div>
+
+        {% if budgets %}
+
+            <div class="projects-grid">
+
+                {% for budget in budgets %}
+
+                    {% set variance =
+                    budget["budget_amount"] -
+                    budget["actual_cost"] %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+
+                                <h3>
+                                    {{ budget["project_name"] }}
+                                </h3>
+
+                                {% if variance >= 0 %}
+
+                                    <span class="badge badge-green">
+                                        On Budget
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-red">
+                                        Over Budget
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+
+                                <span>Budget</span>
+
+                                <strong>
+                                    £{{ budget["budget_amount"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Actual Cost</span>
+
+                                <strong>
+                                    £{{ budget["actual_cost"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Forecast Cost</span>
+
+                                <strong>
+                                    £{{ budget["forecast_cost"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Variance</span>
+
+                                <strong>
+                                    £{{ variance }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Approved By</span>
+
+                                <strong>
+                                    {{ budget["approved_by"] }}
+                                </strong>
+
+                            </div>
+
+                            <div class="budget-row">
+
+                                <span>Status</span>
+
+                                <strong>
+                                    {{ budget["status"] }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                        {% if variance < 0 %}
+
+                            <div class="alert-box alert-danger">
+
+                                Budget exceeded.
+                                Review project spend immediately.
+
+                            </div>
+
+                        {% else %}
+
+                            <div class="smart-insight">
+
+                                Project remains within budget allocation.
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Budgets Added</h3>
+
+                <p>
+                    Add a project budget to start financial tracking.
+                </p>
+
+                <a
+                    href="/add-budget"
+                    class="btn-primary"
+                >
+                    Add First Budget
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

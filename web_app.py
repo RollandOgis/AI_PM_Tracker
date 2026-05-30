@@ -688,6 +688,42 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS budgets
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       budget_amount
+                       NUMERIC,
+
+                       actual_cost
+                       NUMERIC,
+
+                       forecast_cost
+                       NUMERIC,
+
+                       approved_by
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -5603,6 +5639,102 @@ def add_lesson():
 
     return render_template(
         "add_lesson.html",
+        projects=projects
+    )
+
+@app.route("/budgets")
+def budgets():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            budgets.*,
+            projects.name AS project_name
+        FROM budgets
+        LEFT JOIN projects
+        ON budgets.project_id = projects.id
+        WHERE budgets.user_id = %s
+        ORDER BY budgets.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    budgets = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "budgets.html",
+        budgets=budgets
+    )
+
+@app.route("/add-budget", methods=["GET", "POST"])
+def add_budget():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO budgets
+            (
+                user_id,
+                project_id,
+                budget_amount,
+                actual_cost,
+                forecast_cost,
+                approved_by,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["project_id"],
+            request.form["budget_amount"],
+            request.form["actual_cost"],
+            request.form["forecast_cost"],
+            request.form["approved_by"],
+            request.form["status"],
+            str(date.today())
+        ))
+
+        conn.commit()
+
+        conn.close()
+
+        return redirect("/budgets")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "add_budget.html",
         projects=projects
     )
 

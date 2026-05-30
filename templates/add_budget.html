@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Budget</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Budget</h1>
+
+                <p class="dashboard-subtitle">
+                    Create and manage project financial budgets.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Budget Amount (£)</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    name="budget_amount"
+                    required
+                >
+
+                <label>Actual Cost (£)</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    name="actual_cost"
+                    value="0"
+                    required
+                >
+
+                <label>Forecast Cost (£)</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    name="forecast_cost"
+                    value="0"
+                    required
+                >
+
+                <label>Approved By</label>
+                <input
+                    type="text"
+                    name="approved_by"
+                    required
+                >
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option value="Draft">
+                        Draft
+                    </option>
+
+                    <option value="Approved">
+                        Approved
+                    </option>
+
+                    <option value="In Review">
+                        In Review
+                    </option>
+
+                </select>
+
+                <br><br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Save Budget
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
