@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, Response, jsonify
+from flask import Flask, render_template, request, redirect, session, Response, jsonify, send_file
 import sqlite3
 import csv
 from io import StringIO, BytesIO
@@ -3227,244 +3227,141 @@ def export_report():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY id DESC
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
     """, (
         session["user_id"],
     ))
 
-    projects = cursor.fetchall()
+    total_projects = cursor.fetchone()["total_projects"]
 
     cursor.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = %s
-    ORDER BY
-        CASE
-            WHEN tasks.due_date IS NULL THEN '9999-12-31'
-            ELSE tasks.due_date
-        END ASC
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
     """, (
         session["user_id"],
     ))
 
-    tasks = cursor.fetchall()
+    total_tasks = cursor.fetchone()["total_tasks"]
 
     cursor.execute("""
-    SELECT COUNT(*) AS open_risks
-    FROM risks
-    WHERE user_id = %s
-    AND status != 'Closed'
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Completed'
     """, (
         session["user_id"],
     ))
 
-    open_risks = cursor.fetchone()["open_risks"]
+    completed_tasks = cursor.fetchone()["completed_tasks"]
 
     cursor.execute("""
-    SELECT COUNT(*) AS open_issues
-    FROM issues
-    WHERE user_id = %s
-    AND status != 'Closed'
+        SELECT COUNT(*) AS total_risks
+        FROM risks
+        WHERE user_id = %s
     """, (
         session["user_id"],
     ))
 
-    open_issues = cursor.fetchone()["open_issues"]
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_issues
+        FROM issues
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_changes
+        FROM changes
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_changes = cursor.fetchone()["total_changes"]
 
     conn.close()
 
-    total_projects = len(projects)
-    total_tasks = len(tasks)
+    pdf_buffer = BytesIO()
 
-    completed_tasks = len([
-        task for task in tasks
-        if task["status"] == "Completed"
-    ])
-
-    pending_tasks = len([
-        task for task in tasks
-        if task["status"] == "Pending"
-    ])
-
-    in_progress_tasks = len([
-        task for task in tasks
-        if task["status"] == "In Progress"
-    ])
-
-    blocked_tasks = len([
-        task for task in tasks
-        if task["status"] == "Blocked"
-    ])
-
-    completion_rate = 0
-
-    if total_tasks > 0:
-        completion_rate = round(
-            (completed_tasks / total_tasks) * 100
-        )
-
-    report_path = "static/project_report.pdf"
-
-    doc = SimpleDocTemplate(
-        report_path,
-        pagesize=letter
-    )
+    doc = SimpleDocTemplate(pdf_buffer)
 
     styles = getSampleStyleSheet()
 
-    title_style = styles["Title"]
-    heading_style = styles["Heading2"]
-    body_style = styles["BodyText"]
+    content = []
 
-    elements = []
-
-    elements.append(
+    content.append(
         Paragraph(
-            "AI PM Tracker Executive Report",
-            title_style
+            "AI PM Tracker - Executive Portfolio Report",
+            styles["Title"]
         )
     )
 
-    elements.append(Spacer(1, 16))
+    content.append(Spacer(1, 20))
 
-    elements.append(
+    content.append(
         Paragraph(
-            f"Generated: {date.today()}",
-            body_style
+            f"Total Projects: {total_projects}",
+            styles["BodyText"]
         )
     )
 
-    elements.append(Spacer(1, 24))
-
-    elements.append(
+    content.append(
         Paragraph(
-            "Executive Summary",
-            heading_style
+            f"Total Tasks: {total_tasks}",
+            styles["BodyText"]
         )
     )
 
-    elements.append(
+    content.append(
         Paragraph(
-            f"""
-            This report provides a portfolio-level overview of current project delivery,
-            task progress and governance exposure across the AI PM Tracker workspace.
-            """,
-            body_style
+            f"Completed Tasks: {completed_tasks}",
+            styles["BodyText"]
         )
     )
 
-    elements.append(Spacer(1, 16))
-
-    elements.append(
+    content.append(
         Paragraph(
-            "Portfolio Summary",
-            heading_style
+            f"Risk Register Items: {total_risks}",
+            styles["BodyText"]
         )
     )
 
-    elements.append(
+    content.append(
         Paragraph(
-            f"""
-            Total Projects: {total_projects}<br/>
-            Total Tasks: {total_tasks}<br/>
-            Completed Tasks: {completed_tasks}<br/>
-            In Progress Tasks: {in_progress_tasks}<br/>
-            Pending Tasks: {pending_tasks}<br/>
-            Blocked Tasks: {blocked_tasks}<br/>
-            Completion Rate: {completion_rate}%<br/>
-            Open Risks: {open_risks}<br/>
-            Open Issues: {open_issues}
-            """,
-            body_style
+            f"Issue Register Items: {total_issues}",
+            styles["BodyText"]
         )
     )
 
-    elements.append(Spacer(1, 24))
-
-    elements.append(
+    content.append(
         Paragraph(
-            "Project Portfolio",
-            heading_style
+            f"Change Register Items: {total_changes}",
+            styles["BodyText"]
         )
     )
 
-    if projects:
+    doc.build(content)
 
-        for project in projects:
+    pdf_buffer.seek(0)
 
-            project_text = f"""
-            <b>{project["name"]}</b><br/>
-            Status: {project["status"]}<br/>
-            Start Date: {project["start_date"]}<br/>
-            End Date: {project["end_date"]}
-            """
-
-            elements.append(
-                Paragraph(
-                    project_text,
-                    body_style
-                )
-            )
-
-            elements.append(Spacer(1, 12))
-
-    else:
-
-        elements.append(
-            Paragraph(
-                "No projects found.",
-                body_style
-            )
-        )
-
-    elements.append(Spacer(1, 24))
-
-    elements.append(
-        Paragraph(
-            "Task Delivery Summary",
-            heading_style
-        )
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name="Executive_Portfolio_Report.pdf",
+        mimetype="application/pdf"
     )
-
-    if tasks:
-
-        for task in tasks[:25]:
-
-            task_text = f"""
-            <b>{task["title"]}</b><br/>
-            Project: {task["project_name"]}<br/>
-            Priority: {task["priority"]}<br/>
-            Status: {task["status"]}<br/>
-            Due Date: {task["due_date"] or "N/A"}<br/>
-            Assigned To: {task["assigned_to"] or "Unassigned"}
-            """
-
-            elements.append(
-                Paragraph(
-                    task_text,
-                    body_style
-                )
-            )
-
-            elements.append(Spacer(1, 10))
-
-    else:
-
-        elements.append(
-            Paragraph(
-                "No tasks found.",
-                body_style
-            )
-        )
-
-    doc.build(elements)
-
-    return redirect("/static/project_report.pdf")
 
 @app.route("/risks")
 def risks():
