@@ -23,7 +23,7 @@
                 <h1>Budget Management</h1>
 
                 <p class="dashboard-subtitle">
-                    Monitor project budgets, spend and financial health.
+                    Monitor project budgets, spend, forecast and financial health.
                 </p>
 
             </div>
@@ -44,51 +44,110 @@
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
+
                 <h3>Total Budget</h3>
-                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+
+                <p>
+                    £{{ "{:,.0f}".format(total_budget) }}
+                </p>
+
             </div>
 
             <div class="stat-card red-card">
+
                 <h3>Actual Cost</h3>
-                <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
+
+                <p>
+                    £{{ "{:,.0f}".format(total_actual_cost) }}
+                </p>
+
             </div>
 
             <div class="stat-card amber-card">
+
                 <h3>Remaining Budget</h3>
-                <p>£{{ "{:,.0f}".format(remaining_budget) }}</p>
+
+                <p>
+                    £{{ "{:,.0f}".format(remaining_budget) }}
+                </p>
+
             </div>
 
             <div class="stat-card green-card">
+
                 <h3>Budget Usage</h3>
-                <p>{{ budget_usage }}%</p>
+
+                <p>
+                    {{ budget_usage }}%
+                </p>
+
             </div>
 
         </div>
 
-        <div class="project-card">
+        <div class="workload-summary-grid">
 
-            <h3>Budget Health Summary</h3>
+            <div class="project-card">
 
-            <div class="smart-insight">
+                <h3>Budget Health Summary</h3>
 
-                <p>
-                    Financial Health:
-                    <strong>{{ financial_health }}</strong>
-                </p>
+                <div class="smart-insight">
 
-                <p>
-                    Budget Usage:
-                    <strong>{{ budget_usage }}%</strong>
-                </p>
+                    <p>
+                        Financial Health:
+                        <strong>{{ financial_health }}</strong>
+                    </p>
 
-                <p>
-                    Over Budget Projects:
-                    <strong>{{ over_budget_count }}</strong>
-                </p>
+                    <p>
+                        Budget Usage:
+                        <strong>{{ budget_usage }}%</strong>
+                    </p>
 
-                <p>
-                    {{ financial_health_message }}
-                </p>
+                    <p>
+                        Over Budget Projects:
+                        <strong>{{ over_budget_count }}</strong>
+                    </p>
+
+                    <p>
+                        {{ financial_health_message }}
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Budget Analytics</h3>
+
+                <div class="smart-insight">
+
+                    <p>
+                        Forecast Variance:
+                        <strong>
+                            £{{ "{:,.0f}".format(forecast_variance) }}
+                        </strong>
+                    </p>
+
+                    <p>
+                        Forecast Budget Usage:
+                        <strong>
+                            {{ forecast_usage }}%
+                        </strong>
+                    </p>
+
+                    <p>
+                        Financial Risk Level:
+                        <strong>
+                            {{ financial_risk_level }}
+                        </strong>
+                    </p>
+
+                    <p>
+                        {{ financial_recommendation }}
+                    </p>
+
+                </div>
 
             </div>
 
@@ -135,45 +194,63 @@
                         <div class="budget-section">
 
                             <div class="budget-row">
+
                                 <span>Budget</span>
+
                                 <strong>
                                     £{{ budget["budget_amount"] }}
                                 </strong>
+
                             </div>
 
                             <div class="budget-row">
+
                                 <span>Actual Cost</span>
+
                                 <strong>
                                     £{{ budget["actual_cost"] }}
                                 </strong>
+
                             </div>
 
                             <div class="budget-row">
+
                                 <span>Forecast Cost</span>
+
                                 <strong>
                                     £{{ budget["forecast_cost"] }}
                                 </strong>
+
                             </div>
 
                             <div class="budget-row">
+
                                 <span>Variance</span>
+
                                 <strong>
                                     £{{ variance }}
                                 </strong>
+
                             </div>
 
                             <div class="budget-row">
+
                                 <span>Approved By</span>
+
                                 <strong>
                                     {{ budget["approved_by"] }}
                                 </strong>
+
                             </div>
 
                             <div class="budget-row">
+
                                 <span>Status</span>
+
                                 <strong>
                                     {{ budget["status"] }}
                                 </strong>
+
                             </div>
 
                         </div>

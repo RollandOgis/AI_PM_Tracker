@@ -5706,6 +5706,23 @@ def budgets():
         financial_health = "Red"
         financial_health_message = "Budget usage is high and requires attention."
 
+    forecast_variance = total_budget - total_forecast_cost
+
+    if total_budget > 0:
+        forecast_usage = round((total_forecast_cost / total_budget) * 100)
+    else:
+        forecast_usage = 0
+
+    if over_budget_count > 0:
+        financial_risk_level = "High"
+        financial_recommendation = "Review overspending and reduce non-critical project costs."
+    elif budget_usage >= 80:
+        financial_risk_level = "Medium"
+        financial_recommendation = "Monitor project spend closely as budget usage is increasing."
+    else:
+        financial_risk_level = "Low"
+        financial_recommendation = "Financial position is currently stable."
+
     conn.close()
 
     return render_template(
@@ -5718,7 +5735,11 @@ def budgets():
         budget_usage=budget_usage,
         over_budget_count=over_budget_count,
         financial_health=financial_health,
-        financial_health_message=financial_health_message
+        financial_health_message=financial_health_message,
+        forecast_variance=forecast_variance,
+        forecast_usage=forecast_usage,
+        financial_risk_level=financial_risk_level,
+        financial_recommendation=financial_recommendation
     )
 
 @app.route("/add-budget", methods=["GET", "POST"])
