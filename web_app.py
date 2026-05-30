@@ -3032,57 +3032,91 @@ def export_report():
 
     conn = get_db_connection()
 
-    cursor = conn.cursor()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
-    SELECT COUNT(*)
+    SELECT *
     FROM projects
     WHERE user_id = %s
+    ORDER BY id DESC
     """, (
         session["user_id"],
     ))
 
-    total_projects = cursor.fetchone()[0]
+    projects = cursor.fetchall()
 
     cursor.execute("""
-    SELECT COUNT(*)
+    SELECT tasks.*, projects.name AS project_name
     FROM tasks
     JOIN projects
     ON tasks.project_id = projects.id
     WHERE projects.user_id = %s
+    ORDER BY
+        CASE
+            WHEN tasks.due_date IS NULL THEN '9999-12-31'
+            ELSE tasks.due_date
+        END ASC
     """, (
         session["user_id"],
     ))
 
-    total_tasks = cursor.fetchone()[0]
+    tasks = cursor.fetchall()
 
     cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = %s
-    AND tasks.status = 'Completed'
+    SELECT COUNT(*) AS open_risks
+    FROM risks
+    WHERE user_id = %s
+    AND status != 'Closed'
     """, (
         session["user_id"],
     ))
 
-    completed_tasks = cursor.fetchone()[0]
+    open_risks = cursor.fetchone()["open_risks"]
 
     cursor.execute("""
-    SELECT COUNT(*)
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = %s
-    AND tasks.status = 'Blocked'
+    SELECT COUNT(*) AS open_issues
+    FROM issues
+    WHERE user_id = %s
+    AND status != 'Closed'
     """, (
         session["user_id"],
     ))
 
-    blocked_tasks = cursor.fetchone()[0]
+    open_issues = cursor.fetchone()["open_issues"]
 
     conn.close()
+
+    total_projects = len(projects)
+    total_tasks = len(tasks)
+
+    completed_tasks = len([
+        task for task in tasks
+        if task["status"] == "Completed"
+    ])
+
+    pending_tasks = len([
+        task for task in tasks
+        if task["status"] == "Pending"
+    ])
+
+    in_progress_tasks = len([
+        task for task in tasks
+        if task["status"] == "In Progress"
+    ])
+
+    blocked_tasks = len([
+        task for task in tasks
+        if task["status"] == "Blocked"
+    ])
+
+    completion_rate = 0
+
+    if total_tasks > 0:
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
 
     report_path = "static/project_report.pdf"
 
@@ -3093,27 +3127,150 @@ def export_report():
 
     styles = getSampleStyleSheet()
 
+    title_style = styles["Title"]
+    heading_style = styles["Heading2"]
+    body_style = styles["BodyText"]
+
     elements = []
 
-    title = Paragraph(
-        "AI Project Management Report",
-        styles["Title"]
+    elements.append(
+        Paragraph(
+            "AI PM Tracker Executive Report",
+            title_style
+        )
     )
 
-    elements.append(title)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 16))
 
-    summary = Paragraph(
-        f"""
-        Total Projects: {total_projects}<br/>
-        Total Tasks: {total_tasks}<br/>
-        Completed Tasks: {completed_tasks}<br/>
-        Blocked Tasks: {blocked_tasks}
-        """,
-        styles["BodyText"]
+    elements.append(
+        Paragraph(
+            f"Generated: {date.today()}",
+            body_style
+        )
     )
 
-    elements.append(summary)
+    elements.append(Spacer(1, 24))
+
+    elements.append(
+        Paragraph(
+            "Executive Summary",
+            heading_style
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"""
+            This report provides a portfolio-level overview of current project delivery,
+            task progress and governance exposure across the AI PM Tracker workspace.
+            """,
+            body_style
+        )
+    )
+
+    elements.append(Spacer(1, 16))
+
+    elements.append(
+        Paragraph(
+            "Portfolio Summary",
+            heading_style
+        )
+    )
+
+    elements.append(
+        Paragraph(
+            f"""
+            Total Projects: {total_projects}<br/>
+            Total Tasks: {total_tasks}<br/>
+            Completed Tasks: {completed_tasks}<br/>
+            In Progress Tasks: {in_progress_tasks}<br/>
+            Pending Tasks: {pending_tasks}<br/>
+            Blocked Tasks: {blocked_tasks}<br/>
+            Completion Rate: {completion_rate}%<br/>
+            Open Risks: {open_risks}<br/>
+            Open Issues: {open_issues}
+            """,
+            body_style
+        )
+    )
+
+    elements.append(Spacer(1, 24))
+
+    elements.append(
+        Paragraph(
+            "Project Portfolio",
+            heading_style
+        )
+    )
+
+    if projects:
+
+        for project in projects:
+
+            project_text = f"""
+            <b>{project["name"]}</b><br/>
+            Status: {project["status"]}<br/>
+            Start Date: {project["start_date"]}<br/>
+            End Date: {project["end_date"]}
+            """
+
+            elements.append(
+                Paragraph(
+                    project_text,
+                    body_style
+                )
+            )
+
+            elements.append(Spacer(1, 12))
+
+    else:
+
+        elements.append(
+            Paragraph(
+                "No projects found.",
+                body_style
+            )
+        )
+
+    elements.append(Spacer(1, 24))
+
+    elements.append(
+        Paragraph(
+            "Task Delivery Summary",
+            heading_style
+        )
+    )
+
+    if tasks:
+
+        for task in tasks[:25]:
+
+            task_text = f"""
+            <b>{task["title"]}</b><br/>
+            Project: {task["project_name"]}<br/>
+            Priority: {task["priority"]}<br/>
+            Status: {task["status"]}<br/>
+            Due Date: {task["due_date"] or "N/A"}<br/>
+            Assigned To: {task["assigned_to"] or "Unassigned"}
+            """
+
+            elements.append(
+                Paragraph(
+                    task_text,
+                    body_style
+                )
+            )
+
+            elements.append(Spacer(1, 10))
+
+    else:
+
+        elements.append(
+            Paragraph(
+                "No tasks found.",
+                body_style
+            )
+        )
 
     doc.build(elements)
 
