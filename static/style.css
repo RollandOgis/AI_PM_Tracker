@@ -2346,3 +2346,56 @@ body.dark-ready {
     }
 
 }
+
+.workload-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 25px 0;
+    align-items: start;
+}
+
+.workload-summary-grid .project-card {
+    height: auto;
+    min-height: 0;
+}
+
+/* TEAM UTILISATION SUMMARY FIX */
+
+.workload-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 25px 0;
+    align-items: start;
+}
+
+.workload-summary-grid .project-card {
+    height: auto;
+    min-height: 0;
+}
+
+.progress-wrapper {
+    width: 100%;
+    height: 12px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #2563eb;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+@media (max-width: 900px) {
+
+    .workload-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
