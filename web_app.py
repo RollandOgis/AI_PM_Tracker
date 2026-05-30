@@ -4936,39 +4936,51 @@ def team_utilisation():
 
     if overloaded_count > 0:
         smart_insights.append(
-            f"{overloaded_count} team member(s) are overloaded and may require workload redistribution."
+            f"Attention required: {overloaded_count} resource(s) are overloaded and may require workload redistribution."
         )
 
     if balanced_count > 0:
         smart_insights.append(
-            f"{balanced_count} team member(s) are operating within a balanced workload range."
+            "Team workload is currently well balanced."
         )
 
     if available_count > 0:
         smart_insights.append(
-            f"{available_count} team member(s) have spare capacity available."
+            f"{available_count} team member(s) have spare delivery capacity available."
         )
 
     smart_insights.append(
-        f"Average team utilisation is {average_utilisation}%."
+        f"Average team utilisation is currently {average_utilisation}%."
     )
 
     if average_capacity > 50:
 
         smart_insights.append(
-            "The team currently has significant delivery capacity available."
+            "The team currently has significant capacity available for additional project work."
         )
 
     elif average_capacity > 25:
 
         smart_insights.append(
-            "The team has moderate spare capacity available."
+            "The team has moderate spare capacity available for upcoming project demand."
         )
 
     else:
 
         smart_insights.append(
-            "The team is approaching full utilisation."
+            "The team is approaching full utilisation and resource planning should be reviewed."
+        )
+
+    if average_utilisation < 40:
+
+        smart_insights.append(
+            "Opportunity: Additional projects can be onboarded without increasing headcount."
+        )
+
+    elif average_utilisation >= 80:
+
+        smart_insights.append(
+            "Risk: Current utilisation levels may impact delivery performance and team wellbeing."
         )
 
 
