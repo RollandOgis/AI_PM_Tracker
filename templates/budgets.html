@@ -255,24 +255,33 @@
 
                         </div>
 
-                        {% if variance < 0 %}
+<div class="smart-insight">
 
-                            <div class="alert-box alert-danger">
+    <strong>
+        Remaining Budget:
+        £{{ variance }}
+    </strong>
 
-                                Budget exceeded.
-                                Review project spend immediately.
+</div>
 
-                            </div>
+{% if variance < 0 %}
 
-                        {% else %}
+    <div class="alert-box alert-danger">
 
-                            <div class="smart-insight">
+        Budget exceeded.
+        Review project spend immediately.
 
-                                Project remains within budget allocation.
+    </div>
 
-                            </div>
+{% else %}
 
-                        {% endif %}
+    <div class="smart-insight">
+
+        Project remains within budget allocation.
+
+    </div>
+
+{% endif %}
 
                     </div>
 
