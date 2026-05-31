@@ -5406,6 +5406,9 @@ def team():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Team", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -5413,10 +5416,10 @@ def team():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM team_members
-    WHERE user_id = %s
-    ORDER BY name ASC
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -5428,17 +5431,17 @@ def team():
     for member in members:
 
         cursor.execute("""
-        SELECT COUNT(DISTINCT tasks.id) AS total_tasks
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        LEFT JOIN task_team_members
-        ON task_team_members.task_id = tasks.id
-        WHERE projects.user_id = %s
-        AND (
-            tasks.assigned_to = %s
-            OR task_team_members.team_member_id = %s
-        )
+            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
         """, (
             session["user_id"],
             member["name"],
@@ -5448,18 +5451,18 @@ def team():
         total_tasks = cursor.fetchone()["total_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        LEFT JOIN task_team_members
-        ON task_team_members.task_id = tasks.id
-        WHERE projects.user_id = %s
-        AND tasks.status = 'Completed'
-        AND (
-            tasks.assigned_to = %s
-            OR task_team_members.team_member_id = %s
-        )
+            SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status = 'Completed'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
         """, (
             session["user_id"],
             member["name"],
@@ -5469,18 +5472,18 @@ def team():
         completed_tasks = cursor.fetchone()["completed_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(DISTINCT tasks.id) AS active_tasks
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        LEFT JOIN task_team_members
-        ON task_team_members.task_id = tasks.id
-        WHERE projects.user_id = %s
-        AND tasks.status != 'Completed'
-        AND (
-            tasks.assigned_to = %s
-            OR task_team_members.team_member_id = %s
-        )
+            SELECT COUNT(DISTINCT tasks.id) AS active_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status != 'Completed'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
         """, (
             session["user_id"],
             member["name"],
@@ -5490,18 +5493,18 @@ def team():
         active_tasks = cursor.fetchone()["active_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(DISTINCT tasks.id) AS blocked_tasks
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        LEFT JOIN task_team_members
-        ON task_team_members.task_id = tasks.id
-        WHERE projects.user_id = %s
-        AND tasks.status = 'Blocked'
-        AND (
-            tasks.assigned_to = %s
-            OR task_team_members.team_member_id = %s
-        )
+            SELECT COUNT(DISTINCT tasks.id) AS blocked_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status = 'Blocked'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
         """, (
             session["user_id"],
             member["name"],
@@ -5531,28 +5534,35 @@ def team():
         team_data=team_data
     )
 
+
 @app.route("/add-team-member", methods=["GET", "POST"])
 def add_team_member():
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Team", "create"):
+        return "Access denied"
+
     if request.method == "POST":
 
         conn = get_db_connection()
 
-        conn.execute("""
-        INSERT INTO team_members (
-            user_id,
-            name,
-            role,
-            email,
-            phone,
-            skills,
-            status,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO team_members
+            (
+                user_id,
+                name,
+                role,
+                email,
+                phone,
+                skills,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("name", ""),
@@ -5575,23 +5585,33 @@ def add_team_member():
 
     return render_template("add_team_member.html")
 
+
 @app.route("/edit-team-member/<int:member_id>", methods=["GET", "POST"])
 def edit_team_member(member_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Team", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    member = conn.execute("""
-    SELECT *
-    FROM team_members
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE id = %s
+        AND user_id = %s
     """, (
         member_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    member = cursor.fetchone()
 
     if not member:
         conn.close()
@@ -5599,17 +5619,17 @@ def edit_team_member(member_id):
 
     if request.method == "POST":
 
-        conn.execute("""
-        UPDATE team_members
-        SET
-            name = ?,
-            role = ?,
-            email = ?,
-            phone = ?,
-            skills = ?,
-            status = ?
-        WHERE id = ?
-        AND user_id = ?
+        cursor.execute("""
+            UPDATE team_members
+            SET
+                name = %s,
+                role = %s,
+                email = %s,
+                phone = %s,
+                skills = %s,
+                status = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
             request.form.get("name", ""),
             request.form.get("role", ""),
@@ -5644,12 +5664,17 @@ def delete_team_member(member_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Team", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    conn.execute("""
-    DELETE FROM team_members
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM team_members
+        WHERE id = %s
+        AND user_id = %s
     """, (
         member_id,
         session["user_id"]
@@ -5670,6 +5695,9 @@ def raid():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("RAID", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -5677,47 +5705,43 @@ def raid():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM risks
-    WHERE user_id = %s
-    ORDER BY id DESC
+        SELECT *
+        FROM risks
+        WHERE user_id = %s
+        ORDER BY id DESC
     """, (
         session["user_id"],
     ))
-
     risks = cursor.fetchall()
 
     cursor.execute("""
-    SELECT *
-    FROM assumptions
-    WHERE user_id = %s
-    ORDER BY id DESC
+        SELECT *
+        FROM assumptions
+        WHERE user_id = %s
+        ORDER BY id DESC
     """, (
         session["user_id"],
     ))
-
     assumptions = cursor.fetchall()
 
     cursor.execute("""
-    SELECT *
-    FROM issues
-    WHERE user_id = %s
-    ORDER BY id DESC
+        SELECT *
+        FROM issues
+        WHERE user_id = %s
+        ORDER BY id DESC
     """, (
         session["user_id"],
     ))
-
     issues = cursor.fetchall()
 
     cursor.execute("""
-    SELECT *
-    FROM dependencies
-    WHERE user_id = %s
-    ORDER BY id DESC
+        SELECT *
+        FROM dependencies
+        WHERE user_id = %s
+        ORDER BY id DESC
     """, (
         session["user_id"],
     ))
-
     dependencies = cursor.fetchall()
 
     conn.close()
@@ -5730,11 +5754,15 @@ def raid():
         dependencies=dependencies
     )
 
+
 @app.route("/add-assumption", methods=["GET", "POST"])
 def add_assumption():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("RAID", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -5743,10 +5771,10 @@ def add_assumption():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY name ASC
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -5756,16 +5784,17 @@ def add_assumption():
     if request.method == "POST":
 
         cursor.execute("""
-        INSERT INTO assumptions (
-            user_id,
-            project_id,
-            title,
-            description,
-            owner,
-            status,
-            created_at
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO assumptions
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -5787,12 +5816,14 @@ def add_assumption():
         "add_assumption.html",
         projects=projects
     )
-
 @app.route("/add-dependency", methods=["GET", "POST"])
 def add_dependency():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("RAID", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -5801,10 +5832,10 @@ def add_dependency():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY name ASC
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -5814,17 +5845,18 @@ def add_dependency():
     if request.method == "POST":
 
         cursor.execute("""
-        INSERT INTO dependencies (
-            user_id,
-            project_id,
-            title,
-            description,
-            owner,
-            status,
-            target_date,
-            created_at
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO dependencies
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                owner,
+                status,
+                target_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -5853,6 +5885,9 @@ def team_utilisation():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Team", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -5895,12 +5930,81 @@ def team_utilisation():
 
         total_tasks = cursor.fetchone()["total_tasks"]
 
-        utilisation = min(total_tasks * 10, 100)
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status = 'Completed'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS active_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status != 'Completed'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        active_tasks = cursor.fetchone()["active_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS blocked_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status = 'Blocked'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+        if total_tasks > 0:
+            utilisation = round((active_tasks / total_tasks) * 100)
+        else:
+            utilisation = 0
 
         utilisation_data.append({
             "name": member["name"],
             "role": member["role"],
             "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "active_tasks": active_tasks,
+            "blocked_tasks": blocked_tasks,
             "utilisation": utilisation
         })
 
@@ -5993,8 +6097,6 @@ def team_utilisation():
             "Risk: Current utilisation levels may impact delivery performance and team wellbeing."
         )
 
-
-
     conn.close()
 
     return render_template(
@@ -6015,20 +6117,29 @@ def stakeholders():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Stakeholders", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    stakeholders = conn.execute("""
-    SELECT
-        stakeholders.*,
-        projects.name AS project_name
-    FROM stakeholders
-    LEFT JOIN projects
-    ON stakeholders.project_id = projects.id
-    WHERE stakeholders.user_id = %s
-    ORDER BY stakeholders.created_at DESC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            stakeholders.*,
+            projects.name AS project_name
+        FROM stakeholders
+        LEFT JOIN projects
+        ON stakeholders.project_id = projects.id
+        WHERE stakeholders.user_id = %s
+        ORDER BY stakeholders.created_at DESC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    stakeholders = cursor.fetchall()
 
     conn.close()
 
@@ -6037,40 +6148,50 @@ def stakeholders():
         stakeholders=stakeholders
     )
 
+
 @app.route("/add-stakeholder", methods=["GET", "POST"])
 def add_stakeholder():
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Stakeholders", "create"):
+        return "Access denied"
+
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY name ASC
-    """, (session["user_id"],))
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
 
     projects = cursor.fetchall()
 
     if request.method == "POST":
 
         cursor.execute("""
-        INSERT INTO stakeholders (
-            user_id,
-            project_id,
-            name,
-            role,
-            influence,
-            interest,
-            communication_plan,
-            owner,
-            status,
-            created_at
-        )
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO stakeholders
+            (
+                user_id,
+                project_id,
+                name,
+                role,
+                influence,
+                interest,
+                communication_plan,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -6096,11 +6217,15 @@ def add_stakeholder():
         projects=projects
     )
 
+
 @app.route("/decisions")
 def decisions():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Decisions", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6109,14 +6234,14 @@ def decisions():
     )
 
     cursor.execute("""
-    SELECT
-        decisions.*,
-        projects.name AS project_name
-    FROM decisions
-    LEFT JOIN projects
-    ON decisions.project_id = projects.id
-    WHERE decisions.user_id = %s
-    ORDER BY decisions.decision_date DESC
+        SELECT
+            decisions.*,
+            projects.name AS project_name
+        FROM decisions
+        LEFT JOIN projects
+        ON decisions.project_id = projects.id
+        WHERE decisions.user_id = %s
+        ORDER BY decisions.decision_date DESC
     """, (
         session["user_id"],
     ))
@@ -6130,11 +6255,15 @@ def decisions():
         decisions=decisions
     )
 
+
 @app.route("/add-decision", methods=["GET", "POST"])
 def add_decision():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Decisions", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6143,10 +6272,10 @@ def add_decision():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY name ASC
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -6156,18 +6285,19 @@ def add_decision():
     if request.method == "POST":
 
         cursor.execute("""
-        INSERT INTO decisions (
-            user_id,
-            project_id,
-            title,
-            decision_maker,
-            impact,
-            reason,
-            status,
-            decision_date,
-            created_at
-        )
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO decisions
+            (
+                user_id,
+                project_id,
+                title,
+                decision_maker,
+                impact,
+                reason,
+                status,
+                decision_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -6192,11 +6322,15 @@ def add_decision():
         projects=projects
     )
 
+
 @app.route("/actions")
 def actions():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Actions", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6205,22 +6339,22 @@ def actions():
     )
 
     cursor.execute("""
-    SELECT
-        actions.*,
-        projects.name AS project_name
-    FROM actions
-    LEFT JOIN projects
-    ON actions.project_id = projects.id
-    WHERE actions.user_id = %s
-    ORDER BY
-        CASE
-            WHEN actions.status = 'Completed' THEN 4
-            WHEN actions.status = 'Blocked' THEN 1
-            WHEN actions.priority = 'High' THEN 2
-            WHEN actions.status = 'In Progress' THEN 3
-            ELSE 5
-        END,
-        actions.due_date ASC
+        SELECT
+            actions.*,
+            projects.name AS project_name
+        FROM actions
+        LEFT JOIN projects
+        ON actions.project_id = projects.id
+        WHERE actions.user_id = %s
+        ORDER BY
+            CASE
+                WHEN actions.status = 'Completed' THEN 4
+                WHEN actions.status = 'Blocked' THEN 1
+                WHEN actions.priority = 'High' THEN 2
+                WHEN actions.status = 'In Progress' THEN 3
+                ELSE 5
+            END,
+            actions.due_date ASC
     """, (
         session["user_id"],
     ))
@@ -6234,11 +6368,15 @@ def actions():
         actions=actions
     )
 
+
 @app.route("/add-action", methods=["GET", "POST"])
 def add_action():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Actions", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6247,10 +6385,10 @@ def add_action():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY name ASC
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -6260,18 +6398,19 @@ def add_action():
     if request.method == "POST":
 
         cursor.execute("""
-        INSERT INTO actions (
-            user_id,
-            project_id,
-            title,
-            description,
-            owner,
-            priority,
-            status,
-            due_date,
-            created_at
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO actions
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                owner,
+                priority,
+                status,
+                due_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -6295,6 +6434,7 @@ def add_action():
         "add_action.html",
         projects=projects
     )
+
 
 @app.route("/lessons")
 def lessons():
