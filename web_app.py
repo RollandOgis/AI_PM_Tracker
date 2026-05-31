@@ -6517,6 +6517,67 @@ def stage_gates():
         stage_gates=stage_gates
     )
 
+@app.route("/add-stage-gate", methods=["GET", "POST"])
+def add_stage_gate():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO stage_gates
+            (
+                user_id,
+                project_id,
+                stage_name,
+                status,
+                reviewer,
+                comments,
+                review_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["project_id"],
+            request.form["stage_name"],
+            request.form["status"],
+            request.form["reviewer"],
+            request.form["comments"],
+            request.form["review_date"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/stage-gates")
+
+    conn.close()
+
+    return render_template(
+        "add_stage_gate.html",
+        projects=projects
+    )
+
 @app.route("/edit-stage-gate/<int:gate_id>", methods=["GET", "POST"])
 def edit_stage_gate(gate_id):
 
