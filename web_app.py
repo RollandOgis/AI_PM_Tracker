@@ -1857,53 +1857,62 @@ def kanban():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Tasks", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    tasks = conn.execute("""
-    SELECT
-        tasks.*,
-        projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    ORDER BY tasks.id DESC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        ORDER BY tasks.id DESC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    tasks = cursor.fetchall()
 
     grouped_tasks = {
         "Pending": [],
         "In Progress": [],
-        "Completed": []
+        "Completed": [],
+        "Blocked": []
     }
 
     for task in tasks:
 
-        members = conn.execute("""
-        SELECT
-            team_members.name,
-            team_members.role
-        FROM task_team_members
-        JOIN team_members
-        ON task_team_members.team_member_id = team_members.id
-        WHERE task_team_members.task_id = ?
+        cursor.execute("""
+            SELECT
+                team_members.name,
+                team_members.role
+            FROM task_team_members
+            JOIN team_members
+            ON task_team_members.team_member_id = team_members.id
+            WHERE task_team_members.task_id = %s
         """, (
             task["id"],
-        )).fetchall()
+        ))
+
+        members = cursor.fetchall()
 
         team_members = []
 
         for member in members:
 
             if member["role"]:
-
                 team_members.append(
                     f"{member['name']} - {member['role']}"
                 )
-
             else:
-
                 team_members.append(
                     member["name"]
                 )
@@ -1925,11 +1934,15 @@ def kanban():
         grouped_tasks=grouped_tasks
     )
 
+
 @app.route("/update-task-status", methods=["POST"])
 def update_task_status():
 
     if "user_id" not in session:
         return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    if not has_permission("Tasks", "edit"):
+        return jsonify({"success": False, "message": "Access denied"}), 403
 
     data = request.get_json()
 
@@ -1948,13 +1961,21 @@ def update_task_status():
 
     conn = get_db_connection()
 
-    conn.execute("""
-    UPDATE tasks
-    SET status = ?
-    WHERE id = ?
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE tasks
+        SET status = %s
+        WHERE id = %s
+        AND project_id IN (
+            SELECT id
+            FROM projects
+            WHERE user_id = %s
+        )
     """, (
         new_status,
-        task_id
+        task_id,
+        session["user_id"]
     ))
 
     conn.commit()
@@ -1973,6 +1994,9 @@ def calendar():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Tasks", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -1980,16 +2004,16 @@ def calendar():
     )
 
     cursor.execute("""
-    SELECT
-        tasks.*,
-        projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = %s
-    AND tasks.due_date IS NOT NULL
-    AND tasks.due_date != ''
-    ORDER BY tasks.due_date ASC
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.due_date IS NOT NULL
+        AND tasks.due_date != ''
+        ORDER BY tasks.due_date ASC
     """, (
         session["user_id"],
     ))
@@ -2020,29 +2044,49 @@ def calendar():
 
 @app.route("/report")
 def report():
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    projects = conn.execute(
-        "SELECT * FROM projects WHERE user_id = ? ORDER BY id DESC",
-        (session["user_id"],)
-    ).fetchall()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    ORDER BY
-        CASE
-            WHEN tasks.due_date IS NULL OR tasks.due_date = '' THEN 1
-            ELSE 0
-        END,
-        tasks.due_date ASC
-    """, (session["user_id"],)).fetchall()
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        ORDER BY
+            CASE
+                WHEN tasks.due_date IS NULL OR tasks.due_date = '' THEN 1
+                ELSE 0
+            END,
+            tasks.due_date ASC
+    """, (
+        session["user_id"],
+    ))
+
+    tasks = cursor.fetchall()
 
     total_tasks = len(tasks)
 
@@ -2086,33 +2130,58 @@ def pdf_report():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    """, (session["user_id"],)).fetchall()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
 
-    risks = conn.execute("""
-    SELECT *
-    FROM risks
-    WHERE user_id = ?
-    """, (session["user_id"],)).fetchall()
+    projects = cursor.fetchall()
 
-    issues = conn.execute("""
-    SELECT *
-    FROM issues
-    WHERE user_id = ?
-    """, (session["user_id"],)).fetchall()
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    tasks = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM risks
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    risks = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM issues
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    issues = cursor.fetchall()
 
     conn.close()
 
@@ -2146,8 +2215,6 @@ def pdf_report():
     width, height = A4
     y = height - 50
 
-    # TITLE
-
     pdf.setFont("Helvetica-Bold", 22)
     pdf.drawString(
         50,
@@ -2163,8 +2230,6 @@ def pdf_report():
         y,
         f"Generated: {date.today()}"
     )
-
-    # EXECUTIVE SUMMARY
 
     y -= 50
 
@@ -2197,8 +2262,6 @@ def pdf_report():
         f"Completion Rate: {completion_rate}%"
     )
 
-    # DELIVERY HEALTH
-
     y -= 40
 
     pdf.setFont("Helvetica-Bold", 15)
@@ -2221,8 +2284,6 @@ def pdf_report():
         y,
         f"Pending Tasks: {pending_tasks}"
     )
-
-    # RAID SUMMARY
 
     y -= 40
 
@@ -2247,8 +2308,6 @@ def pdf_report():
         f"Open Issues: {open_issues}"
     )
 
-    # PROJECTS
-
     y -= 40
 
     pdf.setFont("Helvetica-Bold", 15)
@@ -2271,8 +2330,6 @@ def pdf_report():
         )
 
         y -= 18
-
-    # TOP TASKS
 
     y -= 20
 
@@ -2309,21 +2366,34 @@ def pdf_report():
             "attachment; filename=executive_project_report.pdf"
         }
     )
-
 @app.route("/insights")
 def insights():
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    tasks = cursor.fetchall()
 
     conn.close()
 
@@ -2376,24 +2446,37 @@ def insights():
 
 @app.route("/export-tasks")
 def export_tasks():
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    tasks = conn.execute("""
-    SELECT tasks.title,
-           tasks.priority,
-           tasks.status,
-           tasks.due_date,
-           tasks.assigned_to,
-           tasks.attachment_url,
-           projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    """, (session["user_id"],)).fetchall()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            tasks.title,
+            tasks.priority,
+            tasks.status,
+            tasks.due_date,
+            tasks.assigned_to,
+            tasks.attachment_url,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    tasks = cursor.fetchall()
 
     conn.close()
 
@@ -2432,33 +2515,46 @@ def export_tasks():
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
+
     if "user_id" not in session:
         return redirect("/login")
 
     conn = get_db_connection()
 
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
     if request.method == "POST":
+
         avatar_initials = request.form["avatar_initials"]
 
-        conn.execute(
-            "UPDATE users SET avatar_initials = ? WHERE id = ?",
-            (
-                avatar_initials,
-                session["user_id"]
-            )
-        )
+        cursor.execute("""
+            UPDATE users
+            SET avatar_initials = %s
+            WHERE id = %s
+        """, (
+            avatar_initials,
+            session["user_id"]
+        ))
 
         conn.commit()
+
         session["avatar_initials"] = avatar_initials
 
         conn.close()
 
         return redirect("/")
 
-    user = conn.execute(
-        "SELECT * FROM users WHERE id = ?",
-        (session["user_id"],)
-    ).fetchone()
+    cursor.execute("""
+        SELECT *
+        FROM users
+        WHERE id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    user = cursor.fetchone()
 
     conn.close()
 
@@ -2470,36 +2566,52 @@ def profile():
 
 @app.route("/project-comments/<int:project_id>", methods=["GET", "POST"])
 def project_comments(project_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    project = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE id = %s
+        AND user_id = %s
     """, (
         project_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    project = cursor.fetchone()
 
     if not project:
         conn.close()
         return redirect("/")
 
     if request.method == "POST":
+
+        if not has_permission("Projects", "edit"):
+            conn.close()
+            return "Access denied"
+
         comment = request.form["comment"]
 
-        conn.execute("""
-        INSERT INTO comments (
-            project_id,
-            username,
-            comment,
-            created_at
-        )
-        VALUES (?, ?, ?, ?)
+        cursor.execute("""
+            INSERT INTO comments
+            (
+                project_id,
+                username,
+                comment,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s)
         """, (
             project_id,
             session.get("username", "User"),
@@ -2513,14 +2625,16 @@ def project_comments(project_id):
             f"{session.get('username', 'User')} commented on project {project['name']}"
         )
 
-    comments = conn.execute("""
-    SELECT *
-    FROM comments
-    WHERE project_id = ?
-    ORDER BY id DESC
+    cursor.execute("""
+        SELECT *
+        FROM comments
+        WHERE project_id = %s
+        ORDER BY id DESC
     """, (
         project_id,
-    )).fetchall()
+    ))
+
+    comments = cursor.fetchall()
 
     conn.close()
 
@@ -2533,29 +2647,41 @@ def project_comments(project_id):
 
 @app.route("/sprint-planner")
 def sprint_planner():
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Tasks", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    tasks = conn.execute("""
-    SELECT tasks.*, projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    AND tasks.status != 'Completed'
-    ORDER BY
-        CASE tasks.priority
-            WHEN 'High' THEN 1
-            WHEN 'Medium' THEN 2
-            WHEN 'Low' THEN 3
-            ELSE 4
-        END,
-        tasks.due_date ASC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status != 'Completed'
+        ORDER BY
+            CASE tasks.priority
+                WHEN 'High' THEN 1
+                WHEN 'Medium' THEN 2
+                WHEN 'Low' THEN 3
+                ELSE 4
+            END,
+            tasks.due_date ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    tasks = cursor.fetchall()
 
     conn.close()
 
@@ -2563,6 +2689,7 @@ def sprint_planner():
     recommendations = []
 
     for task in tasks:
+
         sprint_tasks.append(task)
 
         if task["priority"] == "High":
@@ -2594,43 +2721,56 @@ def sprint_planner():
 
 @app.route("/project/<int:project_id>")
 def project_detail(project_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    project = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE id = %s
+        AND user_id = %s
     """, (
         project_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    project = cursor.fetchone()
 
     if not project:
         conn.close()
         return redirect("/")
 
-    tasks = conn.execute("""
-    SELECT *
-    FROM tasks
-    WHERE project_id = ?
-    ORDER BY
-        CASE
-            WHEN due_date IS NULL OR due_date = '' THEN 1
-            ELSE 0
-        END,
-        due_date ASC
+    cursor.execute("""
+        SELECT *
+        FROM tasks
+        WHERE project_id = %s
+        ORDER BY
+            CASE
+                WHEN due_date IS NULL OR due_date = '' THEN 1
+                ELSE 0
+            END,
+            due_date ASC
     """, (
         project_id,
-    )).fetchall()
+    ))
+
+    tasks = cursor.fetchall()
 
     task_list = []
     completed_tasks = 0
 
     for task in tasks:
+
         overdue = is_overdue(task["due_date"], task["status"])
 
         if task["status"] == "Completed":
@@ -2670,58 +2810,55 @@ def project_detail(project_id):
         completion=completion
     )
 
+
 @app.route("/tasks")
 def tasks():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Tasks", "view"):
+        return "Access denied"
 
-    tasks = conn.execute("""
-    SELECT
-        tasks.*,
-        projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    ORDER BY tasks.id DESC
-    """, (
-        session["user_id"],
-    )).fetchall()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        ORDER BY tasks.id DESC
+    """, (session["user_id"],))
+
+    tasks = cursor.fetchall()
 
     all_tasks = []
 
     for task in tasks:
 
-        members = conn.execute("""
-        SELECT
-            team_members.name,
-            team_members.role
-        FROM task_team_members
-        JOIN team_members
-        ON task_team_members.team_member_id = team_members.id
-        WHERE task_team_members.task_id = ?
-        """, (
-            task["id"],
-        )).fetchall()
+        cursor.execute("""
+            SELECT
+                team_members.name,
+                team_members.role
+            FROM task_team_members
+            JOIN team_members
+            ON task_team_members.team_member_id = team_members.id
+            WHERE task_team_members.task_id = %s
+        """, (task["id"],))
+
+        members = cursor.fetchall()
 
         team_members = []
 
         for member in members:
-
             if member["role"]:
-
-                team_members.append(
-                    f"{member['name']} - {member['role']}"
-                )
-
+                team_members.append(f"{member['name']} - {member['role']}")
             else:
-
-                team_members.append(
-                    member["name"]
-                )
+                team_members.append(member["name"])
 
         all_tasks.append({
             "task": task,
@@ -2734,6 +2871,308 @@ def tasks():
         "tasks.html",
         all_tasks=all_tasks
     )
+@app.route("/add-task", methods=["GET", "POST"])
+def add_task():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Tasks", "create"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    team_members = cursor.fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        assigned_to = request.form.get("assigned_to", "")
+        priority = request.form.get("priority", "Medium")
+        status = request.form.get("status", "Pending")
+        due_date = request.form.get("due_date", "")
+
+        selected_team_members = request.form.getlist("team_member_ids")
+
+        estimated_hours = float(request.form.get("estimated_hours", 0) or 0)
+        actual_hours = float(request.form.get("actual_hours", 0) or 0)
+        hourly_rate = float(request.form.get("hourly_rate", 0) or 0)
+
+        cursor.execute("""
+            INSERT INTO tasks
+            (
+                project_id,
+                title,
+                description,
+                assigned_to,
+                priority,
+                status,
+                due_date,
+                estimated_hours,
+                actual_hours,
+                hourly_rate,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            project_id,
+            title,
+            description,
+            assigned_to,
+            priority,
+            status,
+            due_date,
+            estimated_hours,
+            actual_hours,
+            hourly_rate,
+            str(date.today())
+        ))
+
+        task_id = cursor.fetchone()["id"]
+
+        for member_id in selected_team_members:
+
+            cursor.execute("""
+                INSERT INTO task_team_members
+                (
+                    task_id,
+                    team_member_id
+                )
+                VALUES (%s,%s)
+            """, (
+                task_id,
+                member_id
+            ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a task"
+        )
+
+        return redirect("/tasks")
+
+    conn.close()
+
+    return render_template(
+        "add_task.html",
+        projects=projects,
+        team_members=team_members
+    )
+
+
+@app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
+def edit_task(task_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Tasks", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT
+            tasks.*
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE tasks.id = %s
+        AND projects.user_id = %s
+    """, (
+        task_id,
+        session["user_id"]
+    ))
+
+    task = cursor.fetchone()
+
+    if not task:
+        conn.close()
+        return redirect("/tasks")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    team_members = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT team_member_id
+        FROM task_team_members
+        WHERE task_id = %s
+    """, (task_id,))
+
+    selected_members = cursor.fetchall()
+
+    selected_member_ids = [
+        member["team_member_id"]
+        for member in selected_members
+    ]
+
+    if request.method == "POST":
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        assigned_to = request.form.get("assigned_to", "")
+        priority = request.form.get("priority", "Medium")
+        status = request.form.get("status", "Pending")
+        due_date = request.form.get("due_date", "")
+
+        selected_team_members = request.form.getlist("team_member_ids")
+
+        estimated_hours = float(request.form.get("estimated_hours", 0) or 0)
+        actual_hours = float(request.form.get("actual_hours", 0) or 0)
+        hourly_rate = float(request.form.get("hourly_rate", 0) or 0)
+
+        cursor.execute("""
+            UPDATE tasks
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                assigned_to = %s,
+                priority = %s,
+                status = %s,
+                due_date = %s,
+                estimated_hours = %s,
+                actual_hours = %s,
+                hourly_rate = %s
+            WHERE id = %s
+        """, (
+            project_id,
+            title,
+            description,
+            assigned_to,
+            priority,
+            status,
+            due_date,
+            estimated_hours,
+            actual_hours,
+            hourly_rate,
+            task_id
+        ))
+
+        cursor.execute("""
+            DELETE FROM task_team_members
+            WHERE task_id = %s
+        """, (task_id,))
+
+        for member_id in selected_team_members:
+
+            cursor.execute("""
+                INSERT INTO task_team_members
+                (
+                    task_id,
+                    team_member_id
+                )
+                VALUES (%s,%s)
+            """, (
+                task_id,
+                member_id
+            ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a task"
+        )
+
+        return redirect("/tasks")
+
+    conn.close()
+
+    return render_template(
+        "edit_task.html",
+        task=task,
+        projects=projects,
+        team_members=team_members,
+        selected_member_ids=selected_member_ids
+    )
+
+
+@app.route("/delete-task/<int:task_id>", methods=["POST"])
+def delete_task(task_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Tasks", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT
+            tasks.*
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE tasks.id = %s
+        AND projects.user_id = %s
+    """, (
+        task_id,
+        session["user_id"]
+    ))
+
+    task = cursor.fetchone()
+
+    cursor.execute("""
+        DELETE FROM task_team_members
+        WHERE task_id = %s
+    """, (task_id,))
+
+    cursor.execute("""
+        DELETE FROM tasks
+        WHERE id = %s
+    """, (task_id,))
+
+    conn.commit()
+    conn.close()
+
+    if task:
+        create_activity(
+            f"{session.get('username', 'User')} deleted task {task['title']}"
+        )
+
+    return redirect("/tasks")
 
 
 @app.route("/add-project", methods=["GET", "POST"])
@@ -2742,16 +3181,20 @@ def add_project():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Projects", "create"):
+        return "Access denied"
 
-    clients = conn.execute("""
-    SELECT *
-    FROM clients
-    WHERE user_id = ?
-    ORDER BY name ASC
-    """, (
-        session["user_id"],
-    )).fetchall()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM clients
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    clients = cursor.fetchall()
 
     if request.method == "POST":
 
@@ -2762,28 +3205,24 @@ def add_project():
         end_date = request.form.get("end_date", "")
         client_id = request.form.get("client_id")
 
-        estimated_budget = float(
-            request.form.get("estimated_budget", 0) or 0
-        )
+        estimated_budget = float(request.form.get("estimated_budget", 0) or 0)
+        actual_cost = float(request.form.get("actual_cost", 0) or 0)
 
-        actual_cost = float(
-            request.form.get("actual_cost", 0) or 0
-        )
-
-        conn.execute("""
-        INSERT INTO projects (
-            user_id,
-            client_id,
-            name,
-            description,
-            start_date,
-            end_date,
-            status,
-            estimated_budget,
-            actual_cost,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        cursor.execute("""
+            INSERT INTO projects
+            (
+                user_id,
+                client_id,
+                name,
+                description,
+                start_date,
+                end_date,
+                status,
+                estimated_budget,
+                actual_cost,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             client_id if client_id else None,
@@ -2820,30 +3259,36 @@ def edit_project(project_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Projects", "edit"):
+        return "Access denied"
 
-    project = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE id = ?
-    AND user_id = ?
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE id = %s
+        AND user_id = %s
     """, (
         project_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    project = cursor.fetchone()
 
     if not project:
         conn.close()
         return redirect("/")
 
-    clients = conn.execute("""
-    SELECT *
-    FROM clients
-    WHERE user_id = ?
-    ORDER BY name ASC
-    """, (
-        session["user_id"],
-    )).fetchall()
+    cursor.execute("""
+        SELECT *
+        FROM clients
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    clients = cursor.fetchall()
 
     if request.method == "POST":
 
@@ -2854,27 +3299,22 @@ def edit_project(project_id):
         end_date = request.form.get("end_date", "")
         client_id = request.form.get("client_id")
 
-        estimated_budget = float(
-            request.form.get("estimated_budget", 0) or 0
-        )
+        estimated_budget = float(request.form.get("estimated_budget", 0) or 0)
+        actual_cost = float(request.form.get("actual_cost", 0) or 0)
 
-        actual_cost = float(
-            request.form.get("actual_cost", 0) or 0
-        )
-
-        conn.execute("""
-        UPDATE projects
-        SET
-            client_id = ?,
-            name = ?,
-            description = ?,
-            start_date = ?,
-            end_date = ?,
-            status = ?,
-            estimated_budget = ?,
-            actual_cost = ?
-        WHERE id = ?
-        AND user_id = ?
+        cursor.execute("""
+            UPDATE projects
+            SET
+                client_id = %s,
+                name = %s,
+                description = %s,
+                start_date = %s,
+                end_date = %s,
+                status = %s,
+                estimated_budget = %s,
+                actual_cost = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
             client_id if client_id else None,
             name,
@@ -2905,33 +3345,44 @@ def edit_project(project_id):
         clients=clients
     )
 
+
 @app.route("/delete-project/<int:project_id>", methods=["POST"])
 def delete_project(project_id):
+
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Projects", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    project = conn.execute(
-        "SELECT * FROM projects WHERE id = ? AND user_id = ?",
-        (
-            project_id,
-            session["user_id"]
-        )
-    ).fetchone()
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        project_id,
+        session["user_id"]
+    ))
 
-    conn.execute(
-        "DELETE FROM tasks WHERE project_id = ?",
-        (project_id,)
-    )
+    project = cursor.fetchone()
 
-    conn.execute(
-        "DELETE FROM projects WHERE id = ? AND user_id = ?",
-        (
-            project_id,
-            session["user_id"]
-        )
-    )
+    cursor.execute("""
+        DELETE FROM tasks
+        WHERE project_id = %s
+    """, (project_id,))
+
+    cursor.execute("""
+        DELETE FROM projects
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        project_id,
+        session["user_id"]
+    ))
 
     conn.commit()
     conn.close()
@@ -2944,297 +3395,13 @@ def delete_project(project_id):
     return redirect("/")
 
 
-@app.route("/add-task", methods=["GET", "POST"])
-def add_task():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    ORDER BY name ASC
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    team_members = conn.execute("""
-    SELECT *
-    FROM team_members
-    WHERE user_id = ?
-    ORDER BY name ASC
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    if request.method == "POST":
-
-        project_id = request.form.get("project_id")
-        title = request.form.get("title", "")
-        description = request.form.get("description", "")
-        assigned_to = request.form.get("assigned_to", "")
-        priority = request.form.get("priority", "Medium")
-        status = request.form.get("status", "Pending")
-        due_date = request.form.get("due_date", "")
-
-        selected_team_members = request.form.getlist("team_member_ids")
-
-        estimated_hours = float(
-            request.form.get("estimated_hours", 0) or 0
-        )
-
-        actual_hours = float(
-            request.form.get("actual_hours", 0) or 0
-        )
-
-        hourly_rate = float(
-            request.form.get("hourly_rate", 0) or 0
-        )
-
-        cursor = conn.execute("""
-        INSERT INTO tasks (
-            project_id,
-            title,
-            description,
-            assigned_to,
-            priority,
-            status,
-            due_date,
-            estimated_hours,
-            actual_hours,
-            hourly_rate,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            project_id,
-            title,
-            description,
-            assigned_to,
-            priority,
-            status,
-            due_date,
-            estimated_hours,
-            actual_hours,
-            hourly_rate,
-            str(date.today())
-        ))
-
-        task_id = cursor.lastrowid
-
-        for member_id in selected_team_members:
-
-            conn.execute("""
-            INSERT INTO task_team_members (
-                task_id,
-                team_member_id
-            )
-            VALUES (?, ?)
-            """, (
-                task_id,
-                member_id
-            ))
-
-        conn.commit()
-        conn.close()
-
-        create_activity(
-            f"{session['username']} added a task"
-        )
-
-        return redirect("/tasks")
-
-    conn.close()
-
-    return render_template(
-        "add_task.html",
-        projects=projects,
-        team_members=team_members
-    )
-
-@app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
-def edit_task(task_id):
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    task = conn.execute("""
-    SELECT
-        tasks.*
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE tasks.id = ?
-    AND projects.user_id = ?
-    """, (
-        task_id,
-        session["user_id"]
-    )).fetchone()
-
-    if not task:
-        conn.close()
-        return redirect("/tasks")
-
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    ORDER BY name ASC
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    team_members = conn.execute("""
-    SELECT *
-    FROM team_members
-    WHERE user_id = ?
-    ORDER BY name ASC
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    selected_members = conn.execute("""
-    SELECT team_member_id
-    FROM task_team_members
-    WHERE task_id = ?
-    """, (
-        task_id,
-    )).fetchall()
-
-    selected_member_ids = [
-        member["team_member_id"]
-        for member in selected_members
-    ]
-
-    if request.method == "POST":
-
-        project_id = request.form.get("project_id")
-        title = request.form.get("title", "")
-        description = request.form.get("description", "")
-        assigned_to = request.form.get("assigned_to", "")
-        priority = request.form.get("priority", "Medium")
-        status = request.form.get("status", "Pending")
-        due_date = request.form.get("due_date", "")
-
-        selected_team_members = request.form.getlist("team_member_ids")
-
-        estimated_hours = float(
-            request.form.get("estimated_hours", 0) or 0
-        )
-
-        actual_hours = float(
-            request.form.get("actual_hours", 0) or 0
-        )
-
-        hourly_rate = float(
-            request.form.get("hourly_rate", 0) or 0
-        )
-
-        conn.execute("""
-        UPDATE tasks
-        SET
-            project_id = ?,
-            title = ?,
-            description = ?,
-            assigned_to = ?,
-            priority = ?,
-            status = ?,
-            due_date = ?,
-            estimated_hours = ?,
-            actual_hours = ?,
-            hourly_rate = ?
-        WHERE id = ?
-        """, (
-            project_id,
-            title,
-            description,
-            assigned_to,
-            priority,
-            status,
-            due_date,
-            estimated_hours,
-            actual_hours,
-            hourly_rate,
-            task_id
-        ))
-
-        conn.execute("""
-        DELETE FROM task_team_members
-        WHERE task_id = ?
-        """, (
-            task_id,
-        ))
-
-        for member_id in selected_team_members:
-
-            conn.execute("""
-            INSERT INTO task_team_members (
-                task_id,
-                team_member_id
-            )
-            VALUES (?, ?)
-            """, (
-                task_id,
-                member_id
-            ))
-
-        conn.commit()
-        conn.close()
-
-        create_activity(
-            f"{session['username']} updated a task"
-        )
-
-        return redirect("/tasks")
-
-    conn.close()
-
-    return render_template(
-        "edit_task.html",
-        task=task,
-        projects=projects,
-        team_members=team_members,
-        selected_member_ids=selected_member_ids
-    )
-
-@app.route("/delete-task/<int:task_id>", methods=["POST"])
-def delete_task(task_id):
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    task = conn.execute(
-        "SELECT * FROM tasks WHERE id = ?",
-        (task_id,)
-    ).fetchone()
-
-    conn.execute(
-        "DELETE FROM tasks WHERE id = ?",
-        (task_id,)
-    )
-
-    conn.commit()
-    conn.close()
-
-    if task:
-        create_activity(
-            f"{session.get('username', 'User')} deleted task {task['title']}"
-        )
-
-    return redirect("/tasks")
-
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
+
     error = None
 
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -3242,15 +3409,18 @@ def register():
         avatar_initials = username[:2].upper()
 
         conn = get_db_connection()
+        cursor = conn.cursor()
 
         try:
-            conn.execute("""
-            INSERT INTO users (
-                username,
-                password,
-                avatar_initials
-            )
-            VALUES (?, ?, ?)
+
+            cursor.execute("""
+                INSERT INTO users
+                (
+                    username,
+                    password,
+                    avatar_initials
+                )
+                VALUES (%s,%s,%s)
             """, (
                 username,
                 hashed_password,
@@ -3262,7 +3432,8 @@ def register():
 
             return redirect("/login")
 
-        except sqlite3.IntegrityError:
+        except Exception:
+
             conn.close()
             error = "Username already exists"
 
@@ -3274,23 +3445,36 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
         conn = get_db_connection()
 
-        user = conn.execute(
-            "SELECT * FROM users WHERE username = ?",
-            (username,)
-        ).fetchone()
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+            SELECT *
+            FROM users
+            WHERE username = %s
+        """, (
+            username,
+        ))
+
+        user = cursor.fetchone()
 
         conn.close()
 
         if user:
+
             stored_password = user["password"]
 
             if check_password_hash(stored_password, password) or stored_password == password:
+
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
                 session["avatar_initials"] = user["avatar_initials"] or user["username"][:2].upper()
@@ -3304,6 +3488,7 @@ def login():
 
 @app.route("/logout")
 def logout():
+
     session.clear()
 
     return redirect("/login")
@@ -3315,16 +3500,25 @@ def clients():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Clients", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    clients = conn.execute("""
-    SELECT *
-    FROM clients
-    WHERE user_id = ?
-    ORDER BY id DESC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM clients
+        WHERE user_id = %s
+        ORDER BY id DESC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    clients = cursor.fetchall()
 
     conn.close()
 
@@ -3333,11 +3527,15 @@ def clients():
         clients=clients
     )
 
+
 @app.route("/add-client", methods=["GET", "POST"])
 def add_client():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Clients", "create"):
+        return "Access denied"
 
     if request.method == "POST":
 
@@ -3353,19 +3551,21 @@ def add_client():
         )
 
         conn = get_db_connection()
+        cursor = conn.cursor()
 
-        conn.execute("""
-        INSERT INTO clients (
-            name,
-            company,
-            email,
-            phone,
-            status,
-            notes,
-            estimated_value,
-            user_id
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        cursor.execute("""
+            INSERT INTO clients
+            (
+                name,
+                company,
+                email,
+                phone,
+                status,
+                notes,
+                estimated_value,
+                user_id
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             name,
             company,
@@ -3384,11 +3584,14 @@ def add_client():
 
     return render_template("add_client.html")
 
-@app.route("/activity")
-def activity():
+@app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
+def edit_client(client_id):
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Clients", "edit"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -3397,62 +3600,16 @@ def activity():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM activities
-    ORDER BY id DESC
-    LIMIT 100
-    """)
-
-    activities = cursor.fetchall()
-
-    conn.close()
-
-    return render_template(
-        "activity.html",
-        activities=activities
-    )
-
-def create_activity(activity_text):
-
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-        INSERT INTO activities (
-            activity,
-            created_at
-        )
-        VALUES (%s, %s)
-        """, (
-            activity_text,
-            str(datetime.now())
-        ))
-
-        conn.commit()
-        conn.close()
-
-    except Exception as e:
-        print("Activity logging failed:", e)
-
-
-@app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
-def edit_client(client_id):
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    client = conn.execute("""
-    SELECT *
-    FROM clients
-    WHERE id = ?
-    AND user_id = ?
+        SELECT *
+        FROM clients
+        WHERE id = %s
+        AND user_id = %s
     """, (
         client_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    client = cursor.fetchone()
 
     if not client:
         conn.close()
@@ -3471,18 +3628,18 @@ def edit_client(client_id):
             request.form.get("estimated_value", 0) or 0
         )
 
-        conn.execute("""
-        UPDATE clients
-        SET
-            name = ?,
-            company = ?,
-            email = ?,
-            phone = ?,
-            status = ?,
-            notes = ?,
-            estimated_value = ?
-        WHERE id = ?
-        AND user_id = ?
+        cursor.execute("""
+            UPDATE clients
+            SET
+                name = %s,
+                company = %s,
+                email = %s,
+                phone = %s,
+                status = %s,
+                notes = %s,
+                estimated_value = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
             name,
             company,
@@ -3518,12 +3675,16 @@ def delete_client(client_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Clients", "delete"):
+        return "Access denied"
 
-    conn.execute("""
-    DELETE FROM clients
-    WHERE id = ?
-    AND user_id = ?
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM clients
+        WHERE id = %s
+        AND user_id = %s
     """, (
         client_id,
         session["user_id"]
@@ -3539,38 +3700,106 @@ def delete_client(client_id):
     return redirect("/clients")
 
 
+@app.route("/activity")
+def activity():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Activity", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM activities
+        ORDER BY id DESC
+        LIMIT 100
+    """)
+
+    activities = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "activity.html",
+        activities=activities
+    )
+
+
+def create_activity(activity_text):
+
+    try:
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO activities
+            (
+                activity,
+                created_at
+            )
+            VALUES (%s,%s)
+        """, (
+            activity_text,
+            str(datetime.now())
+        ))
+
+        conn.commit()
+        conn.close()
+
+    except Exception as e:
+
+        print("Activity logging failed:", e)
+
+
 @app.route("/advanced-search")
 def advanced_search():
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Tasks", "view"):
+        return "Access denied"
+
     search = request.args.get("search", "")
 
     conn = get_db_connection()
 
-    tasks = conn.execute("""
-    SELECT
-        tasks.*,
-        projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = ?
-    AND (
-        tasks.title LIKE ?
-        OR projects.name LIKE ?
-        OR tasks.status LIKE ?
-        OR tasks.priority LIKE ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
     )
-    ORDER BY tasks.id DESC
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND (
+            tasks.title ILIKE %s
+            OR projects.name ILIKE %s
+            OR tasks.status ILIKE %s
+            OR tasks.priority ILIKE %s
+        )
+        ORDER BY tasks.id DESC
     """, (
         session["user_id"],
         f"%{search}%",
         f"%{search}%",
         f"%{search}%",
         f"%{search}%"
-    )).fetchall()
+    ))
+
+    tasks = cursor.fetchall()
 
     conn.close()
 
@@ -3586,6 +3815,9 @@ def gantt():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -3593,19 +3825,19 @@ def gantt():
     )
 
     cursor.execute("""
-    SELECT
-        projects.*,
-        clients.name AS client_name
-    FROM projects
-    LEFT JOIN clients
-    ON projects.client_id = clients.id
-    WHERE projects.user_id = %s
-    ORDER BY
-        CASE
-            WHEN projects.start_date IS NULL OR projects.start_date = ''
-            THEN '9999-12-31'
-            ELSE projects.start_date
-        END ASC
+        SELECT
+            projects.*,
+            clients.name AS client_name
+        FROM projects
+        LEFT JOIN clients
+        ON projects.client_id = clients.id
+        WHERE projects.user_id = %s
+        ORDER BY
+            CASE
+                WHEN projects.start_date IS NULL OR projects.start_date = ''
+                THEN '9999-12-31'
+                ELSE projects.start_date
+            END ASC
     """, (
         session["user_id"],
     ))
@@ -3617,9 +3849,9 @@ def gantt():
     for project in projects:
 
         cursor.execute("""
-        SELECT COUNT(*) AS total_tasks
-        FROM tasks
-        WHERE project_id = %s
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
         """, (
             project["id"],
         ))
@@ -3627,10 +3859,10 @@ def gantt():
         total_tasks = cursor.fetchone()["total_tasks"]
 
         cursor.execute("""
-        SELECT COUNT(*) AS completed_tasks
-        FROM tasks
-        WHERE project_id = %s
-        AND status = 'Completed'
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
         """, (
             project["id"],
         ))
@@ -3660,11 +3892,15 @@ def gantt():
         current_date=str(date.today())
     )
 
+
 @app.route("/analytics")
 def analytics():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Reports", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -3673,13 +3909,13 @@ def analytics():
     )
 
     cursor.execute("""
-    SELECT
-        tasks.*,
-        projects.name AS project_name
-    FROM tasks
-    JOIN projects
-    ON tasks.project_id = projects.id
-    WHERE projects.user_id = %s
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
     """, (
         session["user_id"],
     ))
@@ -3762,11 +3998,15 @@ def analytics():
         ]
     )
 
+
 @app.route("/ai-assistant", methods=["GET", "POST"])
 def ai_assistant():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
 
     response_message = ""
 
@@ -3776,50 +4016,98 @@ def ai_assistant():
 
         conn = get_db_connection()
 
-        total_tasks = conn.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        """).fetchone()[0]
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
 
-        completed_tasks = conn.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE status = 'Completed'
-        """).fetchone()[0]
-
-        overdue_tasks = conn.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE due_date < ?
-        AND status != 'Completed'
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE projects.user_id = %s
         """, (
-            str(date.today()),
-        )).fetchone()[0]
+            session["user_id"],
+        ))
 
-        blocked_tasks = conn.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE status = 'Blocked'
-        """).fetchone()[0]
+        total_tasks = cursor.fetchone()["total_tasks"]
 
-        high_priority_tasks = conn.execute("""
-        SELECT COUNT(*)
-        FROM tasks
-        WHERE priority = 'High'
-        AND status != 'Completed'
-        """).fetchone()[0]
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE projects.user_id = %s
+            AND tasks.status = 'Completed'
+        """, (
+            session["user_id"],
+        ))
 
-        total_projects = conn.execute("""
-        SELECT COUNT(*)
-        FROM projects
-        """).fetchone()[0]
+        completed_tasks = cursor.fetchone()["completed_tasks"]
 
-        over_budget_projects = conn.execute("""
-        SELECT COUNT(*)
-        FROM projects
-        WHERE estimated_budget > 0
-        AND actual_cost > estimated_budget
-        """).fetchone()[0]
+        cursor.execute("""
+            SELECT COUNT(*) AS overdue_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE projects.user_id = %s
+            AND tasks.due_date < %s
+            AND tasks.status != 'Completed'
+        """, (
+            session["user_id"],
+            str(date.today())
+        ))
+
+        overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS blocked_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE projects.user_id = %s
+            AND tasks.status = 'Blocked'
+        """, (
+            session["user_id"],
+        ))
+
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS high_priority_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE projects.user_id = %s
+            AND tasks.priority = 'High'
+            AND tasks.status != 'Completed'
+        """, (
+            session["user_id"],
+        ))
+
+        high_priority_tasks = cursor.fetchone()["high_priority_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_projects
+            FROM projects
+            WHERE user_id = %s
+        """, (
+            session["user_id"],
+        ))
+
+        total_projects = cursor.fetchone()["total_projects"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS over_budget_projects
+            FROM projects
+            WHERE user_id = %s
+            AND estimated_budget > 0
+            AND actual_cost > estimated_budget
+        """, (
+            session["user_id"],
+        ))
+
+        over_budget_projects = cursor.fetchone()["over_budget_projects"]
 
         conn.close()
 
@@ -3887,479 +4175,6 @@ Give practical project management advice.
         response_message=response_message
     )
 
-@app.route("/export-report")
-def export_report():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_projects
-        FROM projects
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_projects = cursor.fetchone()["total_projects"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_tasks
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        WHERE projects.user_id = %s
-    """, (session["user_id"],))
-    total_tasks = cursor.fetchone()["total_tasks"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS completed_tasks
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        WHERE projects.user_id = %s
-        AND tasks.status = 'Completed'
-    """, (session["user_id"],))
-    completed_tasks = cursor.fetchone()["completed_tasks"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_risks
-        FROM risks
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_risks = cursor.fetchone()["total_risks"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_issues
-        FROM issues
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_issues = cursor.fetchone()["total_issues"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_changes
-        FROM changes
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_changes = cursor.fetchone()["total_changes"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_benefits
-        FROM benefits
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_benefits = cursor.fetchone()["total_benefits"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS realised_benefits
-        FROM benefits
-        WHERE user_id = %s
-        AND status = 'Realised'
-    """, (session["user_id"],))
-    realised_benefits = cursor.fetchone()["realised_benefits"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS in_progress_benefits
-        FROM benefits
-        WHERE user_id = %s
-        AND status = 'In Progress'
-    """, (session["user_id"],))
-    in_progress_benefits = cursor.fetchone()["in_progress_benefits"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS at_risk_benefits
-        FROM benefits
-        WHERE user_id = %s
-        AND status = 'At Risk'
-    """, (session["user_id"],))
-    at_risk_benefits = cursor.fetchone()["at_risk_benefits"]
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_team_members
-        FROM team_members
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_team_members = cursor.fetchone()["total_team_members"]
-
-    cursor.execute("""
-                   SELECT COUNT(*) AS total_stakeholders
-                   FROM stakeholders
-                   WHERE user_id = %s
-                   """, (session["user_id"],))
-
-    total_stakeholders = cursor.fetchone()["total_stakeholders"]
-
-    cursor.execute("""
-                   SELECT COUNT(*) AS high_influence
-                   FROM stakeholders
-                   WHERE user_id = %s
-                     AND influence = 'High'
-                   """, (session["user_id"],))
-
-    high_influence = cursor.fetchone()["high_influence"]
-
-    cursor.execute("""
-                   SELECT COUNT(*) AS medium_influence
-                   FROM stakeholders
-                   WHERE user_id = %s
-                     AND influence = 'Medium'
-                   """, (session["user_id"],))
-
-    medium_influence = cursor.fetchone()["medium_influence"]
-
-    cursor.execute("""
-                   SELECT COUNT(*) AS low_influence
-                   FROM stakeholders
-                   WHERE user_id = %s
-                     AND influence = 'Low'
-                   """, (session["user_id"],))
-
-    low_influence = cursor.fetchone()["low_influence"]
-
-    cursor.execute("""
-                   SELECT title
-                   FROM risks
-                   WHERE user_id = %s
-                   ORDER BY id DESC LIMIT 3
-                   """, (session["user_id"],))
-
-    top_risks = cursor.fetchall()
-
-    cursor.execute("""
-                   SELECT title
-                   FROM issues
-                   WHERE user_id = %s
-                   ORDER BY id DESC LIMIT 3
-                   """, (session["user_id"],))
-
-    top_issues = cursor.fetchall()
-
-
-
-    conn.close()
-
-    completion_percentage = 0
-
-    if total_tasks > 0:
-        completion_percentage = round(
-            (completed_tasks / total_tasks) * 100
-        )
-
-    if completion_percentage >= 75:
-        portfolio_health = "Green"
-    elif completion_percentage >= 40:
-        portfolio_health = "Amber"
-    else:
-        portfolio_health = "Red"
-
-    pdf_buffer = BytesIO()
-
-    doc = SimpleDocTemplate(pdf_buffer)
-
-    styles = getSampleStyleSheet()
-
-    content = []
-
-    content.append(
-        Paragraph(
-            "AI PM Tracker Executive Portfolio Report",
-            styles["Title"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Generated: {date.today()}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 20))
-
-    content.append(
-        Paragraph(
-            "Portfolio Summary",
-            styles["Heading2"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Total Projects: {total_projects}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Total Tasks: {total_tasks}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Completed Tasks: {completed_tasks}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Completion Rate: {completion_percentage}%",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Portfolio Health: {portfolio_health}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 15))
-
-    content.append(
-        Paragraph(
-            "Governance Summary",
-            styles["Heading2"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Risk Register Items: {total_risks}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Issue Register Items: {total_issues}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Change Register Items: {total_changes}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 15))
-
-    content.append(
-        Paragraph(
-            "Benefits Summary",
-            styles["Heading2"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Benefits Logged: {total_benefits}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Realised Benefits: {realised_benefits}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"In Progress Benefits: {in_progress_benefits}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"At Risk Benefits: {at_risk_benefits}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 15))
-
-    content.append(
-        Paragraph(
-            "Team Summary",
-            styles["Heading2"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Team Members: {total_team_members}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Available Resources: {total_team_members}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 15))
-
-    content.append(
-        Paragraph(
-            "Stakeholder Summary",
-            styles["Heading2"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Total Stakeholders: {total_stakeholders}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"High Influence: {high_influence}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Medium Influence: {medium_influence}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            f"Low Influence: {low_influence}",
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 15))
-
-    content.append(
-        Paragraph(
-            "Top Issues",
-            styles["Heading2"]
-        )
-    )
-
-    if top_issues:
-
-        for issue in top_issues:
-            content.append(
-                Paragraph(
-                    f"- {issue['title']}",
-                    styles["BodyText"]
-                )
-            )
-
-    else:
-
-        content.append(
-            Paragraph(
-                "No issues recorded.",
-                styles["BodyText"]
-            )
-        )
-
-    content.append(Spacer(1, 15))
-
-    content.append(
-        Paragraph(
-            "Top Risks",
-            styles["Heading2"]
-        )
-    )
-
-    if top_risks:
-
-        for risk in top_risks:
-            content.append(
-                Paragraph(
-                    f"- {risk['title']}",
-                    styles["BodyText"]
-                )
-            )
-
-    else:
-
-        content.append(
-            Paragraph(
-                "No risks recorded.",
-                styles["BodyText"]
-            )
-        )
-
-    content.append(
-        Paragraph(
-            "Executive Commentary",
-            styles["Heading2"]
-        )
-    )
-
-    if completion_percentage >= 75:
-        commentary = (
-            "Portfolio performance is healthy. "
-            "Project delivery is progressing well with a strong completion rate."
-        )
-    elif completion_percentage >= 40:
-        commentary = (
-            "Portfolio delivery is progressing steadily. "
-            "Management attention should focus on risks, issues and upcoming milestones."
-        )
-    else:
-        commentary = (
-            "Portfolio performance requires attention. "
-            "Project delivery and governance controls should be reviewed."
-        )
-
-    content.append(
-        Paragraph(
-            commentary,
-            styles["BodyText"]
-        )
-    )
-
-    content.append(Spacer(1, 20))
-
-    content.append(
-        Paragraph(
-            "Generated by AI PM Tracker",
-            styles["Italic"]
-        )
-    )
-
-    content.append(
-        Paragraph(
-            "Governance Foundation Executive Report",
-            styles["Italic"]
-        )
-    )
-
-    doc.build(content)
-
-    pdf_buffer.seek(0)
-
-    return send_file(
-        pdf_buffer,
-        as_attachment=True,
-        download_name="Executive_Portfolio_Report.pdf",
-        mimetype="application/pdf"
-    )
 
 @app.route("/risks")
 def risks():
@@ -6876,6 +6691,9 @@ def executive_dashboard():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -6909,7 +6727,9 @@ def executive_dashboard():
     completed_tasks = cursor.fetchone()["completed_tasks"]
 
     if total_tasks > 0:
-        portfolio_health = round((completed_tasks / total_tasks) * 100)
+        portfolio_health = round(
+            (completed_tasks / total_tasks) * 100
+        )
     else:
         portfolio_health = 0
 
@@ -6921,11 +6741,10 @@ def executive_dashboard():
     total_risks = cursor.fetchone()["total_risks"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS total_issues
-                   FROM issues
-                   WHERE user_id = %s
-                   """, (session["user_id"],))
-
+        SELECT COUNT(*) AS total_issues
+        FROM issues
+        WHERE user_id = %s
+    """, (session["user_id"],))
     total_issues = cursor.fetchone()["total_issues"]
 
     cursor.execute("""
@@ -6936,7 +6755,10 @@ def executive_dashboard():
     """, (session["user_id"],))
     high_risks = cursor.fetchone()["high_risks"]
 
-    risk_health = max(100 - (high_risks * 20), 0)
+    risk_health = max(
+        100 - (high_risks * 20),
+        0
+    )
 
     cursor.execute("""
         SELECT COUNT(*) AS total_benefits
@@ -6954,7 +6776,9 @@ def executive_dashboard():
     realised_benefits = cursor.fetchone()["realised_benefits"]
 
     if total_benefits > 0:
-        benefits_health = round((realised_benefits / total_benefits) * 100)
+        benefits_health = round(
+            (realised_benefits / total_benefits) * 100
+        )
     else:
         benefits_health = 0
 
@@ -6965,13 +6789,24 @@ def executive_dashboard():
         FROM budgets
         WHERE user_id = %s
     """, (session["user_id"],))
+
     budget_data = cursor.fetchone()
 
-    total_budget = float(budget_data["total_budget"] or 0)
-    total_actual = float(budget_data["total_actual"] or 0)
+    total_budget = float(
+        budget_data["total_budget"] or 0
+    )
+
+    total_actual = float(
+        budget_data["total_actual"] or 0
+    )
 
     if total_budget > 0:
-        financial_health = max(100 - round((total_actual / total_budget) * 100), 0)
+        financial_health = max(
+            100 - round(
+                (total_actual / total_budget) * 100
+            ),
+            0
+        )
     else:
         financial_health = 0
 
@@ -6980,6 +6815,7 @@ def executive_dashboard():
         FROM team_members
         WHERE user_id = %s
     """, (session["user_id"],))
+
     total_team_members = cursor.fetchone()["total_team_members"]
 
     resource_health = 100
@@ -6999,54 +6835,60 @@ def executive_dashboard():
 
     if overall_executive_health >= 75:
         executive_status = "Green"
+
     elif overall_executive_health >= 50:
         executive_status = "Amber"
+
     else:
         executive_status = "Red"
 
     cursor.execute("""
-                   SELECT COUNT(*) AS total_assumptions
-                   FROM assumptions
-                   WHERE user_id = %s
-                   """, (session["user_id"],))
+        SELECT COUNT(*) AS total_assumptions
+        FROM assumptions
+        WHERE user_id = %s
+    """, (session["user_id"],))
+
     total_assumptions = cursor.fetchone()["total_assumptions"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS total_dependencies
-                   FROM dependencies
-                   WHERE user_id = %s
-                   """, (session["user_id"],))
+        SELECT COUNT(*) AS total_dependencies
+        FROM dependencies
+        WHERE user_id = %s
+    """, (session["user_id"],))
+
     total_dependencies = cursor.fetchone()["total_dependencies"]
 
     raid_total = (
-            total_risks +
-            total_assumptions +
-            total_issues +
-            total_dependencies
+        total_risks +
+        total_assumptions +
+        total_issues +
+        total_dependencies
     )
 
     if raid_total <= 5:
         raid_health = "Green"
+
     elif raid_total <= 12:
         raid_health = "Amber"
+
     else:
         raid_health = "Red"
 
     cursor.execute("""
-                   SELECT COUNT(*) AS healthy_projects
-                   FROM projects
-                   WHERE user_id = %s
-                     AND status = 'Completed'
-                   """, (session["user_id"],))
+        SELECT COUNT(*) AS healthy_projects
+        FROM projects
+        WHERE user_id = %s
+        AND status = 'Completed'
+    """, (session["user_id"],))
 
     healthy_projects = cursor.fetchone()["healthy_projects"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS active_projects
-                   FROM projects
-                   WHERE user_id = %s
-                     AND status = 'In Progress'
-                   """, (session["user_id"],))
+        SELECT COUNT(*) AS active_projects
+        FROM projects
+        WHERE user_id = %s
+        AND status = 'In Progress'
+    """, (session["user_id"],))
 
     active_projects = cursor.fetchone()["active_projects"]
 
@@ -7082,6 +6924,9 @@ def resource_heatmap():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Team", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7124,7 +6969,10 @@ def resource_heatmap():
 
         total_tasks = cursor.fetchone()["total_tasks"]
 
-        utilisation = min(total_tasks * 10, 100)
+        utilisation = min(
+            total_tasks * 10,
+            100
+        )
 
         if utilisation >= 80:
 
@@ -7183,6 +7031,9 @@ def capacity_forecast():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Team", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -7224,16 +7075,24 @@ def capacity_forecast():
 
         total_tasks = cursor.fetchone()["total_tasks"]
 
-        current_utilisation = min(total_tasks * 10, 100)
+        current_utilisation = min(
+            total_tasks * 10,
+            100
+        )
 
-        forecasted_utilisation = min(current_utilisation + 15, 100)
+        forecasted_utilisation = min(
+            current_utilisation + 15,
+            100
+        )
 
         available_capacity = 100 - current_utilisation
 
         if forecasted_utilisation >= 80:
             forecast_risk = "High"
+
         elif forecasted_utilisation >= 50:
             forecast_risk = "Medium"
+
         else:
             forecast_risk = "Low"
 
@@ -7259,6 +7118,9 @@ def skills_matrix():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Team", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7290,6 +7152,9 @@ def stage_gates():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Stage Gates", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -7318,11 +7183,15 @@ def stage_gates():
         stage_gates=stage_gates
     )
 
+
 @app.route("/add-stage-gate", methods=["GET", "POST"])
 def add_stage_gate():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Stage Gates", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7379,11 +7248,15 @@ def add_stage_gate():
         projects=projects
     )
 
+
 @app.route("/edit-stage-gate/<int:gate_id>", methods=["GET", "POST"])
 def edit_stage_gate(gate_id):
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Stage Gates", "edit"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7403,6 +7276,10 @@ def edit_stage_gate(gate_id):
 
     gate = cursor.fetchone()
 
+    if not gate:
+        conn.close()
+        return redirect("/stage-gates")
+
     if request.method == "POST":
 
         cursor.execute("""
@@ -7414,13 +7291,15 @@ def edit_stage_gate(gate_id):
                 comments = %s,
                 review_date = %s
             WHERE id = %s
+            AND user_id = %s
         """, (
             request.form.get("stage_name"),
             request.form.get("status"),
             request.form.get("reviewer"),
             request.form.get("comments"),
             request.form.get("review_date"),
-            gate_id
+            gate_id,
+            session["user_id"]
         ))
 
         conn.commit()
@@ -7435,17 +7314,19 @@ def edit_stage_gate(gate_id):
         gate=gate
     )
 
+
 @app.route("/delete-stage-gate/<int:gate_id>")
 def delete_stage_gate(gate_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Stage Gates", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor()
 
     cursor.execute("""
         DELETE FROM stage_gates
@@ -7466,6 +7347,9 @@ def approvals():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Approvals", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7501,6 +7385,9 @@ def add_approval():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Approvals", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7565,6 +7452,9 @@ def edit_approval(id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Approvals", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -7582,6 +7472,10 @@ def edit_approval(id):
     ))
 
     approval = cursor.fetchone()
+
+    if not approval:
+        conn.close()
+        return redirect("/approvals")
 
     cursor.execute("""
         SELECT *
@@ -7640,11 +7534,12 @@ def approve_approval(id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Approvals", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE approvals
@@ -7669,11 +7564,12 @@ def reject_approval(id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Approvals", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE approvals
@@ -7698,11 +7594,12 @@ def delete_approval(id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Approvals", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor()
 
     cursor.execute("""
         DELETE FROM approvals
@@ -7723,6 +7620,9 @@ def governance_reviews():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Governance Reviews", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7758,6 +7658,9 @@ def add_governance_review():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Governance Reviews", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7822,11 +7725,15 @@ def add_governance_review():
         projects=projects
     )
 
+
 @app.route("/project-prioritisation")
 def project_prioritisation():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Project Prioritisation", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7862,6 +7769,9 @@ def add_project_prioritisation():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Project Prioritisation", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7930,11 +7840,15 @@ def add_project_prioritisation():
         projects=projects
     )
 
+
 @app.route("/programmes")
 def programmes():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Programmes", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -7966,6 +7880,9 @@ def add_programme():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Programmes", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8016,29 +7933,27 @@ def add_programme():
 
     return render_template("add_programme.html")
 
+
 @app.route("/portfolio-health")
 def portfolio_health():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Portfolio Health", "view"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM portfolio_health
         WHERE user_id = %s
         ORDER BY created_at DESC
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
 
     health_records = cursor.fetchall()
-
     conn.close()
 
     return render_template(
@@ -8053,11 +7968,11 @@ def add_portfolio_health():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Portfolio Health", "create"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     if request.method == "POST":
 
@@ -8094,52 +8009,45 @@ def add_portfolio_health():
 
     return render_template("add_portfolio_health.html")
 
+
 @app.route("/executive-charts")
 def executive_charts():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Reports", "view"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT COUNT(*) AS total_projects
         FROM projects
         WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
     total_projects = cursor.fetchone()
 
     cursor.execute("""
         SELECT COUNT(*) AS total_risks
         FROM risks
         WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
     total_risks = cursor.fetchone()
 
     cursor.execute("""
         SELECT COUNT(*) AS total_issues
         FROM issues
         WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
     total_issues = cursor.fetchone()
 
     cursor.execute("""
         SELECT COUNT(*) AS total_changes
         FROM changes
         WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
     total_changes = cursor.fetchone()
 
     cursor.execute("""
@@ -8148,9 +8056,7 @@ def executive_charts():
         WHERE user_id = %s
         ORDER BY created_at DESC
         LIMIT 1
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
     latest_health = cursor.fetchone()
 
     conn.close()
@@ -8163,29 +8069,28 @@ def executive_charts():
         total_changes=total_changes,
         latest_health=latest_health
     )
+
+
 @app.route("/portfolio-trends")
 def portfolio_trends():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Reports", "view"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM portfolio_health
         WHERE user_id = %s
         ORDER BY created_at ASC
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
 
     trends = cursor.fetchall()
-
     conn.close()
 
     return render_template(
@@ -8193,17 +8098,18 @@ def portfolio_trends():
         trends=trends
     )
 
+
 @app.route("/financial-trends")
 def financial_trends():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Reports", "view"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -8214,12 +8120,9 @@ def financial_trends():
         ON budgets.project_id = projects.id
         WHERE budgets.user_id = %s
         ORDER BY budgets.created_at ASC
-    """, (
-        session["user_id"],
-    ))
+    """, (session["user_id"],))
 
     budgets = cursor.fetchall()
-
     conn.close()
 
     return render_template(
@@ -8227,11 +8130,15 @@ def financial_trends():
         budgets=budgets
     )
 
+
 @app.route("/portfolio-pdf-report")
 def portfolio_pdf_report():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Reports", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8407,11 +8314,15 @@ def portfolio_pdf_report():
 
     return response
 
+
 @app.route("/ai-risk-engine")
 def ai_risk_engine():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8478,11 +8389,15 @@ def ai_risk_engine():
         ai_risks=ai_risks
     )
 
+
 @app.route("/ai-project-intelligence")
 def ai_project_intelligence():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8616,11 +8531,16 @@ def ai_project_intelligence():
         "ai_project_intelligence.html",
         project_intelligence=project_intelligence
     )
+
+
 @app.route("/ai-sprint-management")
 def ai_sprint_management():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8705,11 +8625,15 @@ def ai_sprint_management():
         sprint_recommendations=sprint_recommendations
     )
 
+
 @app.route("/ai-executive-assistant")
 def ai_executive_assistant():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8747,12 +8671,12 @@ def ai_executive_assistant():
     open_issues = cursor.fetchone()["open_issues"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS pending_changes
-                   FROM changes
-                   WHERE user_id = %s
-                   """, (
-                       session["user_id"],
-                   ))
+        SELECT COUNT(*) AS pending_changes
+        FROM changes
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
     pending_changes = cursor.fetchone()["pending_changes"]
 
     cursor.execute("""
@@ -8797,9 +8721,11 @@ def ai_executive_assistant():
     if health_score >= 75 and open_risks <= 3 and open_issues <= 3:
         executive_summary = "Portfolio position is healthy. Current delivery indicators suggest the portfolio is broadly under control."
         board_recommendation = "Continue monitoring key projects and maintain the current governance rhythm."
+
     elif health_score >= 50:
         executive_summary = "Portfolio position requires attention. Some delivery or governance indicators suggest potential pressure."
         board_recommendation = "Review high-priority projects, open risks, issues and budget exposure in the next governance meeting."
+
     else:
         executive_summary = "Portfolio position is at risk. Current indicators suggest escalation may be required."
         board_recommendation = "Escalate portfolio health, review recovery plans and assign ownership for urgent corrective actions."
@@ -8822,8 +8748,12 @@ def ai_executive_assistant():
 
 @app.route("/audit-logs")
 def audit_logs():
+
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Audit Logs", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8832,13 +8762,13 @@ def audit_logs():
     )
 
     cursor.execute("""
-                   SELECT *
-                   FROM audit_logs
-                   WHERE user_id = %s
-                   ORDER BY id DESC
-                   """, (
-                       session["user_id"],
-                   ))
+        SELECT *
+        FROM audit_logs
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
 
     logs = cursor.fetchall()
 
@@ -8848,6 +8778,7 @@ def audit_logs():
         "audit_logs.html",
         logs=logs
     )
+
 
 def add_audit_log(
     user_id,
@@ -8881,11 +8812,15 @@ def add_audit_log(
     conn.commit()
     conn.close()
 
+
 @app.route("/user-roles")
 def user_roles():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8914,6 +8849,9 @@ def add_user_role():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     if request.method == "POST":
 
@@ -8944,11 +8882,15 @@ def add_user_role():
         "add_user_role.html"
     )
 
+
 @app.route("/delete-user-role/<int:id>")
 def delete_user_role(id):
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "delete"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8964,12 +8906,17 @@ def delete_user_role(id):
     conn.commit()
     conn.close()
 
+    return redirect("/user-roles")
+
 
 @app.route("/permissions")
 def permissions():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -8998,6 +8945,9 @@ def add_permission():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     if request.method == "POST":
 
@@ -9041,6 +8991,9 @@ def delete_permission(id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Admin", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor()
@@ -9057,11 +9010,15 @@ def delete_permission(id):
 
     return redirect("/permissions")
 
+
 @app.route("/admin-dashboard")
 def admin_dashboard():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9096,6 +9053,7 @@ def admin_dashboard():
         ORDER BY id DESC
         LIMIT 10
     """)
+
     recent_logs = cursor.fetchall()
 
     conn.close()
@@ -9117,6 +9075,9 @@ def user_management():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9142,11 +9103,15 @@ def user_management():
         users=users
     )
 
+
 @app.route("/alerts")
 def alerts():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Reports", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9216,11 +9181,15 @@ def alerts():
         pending_approvals=pending_approvals
     )
 
+
 @app.route("/organisations")
 def organisations():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9252,6 +9221,9 @@ def add_organisation():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     if request.method == "POST":
 
@@ -9286,11 +9258,15 @@ def add_organisation():
 
     return render_template("add_organisation.html")
 
+
 @app.route("/workspaces")
 def workspaces():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9326,6 +9302,9 @@ def add_workspace():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9380,11 +9359,15 @@ def add_workspace():
         organisations=organisations
     )
 
+
 @app.route("/subscription-plans")
 def subscription_plans():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9416,6 +9399,9 @@ def add_subscription_plan():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     if request.method == "POST":
 
@@ -9462,6 +9448,9 @@ def customer_subscriptions():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -9499,6 +9488,9 @@ def add_customer_subscription():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9567,11 +9559,15 @@ def add_customer_subscription():
         plans=plans
     )
 
+
 @app.route("/notification-settings")
 def notification_settings():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9603,6 +9599,9 @@ def add_notification_setting():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
 
     if request.method == "POST":
 
@@ -9637,11 +9636,15 @@ def add_notification_setting():
 
     return render_template("add_notification_setting.html")
 
+
 @app.route("/billing-dashboard")
 def billing_dashboard():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -9693,6 +9696,7 @@ def billing_dashboard():
         active_subscriptions=active_subscriptions,
         unpaid_subscriptions=unpaid_subscriptions
     )
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
