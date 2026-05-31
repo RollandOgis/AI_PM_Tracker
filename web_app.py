@@ -6442,6 +6442,9 @@ def lessons():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Lessons", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -6449,14 +6452,14 @@ def lessons():
     )
 
     cursor.execute("""
-    SELECT
-        lessons.*,
-        projects.name AS project_name
-    FROM lessons
-    LEFT JOIN projects
-    ON lessons.project_id = projects.id
-    WHERE lessons.user_id = %s
-    ORDER BY lessons.created_at DESC
+        SELECT
+            lessons.*,
+            projects.name AS project_name
+        FROM lessons
+        LEFT JOIN projects
+        ON lessons.project_id = projects.id
+        WHERE lessons.user_id = %s
+        ORDER BY lessons.created_at DESC
     """, (
         session["user_id"],
     ))
@@ -6470,11 +6473,15 @@ def lessons():
         lessons=lessons
     )
 
+
 @app.route("/add-lesson", methods=["GET", "POST"])
 def add_lesson():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Lessons", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6483,10 +6490,10 @@ def add_lesson():
     )
 
     cursor.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = %s
-    ORDER BY name ASC
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -6496,19 +6503,20 @@ def add_lesson():
     if request.method == "POST":
 
         cursor.execute("""
-        INSERT INTO lessons (
-            user_id,
-            project_id,
-            title,
-            what_happened,
-            what_went_well,
-            what_went_wrong,
-            recommendation,
-            owner,
-            status,
-            created_at
-        )
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            INSERT INTO lessons
+            (
+                user_id,
+                project_id,
+                title,
+                what_happened,
+                what_went_well,
+                what_went_wrong,
+                recommendation,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -6534,11 +6542,15 @@ def add_lesson():
         projects=projects
     )
 
+
 @app.route("/budgets")
 def budgets():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Budgets", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6589,11 +6601,9 @@ def budgets():
     if budget_usage <= 70:
         financial_health = "Green"
         financial_health_message = "Financial position is healthy."
-
     elif budget_usage <= 90:
         financial_health = "Amber"
         financial_health_message = "Budget usage requires monitoring."
-
     else:
         financial_health = "Red"
         financial_health_message = "Budget usage is high and requires attention."
@@ -6634,11 +6644,15 @@ def budgets():
         financial_recommendation=financial_recommendation
     )
 
+
 @app.route("/add-budget", methods=["GET", "POST"])
 def add_budget():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Budgets", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6673,7 +6687,6 @@ def add_budget():
         ))
 
         conn.commit()
-
         conn.close()
 
         return redirect("/budgets")
@@ -6696,11 +6709,15 @@ def add_budget():
         projects=projects
     )
 
+
 @app.route("/project-health")
 def project_health():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Project Health", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -6725,13 +6742,13 @@ def project_health():
 
         project_id = project["id"]
 
-        # Tasks
-
         cursor.execute("""
             SELECT COUNT(*) AS total_tasks
             FROM tasks
             WHERE project_id = %s
-        """, (project_id,))
+        """, (
+            project_id,
+        ))
 
         total_tasks = cursor.fetchone()["total_tasks"]
 
@@ -6740,37 +6757,37 @@ def project_health():
             FROM tasks
             WHERE project_id = %s
             AND status = 'Completed'
-        """, (project_id,))
+        """, (
+            project_id,
+        ))
 
         completed_tasks = cursor.fetchone()["completed_tasks"]
-
-        # Risks
 
         cursor.execute("""
             SELECT COUNT(*) AS risk_count
             FROM risks
             WHERE project_id = %s
-        """, (project_id,))
+        """, (
+            project_id,
+        ))
 
         risk_count = cursor.fetchone()["risk_count"]
-
-        # Budget
 
         cursor.execute("""
             SELECT *
             FROM budgets
             WHERE project_id = %s
             LIMIT 1
-        """, (project_id,))
+        """, (
+            project_id,
+        ))
 
         budget = cursor.fetchone()
 
         schedule_score = 100
 
         if total_tasks > 0:
-            schedule_score = round(
-                (completed_tasks / total_tasks) * 100
-            )
+            schedule_score = round((completed_tasks / total_tasks) * 100)
 
         risk_score = max(
             100 - (risk_count * 10),
@@ -6781,20 +6798,12 @@ def project_health():
 
         if budget:
 
-            budget_amount = float(
-                budget["budget_amount"] or 0
-            )
-
-            actual_cost = float(
-                budget["actual_cost"] or 0
-            )
+            budget_amount = float(budget["budget_amount"] or 0)
+            actual_cost = float(budget["actual_cost"] or 0)
 
             if budget_amount > 0:
-
                 budget_score = max(
-                    100 - round(
-                        (actual_cost / budget_amount) * 100
-                    ),
+                    100 - round((actual_cost / budget_amount) * 100),
                     0
                 )
 
@@ -6808,70 +6817,58 @@ def project_health():
 
         if overall_health >= 75:
             status = "Green"
-
         elif overall_health >= 50:
             status = "Amber"
-
         else:
             status = "Red"
 
         project_scores.append({
-
             "project_name": project["name"],
-
             "schedule_score": schedule_score,
-
             "risk_score": risk_score,
-
             "budget_score": budget_score,
-
             "overall_health": overall_health,
-
             "status": status
-
         })
 
-        total_projects = len(project_scores)
+    total_projects = len(project_scores)
 
-        healthy_projects = len([
-            project for project in project_scores
-            if project["status"] == "Green"
-        ])
+    healthy_projects = len([
+        project for project in project_scores
+        if project["status"] == "Green"
+    ])
 
-        monitor_projects = len([
-            project for project in project_scores
-            if project["status"] == "Amber"
-        ])
+    monitor_projects = len([
+        project for project in project_scores
+        if project["status"] == "Amber"
+    ])
 
-        at_risk_projects = len([
-            project for project in project_scores
-            if project["status"] == "Red"
-        ])
+    at_risk_projects = len([
+        project for project in project_scores
+        if project["status"] == "Red"
+    ])
 
-        if total_projects > 0:
-
-            average_health_score = round(
-                sum(
-                    project["overall_health"]
-                    for project in project_scores
-                ) / total_projects
-            )
-
-        else:
-
-            average_health_score = 0
-
-        conn.close()
-
-        return render_template(
-            "project_health.html",
-            project_scores=project_scores,
-            total_projects=total_projects,
-            healthy_projects=healthy_projects,
-            monitor_projects=monitor_projects,
-            at_risk_projects=at_risk_projects,
-            average_health_score=average_health_score
+    if total_projects > 0:
+        average_health_score = round(
+            sum(
+                project["overall_health"]
+                for project in project_scores
+            ) / total_projects
         )
+    else:
+        average_health_score = 0
+
+    conn.close()
+
+    return render_template(
+        "project_health.html",
+        project_scores=project_scores,
+        total_projects=total_projects,
+        healthy_projects=healthy_projects,
+        monitor_projects=monitor_projects,
+        at_risk_projects=at_risk_projects,
+        average_health_score=average_health_score
+    )
 
 @app.route("/executive-dashboard")
 def executive_dashboard():
