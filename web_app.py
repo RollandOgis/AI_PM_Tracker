@@ -1133,6 +1133,39 @@ def init_db():
                    )
                    """)
 
+    # Workspaces Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS workspaces
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       organisation_id
+                       INTEGER,
+
+                       workspace_name
+                       TEXT,
+
+                       workspace_type
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -8907,6 +8940,100 @@ def add_organisation():
         return redirect("/organisations")
 
     return render_template("add_organisation.html")
+
+@app.route("/workspaces")
+def workspaces():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            workspaces.*,
+            organisations.organisation_name
+        FROM workspaces
+        LEFT JOIN organisations
+        ON workspaces.organisation_id = organisations.id
+        WHERE workspaces.user_id = %s
+        ORDER BY workspaces.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "workspaces.html",
+        workspaces=workspaces
+    )
+
+
+@app.route("/add-workspace", methods=["GET", "POST"])
+def add_workspace():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO workspaces
+            (
+                user_id,
+                organisation_id,
+                workspace_name,
+                workspace_type,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["organisation_id"],
+            request.form["workspace_name"],
+            request.form["workspace_type"],
+            request.form["owner"],
+            request.form["status"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/workspaces")
+
+    conn.close()
+
+    return render_template(
+        "add_workspace.html",
+        organisations=organisations
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

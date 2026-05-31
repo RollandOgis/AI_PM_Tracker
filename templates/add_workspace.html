@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Workspace</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Workspace</h1>
+
+                <p class="dashboard-subtitle">
+                    Create a workspace under an organisation.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/workspaces" class="btn-primary">
+                    Back to Workspaces
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Organisation</label>
+                <select name="organisation_id" required>
+                    {% for organisation in organisations %}
+                        <option value="{{ organisation['id'] }}">
+                            {{ organisation['organisation_name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Workspace Name</label>
+                <input
+                    type="text"
+                    name="workspace_name"
+                    placeholder="PMO Workspace"
+                    required
+                >
+
+                <label>Workspace Type</label>
+                <select name="workspace_type" required>
+                    <option value="PMO">PMO</option>
+                    <option value="Project">Project</option>
+                    <option value="Programme">Programme</option>
+                    <option value="Portfolio">Portfolio</option>
+                    <option value="Client">Client</option>
+                </select>
+
+                <label>Owner</label>
+                <input
+                    type="text"
+                    name="owner"
+                    placeholder="Workspace owner"
+                >
+
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Archived">Archived</option>
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Workspace
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

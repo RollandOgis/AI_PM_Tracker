@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspaces</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Workspaces</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage team workspaces across organisations.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-workspace" class="btn-primary">
+                    + Add Workspace
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Workspaces</h3>
+                <p>{{ workspaces|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active</h3>
+                <p>{{ workspaces | selectattr("status", "equalto", "Active") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Project Workspaces</h3>
+                <p>{{ workspaces | selectattr("workspace_type", "equalto", "Project") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>PMO Workspaces</h3>
+                <p>{{ workspaces | selectattr("workspace_type", "equalto", "PMO") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if workspaces %}
+
+        <div class="projects-grid">
+
+            {% for workspace in workspaces %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ workspace["workspace_name"] }}</h3>
+
+                        {% if workspace["status"] == "Active" %}
+                            <span class="badge badge-green">Active</span>
+                        {% elif workspace["status"] == "Pending" %}
+                            <span class="badge badge-yellow">Pending</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ workspace["status"] }}</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Organisation</span>
+                        <strong>{{ workspace["organisation_name"] or "No Organisation" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Workspace Type</span>
+                        <strong>{{ workspace["workspace_type"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ workspace["owner"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ workspace["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ workspace["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Workspaces Added</h3>
+
+            <p>
+                Add team workspaces to support multi-tenant project collaboration.
+            </p>
+
+            <a href="/add-workspace" class="btn-primary">
+                Add First Workspace
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
