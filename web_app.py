@@ -898,6 +898,42 @@ def init_db():
                    )
                    """)
 
+    # Project Prioritisation Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS project_prioritisation
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       business_value_score
+                       INTEGER,
+
+                       strategic_alignment_score
+                       INTEGER,
+
+                       risk_score
+                       INTEGER,
+
+                       cost_score
+                       INTEGER,
+
+                       priority_score
+                       INTEGER,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -7104,6 +7140,114 @@ def add_governance_review():
 
     return render_template(
         "add_governance_review.html",
+        projects=projects
+    )
+
+@app.route("/project-prioritisation")
+def project_prioritisation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            project_prioritisation.*,
+            projects.name AS project_name
+        FROM project_prioritisation
+        LEFT JOIN projects
+        ON project_prioritisation.project_id = projects.id
+        WHERE project_prioritisation.user_id = %s
+        ORDER BY project_prioritisation.priority_score DESC
+    """, (
+        session["user_id"],
+    ))
+
+    priorities = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "project_prioritisation.html",
+        priorities=priorities
+    )
+
+
+@app.route("/add-project-prioritisation", methods=["GET", "POST"])
+def add_project_prioritisation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        business_value_score = int(request.form["business_value_score"])
+        strategic_alignment_score = int(request.form["strategic_alignment_score"])
+        risk_score = int(request.form["risk_score"])
+        cost_score = int(request.form["cost_score"])
+
+        priority_score = (
+            business_value_score
+            + strategic_alignment_score
+            + risk_score
+            + cost_score
+        )
+
+        cursor.execute("""
+            INSERT INTO project_prioritisation
+            (
+                user_id,
+                project_id,
+                business_value_score,
+                strategic_alignment_score,
+                risk_score,
+                cost_score,
+                priority_score,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["project_id"],
+            business_value_score,
+            strategic_alignment_score,
+            risk_score,
+            cost_score,
+            priority_score,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/project-prioritisation")
+
+    conn.close()
+
+    return render_template(
+        "add_project_prioritisation.html",
         projects=projects
     )
 

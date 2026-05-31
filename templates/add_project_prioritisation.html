@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Project Prioritisation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Project Prioritisation</h1>
+
+                <p class="dashboard-subtitle">
+                    Score a project to calculate its portfolio priority ranking.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/project-prioritisation" class="btn-primary">
+                    Back to Prioritisation
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Project</label>
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Business Value Score</label>
+                <input
+                    type="number"
+                    name="business_value_score"
+                    min="1"
+                    max="10"
+                    placeholder="1 - 10"
+                    required
+                >
+
+                <label>Strategic Alignment Score</label>
+                <input
+                    type="number"
+                    name="strategic_alignment_score"
+                    min="1"
+                    max="10"
+                    placeholder="1 - 10"
+                    required
+                >
+
+                <label>Risk Score</label>
+                <input
+                    type="number"
+                    name="risk_score"
+                    min="1"
+                    max="10"
+                    placeholder="1 - 10"
+                    required
+                >
+
+                <label>Cost Score</label>
+                <input
+                    type="number"
+                    name="cost_score"
+                    min="1"
+                    max="10"
+                    placeholder="1 - 10"
+                    required
+                >
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Priority Score
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
