@@ -4498,361 +4498,6 @@ def add_risk():
         projects=projects
     )
 
-@app.route("/issues")
-def issues():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Issues", "view"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT
-            issues.*,
-            projects.name AS project_name
-        FROM issues
-        LEFT JOIN projects
-        ON issues.project_id = projects.id
-        WHERE issues.user_id = %s
-        ORDER BY
-            CASE
-                WHEN issues.status IN ('Resolved', 'Closed') THEN 2
-                ELSE 1
-            END,
-            CASE
-                WHEN issues.priority = 'High' THEN 1
-                WHEN issues.priority = 'Medium' THEN 2
-                ELSE 3
-            END,
-            issues.created_at DESC
-    """, (
-        session["user_id"],
-    ))
-
-    issues = cursor.fetchall()
-
-    conn.close()
-
-    return render_template(
-        "issues.html",
-        issues=issues
-    )
-
-
-@app.route("/add-issue", methods=["GET", "POST"])
-def add_issue():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Issues", "create"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT *
-        FROM projects
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
-    projects = cursor.fetchall()
-
-    if request.method == "POST":
-
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        priority = request.form["priority"]
-        owner = request.form["owner"]
-        status = request.form["status"]
-        resolution = request.form["resolution"]
-
-        cursor.execute("""
-            INSERT INTO issues
-            (
-                user_id,
-                project_id,
-                title,
-                description,
-                priority,
-                owner,
-                status,
-                resolution,
-                created_at
-            )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            session["user_id"],
-            project_id,
-            title,
-            description,
-            priority,
-            owner,
-            status,
-            resolution,
-            str(date.today())
-        ))
-
-        conn.commit()
-        conn.close()
-
-        create_activity(
-            f"{session['username']} added a new issue"
-        )
-
-        return redirect("/issues")
-
-    conn.close()
-
-    return render_template(
-        "add_issue.html",
-        projects=projects
-    )
-
-@app.route("/changes")
-def changes():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    changes = conn.execute("""
-    SELECT
-        changes.*,
-        projects.name AS project_name
-    FROM changes
-    LEFT JOIN projects
-    ON changes.project_id = projects.id
-    WHERE changes.user_id = ?
-    ORDER BY
-        CASE
-            WHEN changes.approval_status = 'Pending' THEN 1
-            WHEN changes.approval_status = 'Approved' THEN 2
-            WHEN changes.approval_status = 'Rejected' THEN 3
-            ELSE 4
-        END,
-        changes.created_at DESC
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    conn.close()
-
-    return render_template(
-        "changes.html",
-        changes=changes
-    )
-
-@app.route("/add-change", methods=["GET", "POST"])
-def add_change():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    if request.method == "POST":
-
-        project_id = request.form["project_id"]
-
-        title = request.form["title"]
-
-        description = request.form["description"]
-
-        impact = request.form["impact"]
-
-        requested_by = request.form["requested_by"]
-
-        approval_status = request.form["approval_status"]
-
-        implementation_plan = request.form["implementation_plan"]
-
-        conn.execute("""
-        INSERT INTO changes (
-            user_id,
-            project_id,
-            title,
-            description,
-            impact,
-            requested_by,
-            approval_status,
-            implementation_plan,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            session["user_id"],
-            project_id,
-            title,
-            description,
-            impact,
-            requested_by,
-            approval_status,
-            implementation_plan,
-            str(date.today())
-        ))
-
-        conn.commit()
-
-        conn.close()
-
-        create_activity(
-            f"{session['username']} submitted a change request"
-        )
-
-        return redirect("/changes")
-
-    conn.close()
-
-    return render_template(
-        "add_change.html",
-        projects=projects
-    )
-
-@app.route("/benefits")
-def benefits():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    benefits = conn.execute("""
-    SELECT
-        benefits.*,
-        projects.name AS project_name
-    FROM benefits
-    LEFT JOIN projects
-    ON benefits.project_id = projects.id
-    WHERE benefits.user_id = %s
-    ORDER BY benefits.created_at DESC
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    conn.close()
-
-    def clean_value(value):
-        if not value:
-            return 0
-
-        value = str(value)
-        value = value.replace("£", "")
-        value = value.replace(",", "")
-        value = value.strip()
-
-        try:
-            return float(value)
-        except:
-            return 0
-
-    if benefits:
-        top_benefit = max(
-            benefits,
-            key=lambda benefit: clean_value(benefit["expected_value"])
-        )
-    else:
-        top_benefit = None
-
-    return render_template(
-        "benefits.html",
-        benefits=benefits,
-        top_benefit=top_benefit
-    )
-
-@app.route("/add-benefit", methods=["GET", "POST"])
-def add_benefit():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db_connection()
-
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    """, (
-        session["user_id"],
-    )).fetchall()
-
-    if request.method == "POST":
-
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        expected_value = request.form["expected_value"]
-        measurement_method = request.form["measurement_method"]
-        owner = request.form["owner"]
-        status = request.form["status"]
-        target_date = request.form["target_date"]
-
-        conn.execute("""
-        INSERT INTO benefits (
-            user_id,
-            project_id,
-            title,
-            description,
-            expected_value,
-            measurement_method,
-            owner,
-            status,
-            target_date,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            session["user_id"],
-            project_id,
-            title,
-            description,
-            expected_value,
-            measurement_method,
-            owner,
-            status,
-            target_date,
-            str(date.today())
-        ))
-
-        conn.commit()
-        conn.close()
-
-        create_activity(
-            f"{session['username']} added a new benefit"
-        )
-
-        return redirect("/benefits")
-
-    conn.close()
-
-    return render_template(
-        "add_benefit.html",
-        projects=projects
-    )
-
 @app.route("/edit-risk/<int:risk_id>", methods=["GET", "POST"])
 def edit_risk(risk_id):
 
@@ -4985,6 +4630,132 @@ def delete_risk(risk_id):
     )
 
     return redirect("/risks")
+
+
+@app.route("/issues")
+def issues():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Issues", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            issues.*,
+            projects.name AS project_name
+        FROM issues
+        LEFT JOIN projects
+        ON issues.project_id = projects.id
+        WHERE issues.user_id = %s
+        ORDER BY
+            CASE
+                WHEN issues.status IN ('Resolved', 'Closed') THEN 2
+                ELSE 1
+            END,
+            CASE
+                WHEN issues.priority = 'High' THEN 1
+                WHEN issues.priority = 'Medium' THEN 2
+                ELSE 3
+            END,
+            issues.created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    issues = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "issues.html",
+        issues=issues
+    )
+
+
+@app.route("/add-issue", methods=["GET", "POST"])
+def add_issue():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Issues", "create"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+        title = request.form["title"]
+        description = request.form["description"]
+        priority = request.form["priority"]
+        owner = request.form["owner"]
+        status = request.form["status"]
+        resolution = request.form["resolution"]
+
+        cursor.execute("""
+            INSERT INTO issues
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                priority,
+                owner,
+                status,
+                resolution,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            priority,
+            owner,
+            status,
+            resolution,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a new issue"
+        )
+
+        return redirect("/issues")
+
+    conn.close()
+
+    return render_template(
+        "add_issue.html",
+        projects=projects
+    )
 
 @app.route("/edit-issue/<int:issue_id>", methods=["GET", "POST"])
 def edit_issue(issue_id):
@@ -5129,51 +4900,184 @@ def delete_issue(issue_id):
 
     return redirect("/issues")
 
+@app.route("/changes")
+def changes():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Changes", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            changes.*,
+            projects.name AS project_name
+        FROM changes
+        LEFT JOIN projects
+        ON changes.project_id = projects.id
+        WHERE changes.user_id = %s
+        ORDER BY
+            CASE
+                WHEN changes.approval_status = 'Pending' THEN 1
+                WHEN changes.approval_status = 'Approved' THEN 2
+                WHEN changes.approval_status = 'Rejected' THEN 3
+                ELSE 4
+            END,
+            changes.created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    changes = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "changes.html",
+        changes=changes
+    )
+
+
+@app.route("/add-change", methods=["GET", "POST"])
+def add_change():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Changes", "create"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+        title = request.form["title"]
+        description = request.form["description"]
+        impact = request.form["impact"]
+        requested_by = request.form["requested_by"]
+        approval_status = request.form["approval_status"]
+        implementation_plan = request.form["implementation_plan"]
+
+        cursor.execute("""
+            INSERT INTO changes
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                impact,
+                requested_by,
+                approval_status,
+                implementation_plan,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            impact,
+            requested_by,
+            approval_status,
+            implementation_plan,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} submitted a change request"
+        )
+
+        return redirect("/changes")
+
+    conn.close()
+
+    return render_template(
+        "add_change.html",
+        projects=projects
+    )
+
 @app.route("/edit-change/<int:change_id>", methods=["GET", "POST"])
 def edit_change(change_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Changes", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    change = conn.execute("""
-    SELECT *
-    FROM changes
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM changes
+        WHERE id = %s
+        AND user_id = %s
     """, (
         change_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    change = cursor.fetchone()
 
     if not change:
         conn.close()
         return redirect("/changes")
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    ORDER BY name ASC
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
-        conn.execute("""
-        UPDATE changes
-        SET
-            project_id = ?,
-            title = ?,
-            description = ?,
-            impact = ?,
-            requested_by = ?,
-            approval_status = ?,
-            implementation_plan = ?
-        WHERE id = ?
-        AND user_id = ?
+        cursor.execute("""
+            UPDATE changes
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                impact = %s,
+                requested_by = %s,
+                approval_status = %s,
+                implementation_plan = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
             request.form.get("project_id"),
             request.form.get("title", ""),
@@ -5210,12 +5114,17 @@ def delete_change(change_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Changes", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    conn.execute("""
-    DELETE FROM changes
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM changes
+        WHERE id = %s
+        AND user_id = %s
     """, (
         change_id,
         session["user_id"]
@@ -5229,6 +5138,127 @@ def delete_change(change_id):
     )
 
     return redirect("/changes")
+
+@app.route("/benefits")
+def benefits():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    benefits = conn.execute("""
+    SELECT
+        benefits.*,
+        projects.name AS project_name
+    FROM benefits
+    LEFT JOIN projects
+    ON benefits.project_id = projects.id
+    WHERE benefits.user_id = %s
+    ORDER BY benefits.created_at DESC
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    conn.close()
+
+    def clean_value(value):
+        if not value:
+            return 0
+
+        value = str(value)
+        value = value.replace("£", "")
+        value = value.replace(",", "")
+        value = value.strip()
+
+        try:
+            return float(value)
+        except:
+            return 0
+
+    if benefits:
+        top_benefit = max(
+            benefits,
+            key=lambda benefit: clean_value(benefit["expected_value"])
+        )
+    else:
+        top_benefit = None
+
+    return render_template(
+        "benefits.html",
+        benefits=benefits,
+        top_benefit=top_benefit
+    )
+
+@app.route("/add-benefit", methods=["GET", "POST"])
+def add_benefit():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    projects = conn.execute("""
+    SELECT *
+    FROM projects
+    WHERE user_id = ?
+    """, (
+        session["user_id"],
+    )).fetchall()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+        title = request.form["title"]
+        description = request.form["description"]
+        expected_value = request.form["expected_value"]
+        measurement_method = request.form["measurement_method"]
+        owner = request.form["owner"]
+        status = request.form["status"]
+        target_date = request.form["target_date"]
+
+        conn.execute("""
+        INSERT INTO benefits (
+            user_id,
+            project_id,
+            title,
+            description,
+            expected_value,
+            measurement_method,
+            owner,
+            status,
+            target_date,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user_id"],
+            project_id,
+            title,
+            description,
+            expected_value,
+            measurement_method,
+            owner,
+            status,
+            target_date,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} added a new benefit"
+        )
+
+        return redirect("/benefits")
+
+    conn.close()
+
+    return render_template(
+        "add_benefit.html",
+        projects=projects
+    )
 
 @app.route("/edit-benefit/<int:benefit_id>", methods=["GET", "POST"])
 def edit_benefit(benefit_id):
