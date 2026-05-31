@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Health</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Portfolio Health Dashboard</h1>
+
+                <p class="dashboard-subtitle">
+                    Monitor portfolio health, risk exposure, financial strength and delivery performance.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-portfolio-health" class="btn-primary">
+                    + Add Health Record
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Records</h3>
+                <p>{{ health_records|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Latest Health Score</h3>
+                <p>
+                    {% if health_records %}
+                        {{ health_records[0]["health_score"] }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Risk Exposure</h3>
+                <p>
+                    {% if health_records %}
+                        {{ health_records[0]["risk_exposure"] }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Financial Health</h3>
+                <p>
+                    {% if health_records %}
+                        {{ health_records[0]["financial_health"] }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </p>
+            </div>
+
+        </div>
+
+        {% if health_records %}
+
+        <div class="smart-card">
+
+            <h3>Latest Portfolio Health Snapshot</h3>
+
+            {% set latest = health_records[0] %}
+
+            <div class="smart-insight">
+
+                <strong>
+                    Overall Health:
+                    {{ latest["health_score"] }}%
+                </strong>
+
+                <p>
+                    Trend:
+                    {{ latest["trend"] }}
+                </p>
+
+                <p>
+                    Performance Score:
+                    {{ latest["performance_score"] }}%
+                </p>
+
+                <p>
+                    Created:
+                    {{ latest["created_at"] }}
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for record in health_records %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>
+                            Portfolio Snapshot
+                            {{ record["created_at"] }}
+                        </h3>
+
+                        {% if record["health_score"] >= 75 %}
+
+                            <span class="badge badge-green">
+                                Healthy
+                            </span>
+
+                        {% elif record["health_score"] >= 50 %}
+
+                            <span class="badge badge-yellow">
+                                Watch
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-red">
+                                Critical
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>{{ record["health_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Exposure</span>
+                        <strong>{{ record["risk_exposure"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Financial Health</span>
+                        <strong>{{ record["financial_health"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Performance Score</span>
+                        <strong>{{ record["performance_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Trend</span>
+                        <strong>{{ record["trend"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Commentary:</strong>
+
+                    <br><br>
+
+                    {{ record["commentary"] or "No commentary added." }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Portfolio Health Records</h3>
+
+            <p>
+                Add a portfolio health snapshot to begin tracking overall delivery performance.
+            </p>
+
+            <a href="/add-portfolio-health" class="btn-primary">
+                Add First Health Record
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

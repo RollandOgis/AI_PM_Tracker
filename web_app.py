@@ -982,6 +982,42 @@ def init_db():
                    )
                    """)
 
+    # Portfolio Health Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS portfolio_health
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       health_score
+                       INTEGER,
+
+                       risk_exposure
+                       INTEGER,
+
+                       financial_health
+                       INTEGER,
+
+                       performance_score
+                       INTEGER,
+
+                       trend
+                       TEXT,
+
+                       commentary
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -7384,6 +7420,84 @@ def add_programme():
     conn.close()
 
     return render_template("add_programme.html")
+
+@app.route("/portfolio-health")
+def portfolio_health():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_health
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    health_records = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "portfolio_health.html",
+        health_records=health_records
+    )
+
+
+@app.route("/add-portfolio-health", methods=["GET", "POST"])
+def add_portfolio_health():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO portfolio_health
+            (
+                user_id,
+                health_score,
+                risk_exposure,
+                financial_health,
+                performance_score,
+                trend,
+                commentary,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["health_score"],
+            request.form["risk_exposure"],
+            request.form["financial_health"],
+            request.form["performance_score"],
+            request.form["trend"],
+            request.form["commentary"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/portfolio-health")
+
+    conn.close()
+
+    return render_template("add_portfolio_health.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

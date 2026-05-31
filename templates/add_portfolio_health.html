@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Portfolio Health</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Portfolio Health Snapshot</h1>
+
+                <p class="dashboard-subtitle">
+                    Record the current portfolio health, risk, financial and performance view.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/portfolio-health" class="btn-primary">
+                    Back to Portfolio Health
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Portfolio Health Score (%)</label>
+                <input
+                    type="number"
+                    name="health_score"
+                    min="0"
+                    max="100"
+                    placeholder="0 - 100"
+                    required
+                >
+
+                <label>Risk Exposure (%)</label>
+                <input
+                    type="number"
+                    name="risk_exposure"
+                    min="0"
+                    max="100"
+                    placeholder="0 - 100"
+                    required
+                >
+
+                <label>Financial Health (%)</label>
+                <input
+                    type="number"
+                    name="financial_health"
+                    min="0"
+                    max="100"
+                    placeholder="0 - 100"
+                    required
+                >
+
+                <label>Performance Score (%)</label>
+                <input
+                    type="number"
+                    name="performance_score"
+                    min="0"
+                    max="100"
+                    placeholder="0 - 100"
+                    required
+                >
+
+                <label>Trend</label>
+                <select name="trend" required>
+                    <option value="Improving">Improving</option>
+                    <option value="Stable">Stable</option>
+                    <option value="Declining">Declining</option>
+                    <option value="Critical">Critical</option>
+                </select>
+
+                <label>Commentary</label>
+                <textarea
+                    name="commentary"
+                    rows="5"
+                    placeholder="Portfolio health commentary"
+                ></textarea>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Health Snapshot
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
