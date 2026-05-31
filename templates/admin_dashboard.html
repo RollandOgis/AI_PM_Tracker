@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Admin Dashboard</h1>
+                <p class="dashboard-subtitle">
+                    Monitor users, access control, platform activity and system usage.
+                </p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Users</h3>
+                <p>{{ total_users }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Tasks</h3>
+                <p>{{ total_tasks }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Risks</h3>
+                <p>{{ total_risks }}</p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Issues</h3>
+                <p>{{ total_issues }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>User Roles</h3>
+                <p>{{ total_roles }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Permissions</h3>
+                <p>{{ total_permissions }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Recent Audit Logs</h3>
+
+            {% if recent_logs %}
+
+                <div class="budget-section">
+
+                    {% for log in recent_logs %}
+
+                        <div class="budget-row">
+                            <span>
+                                {{ log["module"] }} - {{ log["action"] }}
+                            </span>
+
+                            <strong>
+                                {{ log["created_at"] }}
+                            </strong>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="smart-insight">
+                    No audit logs recorded yet.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

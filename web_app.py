@@ -8649,6 +8649,61 @@ def delete_permission(id):
 
     return redirect("/permissions")
 
+@app.route("/admin-dashboard")
+def admin_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("SELECT COUNT(*) AS total_users FROM users")
+    total_users = cursor.fetchone()["total_users"]
+
+    cursor.execute("SELECT COUNT(*) AS total_projects FROM projects")
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("SELECT COUNT(*) AS total_tasks FROM tasks")
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("SELECT COUNT(*) AS total_risks FROM risks")
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("SELECT COUNT(*) AS total_issues FROM issues")
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("SELECT COUNT(*) AS total_roles FROM user_roles")
+    total_roles = cursor.fetchone()["total_roles"]
+
+    cursor.execute("SELECT COUNT(*) AS total_permissions FROM permissions")
+    total_permissions = cursor.fetchone()["total_permissions"]
+
+    cursor.execute("""
+        SELECT *
+        FROM audit_logs
+        ORDER BY id DESC
+        LIMIT 10
+    """)
+    recent_logs = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "admin_dashboard.html",
+        total_users=total_users,
+        total_projects=total_projects,
+        total_tasks=total_tasks,
+        total_risks=total_risks,
+        total_issues=total_issues,
+        total_roles=total_roles,
+        total_permissions=total_permissions,
+        recent_logs=recent_logs
+    )
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
