@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Resource Optimisation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI Resource Optimisation</h1>
+
+        <table>
+
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Active Tasks</th>
+                <th>Utilisation</th>
+                <th>Optimisation</th>
+                <th>Recommended Action</th>
+            </tr>
+
+            {% for item in optimisation_data %}
+
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.role }}</td>
+                <td>{{ item.active_tasks }}</td>
+                <td>{{ item.utilisation }}%</td>
+                <td>{{ item.optimisation }}</td>
+                <td>{{ item.action }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Predictive Risk Scoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI Predictive Risk Scoring</h1>
+
+        <p class="page-subtitle">
+            Predict project risk using overdue tasks, blockers, open risks, issues and completion rate.
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Completion</th>
+                        <th>Overdue</th>
+                        <th>Blocked</th>
+                        <th>Risks</th>
+                        <th>Issues</th>
+                        <th>Risk Score</th>
+                        <th>Prediction</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in risk_predictions %}
+
+                    <tr>
+                        <td>{{ item.project_name }}</td>
+                        <td>{{ item.status }}</td>
+                        <td>{{ item.completion_rate }}%</td>
+                        <td>{{ item.overdue_tasks }}</td>
+                        <td>{{ item.blocked_tasks }}</td>
+                        <td>{{ item.open_risks }}</td>
+                        <td>{{ item.open_issues }}</td>
+                        <td>{{ item.risk_score }}%</td>
+
+                        <td>
+                            {% if item.prediction == "High Risk" %}
+                                <span class="badge badge-red">High Risk</span>
+                            {% elif item.prediction == "Medium Risk" %}
+                                <span class="badge badge-yellow">Medium Risk</span>
+                            {% else %}
+                                <span class="badge badge-green">Low Risk</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ item.recommendation }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

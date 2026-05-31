@@ -9021,6 +9021,827 @@ def ai_executive_assistant():
         executive_summary=executive_summary,
         board_recommendation=board_recommendation
     )
+@app.route("/ai-predictive-risk-scoring")
+def ai_predictive_risk_scoring():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    risk_predictions = []
+
+    for project in projects:
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project_id,
+        ))
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project_id,
+        ))
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS blocked_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Blocked'
+        """, (
+            project_id,
+        ))
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS overdue_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND due_date < %s
+            AND status != 'Completed'
+        """, (
+            project_id,
+            str(date.today())
+        ))
+        overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_risks
+            FROM risks
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+        open_risks = cursor.fetchone()["open_risks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+        open_issues = cursor.fetchone()["open_issues"]
+
+        if total_tasks > 0:
+            completion_rate = round(
+                (completed_tasks / total_tasks) * 100
+            )
+        else:
+            completion_rate = 0
+
+        risk_score = 0
+
+        risk_score += overdue_tasks * 15
+        risk_score += blocked_tasks * 15
+        risk_score += open_risks * 10
+        risk_score += open_issues * 8
+
+        if completion_rate < 30 and total_tasks > 0:
+            risk_score += 20
+
+        risk_score = min(risk_score, 100)
+
+        if risk_score >= 70:
+            prediction = "High Risk"
+            recommendation = "Immediate management attention is required."
+        elif risk_score >= 40:
+            prediction = "Medium Risk"
+            recommendation = "Monitor closely and review delivery blockers."
+        else:
+            prediction = "Low Risk"
+            recommendation = "Project currently appears stable."
+
+        risk_predictions.append({
+            "project_name": project["name"],
+            "status": project["status"],
+            "completion_rate": completion_rate,
+            "overdue_tasks": overdue_tasks,
+            "blocked_tasks": blocked_tasks,
+            "open_risks": open_risks,
+            "open_issues": open_issues,
+            "risk_score": risk_score,
+            "prediction": prediction,
+            "recommendation": recommendation
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_predictive_risk_scoring.html",
+        risk_predictions=risk_predictions
+    )
+
+@app.route("/ai-budget-forecasting")
+def ai_budget_forecasting():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    forecasts = []
+
+    for project in projects:
+
+        estimated_budget = float(
+            project["estimated_budget"] or 0
+        )
+
+        actual_cost = float(
+            project["actual_cost"] or 0
+        )
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project["id"],
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project["id"],
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        if total_tasks > 0:
+            completion_rate = (
+                completed_tasks / total_tasks
+            )
+        else:
+            completion_rate = 0
+
+        if completion_rate > 0:
+            forecast_cost = round(
+                actual_cost / completion_rate,
+                2
+            )
+        else:
+            forecast_cost = actual_cost
+
+        variance = round(
+            forecast_cost - estimated_budget,
+            2
+        )
+
+        if variance > 0:
+            forecast_status = "Over Budget"
+        elif variance < 0:
+            forecast_status = "Under Budget"
+        else:
+            forecast_status = "On Budget"
+
+        forecasts.append({
+
+            "project_name": project["name"],
+            "estimated_budget": estimated_budget,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "variance": variance,
+            "forecast_status": forecast_status
+
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_budget_forecasting.html",
+        forecasts=forecasts
+    )
+
+@app.route("/ai-workload-balancer")
+def ai_workload_balancer():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    team_members = cursor.fetchall()
+
+    workload_data = []
+
+    for member in team_members:
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS active_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status != 'Completed'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        active_tasks = cursor.fetchone()["active_tasks"]
+
+        utilisation = min(active_tasks * 10, 100)
+
+        if utilisation >= 80:
+            workload_status = "Overloaded"
+            recommendation = "Reassign some tasks to available team members."
+
+        elif utilisation >= 50:
+            workload_status = "Balanced"
+            recommendation = "Workload is manageable but should be monitored."
+
+        else:
+            workload_status = "Available"
+            recommendation = "This team member can take on more work."
+
+        workload_data.append({
+            "name": member["name"],
+            "role": member["role"],
+            "active_tasks": active_tasks,
+            "utilisation": utilisation,
+            "workload_status": workload_status,
+            "recommendation": recommendation
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_workload_balancer.html",
+        workload_data=workload_data
+    )
+
+@app.route("/ai-resource-optimisation")
+def ai_resource_optimisation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    team_members = cursor.fetchall()
+
+    optimisation_data = []
+
+    for member in team_members:
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS active_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND tasks.status != 'Completed'
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        active_tasks = cursor.fetchone()["active_tasks"]
+
+        utilisation = min(active_tasks * 10, 100)
+
+        if utilisation >= 80:
+
+            optimisation = "Reduce workload"
+            action = "Move tasks away from this resource."
+
+        elif utilisation >= 50:
+
+            optimisation = "Maintain"
+            action = "Current workload appears balanced."
+
+        else:
+
+            optimisation = "Increase workload"
+            action = "Assign additional tasks to this resource."
+
+        optimisation_data.append({
+
+            "name": member["name"],
+            "role": member["role"],
+            "active_tasks": active_tasks,
+            "utilisation": utilisation,
+            "optimisation": optimisation,
+            "action": action
+
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_resource_optimisation.html",
+        optimisation_data=optimisation_data
+    )
+
+@app.route("/ai-portfolio-health-predictor")
+def ai_portfolio_health_predictor():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Completed'
+    """, (
+        session["user_id"],
+    ))
+
+    completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS overdue_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.due_date < %s
+        AND tasks.status != 'Completed'
+    """, (
+        session["user_id"],
+        str(date.today())
+    ))
+
+    overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS blocked_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Blocked'
+    """, (
+        session["user_id"],
+    ))
+
+    blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS open_risks
+        FROM risks
+        WHERE user_id = %s
+        AND status != 'Closed'
+    """, (
+        session["user_id"],
+    ))
+
+    open_risks = cursor.fetchone()["open_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS open_issues
+        FROM issues
+        WHERE user_id = %s
+        AND status != 'Closed'
+    """, (
+        session["user_id"],
+    ))
+
+    open_issues = cursor.fetchone()["open_issues"]
+
+    cursor.execute("""
+        SELECT
+            SUM(budget_amount) AS total_budget,
+            SUM(actual_cost) AS total_actual
+        FROM budgets
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    budget_data = cursor.fetchone()
+
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual = float(budget_data["total_actual"] or 0)
+
+    conn.close()
+
+    if total_tasks > 0:
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
+    else:
+        completion_rate = 0
+
+    portfolio_score = 100
+
+    portfolio_score -= overdue_tasks * 8
+    portfolio_score -= blocked_tasks * 8
+    portfolio_score -= open_risks * 5
+    portfolio_score -= open_issues * 4
+
+    if total_budget > 0 and total_actual > total_budget:
+        portfolio_score -= 15
+
+    portfolio_score = max(
+        0,
+        min(100, portfolio_score)
+    )
+
+    if portfolio_score >= 75:
+        prediction = "Healthy"
+        recommendation = "Portfolio performance is strong. Continue current governance rhythm."
+
+    elif portfolio_score >= 50:
+        prediction = "Watch"
+        recommendation = "Portfolio requires monitoring. Review risks, issues and budget pressure."
+
+    else:
+        prediction = "At Risk"
+        recommendation = "Portfolio requires intervention. Escalate major delivery, risk and budget concerns."
+
+    return render_template(
+        "ai_portfolio_health_predictor.html",
+        total_projects=total_projects,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion_rate=completion_rate,
+        overdue_tasks=overdue_tasks,
+        blocked_tasks=blocked_tasks,
+        open_risks=open_risks,
+        open_issues=open_issues,
+        total_budget=total_budget,
+        total_actual=total_actual,
+        portfolio_score=portfolio_score,
+        prediction=prediction,
+        recommendation=recommendation
+    )
+
+@app.route("/ai-project-summary-generator")
+def ai_project_summary_generator():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    summaries = []
+
+    for project in projects:
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project_id,
+        ))
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project_id,
+        ))
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS overdue_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND due_date < %s
+            AND status != 'Completed'
+        """, (
+            project_id,
+            str(date.today())
+        ))
+        overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS blocked_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Blocked'
+        """, (
+            project_id,
+        ))
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_risks
+            FROM risks
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+        open_risks = cursor.fetchone()["open_risks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+        open_issues = cursor.fetchone()["open_issues"]
+
+        if total_tasks > 0:
+            completion_rate = round(
+                (completed_tasks / total_tasks) * 100
+            )
+        else:
+            completion_rate = 0
+
+        if completion_rate >= 75 and open_risks == 0 and open_issues == 0:
+            summary = "Project is performing well with strong delivery progress and no major governance concerns."
+        elif overdue_tasks > 0 or blocked_tasks > 0:
+            summary = "Project requires delivery attention due to overdue or blocked tasks."
+        elif open_risks > 0 or open_issues > 0:
+            summary = "Project has governance items that should be reviewed in the next project meeting."
+        else:
+            summary = "Project is stable but should continue to be monitored."
+
+        summaries.append({
+            "project_name": project["name"],
+            "status": project["status"],
+            "completion_rate": completion_rate,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "overdue_tasks": overdue_tasks,
+            "blocked_tasks": blocked_tasks,
+            "open_risks": open_risks,
+            "open_issues": open_issues,
+            "summary": summary
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_project_summary_generator.html",
+        summaries=summaries
+    )
+
+@app.route("/ai-pm-copilot")
+def ai_pm_copilot():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS overdue_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status != 'Completed'
+        AND tasks.due_date < %s
+    """, (
+        session["user_id"],
+        str(date.today())
+    ))
+
+    overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS open_risks
+        FROM risks
+        WHERE user_id = %s
+        AND status != 'Closed'
+    """, (
+        session["user_id"],
+    ))
+
+    open_risks = cursor.fetchone()["open_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS open_issues
+        FROM issues
+        WHERE user_id = %s
+        AND status != 'Closed'
+    """, (
+        session["user_id"],
+    ))
+
+    open_issues = cursor.fetchone()["open_issues"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS blocked_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Blocked'
+    """, (
+        session["user_id"],
+    ))
+
+    blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+    conn.close()
+
+    recommendations = []
+
+    if overdue_tasks > 0:
+        recommendations.append(
+            f"Review {overdue_tasks} overdue task(s) immediately."
+        )
+
+    if blocked_tasks > 0:
+        recommendations.append(
+            f"Escalate {blocked_tasks} blocked task(s)."
+        )
+
+    if open_risks > 0:
+        recommendations.append(
+            f"Review {open_risks} open risk(s)."
+        )
+
+    if open_issues > 0:
+        recommendations.append(
+            f"Review {open_issues} open issue(s)."
+        )
+
+    if not recommendations:
+        recommendations.append(
+            "Portfolio currently appears healthy."
+        )
+
+    return render_template(
+        "ai_pm_copilot.html",
+        total_projects=total_projects,
+        overdue_tasks=overdue_tasks,
+        open_risks=open_risks,
+        open_issues=open_issues,
+        blocked_tasks=blocked_tasks,
+        recommendations=recommendations
+    )
+
 
 
 @app.route("/audit-logs")

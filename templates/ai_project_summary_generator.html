@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Project Summary Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI Project Summary Generator</h1>
+
+        <p class="page-subtitle">
+            Generate executive-style project summaries using delivery, risk and issue indicators.
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Completion</th>
+                        <th>Tasks</th>
+                        <th>Overdue</th>
+                        <th>Blocked</th>
+                        <th>Risks</th>
+                        <th>Issues</th>
+                        <th>AI Summary</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in summaries %}
+
+                    <tr>
+                        <td>{{ item.project_name }}</td>
+                        <td>{{ item.status }}</td>
+                        <td>{{ item.completion_rate }}%</td>
+                        <td>{{ item.completed_tasks }} / {{ item.total_tasks }}</td>
+                        <td>{{ item.overdue_tasks }}</td>
+                        <td>{{ item.blocked_tasks }}</td>
+                        <td>{{ item.open_risks }}</td>
+                        <td>{{ item.open_issues }}</td>
+                        <td>{{ item.summary }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

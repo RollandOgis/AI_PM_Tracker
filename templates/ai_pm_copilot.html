@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI PM Copilot</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI PM Copilot</h1>
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <h3>Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Overdue Tasks</h3>
+                <p>{{ overdue_tasks }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Open Risks</h3>
+                <p>{{ open_risks }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Open Issues</h3>
+                <p>{{ open_issues }}</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>Blocked Tasks</h3>
+                <p>{{ blocked_tasks }}</p>
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <h2>Copilot Recommendations</h2>
+
+            <ul>
+
+                {% for recommendation in recommendations %}
+
+                <li>{{ recommendation }}</li>
+
+                {% endfor %}
+
+            </ul>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

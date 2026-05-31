@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Portfolio Health Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI Portfolio Health Predictor</h1>
+
+        <p class="page-subtitle">
+            Predict future portfolio health using delivery, risk, issue and budget indicators.
+        </p>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Portfolio Score</h3>
+                <p>{{ portfolio_score }}%</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Open Risks</h3>
+                <p>{{ open_risks }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Open Issues</h3>
+                <p>{{ open_issues }}</p>
+            </div>
+
+        </div>
+
+        <div class="card">
+
+            <h2>AI Prediction</h2>
+
+            <p>
+                <strong>Status:</strong>
+
+                {% if prediction == "Healthy" %}
+                    <span class="badge badge-green">Healthy</span>
+                {% elif prediction == "Watch" %}
+                    <span class="badge badge-yellow">Watch</span>
+                {% else %}
+                    <span class="badge badge-red">At Risk</span>
+                {% endif %}
+            </p>
+
+            <p>
+                <strong>Recommendation:</strong>
+                {{ recommendation }}
+            </p>
+
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Total Projects</th>
+                        <th>Total Tasks</th>
+                        <th>Completed Tasks</th>
+                        <th>Overdue Tasks</th>
+                        <th>Blocked Tasks</th>
+                        <th>Total Budget</th>
+                        <th>Total Actual</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>{{ total_projects }}</td>
+                        <td>{{ total_tasks }}</td>
+                        <td>{{ completed_tasks }}</td>
+                        <td>{{ overdue_tasks }}</td>
+                        <td>{{ blocked_tasks }}</td>
+                        <td>£{{ "{:,.0f}".format(total_budget) }}</td>
+                        <td>£{{ "{:,.0f}".format(total_actual) }}</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Schedule Forecasting</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI Schedule Forecasting</h1>
+
+        <table>
+
+            <tr>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Completion</th>
+                <th>Overdue Tasks</th>
+                <th>Delay Risk</th>
+                <th>Forecast</th>
+            </tr>
+
+            {% for item in forecasts %}
+
+            <tr>
+                <td>{{ item.project_name }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.completion_rate }}%</td>
+                <td>{{ item.overdue_tasks }}</td>
+                <td>{{ item.delay_risk }}</td>
+                <td>{{ item.forecast }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </main>
+
+</div>
+
+</body>
+</html>

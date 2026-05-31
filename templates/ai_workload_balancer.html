@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Workload Balancer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>AI Workload Balancer</h1>
+
+        <p class="page-subtitle">
+            Analyse workload pressure and identify who can take on more work.
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Team Member</th>
+                        <th>Role</th>
+                        <th>Active Tasks</th>
+                        <th>Utilisation</th>
+                        <th>Status</th>
+                        <th>AI Recommendation</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in workload_data %}
+
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.role }}</td>
+                        <td>{{ item.active_tasks }}</td>
+                        <td>{{ item.utilisation }}%</td>
+
+                        <td>
+                            {% if item.workload_status == "Overloaded" %}
+                                <span class="badge badge-red">Overloaded</span>
+                            {% elif item.workload_status == "Balanced" %}
+                                <span class="badge badge-yellow">Balanced</span>
+                            {% else %}
+                                <span class="badge badge-green">Available</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ item.recommendation }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>
