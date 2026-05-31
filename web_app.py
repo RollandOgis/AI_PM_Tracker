@@ -8154,6 +8154,259 @@ def financial_trends():
         budgets=budgets
     )
 
+@app.route("/forecast-vs-actual")
+def forecast_vs_actual():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            budgets.*,
+            projects.name AS project_name
+        FROM budgets
+        LEFT JOIN projects
+        ON budgets.project_id = projects.id
+        WHERE budgets.user_id = %s
+        ORDER BY budgets.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    budgets = cursor.fetchall()
+
+    forecast_items = []
+
+    total_budget = 0
+    total_actual = 0
+    total_forecast = 0
+
+    for item in budgets:
+
+        budget_amount = float(item["budget_amount"] or 0)
+        actual_cost = float(item["actual_cost"] or 0)
+        forecast_cost = float(item["forecast_cost"] or 0)
+
+        total_budget += budget_amount
+        total_actual += actual_cost
+        total_forecast += forecast_cost
+
+        variance = forecast_cost - actual_cost
+
+        if actual_cost > forecast_cost:
+            status = "Over Forecast"
+        elif actual_cost == forecast_cost:
+            status = "On Forecast"
+        else:
+            status = "Under Forecast"
+
+        forecast_items.append({
+            "project_name": item["project_name"],
+            "budget_amount": budget_amount,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "variance": variance,
+            "status": status
+        })
+
+    conn.close()
+
+    return render_template(
+        "forecast_vs_actual.html",
+        forecast_items=forecast_items,
+        total_budget=total_budget,
+        total_actual=total_actual,
+        total_forecast=total_forecast
+    )
+
+@app.route("/profitability-dashboard")
+def profitability_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            projects.id,
+            projects.name,
+            projects.estimated_budget,
+            projects.actual_cost
+        FROM projects
+        WHERE projects.user_id = %s
+        ORDER BY projects.name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    profitability_data = []
+
+    total_budget = 0
+    total_actual = 0
+    total_profit = 0
+
+    for project in projects:
+
+        budget = float(
+            project["estimated_budget"] or 0
+        )
+
+        actual = float(
+            project["actual_cost"] or 0
+        )
+
+        profit = budget - actual
+
+        total_budget += budget
+        total_actual += actual
+        total_profit += profit
+
+        if budget > 0:
+            profitability_percent = round(
+                (profit / budget) * 100
+            )
+        else:
+            profitability_percent = 0
+
+        if profitability_percent >= 30:
+            status = "High Profit"
+        elif profitability_percent >= 0:
+            status = "Profitable"
+        else:
+            status = "Loss"
+
+        profitability_data.append({
+            "project_name": project["name"],
+            "budget": budget,
+            "actual": actual,
+            "profit": profit,
+            "profitability_percent": profitability_percent,
+            "status": status
+        })
+
+    conn.close()
+
+    return render_template(
+        "profitability_dashboard.html",
+        profitability_data=profitability_data,
+        total_budget=total_budget,
+        total_actual=total_actual,
+        total_profit=total_profit
+    )
+
+@app.route("/resource-allocation")
+def resource_allocation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Team", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    team_members = cursor.fetchall()
+
+    allocation_data = []
+
+    for member in team_members:
+
+        cursor.execute("""
+            SELECT
+                tasks.title,
+                tasks.status,
+                tasks.priority,
+                tasks.due_date,
+                projects.name AS project_name
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+            ORDER BY tasks.due_date ASC
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        tasks = cursor.fetchall()
+
+        active_tasks = [
+            task for task in tasks
+            if task["status"] != "Completed"
+        ]
+
+        completed_tasks = [
+            task for task in tasks
+            if task["status"] == "Completed"
+        ]
+
+        utilisation = min(
+            len(active_tasks) * 10,
+            100
+        )
+
+        if utilisation >= 80:
+            allocation_status = "Overallocated"
+        elif utilisation >= 50:
+            allocation_status = "Allocated"
+        else:
+            allocation_status = "Available"
+
+        allocation_data.append({
+            "member": member,
+            "tasks": tasks,
+            "active_tasks": len(active_tasks),
+            "completed_tasks": len(completed_tasks),
+            "utilisation": utilisation,
+            "allocation_status": allocation_status
+        })
+
+    conn.close()
+
+    return render_template(
+        "resource_allocation.html",
+        allocation_data=allocation_data
+    )
+
 
 @app.route("/portfolio-pdf-report")
 def portfolio_pdf_report():
@@ -9727,6 +9980,9 @@ def portfolio_board():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -9855,6 +10111,7 @@ def portfolio_board():
         total_budget=total_budget,
         total_actual=total_actual
     )
+
 
 @app.route("/portfolio-roadmap")
 def portfolio_roadmap():

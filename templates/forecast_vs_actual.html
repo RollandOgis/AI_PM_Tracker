@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Forecast vs Actual</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Forecast vs Actual</h1>
+
+        <p class="page-subtitle">
+            Compare project budgets, forecast costs and actual spend.
+        </p>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Budget</h3>
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Total Forecast</h3>
+                <p>£{{ "{:,.0f}".format(total_forecast) }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Total Actual</h3>
+                <p>£{{ "{:,.0f}".format(total_actual) }}</p>
+            </div>
+
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Budget</th>
+                        <th>Forecast</th>
+                        <th>Actual</th>
+                        <th>Variance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in forecast_items %}
+
+                    <tr>
+                        <td>{{ item.project_name or "No Project" }}</td>
+                        <td>£{{ "{:,.0f}".format(item.budget_amount) }}</td>
+                        <td>£{{ "{:,.0f}".format(item.forecast_cost) }}</td>
+                        <td>£{{ "{:,.0f}".format(item.actual_cost) }}</td>
+                        <td>£{{ "{:,.0f}".format(item.variance) }}</td>
+
+                        <td>
+                            {% if item.status == "Under Forecast" %}
+                                <span class="badge badge-green">Under Forecast</span>
+                            {% elif item.status == "On Forecast" %}
+                                <span class="badge badge-yellow">On Forecast</span>
+                            {% else %}
+                                <span class="badge badge-red">Over Forecast</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

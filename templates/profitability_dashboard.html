@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profitability Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Profitability Dashboard</h1>
+
+        <p class="page-subtitle">
+            Track project profitability by comparing budget against actual cost.
+        </p>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Budget</h3>
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Total Actual Cost</h3>
+                <p>£{{ "{:,.0f}".format(total_actual) }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Total Profit</h3>
+                <p>£{{ "{:,.0f}".format(total_profit) }}</p>
+            </div>
+
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Budget</th>
+                        <th>Actual Cost</th>
+                        <th>Profit</th>
+                        <th>Profitability %</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in profitability_data %}
+
+                    <tr>
+                        <td>{{ item.project_name }}</td>
+                        <td>£{{ "{:,.0f}".format(item.budget) }}</td>
+                        <td>£{{ "{:,.0f}".format(item.actual) }}</td>
+                        <td>£{{ "{:,.0f}".format(item.profit) }}</td>
+                        <td>{{ item.profitability_percent }}%</td>
+
+                        <td>
+                            {% if item.status == "High Profit" %}
+                                <span class="badge badge-green">High Profit</span>
+                            {% elif item.status == "Profitable" %}
+                                <span class="badge badge-yellow">Profitable</span>
+                            {% else %}
+                                <span class="badge badge-red">Loss</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

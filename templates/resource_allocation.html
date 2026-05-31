@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resource Allocation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Resource Allocation</h1>
+
+        <p class="page-subtitle">
+            View workload distribution across team members.
+        </p>
+
+        {% for item in allocation_data %}
+
+        <div class="card">
+
+            <h2>{{ item.member.name }}</h2>
+
+            <p>
+                <strong>Role:</strong>
+                {{ item.member.role }}
+            </p>
+
+            <p>
+                <strong>Active Tasks:</strong>
+                {{ item.active_tasks }}
+            </p>
+
+            <p>
+                <strong>Completed Tasks:</strong>
+                {{ item.completed_tasks }}
+            </p>
+
+            <p>
+                <strong>Utilisation:</strong>
+                {{ item.utilisation }}%
+            </p>
+
+            <p>
+                <strong>Status:</strong>
+
+                {% if item.allocation_status == "Available" %}
+                    <span class="badge badge-green">
+                        Available
+                    </span>
+
+                {% elif item.allocation_status == "Allocated" %}
+                    <span class="badge badge-yellow">
+                        Allocated
+                    </span>
+
+                {% else %}
+                    <span class="badge badge-red">
+                        Overallocated
+                    </span>
+
+                {% endif %}
+            </p>
+
+            <h3>Assigned Tasks</h3>
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Project</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for task in item.tasks %}
+
+                    <tr>
+                        <td>{{ task.title }}</td>
+                        <td>{{ task.project_name }}</td>
+                        <td>{{ task.priority }}</td>
+                        <td>{{ task.status }}</td>
+                        <td>{{ task.due_date }}</td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <br>
+
+        {% endfor %}
+
+    </main>
+
+</div>
+
+</body>
+</html>
