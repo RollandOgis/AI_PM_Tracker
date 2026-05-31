@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>AI Budget Forecasting</title>
+    <link rel="stylesheet" href="/static/style.css">
+
+</head>
+<body>
+
+{% include "sidebar.html" %}
+
+<div class="main-content">
+
+    <h1>AI Budget Forecasting</h1>
+
+    <div class="card">
+
+        <h2>Forecast Analysis</h2>
+
+        <table>
+
+            <tr>
+                <th>Project</th>
+                <th>Budget</th>
+                <th>Actual Cost</th>
+                <th>Forecast Cost</th>
+                <th>Variance</th>
+                <th>Status</th>
+            </tr>
+
+            {% for item in forecasts %}
+
+            <tr>
+
+                <td>{{ item.project_name }}</td>
+
+                <td>£{{ item.budget }}</td>
+
+                <td>£{{ item.actual_cost }}</td>
+
+                <td>£{{ item.forecast_cost }}</td>
+
+                <td>£{{ item.variance }}</td>
+
+                <td>{{ item.status }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -9264,6 +9264,102 @@ def ai_budget_forecasting():
         forecasts=forecasts
     )
 
+@app.route("/ai-schedule-forecasting")
+def ai_schedule_forecasting():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    forecasts = []
+
+    for project in projects:
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project["id"],
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project["id"],
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS overdue_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND due_date < %s
+            AND status != 'Completed'
+        """, (
+            project["id"],
+            str(date.today())
+        ))
+
+        overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        if total_tasks > 0:
+            completion_rate = round(
+                (completed_tasks / total_tasks) * 100
+            )
+        else:
+            completion_rate = 0
+
+        delay_risk = overdue_tasks * 10
+
+        if completion_rate >= 80 and overdue_tasks == 0:
+            forecast = "On Track"
+        elif completion_rate >= 50:
+            forecast = "Minor Delay Risk"
+        else:
+            forecast = "High Delay Risk"
+
+        forecasts.append({
+
+            "project_name": project["name"],
+            "status": project["status"],
+            "completion_rate": completion_rate,
+            "overdue_tasks": overdue_tasks,
+            "delay_risk": delay_risk,
+            "forecast": forecast
+
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_schedule_forecasting.html",
+        forecasts=forecasts
+    )
+
+
 @app.route("/ai-workload-balancer")
 def ai_workload_balancer():
 
