@@ -8556,8 +8556,8 @@ def delete_user_role(id):
     conn.commit()
     conn.close()
 
-    @app.route("/permissions")
-    def permissions():
+@app.route("/permissions")
+def permissions():
 
         if "user_id" not in session:
             return redirect("/login")
@@ -8583,45 +8583,75 @@ def delete_user_role(id):
             permissions=permissions
         )
 
-    @app.route("/add-permission", methods=["GET", "POST"])
-    def add_permission():
+@app.route("/permissions")
+def permissions():
 
-        if "user_id" not in session:
-            return redirect("/login")
+    if "user_id" not in session:
+        return redirect("/login")
 
-        if request.method == "POST":
-            conn = get_db_connection()
+    conn = get_db_connection()
 
-            cursor = conn.cursor()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
-            cursor.execute("""
-                           INSERT INTO permissions
-                           (role,
-                            module,
-                            can_view,
-                            can_create,
-                            can_edit,
-                            can_delete)
-                           VALUES (%s, %s, %s, %s, %s, %s)
-                           """, (
-                               request.form["role"],
-                               request.form["module"],
-                               request.form.get("can_view") == "on",
-                               request.form.get("can_create") == "on",
-                               request.form.get("can_edit") == "on",
-                               request.form.get("can_delete") == "on"
-                           ))
+    cursor.execute("""
+        SELECT *
+        FROM permissions
+        ORDER BY role, module
+    """)
 
-            conn.commit()
-            conn.close()
+    permissions = cursor.fetchall()
 
-            return redirect("/permissions")
+    conn.close()
 
-        return render_template(
-            "add_permission.html"
-        )
+    return render_template(
+        "permissions.html",
+        permissions=permissions
+    )
 
-    return redirect("/user-roles")
+
+@app.route("/add-permission", methods=["GET", "POST"])
+def add_permission():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO permissions
+            (
+                role,
+                module,
+                can_view,
+                can_create,
+                can_edit,
+                can_delete
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            request.form["role"],
+            request.form["module"],
+            request.form.get("can_view") == "on",
+            request.form.get("can_create") == "on",
+            request.form.get("can_edit") == "on",
+            request.form.get("can_delete") == "on"
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/permissions")
+
+    return render_template(
+        "add_permission.html"
+    )
+
 
 @app.route("/delete-permission/<int:id>")
 def delete_permission(id):
