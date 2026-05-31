@@ -842,6 +842,13 @@ def init_db():
                        TEXT
                    )
                    """)
+    try:
+        cursor.execute("""
+                       ALTER TABLE approvals
+                           ADD COLUMN user_id INTEGER
+                       """)
+    except:
+        pass
 
 
     conn.commit()
