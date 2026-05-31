@@ -27,9 +27,11 @@
             </div>
 
             <div class="dashboard-actions">
+
                 <a href="/add-user-role" class="btn-primary">
                     + Add Role
                 </a>
+
             </div>
 
         </div>
@@ -43,17 +45,23 @@
 
             <div class="stat-card green-card">
                 <h3>Admins</h3>
-                <p>{{ roles | selectattr("role", "equalto", "Admin") | list | length }}</p>
+                <p>
+                    {{ roles | selectattr("role", "equalto", "Admin") | list | length }}
+                </p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Managers</h3>
-                <p>{{ roles | selectattr("role", "equalto", "Project Manager") | list | length }}</p>
+                <h3>Project Managers</h3>
+                <p>
+                    {{ roles | selectattr("role", "equalto", "Project Manager") | list | length }}
+                </p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Viewers</h3>
-                <p>{{ roles | selectattr("role", "equalto", "Viewer") | list | length }}</p>
+                <p>
+                    {{ roles | selectattr("role", "equalto", "Viewer") | list | length }}
+                </p>
             </div>
 
         </div>
@@ -69,20 +77,35 @@
                 <div class="project-top">
 
                     <div>
+
                         <h3>User ID: {{ role["user_id"] }}</h3>
 
                         {% if role["role"] == "Admin" %}
-                            <span class="badge badge-red">Admin</span>
+
+                            <span class="badge badge-red">
+                                Admin
+                            </span>
 
                         {% elif role["role"] == "Project Manager" %}
-                            <span class="badge badge-green">Project Manager</span>
+
+                            <span class="badge badge-green">
+                                Project Manager
+                            </span>
 
                         {% elif role["role"] == "Project Coordinator" %}
-                            <span class="badge badge-yellow">Project Coordinator</span>
+
+                            <span class="badge badge-yellow">
+                                Project Coordinator
+                            </span>
 
                         {% else %}
-                            <span class="badge badge-blue">Viewer</span>
+
+                            <span class="badge badge-blue">
+                                Viewer
+                            </span>
+
                         {% endif %}
+
                     </div>
 
                 </div>
@@ -95,9 +118,26 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>User ID</span>
+                        <strong>{{ role["user_id"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Created At</span>
                         <strong>{{ role["created_at"] }}</strong>
                     </div>
+
+                </div>
+
+                <div style="margin-top:15px;">
+
+                    <a
+                        href="/delete-user-role/{{ role['id'] }}"
+                        onclick="return confirm('Delete this role?')"
+                        class="btn-primary"
+                    >
+                        Delete Role
+                    </a>
 
                 </div>
 

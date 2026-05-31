@@ -8402,6 +8402,28 @@ def add_user_role():
         "add_user_role.html"
     )
 
+@app.route("/delete-user-role/<int:id>")
+def delete_user_role(id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM user_roles
+        WHERE id = %s
+    """, (
+        id,
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/user-roles")
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
