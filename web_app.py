@@ -9721,6 +9721,143 @@ def billing_dashboard():
         unpaid_subscriptions=unpaid_subscriptions
     )
 
+@app.route("/portfolio-board")
+def portfolio_board():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    portfolio_projects = []
+
+    total_budget = 0
+    total_actual = 0
+
+    for project in projects:
+
+        project_id = project["id"]
+
+        estimated_budget = float(
+            project["estimated_budget"] or 0
+        )
+
+        actual_cost = float(
+            project["actual_cost"] or 0
+        )
+
+        total_budget += estimated_budget
+        total_actual += actual_cost
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project_id,
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project_id,
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_risks
+            FROM risks
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+
+        open_risks = cursor.fetchone()["open_risks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+
+        open_issues = cursor.fetchone()["open_issues"]
+
+        if total_tasks > 0:
+            completion_rate = round(
+                (completed_tasks / total_tasks) * 100
+            )
+        else:
+            completion_rate = 0
+
+        health_score = (
+            100
+            - (open_risks * 10)
+            - (open_issues * 5)
+        )
+
+        health_score = max(
+            0,
+            min(100, health_score)
+        )
+
+        if health_score >= 80:
+            health_status = "Green"
+        elif health_score >= 50:
+            health_status = "Amber"
+        else:
+            health_status = "Red"
+
+        portfolio_projects.append({
+
+            "name": project["name"],
+            "status": project["status"],
+            "completion_rate": completion_rate,
+            "open_risks": open_risks,
+            "open_issues": open_issues,
+            "budget": estimated_budget,
+            "actual_cost": actual_cost,
+            "health_score": health_score,
+            "health_status": health_status
+
+        })
+
+    conn.close()
+
+    return render_template(
+        "portfolio_board.html",
+        portfolio_projects=portfolio_projects,
+        total_projects=len(projects),
+        total_budget=total_budget,
+        total_actual=total_actual
+    )
+
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

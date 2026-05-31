@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Board</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Portfolio Board</h1>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Total Budget</h3>
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Total Actual Cost</h3>
+                <p>£{{ "{:,.0f}".format(total_actual) }}</p>
+            </div>
+
+        </div>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Completion</th>
+                        <th>Risks</th>
+                        <th>Issues</th>
+                        <th>Budget</th>
+                        <th>Actual Cost</th>
+                        <th>Health</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for project in portfolio_projects %}
+
+                    <tr>
+                        <td>{{ project.name }}</td>
+                        <td>{{ project.status }}</td>
+                        <td>{{ project.completion_rate }}%</td>
+                        <td>{{ project.open_risks }}</td>
+                        <td>{{ project.open_issues }}</td>
+                        <td>£{{ "{:,.0f}".format(project.budget) }}</td>
+                        <td>£{{ "{:,.0f}".format(project.actual_cost) }}</td>
+
+                        <td>
+                            {% if project.health_status == "Green" %}
+                                <span class="badge badge-green">Green</span>
+                            {% elif project.health_status == "Amber" %}
+                                <span class="badge badge-yellow">Amber</span>
+                            {% else %}
+                                <span class="badge badge-red">Red</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>
