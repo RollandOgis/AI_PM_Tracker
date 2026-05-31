@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Audit Logs</h1>
+
+                <p class="dashboard-subtitle">
+                    Track user actions, module activity and system changes.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Logs</h3>
+                <p>{{ logs|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Created Actions</h3>
+                <p>{{ logs | selectattr("action", "equalto", "Created") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Updated Actions</h3>
+                <p>{{ logs | selectattr("action", "equalto", "Updated") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Deleted Actions</h3>
+                <p>{{ logs | selectattr("action", "equalto", "Deleted") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if logs %}
+
+        <div class="projects-grid">
+
+            {% for log in logs %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ log["module"] }}</h3>
+
+                        {% if log["action"] == "Created" %}
+
+                            <span class="badge badge-green">
+                                Created
+                            </span>
+
+                        {% elif log["action"] == "Updated" %}
+
+                            <span class="badge badge-yellow">
+                                Updated
+                            </span>
+
+                        {% elif log["action"] == "Deleted" %}
+
+                            <span class="badge badge-red">
+                                Deleted
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-blue">
+                                {{ log["action"] }}
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Action</span>
+                        <strong>{{ log["action"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Module</span>
+                        <strong>{{ log["module"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Date / Time</span>
+                        <strong>{{ log["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Details:</strong>
+
+                    <br><br>
+
+                    {{ log["details"] or "No details provided." }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Audit Logs Yet</h3>
+
+            <p>
+                Activity will appear here once system actions are recorded.
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

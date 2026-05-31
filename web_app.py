@@ -1019,6 +1019,35 @@ def init_db():
                    )
                    """)
 
+    # Audit Logs Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS audit_logs
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       action
+                       TEXT,
+
+                       module
+                       TEXT,
+
+                       details
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -8225,6 +8254,69 @@ def ai_executive_assistant():
         board_recommendation=board_recommendation
     )
 
+
+@app.route("/audit-logs")
+def audit_logs():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+                   SELECT *
+                   FROM audit_logs
+                   WHERE user_id = %s
+                   ORDER BY id DESC
+                   """, (
+                       session["user_id"],
+                   ))
+
+    logs = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "audit_logs.html",
+        logs=logs
+    )
+
+def add_audit_log(
+    user_id,
+    action,
+    module,
+    details
+):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO audit_logs
+        (
+            user_id,
+            action,
+            module,
+            details,
+            created_at
+        )
+        VALUES (%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        action,
+        module,
+        details,
+        str(datetime.now())
+    ))
+
+    conn.commit()
+    conn.close()
+
+    
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
