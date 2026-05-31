@@ -6743,6 +6743,60 @@ def add_approval():
         projects=projects
     )
 
+@app.route("/approve-approval/<int:id>")
+def approve_approval(id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE approvals
+        SET status = 'Approved',
+            decision_date = CURRENT_DATE
+        WHERE id = %s
+    """, (id,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/approvals")
+
+
+@app.route("/reject-approval/<int:id>")
+def reject_approval(id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE approvals
+        SET status = 'Rejected',
+            decision_date = CURRENT_DATE
+        WHERE id = %s
+    """, (id,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/approvals")
+
+
+@app.route("/delete-approval/<int:id>")
+def delete_approval(id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM approvals
+        WHERE id = %s
+    """, (id,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/approvals")
+
 
 
 if __name__ == "__main__":

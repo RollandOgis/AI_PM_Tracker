@@ -60,6 +60,73 @@
 
         {% if approvals %}
 
+            <div class="smart-card">
+
+                <h3>Priority Approval</h3>
+
+                {% set top_approval = approvals[0] %}
+
+                <div class="smart-insight">
+
+                    <strong>
+                        {{ top_approval["item_type"] }}
+                        #{{ top_approval["item_id"] }}
+                    </strong>
+
+                    <p>
+                        Submitted By:
+                        {{ top_approval["submitted_by"] }}
+                    </p>
+
+                    <p>
+                        Approver:
+                        {{ top_approval["approver"] }}
+                    </p>
+
+                    <p>
+                        Status:
+                        {{ top_approval["status"] }}
+                    </p>
+
+                    <p>
+                        Submitted:
+                        {{ top_approval["submitted_date"] }}
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="smart-card">
+
+                <h3>Approval Analytics</h3>
+
+                <div class="smart-insight">
+
+                    <p>
+                        Total Approvals:
+                        {{ approvals|length }}
+                    </p>
+
+                    <p>
+                        Approved:
+                        {{ approvals | selectattr("status", "equalto", "Approved") | list | length }}
+                    </p>
+
+                    <p>
+                        Rejected:
+                        {{ approvals | selectattr("status", "equalto", "Rejected") | list | length }}
+                    </p>
+
+                    <p>
+                        Pending:
+                        {{ approvals | selectattr("status", "equalto", "Pending Approval") | list | length }}
+                    </p>
+
+                </div>
+
+            </div>
+
             <div class="projects-grid">
 
                 {% for approval in approvals %}
@@ -69,7 +136,10 @@
                         <div class="project-top">
 
                             <div>
-                                <h3>{{ approval["item_type"] }}</h3>
+                                <h3>
+                                    {{ approval["item_type"] }}
+                                    #{{ approval["item_id"] }}
+                                </h3>
 
                                 {% if approval["status"] == "Approved" %}
 
@@ -89,10 +159,16 @@
                                         Pending Approval
                                     </span>
 
+                                {% elif approval["status"] == "Submitted" %}
+
+                                    <span class="badge badge-blue">
+                                        Submitted
+                                    </span>
+
                                 {% else %}
 
                                     <span class="badge badge-blue">
-                                        {{ approval["status"] }}
+                                        Draft
                                     </span>
 
                                 {% endif %}
@@ -108,6 +184,11 @@
                             </div>
 
                             <div class="budget-row">
+                                <span>Item Type</span>
+                                <strong>{{ approval["item_type"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
                                 <span>Item ID</span>
                                 <strong>{{ approval["item_id"] }}</strong>
                             </div>
@@ -120,6 +201,11 @@
                             <div class="budget-row">
                                 <span>Approver</span>
                                 <strong>{{ approval["approver"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>{{ approval["status"] }}</strong>
                             </div>
 
                             <div class="budget-row">
@@ -140,6 +226,29 @@
                             <br><br>
 
                             {{ approval["comments"] or "No comments added." }}
+                        </div>
+
+                        <div class="project-actions">
+
+                            <a href="/approve-approval/{{ approval['id'] }}">
+                                Approve
+                            </a>
+
+                            <a href="/reject-approval/{{ approval['id'] }}">
+                                Reject
+                            </a>
+
+                            <a href="/edit-approval/{{ approval['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-approval/{{ approval['id'] }}"
+                                onclick="return confirm('Delete this approval?')"
+                            >
+                                Delete
+                            </a>
+
                         </div>
 
                     </div>
