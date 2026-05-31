@@ -6180,6 +6180,106 @@ def executive_dashboard():
         executive_status=executive_status
     )
 
+@app.route("/resource-heatmap")
+def resource_heatmap():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    members = cursor.fetchall()
+
+    heatmap_data = []
+
+    for member in members:
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        utilisation = min(total_tasks * 10, 100)
+
+        if utilisation >= 80:
+
+            status = "Overloaded"
+            colour = "red"
+
+        elif utilisation >= 50:
+
+            status = "Busy"
+            colour = "amber"
+
+        else:
+
+            status = "Available"
+            colour = "green"
+
+        heatmap_data.append({
+
+            "name": member["name"],
+            "role": member["role"],
+            "total_tasks": total_tasks,
+            "utilisation": utilisation,
+            "status": status,
+            "colour": colour
+
+        })
+
+    overloaded_count = len([
+        item for item in heatmap_data
+        if item["status"] == "Overloaded"
+    ])
+
+    busy_count = len([
+        item for item in heatmap_data
+        if item["status"] == "Busy"
+    ])
+
+    available_count = len([
+        item for item in heatmap_data
+        if item["status"] == "Available"
+    ])
+
+    conn.close()
+
+    return render_template(
+        "resource_heatmap.html",
+        heatmap_data=heatmap_data,
+        overloaded_count=overloaded_count,
+        busy_count=busy_count,
+        available_count=available_count
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Heat Map</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Resource Heat Map</h1>
+
+                <p class="dashboard-subtitle">
+                    Visualise team workload pressure and resource availability.
+                </p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card red-card">
+                <h3>Overloaded</h3>
+                <p>{{ overloaded_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Busy</h3>
+                <p>{{ busy_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Available</h3>
+                <p>{{ available_count }}</p>
+            </div>
+
+        </div>
+
+        {% if heatmap_data %}
+
+            <div class="projects-grid">
+
+                {% for item in heatmap_data %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+                            <div>
+                                <h3>{{ item["name"] }}</h3>
+                                <p>{{ item["role"] }}</p>
+                            </div>
+
+                            {% if item["status"] == "Overloaded" %}
+                                <span class="badge badge-red">Overloaded</span>
+                            {% elif item["status"] == "Busy" %}
+                                <span class="badge badge-yellow">Busy</span>
+                            {% else %}
+                                <span class="badge badge-green">Available</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Total Tasks</span>
+                                <strong>{{ item["total_tasks"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Utilisation</span>
+                                <strong>{{ item["utilisation"] }}%</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>{{ item["status"] }}</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="progress-wrapper">
+                            <div
+                                class="progress-fill"
+                                data-width="{{ item['utilisation'] }}"
+                            ></div>
+                        </div>
+
+                        {% if item["status"] == "Overloaded" %}
+                            <div class="alert-box alert-danger">
+                                Workload pressure is high. Consider redistributing tasks.
+                            </div>
+                        {% elif item["status"] == "Busy" %}
+                            <div class="smart-insight">
+                                Resource is busy but within a manageable range.
+                            </div>
+                        {% else %}
+                            <div class="smart-insight">
+                                Resource has available capacity for additional work.
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+                <h3>No Team Members Found</h3>
+
+                <p>
+                    Add team members to generate the resource heat map.
+                </p>
+
+                <a href="/add-team-member" class="btn-primary">
+                    Add Team Member
+                </a>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+document.querySelectorAll(".progress-fill").forEach(function(bar) {
+    bar.style.width = bar.dataset.width + "%";
+});
+</script>
+
+</body>
+</html>
