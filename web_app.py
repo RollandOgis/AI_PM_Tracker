@@ -647,6 +647,50 @@ def init_db():
                    )
                    """)
 
+    # Lessons Learned table
+
+    cursor.execute("""
+
+                   CREATE TABLE IF NOT EXISTS lessons
+
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       what_happened
+                       TEXT,
+
+                       what_went_well
+                       TEXT,
+
+                       what_went_wrong
+                       TEXT,
+
+                       recommendation
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+
+                   """)
+
     # Actions table
 
     cursor.execute("""
