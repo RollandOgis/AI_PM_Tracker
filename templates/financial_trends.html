@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Trends</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Financial Trend Charts</h1>
+
+                <p class="dashboard-subtitle">
+                    Track project budgets, actual costs, forecast costs and financial variance.
+                </p>
+            </div>
+
+        </div>
+
+        {% if budgets %}
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Records</h3>
+                <p>{{ budgets|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Total Budget</h3>
+                <p>
+                    £{{ budgets | sum(attribute="budget_amount") }}
+                </p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Total Actual Cost</h3>
+                <p>
+                    £{{ budgets | sum(attribute="actual_cost") }}
+                </p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Total Forecast Cost</h3>
+                <p>
+                    £{{ budgets | sum(attribute="forecast_cost") }}
+                </p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Budget vs Actual vs Forecast</h3>
+
+            <canvas id="financialTrendChart"></canvas>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for budget in budgets %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>
+                            {{ budget["project_name"] or "No Project" }}
+                        </h3>
+
+                        {% if budget["actual_cost"] > budget["budget_amount"] %}
+
+                            <span class="badge badge-red">
+                                Over Budget
+                            </span>
+
+                        {% elif budget["forecast_cost"] > budget["budget_amount"] %}
+
+                            <span class="badge badge-yellow">
+                                Forecast Risk
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-green">
+                                On Track
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Budget Amount</span>
+                        <strong>£{{ budget["budget_amount"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Cost</span>
+                        <strong>£{{ budget["actual_cost"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Cost</span>
+                        <strong>£{{ budget["forecast_cost"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Variance</span>
+                        <strong>
+                            £{{ budget["budget_amount"] - budget["actual_cost"] }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ budget["status"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        <script>
+
+            const labels = [
+                {% for budget in budgets %}
+                    "{{ budget['project_name'] or 'No Project' }}",
+                {% endfor %}
+            ];
+
+            const budgetAmounts = [
+                {% for budget in budgets %}
+                    {{ budget['budget_amount'] }},
+                {% endfor %}
+            ];
+
+            const actualCosts = [
+                {% for budget in budgets %}
+                    {{ budget['actual_cost'] }},
+                {% endfor %}
+            ];
+
+            const forecastCosts = [
+                {% for budget in budgets %}
+                    {{ budget['forecast_cost'] }},
+                {% endfor %}
+            ];
+
+            const ctx = document.getElementById("financialTrendChart");
+
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: "Budget Amount",
+                            data: budgetAmounts,
+                            borderWidth: 1
+                        },
+                        {
+                            label: "Actual Cost",
+                            data: actualCosts,
+                            borderWidth: 1
+                        },
+                        {
+                            label: "Forecast Cost",
+                            data: forecastCosts,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+        </script>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Financial Trend Data</h3>
+
+            <p>
+                Add budget records first so financial trend charts can be generated.
+            </p>
+
+            <a href="/add-budget" class="btn-primary">
+                Add Budget
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

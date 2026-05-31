@@ -732,6 +732,7 @@ def init_db():
                    )
                    """)
 
+    # Budgets table
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS budgets
                    (
@@ -7596,6 +7597,40 @@ def portfolio_trends():
     return render_template(
         "portfolio_trends.html",
         trends=trends
+    )
+
+@app.route("/financial-trends")
+def financial_trends():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            budgets.*,
+            projects.name AS project_name
+        FROM budgets
+        LEFT JOIN projects
+        ON budgets.project_id = projects.id
+        WHERE budgets.user_id = %s
+        ORDER BY budgets.created_at ASC
+    """, (
+        session["user_id"],
+    ))
+
+    budgets = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "financial_trends.html",
+        budgets=budgets
     )
 
 if __name__ == "__main__":
