@@ -4409,30 +4409,29 @@ def add_risk():
 
     conn = get_db_connection()
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
         project_id = request.form["project_id"]
-
         title = request.form["title"]
-
         description = request.form["description"]
-
         probability = request.form["probability"]
-
         impact = request.form["impact"]
-
         mitigation = request.form["mitigation"]
-
         owner = request.form["owner"]
-
         status = request.form["status"]
 
         probability_map = {
@@ -4453,21 +4452,22 @@ def add_risk():
             impact_map[impact]
         )
 
-        conn.execute("""
-        INSERT INTO risks (
-            user_id,
-            project_id,
-            title,
-            description,
-            probability,
-            impact,
-            severity_score,
-            mitigation,
-            owner,
-            status,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        cursor.execute("""
+            INSERT INTO risks
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                probability,
+                impact,
+                severity_score,
+                mitigation,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             project_id,
@@ -4483,7 +4483,6 @@ def add_risk():
         ))
 
         conn.commit()
-
         conn.close()
 
         create_activity(
@@ -4505,30 +4504,39 @@ def issues():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Issues", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    issues = conn.execute("""
-    SELECT
-        issues.*,
-        projects.name AS project_name
-    FROM issues
-    LEFT JOIN projects
-    ON issues.project_id = projects.id
-    WHERE issues.user_id = ?
-    ORDER BY
-        CASE
-            WHEN issues.status IN ('Resolved', 'Closed') THEN 2
-            ELSE 1
-        END,
-        CASE
-            WHEN issues.priority = 'High' THEN 1
-            WHEN issues.priority = 'Medium' THEN 2
-            ELSE 3
-        END,
-        issues.created_at DESC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            issues.*,
+            projects.name AS project_name
+        FROM issues
+        LEFT JOIN projects
+        ON issues.project_id = projects.id
+        WHERE issues.user_id = %s
+        ORDER BY
+            CASE
+                WHEN issues.status IN ('Resolved', 'Closed') THEN 2
+                ELSE 1
+            END,
+            CASE
+                WHEN issues.priority = 'High' THEN 1
+                WHEN issues.priority = 'Medium' THEN 2
+                ELSE 3
+            END,
+            issues.created_at DESC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    issues = cursor.fetchall()
 
     conn.close()
 
@@ -4537,51 +4545,56 @@ def issues():
         issues=issues
     )
 
+
 @app.route("/add-issue", methods=["GET", "POST"])
 def add_issue():
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Issues", "create"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
         project_id = request.form["project_id"]
-
         title = request.form["title"]
-
         description = request.form["description"]
-
         priority = request.form["priority"]
-
         owner = request.form["owner"]
-
         status = request.form["status"]
-
         resolution = request.form["resolution"]
 
-        conn.execute("""
-        INSERT INTO issues (
-            user_id,
-            project_id,
-            title,
-            description,
-            priority,
-            owner,
-            status,
-            resolution,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        cursor.execute("""
+            INSERT INTO issues
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                priority,
+                owner,
+                status,
+                resolution,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             project_id,
@@ -4595,7 +4608,6 @@ def add_issue():
         ))
 
         conn.commit()
-
         conn.close()
 
         create_activity(
@@ -4847,14 +4859,19 @@ def edit_risk(risk_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Risks", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     risk = conn.execute("""
     SELECT *
     FROM risks
     WHERE id = ?
+    AND user_id = ?
     """, (
         risk_id,
+        session["user_id"],
     )).fetchone()
 
     projects = conn.execute("""
@@ -4868,19 +4885,12 @@ def edit_risk(risk_id):
     if request.method == "POST":
 
         project_id = request.form["project_id"]
-
         title = request.form["title"]
-
         description = request.form["description"]
-
         probability = request.form["probability"]
-
         impact = request.form["impact"]
-
         mitigation = request.form["mitigation"]
-
         owner = request.form["owner"]
-
         status = request.form["status"]
 
         probability_map = {
@@ -4914,6 +4924,7 @@ def edit_risk(risk_id):
             owner = ?,
             status = ?
         WHERE id = ?
+        AND user_id = ?
         """, (
             project_id,
             title,
@@ -4924,11 +4935,11 @@ def edit_risk(risk_id):
             mitigation,
             owner,
             status,
-            risk_id
+            risk_id,
+            session["user_id"]
         ))
 
         conn.commit()
-
         conn.close()
 
         create_activity(
@@ -4945,23 +4956,28 @@ def edit_risk(risk_id):
         projects=projects
     )
 
+
 @app.route("/delete-risk/<int:risk_id>")
 def delete_risk(risk_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Risks", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     conn.execute("""
     DELETE FROM risks
     WHERE id = ?
+    AND user_id = ?
     """, (
         risk_id,
+        session["user_id"],
     ))
 
     conn.commit()
-
     conn.close()
 
     create_activity(
@@ -4976,30 +4992,41 @@ def edit_issue(issue_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Issues", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    issue = conn.execute("""
-    SELECT *
-    FROM issues
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM issues
+        WHERE id = %s
+        AND user_id = %s
     """, (
         issue_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    issue = cursor.fetchone()
 
     if not issue:
         conn.close()
         return redirect("/issues")
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    ORDER BY name ASC
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
@@ -5011,18 +5038,18 @@ def edit_issue(issue_id):
         status = request.form.get("status", "Open")
         resolution = request.form.get("resolution", "")
 
-        conn.execute("""
-        UPDATE issues
-        SET
-            project_id = ?,
-            title = ?,
-            description = ?,
-            priority = ?,
-            owner = ?,
-            status = ?,
-            resolution = ?
-        WHERE id = ?
-        AND user_id = ?
+        cursor.execute("""
+            UPDATE issues
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                priority = %s,
+                owner = %s,
+                status = %s,
+                resolution = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
             project_id,
             title,
@@ -5059,26 +5086,35 @@ def delete_issue(issue_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Issues", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    issue = conn.execute("""
-    SELECT *
-    FROM issues
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM issues
+        WHERE id = %s
+        AND user_id = %s
     """, (
         issue_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    issue = cursor.fetchone()
 
     if not issue:
         conn.close()
         return redirect("/issues")
 
-    conn.execute("""
-    DELETE FROM issues
-    WHERE id = ?
-    AND user_id = ?
+    cursor.execute("""
+        DELETE FROM issues
+        WHERE id = %s
+        AND user_id = %s
     """, (
         issue_id,
         session["user_id"]
