@@ -1241,6 +1241,36 @@ def init_db():
                    )
                    """)
 
+    # Notification Settings Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS notification_settings
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       notification_type
+                       TEXT,
+
+                       channel
+                       TEXT,
+
+                       enabled
+                       TEXT,
+
+                       frequency
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -9296,6 +9326,76 @@ def add_customer_subscription():
         organisations=organisations,
         plans=plans
     )
+
+@app.route("/notification-settings")
+def notification_settings():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM notification_settings
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    settings = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "notification_settings.html",
+        settings=settings
+    )
+
+
+@app.route("/add-notification-setting", methods=["GET", "POST"])
+def add_notification_setting():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO notification_settings
+            (
+                user_id,
+                notification_type,
+                channel,
+                enabled,
+                frequency,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["notification_type"],
+            request.form["channel"],
+            request.form["enabled"],
+            request.form["frequency"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/notification-settings")
+
+    return render_template("add_notification_setting.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

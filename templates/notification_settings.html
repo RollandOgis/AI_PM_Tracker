@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Settings</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Notification Settings</h1>
+
+                <p class="dashboard-subtitle">
+                    Configure risk alerts, deadline alerts, approval alerts and email notifications.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-notification-setting" class="btn-primary">
+                    + Add Setting
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Settings</h3>
+                <p>{{ settings|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Enabled</h3>
+                <p>{{ settings | selectattr("enabled", "equalto", "Yes") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Email Alerts</h3>
+                <p>{{ settings | selectattr("channel", "equalto", "Email") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Approval Alerts</h3>
+                <p>{{ settings | selectattr("notification_type", "equalto", "Approval Alert") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if settings %}
+
+        <div class="projects-grid">
+
+            {% for setting in settings %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ setting["notification_type"] }}</h3>
+
+                        {% if setting["enabled"] == "Yes" %}
+                            <span class="badge badge-green">Enabled</span>
+                        {% else %}
+                            <span class="badge badge-red">Disabled</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Channel</span>
+                        <strong>{{ setting["channel"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Frequency</span>
+                        <strong>{{ setting["frequency"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Enabled</span>
+                        <strong>{{ setting["enabled"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ setting["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Notification Settings Added</h3>
+
+            <p>
+                Add settings to control how alerts are delivered.
+            </p>
+
+            <a href="/add-notification-setting" class="btn-primary">
+                Add First Setting
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

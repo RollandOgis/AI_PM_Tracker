@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Notification Setting</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Notification Setting</h1>
+
+                <p class="dashboard-subtitle">
+                    Create a notification rule for alerts and updates.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/notification-settings" class="btn-primary">
+                    Back to Settings
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Notification Type</label>
+                <select name="notification_type" required>
+                    <option value="Risk Alert">Risk Alert</option>
+                    <option value="Deadline Alert">Deadline Alert</option>
+                    <option value="Approval Alert">Approval Alert</option>
+                    <option value="Issue Alert">Issue Alert</option>
+                    <option value="Budget Alert">Budget Alert</option>
+                </select>
+
+                <label>Channel</label>
+                <select name="channel" required>
+                    <option value="In-App">In-App</option>
+                    <option value="Email">Email</option>
+                    <option value="SMS">SMS</option>
+                </select>
+
+                <label>Enabled</label>
+                <select name="enabled" required>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+
+                <label>Frequency</label>
+                <select name="frequency" required>
+                    <option value="Immediate">Immediate</option>
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Setting
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
