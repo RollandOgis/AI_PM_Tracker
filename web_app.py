@@ -5145,20 +5145,29 @@ def benefits():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Benefits", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    benefits = conn.execute("""
-    SELECT
-        benefits.*,
-        projects.name AS project_name
-    FROM benefits
-    LEFT JOIN projects
-    ON benefits.project_id = projects.id
-    WHERE benefits.user_id = %s
-    ORDER BY benefits.created_at DESC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            benefits.*,
+            projects.name AS project_name
+        FROM benefits
+        LEFT JOIN projects
+        ON benefits.project_id = projects.id
+        WHERE benefits.user_id = %s
+        ORDER BY benefits.created_at DESC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    benefits = cursor.fetchall()
 
     conn.close()
 
@@ -5190,21 +5199,31 @@ def benefits():
         top_benefit=top_benefit
     )
 
+
 @app.route("/add-benefit", methods=["GET", "POST"])
 def add_benefit():
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Benefits", "create"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
@@ -5217,20 +5236,21 @@ def add_benefit():
         status = request.form["status"]
         target_date = request.form["target_date"]
 
-        conn.execute("""
-        INSERT INTO benefits (
-            user_id,
-            project_id,
-            title,
-            description,
-            expected_value,
-            measurement_method,
-            owner,
-            status,
-            target_date,
-            created_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        cursor.execute("""
+            INSERT INTO benefits
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                expected_value,
+                measurement_method,
+                owner,
+                status,
+                target_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             project_id,
@@ -5260,52 +5280,64 @@ def add_benefit():
         projects=projects
     )
 
+
 @app.route("/edit-benefit/<int:benefit_id>", methods=["GET", "POST"])
 def edit_benefit(benefit_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Benefits", "edit"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    benefit = conn.execute("""
-    SELECT *
-    FROM benefits
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM benefits
+        WHERE id = %s
+        AND user_id = %s
     """, (
         benefit_id,
         session["user_id"]
-    )).fetchone()
+    ))
+
+    benefit = cursor.fetchone()
 
     if not benefit:
         conn.close()
         return redirect("/benefits")
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
-    ORDER BY name ASC
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
-        conn.execute("""
-        UPDATE benefits
-        SET
-            project_id = ?,
-            title = ?,
-            description = ?,
-            expected_value = ?,
-            measurement_method = ?,
-            owner = ?,
-            status = ?,
-            target_date = ?
-        WHERE id = ?
-        AND user_id = ?
+        cursor.execute("""
+            UPDATE benefits
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                expected_value = %s,
+                measurement_method = %s,
+                owner = %s,
+                status = %s,
+                target_date = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
             request.form.get("project_id"),
             request.form.get("title", ""),
@@ -5343,12 +5375,17 @@ def delete_benefit(benefit_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Benefits", "delete"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    conn.execute("""
-    DELETE FROM benefits
-    WHERE id = ?
-    AND user_id = ?
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM benefits
+        WHERE id = %s
+        AND user_id = %s
     """, (
         benefit_id,
         session["user_id"]
