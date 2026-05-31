@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Risk Engine</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>AI Risk Engine</h1>
+
+                <p class="dashboard-subtitle">
+                    Predict risk severity, escalation need and recommended mitigation actions.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total AI Risks</h3>
+                <p>{{ ai_risks|length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Critical Risks</h3>
+                <p>{{ ai_risks | selectattr("ai_level", "equalto", "Critical") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>High Risks</h3>
+                <p>{{ ai_risks | selectattr("ai_level", "equalto", "High") | list | length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Low / Medium</h3>
+                <p>
+                    {{ ai_risks | rejectattr("ai_level", "equalto", "Critical") | rejectattr("ai_level", "equalto", "High") | list | length }}
+                </p>
+            </div>
+
+        </div>
+
+        {% if ai_risks %}
+
+        <div class="projects-grid">
+
+            {% for risk in ai_risks %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ risk["title"] }}</h3>
+
+                        {% if risk["ai_level"] == "Critical" %}
+
+                            <span class="badge badge-red">
+                                Critical AI Risk
+                            </span>
+
+                        {% elif risk["ai_level"] == "High" %}
+
+                            <span class="badge badge-red">
+                                High AI Risk
+                            </span>
+
+                        {% elif risk["ai_level"] == "Medium" %}
+
+                            <span class="badge badge-yellow">
+                                Medium AI Risk
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-green">
+                                Low AI Risk
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ risk["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ risk["owner"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ risk["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Severity Score</span>
+                        <strong>{{ risk["severity_score"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Level</span>
+                        <strong>{{ risk["ai_level"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Escalation</span>
+                        <strong>{{ risk["escalation_warning"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Recommendation:</strong>
+
+                    <br><br>
+
+                    {{ risk["recommendation"] }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Risks Found</h3>
+
+            <p>
+                Add risks first so the AI Risk Engine can analyse them.
+            </p>
+
+            <a href="/risks" class="btn-primary">
+                Go to Risk Register
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

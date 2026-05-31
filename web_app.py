@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, Response, jsonify, send_file
+from flask import Flask, render_template, request, redirect, session, Response, jsonify, send_file, make_response
 import sqlite3
 import csv
 from io import StringIO, BytesIO
@@ -7631,6 +7631,257 @@ def financial_trends():
     return render_template(
         "financial_trends.html",
         budgets=budgets
+    )
+
+@app.route("/portfolio-pdf-report")
+def portfolio_pdf_report():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_projects = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_risks
+        FROM risks
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_risks = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_issues
+        FROM issues
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_issues = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_changes
+        FROM changes
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_changes = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_health
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (
+        session["user_id"],
+    ))
+    latest_health = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT
+            project_prioritisation.*,
+            projects.name AS project_name
+        FROM project_prioritisation
+        LEFT JOIN projects
+        ON project_prioritisation.project_id = projects.id
+        WHERE project_prioritisation.user_id = %s
+        ORDER BY project_prioritisation.priority_score DESC
+        LIMIT 5
+    """, (
+        session["user_id"],
+    ))
+    top_priorities = cursor.fetchall()
+
+    conn.close()
+
+    buffer = BytesIO()
+
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+
+    width, height = A4
+
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(50, y, "AI PM Tracker - Portfolio Report")
+
+    y -= 30
+
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(50, y, f"Generated for User ID: {session['user_id']}")
+
+    y -= 40
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Portfolio Summary")
+
+    y -= 25
+
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(50, y, f"Total Projects: {total_projects['total_projects']}")
+    y -= 20
+    pdf.drawString(50, y, f"Total Risks: {total_risks['total_risks']}")
+    y -= 20
+    pdf.drawString(50, y, f"Total Issues: {total_issues['total_issues']}")
+    y -= 20
+    pdf.drawString(50, y, f"Total Changes: {total_changes['total_changes']}")
+
+    y -= 40
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Latest Portfolio Health")
+
+    y -= 25
+
+    pdf.setFont("Helvetica", 11)
+
+    if latest_health:
+
+        pdf.drawString(50, y, f"Health Score: {latest_health['health_score']}%")
+        y -= 20
+        pdf.drawString(50, y, f"Risk Exposure: {latest_health['risk_exposure']}%")
+        y -= 20
+        pdf.drawString(50, y, f"Financial Health: {latest_health['financial_health']}%")
+        y -= 20
+        pdf.drawString(50, y, f"Performance Score: {latest_health['performance_score']}%")
+        y -= 20
+        pdf.drawString(50, y, f"Trend: {latest_health['trend']}")
+
+    else:
+
+        pdf.drawString(50, y, "No portfolio health record found.")
+
+    y -= 40
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Top Priority Projects")
+
+    y -= 25
+
+    pdf.setFont("Helvetica", 11)
+
+    if top_priorities:
+
+        rank = 1
+
+        for item in top_priorities:
+
+            if y < 80:
+                pdf.showPage()
+                y = height - 50
+                pdf.setFont("Helvetica", 11)
+
+            project_name = item["project_name"] or "No Project"
+            priority_score = item["priority_score"]
+
+            pdf.drawString(
+                50,
+                y,
+                f"#{rank} {project_name} - Priority Score: {priority_score}"
+            )
+
+            y -= 20
+            rank += 1
+
+    else:
+
+        pdf.drawString(50, y, "No project prioritisation records found.")
+
+    pdf.showPage()
+    pdf.save()
+
+    buffer.seek(0)
+
+    response = make_response(buffer.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = "attachment; filename=portfolio_report.pdf"
+
+    return response
+
+@app.route("/ai-risk-engine")
+def ai_risk_engine():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            risks.*,
+            projects.name AS project_name
+        FROM risks
+        LEFT JOIN projects
+        ON risks.project_id = projects.id
+        WHERE risks.user_id = %s
+        ORDER BY risks.severity_score DESC
+    """, (
+        session["user_id"],
+    ))
+
+    risks = cursor.fetchall()
+
+    ai_risks = []
+
+    for risk in risks:
+
+        severity = risk["severity_score"] or 0
+        status = risk["status"] or ""
+
+        if severity >= 8:
+            ai_level = "Critical"
+            recommendation = "Escalate immediately and create a mitigation action plan."
+        elif severity >= 6:
+            ai_level = "High"
+            recommendation = "Review weekly and assign a clear mitigation owner."
+        elif severity >= 3:
+            ai_level = "Medium"
+            recommendation = "Monitor regularly and update mitigation progress."
+        else:
+            ai_level = "Low"
+            recommendation = "Keep under observation during normal project reviews."
+
+        if status != "Closed" and severity >= 6:
+            escalation_warning = "Escalation Recommended"
+        else:
+            escalation_warning = "No Escalation Required"
+
+        ai_risks.append({
+            "id": risk["id"],
+            "title": risk["title"],
+            "project_name": risk["project_name"],
+            "owner": risk["owner"],
+            "status": risk["status"],
+            "severity_score": severity,
+            "ai_level": ai_level,
+            "escalation_warning": escalation_warning,
+            "recommendation": recommendation
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_risk_engine.html",
+        ai_risks=ai_risks
     )
 
 if __name__ == "__main__":
