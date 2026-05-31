@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Alerts</h1>
+
+                <p class="dashboard-subtitle">
+                    Monitor overdue tasks, high risks and pending approvals.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card red-card">
+                <h3>Overdue Tasks</h3>
+                <p>{{ overdue_tasks|length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>High Risks</h3>
+                <p>{{ high_risks|length }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Pending Approvals</h3>
+                <p>{{ pending_approvals|length }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Overdue Task Alerts</h3>
+
+            {% if overdue_tasks %}
+
+                <div class="budget-section">
+
+                    {% for task in overdue_tasks %}
+
+                        <div class="budget-row">
+                            <span>
+                                {{ task["title"] }}
+                                - {{ task["project_name"] }}
+                            </span>
+
+                            <strong>
+                                Due: {{ task["due_date"] }}
+                            </strong>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="smart-insight">
+                    No overdue tasks.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>High Risk Alerts</h3>
+
+            {% if high_risks %}
+
+                <div class="budget-section">
+
+                    {% for risk in high_risks %}
+
+                        <div class="budget-row">
+                            <span>
+                                {{ risk["title"] }}
+                                - {{ risk["project_name"] or "No Project" }}
+                            </span>
+
+                            <strong>
+                                Score: {{ risk["severity_score"] }}
+                            </strong>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="smart-insight">
+                    No high risks.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Approval Alerts</h3>
+
+            {% if pending_approvals %}
+
+                <div class="budget-section">
+
+                    {% for approval in pending_approvals %}
+
+                        <div class="budget-row">
+                            <span>
+                                {{ approval["item_type"] }}
+                                - {{ approval["project_name"] or "No Project" }}
+                            </span>
+
+                            <strong>
+                                {{ approval["status"] }}
+                            </strong>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="smart-insight">
+                    No pending approvals.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

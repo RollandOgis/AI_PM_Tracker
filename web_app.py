@@ -8734,6 +8734,80 @@ def user_management():
         users=users
     )
 
+@app.route("/alerts")
+def alerts():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    today = str(date.today())
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.due_date < %s
+        AND tasks.status != 'Completed'
+        ORDER BY tasks.due_date ASC
+    """, (
+        session["user_id"],
+        today
+    ))
+
+    overdue_tasks = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT
+            risks.*,
+            projects.name AS project_name
+        FROM risks
+        LEFT JOIN projects
+        ON risks.project_id = projects.id
+        WHERE risks.user_id = %s
+        AND risks.severity_score >= 6
+        AND risks.status != 'Closed'
+        ORDER BY risks.severity_score DESC
+    """, (
+        session["user_id"],
+    ))
+
+    high_risks = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT
+            approvals.*,
+            projects.name AS project_name
+        FROM approvals
+        LEFT JOIN projects
+        ON approvals.project_id = projects.id
+        WHERE approvals.user_id = %s
+        AND approvals.status = 'Pending Approval'
+        ORDER BY approvals.submitted_date ASC
+    """, (
+        session["user_id"],
+    ))
+
+    pending_approvals = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "alerts.html",
+        overdue_tasks=overdue_tasks,
+        high_risks=high_risks,
+        pending_approvals=pending_approvals
+    )
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
