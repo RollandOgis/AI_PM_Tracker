@@ -6035,6 +6035,14 @@ def executive_dashboard():
     total_risks = cursor.fetchone()["total_risks"]
 
     cursor.execute("""
+                   SELECT COUNT(*) AS total_issues
+                   FROM issues
+                   WHERE user_id = %s
+                   """, (session["user_id"],))
+
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("""
         SELECT COUNT(*) AS high_risks
         FROM risks
         WHERE user_id = %s
@@ -6164,6 +6172,7 @@ def executive_dashboard():
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
         total_risks=total_risks,
+        total_issues=total_issues,
         high_risks=high_risks,
         total_benefits=total_benefits,
         realised_benefits=realised_benefits,
@@ -6176,6 +6185,8 @@ def executive_dashboard():
         total_dependencies=total_dependencies,
         raid_total=raid_total,
         raid_health=raid_health,
+        healthy_projects=healthy_projects,
+        active_projects=active_projects,
         overall_executive_health=overall_executive_health,
         executive_status=executive_status
     )
