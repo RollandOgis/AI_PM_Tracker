@@ -4199,20 +4199,29 @@ def risks():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Risks", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
-    risks = conn.execute("""
-    SELECT
-        risks.*,
-        projects.name AS project_name
-    FROM risks
-    LEFT JOIN projects
-    ON risks.project_id = projects.id
-    WHERE risks.user_id = ?
-    ORDER BY severity_score DESC
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            risks.*,
+            projects.name AS project_name
+        FROM risks
+        LEFT JOIN projects
+        ON risks.project_id = projects.id
+        WHERE risks.user_id = %s
+        ORDER BY severity_score DESC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    risks = cursor.fetchall()
 
     conn.close()
 
@@ -4226,6 +4235,9 @@ def add_risk():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Risks", "create"):
+        return "Access denied"
 
     conn = get_db_connection()
 
