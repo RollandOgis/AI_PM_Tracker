@@ -6797,7 +6797,68 @@ def delete_approval(id):
 
     return redirect("/approvals")
 
+@app.route("/edit-approval/<int:id>", methods=["GET", "POST"])
+def edit_approval(id):
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+        item_type = request.form["item_type"]
+        item_id = request.form["item_id"]
+        submitted_by = request.form["submitted_by"]
+        approver = request.form["approver"]
+        status = request.form["status"]
+        comments = request.form["comments"]
+
+        cursor.execute("""
+            UPDATE approvals
+            SET
+                project_id=%s,
+                item_type=%s,
+                item_id=%s,
+                submitted_by=%s,
+                approver=%s,
+                status=%s,
+                comments=%s
+            WHERE id=%s
+        """,
+        (
+            project_id,
+            item_type,
+            item_id,
+            submitted_by,
+            approver,
+            status,
+            comments,
+            id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/approvals")
+
+    cursor.execute(
+        "SELECT * FROM approvals WHERE id=%s",
+        (id,)
+    )
+
+    approval = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM projects")
+
+    projects = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "edit_approval.html",
+        approval=approval,
+        projects=projects
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
