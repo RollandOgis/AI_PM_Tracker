@@ -6280,6 +6280,83 @@ def resource_heatmap():
         available_count=available_count
     )
 
+@app.route("/capacity-forecast")
+def capacity_forecast():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    members = cursor.fetchall()
+
+    forecast_data = []
+
+    for member in members:
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members
+            ON task_team_members.task_id = tasks.id
+            WHERE projects.user_id = %s
+            AND (
+                tasks.assigned_to = %s
+                OR task_team_members.team_member_id = %s
+            )
+        """, (
+            session["user_id"],
+            member["name"],
+            member["id"]
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        current_utilisation = min(total_tasks * 10, 100)
+
+        forecasted_utilisation = min(current_utilisation + 15, 100)
+
+        available_capacity = 100 - current_utilisation
+
+        if forecasted_utilisation >= 80:
+            forecast_risk = "High"
+        elif forecasted_utilisation >= 50:
+            forecast_risk = "Medium"
+        else:
+            forecast_risk = "Low"
+
+        forecast_data.append({
+            "name": member["name"],
+            "role": member["role"],
+            "total_tasks": total_tasks,
+            "current_utilisation": current_utilisation,
+            "forecasted_utilisation": forecasted_utilisation,
+            "available_capacity": available_capacity,
+            "forecast_risk": forecast_risk
+        })
+
+    conn.close()
+
+    return render_template(
+        "capacity_forecast.html",
+        forecast_data=forecast_data
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

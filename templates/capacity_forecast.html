@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capacity Forecast</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Capacity Forecast</h1>
+
+                <p class="dashboard-subtitle">
+                    Forecast future workload pressure and resource capacity.
+                </p>
+            </div>
+        </div>
+
+        {% if forecast_data %}
+
+            <div class="projects-grid">
+
+                {% for item in forecast_data %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+                            <div>
+                                <h3>{{ item["name"] }}</h3>
+                                <p>{{ item["role"] }}</p>
+                            </div>
+
+                            {% if item["forecast_risk"] == "High" %}
+                                <span class="badge badge-red">High Risk</span>
+                            {% elif item["forecast_risk"] == "Medium" %}
+                                <span class="badge badge-yellow">Medium Risk</span>
+                            {% else %}
+                                <span class="badge badge-green">Low Risk</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Current Tasks</span>
+                                <strong>{{ item["total_tasks"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Current Utilisation</span>
+                                <strong>{{ item["current_utilisation"] }}%</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Forecasted Utilisation</span>
+                                <strong>{{ item["forecasted_utilisation"] }}%</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Available Capacity</span>
+                                <strong>{{ item["available_capacity"] }}%</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Forecast Risk</span>
+                                <strong>{{ item["forecast_risk"] }}</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="progress-wrapper">
+                            <div
+                                class="progress-fill"
+                                data-width="{{ item['forecasted_utilisation'] }}"
+                            ></div>
+                        </div>
+
+                        {% if item["forecast_risk"] == "High" %}
+                            <div class="alert-box alert-danger">
+                                Future workload risk is high. Consider rebalancing work before assigning more tasks.
+                            </div>
+                        {% elif item["forecast_risk"] == "Medium" %}
+                            <div class="smart-insight">
+                                Forecasted workload is manageable but should be monitored.
+                            </div>
+                        {% else %}
+                            <div class="smart-insight">
+                                Resource has healthy future capacity.
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+                <h3>No Capacity Data</h3>
+
+                <p>
+                    Add team members and tasks to generate capacity forecasts.
+                </p>
+
+                <a href="/add-team-member" class="btn-primary">
+                    Add Team Member
+                </a>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+document.querySelectorAll(".progress-fill").forEach(function(bar) {
+    bar.style.width = bar.dataset.width + "%";
+});
+</script>
+
+</body>
+</html>
