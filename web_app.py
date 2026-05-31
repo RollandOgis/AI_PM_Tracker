@@ -8111,6 +8111,121 @@ def ai_sprint_management():
         sprint_recommendations=sprint_recommendations
     )
 
+@app.route("/ai-executive-assistant")
+def ai_executive_assistant():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS open_risks
+        FROM risks
+        WHERE user_id = %s
+        AND status != 'Closed'
+    """, (
+        session["user_id"],
+    ))
+    open_risks = cursor.fetchone()["open_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS open_issues
+        FROM issues
+        WHERE user_id = %s
+        AND status != 'Closed'
+    """, (
+        session["user_id"],
+    ))
+    open_issues = cursor.fetchone()["open_issues"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS pending_changes
+        FROM changes
+        WHERE user_id = %s
+        AND status != 'Approved'
+    """, (
+        session["user_id"],
+    ))
+    pending_changes = cursor.fetchone()["pending_changes"]
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_health
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (
+        session["user_id"],
+    ))
+    latest_health = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT
+            project_prioritisation.*,
+            projects.name AS project_name
+        FROM project_prioritisation
+        LEFT JOIN projects
+        ON project_prioritisation.project_id = projects.id
+        WHERE project_prioritisation.user_id = %s
+        ORDER BY project_prioritisation.priority_score DESC
+        LIMIT 3
+    """, (
+        session["user_id"],
+    ))
+    top_priorities = cursor.fetchall()
+
+    conn.close()
+
+    if latest_health:
+        health_score = latest_health["health_score"]
+        risk_exposure = latest_health["risk_exposure"]
+        financial_health = latest_health["financial_health"]
+        trend = latest_health["trend"]
+    else:
+        health_score = 0
+        risk_exposure = 0
+        financial_health = 0
+        trend = "No data"
+
+    if health_score >= 75 and open_risks <= 3 and open_issues <= 3:
+        executive_summary = "Portfolio position is healthy. Current delivery indicators suggest the portfolio is broadly under control."
+        board_recommendation = "Continue monitoring key projects and maintain the current governance rhythm."
+    elif health_score >= 50:
+        executive_summary = "Portfolio position requires attention. Some delivery or governance indicators suggest potential pressure."
+        board_recommendation = "Review high-priority projects, open risks, issues and budget exposure in the next governance meeting."
+    else:
+        executive_summary = "Portfolio position is at risk. Current indicators suggest escalation may be required."
+        board_recommendation = "Escalate portfolio health, review recovery plans and assign ownership for urgent corrective actions."
+
+    return render_template(
+        "ai_executive_assistant.html",
+        total_projects=total_projects,
+        open_risks=open_risks,
+        open_issues=open_issues,
+        pending_changes=pending_changes,
+        health_score=health_score,
+        risk_exposure=risk_exposure,
+        financial_health=financial_health,
+        trend=trend,
+        top_priorities=top_priorities,
+        executive_summary=executive_summary,
+        board_recommendation=board_recommendation
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

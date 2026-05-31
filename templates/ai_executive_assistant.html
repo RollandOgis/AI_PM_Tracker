@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Executive Assistant</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>AI Executive Assistant</h1>
+
+                <p class="dashboard-subtitle">
+                    Generate executive summaries, board-level recommendations and portfolio commentary.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Open Risks</h3>
+                <p>{{ open_risks }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Open Issues</h3>
+                <p>{{ open_issues }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Portfolio Health</h3>
+                <p>{{ health_score }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Summary</h3>
+
+            <div class="smart-insight">
+
+                {{ executive_summary }}
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Board Recommendation</h3>
+
+            <div class="smart-insight">
+
+                {{ board_recommendation }}
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Portfolio Commentary</h3>
+
+            <div class="budget-section">
+
+                <div class="budget-row">
+                    <span>Risk Exposure</span>
+                    <strong>{{ risk_exposure }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Financial Health</span>
+                    <strong>{{ financial_health }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Trend</span>
+                    <strong>{{ trend }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Pending Changes</span>
+                    <strong>{{ pending_changes }}</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Top Priority Projects</h3>
+
+            {% if top_priorities %}
+
+                <div class="budget-section">
+
+                    {% for item in top_priorities %}
+
+                        <div class="budget-row">
+                            <span>
+                                #{{ loop.index }}
+                                {{ item["project_name"] or "No Project" }}
+                            </span>
+
+                            <strong>
+                                Score:
+                                {{ item["priority_score"] }}
+                            </strong>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="smart-insight">
+                    No project prioritisation records found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
