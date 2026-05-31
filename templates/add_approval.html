@@ -8,64 +8,112 @@
 
 <body>
 
-<div class="container">
+<div class="page-container">
 
-    <h1>Add Approval</h1>
+    <div class="page-header">
+        <h1>Create Approval</h1>
+        <a href="/approvals" class="btn-primary">
+            Back to Approvals
+        </a>
+    </div>
 
-    <form method="POST">
+    <div class="card">
 
-        <label>Project</label>
-        <select name="project_id" required>
-            {% for project in projects %}
-                <option value="{{ project[0] }}">{{ project[1] }}</option>
-            {% endfor %}
-        </select>
+        <form method="POST">
 
-        <br><br>
+            <div class="form-group">
+                <label>Project</label>
 
-        <label>Item Type</label>
-        <input type="text" name="item_type" placeholder="Risk, Change, Budget, Stage Gate" required>
+                <select name="project_id" class="form-control" required>
+                    {% for project in projects %}
+                        <option value="{{ project[0] }}">
+                            {{ project[1] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label>Item Type</label>
 
-        <label>Item ID</label>
-        <input type="number" name="item_id" placeholder="Enter related item ID" required>
+                <input
+                    type="text"
+                    name="item_type"
+                    class="form-control"
+                    placeholder="Risk, Change, Budget, Stage Gate"
+                    required
+                >
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label>Item ID</label>
 
-        <label>Submitted By</label>
-        <input type="text" name="submitted_by" required>
+                <input
+                    type="number"
+                    name="item_id"
+                    class="form-control"
+                    required
+                >
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label>Submitted By</label>
 
-        <label>Approver</label>
-        <input type="text" name="approver" required>
+                <input
+                    type="text"
+                    name="submitted_by"
+                    class="form-control"
+                    required
+                >
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label>Approver</label>
 
-        <label>Status</label>
-        <select name="status" required>
-            <option value="Draft">Draft</option>
-            <option value="Submitted">Submitted</option>
-            <option value="Pending Approval">Pending Approval</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-        </select>
+                <input
+                    type="text"
+                    name="approver"
+                    class="form-control"
+                    required
+                >
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label>Status</label>
 
-        <label>Comments</label>
-        <textarea name="comments" rows="5"></textarea>
+                <select
+                    name="status"
+                    class="form-control"
+                    required
+                >
+                    <option value="Draft">Draft</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Pending Approval">Pending Approval</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
 
-        <br><br>
+            <div class="form-group">
+                <label>Comments</label>
 
-        <button type="submit">Save Approval</button>
+                <textarea
+                    name="comments"
+                    rows="5"
+                    class="form-control"
+                ></textarea>
+            </div>
 
-    </form>
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Save Approval
+            </button>
 
-    <br>
+        </form>
 
-    <a href="/approvals">Back to Approvals</a>
+    </div>
 
 </div>
 

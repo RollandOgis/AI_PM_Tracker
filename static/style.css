@@ -2411,3 +2411,86 @@ body.dark-ready {
 .workload-summary-grid .project-card {
     height: 100%;
 }
+
+.page-container {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f4f6f8;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+    padding: 10px 14px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.status-badge {
+    background: #eef2ff;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+textarea.form-control {
+    resize: vertical;
+}
