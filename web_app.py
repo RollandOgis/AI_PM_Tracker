@@ -1271,6 +1271,35 @@ def init_db():
                    )
                    """)
 
+    # Comments Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS comments
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       project_id
+                       INTEGER,
+
+                       username
+                       TEXT,
+
+                       comment
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS status TEXT
+                   """)
+
 
     conn.commit()
 
@@ -1292,14 +1321,6 @@ def is_overdue(due_date, status):
         return False
 
     return due_date < str(date.today()) and status != "Completed"
-
-def is_overdue(due_date, status):
-
-    if not due_date:
-        return False
-
-    return due_date < str(date.today()) and status != "Completed"
-
 
 # PASTE HERE
 
@@ -1388,6 +1409,9 @@ def home():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Projects", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
