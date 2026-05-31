@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Subscription Plan</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Subscription Plan</h1>
+
+                <p class="dashboard-subtitle">
+                    Create a pricing plan for SaaS subscription management.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/subscription-plans" class="btn-primary">
+                    Back to Plans
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Plan Name</label>
+                <select name="plan_name" required>
+                    <option value="Free">Free</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Business">Business</option>
+                    <option value="Enterprise">Enterprise</option>
+                </select>
+
+                <label>Price</label>
+                <input
+                    type="number"
+                    name="price"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                >
+
+                <label>Billing Cycle</label>
+                <select name="billing_cycle" required>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Yearly">Yearly</option>
+                    <option value="One-Time">One-Time</option>
+                </select>
+
+                <label>Max Projects</label>
+                <input
+                    type="number"
+                    name="max_projects"
+                    placeholder="10"
+                    required
+                >
+
+                <label>Max Users</label>
+                <input
+                    type="number"
+                    name="max_users"
+                    placeholder="5"
+                    required
+                >
+
+                <label>Features</label>
+                <textarea
+                    name="features"
+                    rows="5"
+                    placeholder="List included features"
+                ></textarea>
+
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Draft">Draft</option>
+                    <option value="Active">Active</option>
+                    <option value="Archived">Archived</option>
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Plan
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

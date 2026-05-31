@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Plans</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Subscription Plans</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage SaaS pricing plans, billing cycles and feature limits.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-subscription-plan" class="btn-primary">
+                    + Add Plan
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Plans</h3>
+                <p>{{ plans|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active Plans</h3>
+                <p>{{ plans | selectattr("status", "equalto", "Active") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Monthly Plans</h3>
+                <p>{{ plans | selectattr("billing_cycle", "equalto", "Monthly") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Enterprise Plans</h3>
+                <p>{{ plans | selectattr("plan_name", "equalto", "Enterprise") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if plans %}
+
+        <div class="projects-grid">
+
+            {% for plan in plans %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ plan["plan_name"] }}</h3>
+
+                        {% if plan["status"] == "Active" %}
+                            <span class="badge badge-green">Active</span>
+                        {% elif plan["status"] == "Draft" %}
+                            <span class="badge badge-yellow">Draft</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ plan["status"] }}</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Price</span>
+                        <strong>£{{ plan["price"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Billing Cycle</span>
+                        <strong>{{ plan["billing_cycle"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Max Projects</span>
+                        <strong>{{ plan["max_projects"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Max Users</span>
+                        <strong>{{ plan["max_users"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ plan["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ plan["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Features:</strong>
+
+                    <br><br>
+
+                    {{ plan["features"] or "No features added." }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Subscription Plans Added</h3>
+
+            <p>
+                Add subscription plans to prepare the platform for SaaS billing.
+            </p>
+
+            <a href="/add-subscription-plan" class="btn-primary">
+                Add First Plan
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

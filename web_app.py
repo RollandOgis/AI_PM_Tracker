@@ -1166,6 +1166,45 @@ def init_db():
                    )
                    """)
 
+    # Subscription Plans Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS subscription_plans
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       plan_name
+                       TEXT,
+
+                       price
+                       NUMERIC,
+
+                       billing_cycle
+                       TEXT,
+
+                       max_projects
+                       INTEGER,
+
+                       max_users
+                       INTEGER,
+
+                       features
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -9034,6 +9073,82 @@ def add_workspace():
         "add_workspace.html",
         organisations=organisations
     )
+
+@app.route("/subscription-plans")
+def subscription_plans():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM subscription_plans
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    plans = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "subscription_plans.html",
+        plans=plans
+    )
+
+
+@app.route("/add-subscription-plan", methods=["GET", "POST"])
+def add_subscription_plan():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO subscription_plans
+            (
+                user_id,
+                plan_name,
+                price,
+                billing_cycle,
+                max_projects,
+                max_users,
+                features,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["plan_name"],
+            request.form["price"],
+            request.form["billing_cycle"],
+            request.form["max_projects"],
+            request.form["max_users"],
+            request.form["features"],
+            request.form["status"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/subscription-plans")
+
+    return render_template("add_subscription_plan.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
