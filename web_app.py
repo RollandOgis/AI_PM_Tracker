@@ -1125,6 +1125,96 @@ def is_overdue(due_date, status):
 
     return due_date < str(date.today()) and status != "Completed"
 
+def is_overdue(due_date, status):
+
+    if not due_date:
+        return False
+
+    return due_date < str(date.today()) and status != "Completed"
+
+
+# PASTE HERE
+
+def get_current_user_role():
+
+    if "user_id" not in session:
+        return None
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT role
+        FROM user_roles
+        WHERE user_id = %s
+        ORDER BY id DESC
+        LIMIT 1
+    """, (
+        session["user_id"],
+    ))
+
+    role = cursor.fetchone()
+
+    conn.close()
+
+    if role:
+        return role["role"]
+
+    return "Admin"
+
+
+def has_permission(
+    module,
+    permission_type
+):
+
+    role = get_current_user_role()
+
+    if role == "Admin":
+        return True
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM permissions
+        WHERE role = %s
+        AND module = %s
+        LIMIT 1
+    """, (
+        role,
+        module
+    ))
+
+    permission = cursor.fetchone()
+
+    conn.close()
+
+    if not permission:
+        return False
+
+    if permission_type == "view":
+        return permission["can_view"]
+
+    if permission_type == "create":
+        return permission["can_create"]
+
+    if permission_type == "edit":
+        return permission["can_edit"]
+
+    if permission_type == "delete":
+        return permission["can_delete"]
+
+    return False
+
+
 @app.route("/")
 def home():
 
