@@ -818,6 +818,8 @@ def init_db():
                        SERIAL
                        PRIMARY
                        KEY,
+                       user_id
+                       INTEGER,
                        project_id
                        INTEGER,
                        item_type
@@ -840,9 +842,6 @@ def init_db():
                        TEXT
                    )
                    """)
-
-
-
 
 
     conn.commit()
