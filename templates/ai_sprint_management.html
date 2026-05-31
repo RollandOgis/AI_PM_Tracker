@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sprint Management</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>AI Sprint Management</h1>
+
+                <p class="dashboard-subtitle">
+                    Generate sprint recommendations using task priority, blockers and due dates.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Tasks Analysed</h3>
+                <p>{{ sprint_recommendations|length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Critical Sprint Items</h3>
+                <p>{{ sprint_recommendations | selectattr("sprint_level", "equalto", "Critical") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>High Priority</h3>
+                <p>{{ sprint_recommendations | selectattr("sprint_level", "equalto", "High") | list | length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Backlog / Low</h3>
+                <p>{{ sprint_recommendations | selectattr("sprint_level", "equalto", "Low") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if sprint_recommendations %}
+
+        <div class="projects-grid">
+
+            {% for task in sprint_recommendations %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ task["title"] }}</h3>
+
+                        {% if task["sprint_level"] == "Critical" %}
+
+                            <span class="badge badge-red">
+                                Critical Sprint Item
+                            </span>
+
+                        {% elif task["sprint_level"] == "High" %}
+
+                            <span class="badge badge-red">
+                                High Priority
+                            </span>
+
+                        {% elif task["sprint_level"] == "Medium" %}
+
+                            <span class="badge badge-yellow">
+                                Medium Priority
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-green">
+                                Backlog
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ task["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Assigned To</span>
+                        <strong>{{ task["assigned_to"] or "Unassigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Priority</span>
+                        <strong>{{ task["priority"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ task["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Due Date</span>
+                        <strong>{{ task["due_date"] or "No date" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Sprint Score</span>
+                        <strong>{{ task["ai_priority_score"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Sprint Recommendation:</strong>
+
+                    <br><br>
+
+                    {{ task["sprint_action"] }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Open Tasks Found</h3>
+
+            <p>
+                Add open tasks first so AI Sprint Management can recommend sprint priorities.
+            </p>
+
+            <a href="/add-task" class="btn-primary">
+                Add Task
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

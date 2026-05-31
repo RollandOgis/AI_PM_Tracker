@@ -8022,7 +8022,94 @@ def ai_project_intelligence():
         "ai_project_intelligence.html",
         project_intelligence=project_intelligence
     )
+@app.route("/ai-sprint-management")
+def ai_sprint_management():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status != 'Completed'
+        ORDER BY
+            CASE
+                WHEN tasks.priority = 'High' THEN 1
+                WHEN tasks.priority = 'Medium' THEN 2
+                ELSE 3
+            END,
+            tasks.due_date ASC
+    """, (
+        session["user_id"],
+    ))
+
+    tasks = cursor.fetchall()
+
+    sprint_recommendations = []
+
+    for task in tasks:
+
+        priority = task["priority"] or "Low"
+        status = task["status"] or "Pending"
+        due_date = task["due_date"]
+
+        ai_priority_score = 0
+
+        if priority == "High":
+            ai_priority_score += 5
+        elif priority == "Medium":
+            ai_priority_score += 3
+        else:
+            ai_priority_score += 1
+
+        if status == "Blocked":
+            ai_priority_score += 4
+
+        if due_date and str(due_date) < str(date.today()):
+            ai_priority_score += 5
+
+        if ai_priority_score >= 9:
+            sprint_action = "Move into current sprint immediately."
+            sprint_level = "Critical"
+        elif ai_priority_score >= 6:
+            sprint_action = "Prioritise in the next sprint."
+            sprint_level = "High"
+        elif ai_priority_score >= 3:
+            sprint_action = "Schedule after high priority work."
+            sprint_level = "Medium"
+        else:
+            sprint_action = "Keep in backlog for later planning."
+            sprint_level = "Low"
+
+        sprint_recommendations.append({
+            "title": task["title"],
+            "project_name": task["project_name"],
+            "priority": priority,
+            "status": status,
+            "due_date": due_date,
+            "assigned_to": task["assigned_to"],
+            "ai_priority_score": ai_priority_score,
+            "sprint_level": sprint_level,
+            "sprint_action": sprint_action
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_sprint_management.html",
+        sprint_recommendations=sprint_recommendations
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
