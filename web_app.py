@@ -9397,6 +9397,63 @@ def add_notification_setting():
 
     return render_template("add_notification_setting.html")
 
+@app.route("/billing-dashboard")
+def billing_dashboard():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            customer_subscriptions.*,
+            organisations.organisation_name,
+            subscription_plans.plan_name,
+            subscription_plans.price
+        FROM customer_subscriptions
+        LEFT JOIN organisations
+        ON customer_subscriptions.organisation_id = organisations.id
+        LEFT JOIN subscription_plans
+        ON customer_subscriptions.plan_id = subscription_plans.id
+        WHERE customer_subscriptions.user_id = %s
+        ORDER BY customer_subscriptions.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    subscriptions = cursor.fetchall()
+
+    total_revenue = 0
+
+    for sub in subscriptions:
+        if sub["payment_status"] == "Paid" and sub["price"]:
+            total_revenue += sub["price"]
+
+    active_subscriptions = [
+        sub for sub in subscriptions
+        if sub["status"] == "Active"
+    ]
+
+    unpaid_subscriptions = [
+        sub for sub in subscriptions
+        if sub["payment_status"] == "Unpaid"
+    ]
+
+    conn.close()
+
+    return render_template(
+        "billing_dashboard.html",
+        subscriptions=subscriptions,
+        total_revenue=total_revenue,
+        active_subscriptions=active_subscriptions,
+        unpaid_subscriptions=unpaid_subscriptions
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

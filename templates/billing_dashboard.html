@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Billing Dashboard</h1>
+
+                <p class="dashboard-subtitle">
+                    Monitor subscription revenue, active plans and unpaid accounts.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card green-card">
+                <h3>Total Revenue</h3>
+                <p>£{{ total_revenue }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Total Subscriptions</h3>
+                <p>{{ subscriptions|length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Active Subscriptions</h3>
+                <p>{{ active_subscriptions|length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Unpaid</h3>
+                <p>{{ unpaid_subscriptions|length }}</p>
+            </div>
+
+        </div>
+
+        {% if subscriptions %}
+
+        <div class="projects-grid">
+
+            {% for sub in subscriptions %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ sub["organisation_name"] or "No Organisation" }}</h3>
+
+                        {% if sub["payment_status"] == "Paid" %}
+                            <span class="badge badge-green">Paid</span>
+                        {% elif sub["payment_status"] == "Pending" %}
+                            <span class="badge badge-yellow">Pending</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ sub["payment_status"] }}</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>{{ sub["plan_name"] or "No Plan" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Price</span>
+                        <strong>£{{ sub["price"] or 0 }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ sub["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Payment Status</span>
+                        <strong>{{ sub["payment_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Start Date</span>
+                        <strong>{{ sub["start_date"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>End Date</span>
+                        <strong>{{ sub["end_date"] or "Not set" }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Billing Data Found</h3>
+
+            <p>
+                Add subscription plans and customer subscriptions to populate billing data.
+            </p>
+
+            <a href="/customer-subscriptions" class="btn-primary">
+                Go to Subscriptions
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
