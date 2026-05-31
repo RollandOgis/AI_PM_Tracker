@@ -9856,7 +9856,81 @@ def portfolio_board():
         total_actual=total_actual
     )
 
+@app.route("/portfolio-roadmap")
+def portfolio_roadmap():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY
+            CASE
+                WHEN start_date IS NULL OR start_date = ''
+                THEN '9999-12-31'
+                ELSE start_date
+            END ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    roadmap_items = []
+
+    for project in projects:
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project["id"],
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project["id"],
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        if total_tasks > 0:
+            progress = round((completed_tasks / total_tasks) * 100)
+        else:
+            progress = 0
+
+        roadmap_items.append({
+            "project_name": project["name"],
+            "status": project["status"],
+            "start_date": project["start_date"],
+            "end_date": project["end_date"],
+            "progress": progress
+        })
+
+    conn.close()
+
+    return render_template(
+        "portfolio_roadmap.html",
+        roadmap_items=roadmap_items
+    )
 
 
 if __name__ == "__main__":

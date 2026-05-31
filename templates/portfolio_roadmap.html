@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Roadmap</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Portfolio Roadmap</h1>
+
+        <p class="page-subtitle">
+            View project timelines, progress and delivery status across the portfolio.
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Progress</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in roadmap_items %}
+
+                    <tr>
+                        <td>{{ item.project_name }}</td>
+                        <td>{{ item.status }}</td>
+                        <td>{{ item.start_date or "Not set" }}</td>
+                        <td>{{ item.end_date or "Not set" }}</td>
+                        <td>{{ item.progress }}%</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

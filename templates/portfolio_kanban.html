@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Portfolio Kanban</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Portfolio Kanban</h1>
+
+        <p class="page-subtitle">
+            View projects by portfolio delivery stage.
+        </p>
+
+        <div class="kanban-board">
+
+            {% for status, projects in grouped_projects.items() %}
+
+            <div class="kanban-column">
+
+                <h2>{{ status }}</h2>
+
+                {% for project in projects %}
+
+                <div class="kanban-card">
+
+                    <h3>{{ project.name }}</h3>
+
+                    <p>
+                        {{ project.description or "No description added." }}
+                    </p>
+
+                    <p>
+                        <strong>Start:</strong>
+                        {{ project.start_date or "Not set" }}
+                    </p>
+
+                    <p>
+                        <strong>End:</strong>
+                        {{ project.end_date or "Not set" }}
+                    </p>
+
+                    <span class="badge badge-blue">
+                        {{ project.status }}
+                    </span>
+
+                </div>
+
+                {% else %}
+
+                <p class="muted-text">No projects</p>
+
+                {% endfor %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>
