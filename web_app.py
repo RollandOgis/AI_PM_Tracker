@@ -809,6 +809,38 @@ def init_db():
 
                    """)
 
+    # Approvals Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS approvals
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       project_id
+                       INTEGER,
+                       item_type
+                       TEXT,
+                       item_id
+                       INTEGER,
+                       submitted_by
+                       TEXT,
+                       approver
+                       TEXT,
+                       status
+                       TEXT
+                       DEFAULT
+                       'Draft',
+                       submitted_date
+                       DATE,
+                       decision_date
+                       DATE,
+                       comments
+                       TEXT
+                   )
+                   """)
+
 
 
 
@@ -6633,6 +6665,85 @@ def edit_stage_gate(gate_id):
         "edit_stage_gate.html",
         gate=gate
     )
+
+@app.route("/approvals")
+def approvals():
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT *
+        FROM approvals
+        ORDER BY id DESC
+    """)
+
+    approvals = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "approvals.html",
+        approvals=approvals
+    )
+
+@app.route("/add-approval", methods=["GET", "POST"])
+def add_approval():
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+
+        project_id = request.form["project_id"]
+        item_type = request.form["item_type"]
+        item_id = request.form["item_id"]
+        submitted_by = request.form["submitted_by"]
+        approver = request.form["approver"]
+        status = request.form["status"]
+        comments = request.form["comments"]
+
+        cursor.execute("""
+            INSERT INTO approvals
+            (
+                project_id,
+                item_type,
+                item_id,
+                submitted_by,
+                approver,
+                status,
+                submitted_date,
+                comments
+            )
+            VALUES
+            (%s,%s,%s,%s,%s,%s,CURRENT_DATE,%s)
+        """,
+        (
+            project_id,
+            item_type,
+            item_id,
+            submitted_by,
+            approver,
+            status,
+            comments
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/approvals")
+
+    cursor.execute("SELECT * FROM projects")
+    projects = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "add_approval.html",
+        projects=projects
+    )
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

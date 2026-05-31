@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    <div class="page-header">
+        <h2>Approval Workflows</h2>
+        <a href="/add-approval" class="btn btn-primary">+ New Approval</a>
+    </div>
+
+    <table class="table table-striped">
+
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Project</th>
+                <th>Type</th>
+                <th>Submitted By</th>
+                <th>Approver</th>
+                <th>Status</th>
+                <th>Submitted</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% for approval in approvals %}
+
+            <tr>
+                <td>{{ approval[0] }}</td>
+                <td>{{ approval[1] }}</td>
+                <td>{{ approval[2] }}</td>
+                <td>{{ approval[3] }}</td>
+                <td>{{ approval[4] }}</td>
+                <td>
+
+                    {% if approval[5] == "Approved" %}
+                        <span class="badge bg-success">Approved</span>
+
+                    {% elif approval[5] == "Rejected" %}
+                        <span class="badge bg-danger">Rejected</span>
+
+                    {% elif approval[5] == "Pending Approval" %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+
+                    {% else %}
+                        <span class="badge bg-secondary">
+                            {{ approval[5] }}
+                        </span>
+                    {% endif %}
+
+                </td>
+
+                <td>{{ approval[6] }}</td>
+
+            </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}
