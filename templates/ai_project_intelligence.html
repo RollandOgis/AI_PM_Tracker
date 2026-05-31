@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Project Intelligence</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>AI Project Intelligence</h1>
+
+                <p class="dashboard-subtitle">
+                    Predict project health, delivery risk and schedule pressure using project data.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Projects Analysed</h3>
+                <p>{{ project_intelligence|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Healthy</h3>
+                <p>{{ project_intelligence | selectattr("ai_status", "equalto", "Healthy") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Watch</h3>
+                <p>{{ project_intelligence | selectattr("ai_status", "equalto", "Watch") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>At Risk</h3>
+                <p>{{ project_intelligence | selectattr("ai_status", "equalto", "At Risk") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if project_intelligence %}
+
+        <div class="projects-grid">
+
+            {% for project in project_intelligence %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ project["project_name"] }}</h3>
+
+                        {% if project["ai_status"] == "Healthy" %}
+
+                            <span class="badge badge-green">
+                                Healthy
+                            </span>
+
+                        {% elif project["ai_status"] == "Watch" %}
+
+                            <span class="badge badge-yellow">
+                                Watch
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-red">
+                                At Risk
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Completion Rate</span>
+                        <strong>{{ project["completion_rate"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Health Prediction</span>
+                        <strong>{{ project["health_prediction"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Total Tasks</span>
+                        <strong>{{ project["total_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Overdue Tasks</span>
+                        <strong>{{ project["overdue_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Blocked Tasks</span>
+                        <strong>{{ project["blocked_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Risks</span>
+                        <strong>{{ project["open_risks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Issues</span>
+                        <strong>{{ project["open_issues"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Forecast:</strong>
+
+                    <br><br>
+
+                    {{ project["forecast"] }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Projects Found</h3>
+
+            <p>
+                Add projects and tasks first so AI Project Intelligence can analyse delivery health.
+            </p>
+
+            <a href="/add-project" class="btn-primary">
+                Add Project
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

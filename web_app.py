@@ -7884,6 +7884,146 @@ def ai_risk_engine():
         ai_risks=ai_risks
     )
 
+@app.route("/ai-project-intelligence")
+def ai_project_intelligence():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    project_intelligence = []
+
+    for project in projects:
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project_id,
+        ))
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project_id,
+        ))
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS blocked_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Blocked'
+        """, (
+            project_id,
+        ))
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS overdue_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND due_date < %s
+            AND status != 'Completed'
+        """, (
+            project_id,
+            str(date.today())
+        ))
+        overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_risks
+            FROM risks
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+        open_risks = cursor.fetchone()["open_risks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+        open_issues = cursor.fetchone()["open_issues"]
+
+        if total_tasks > 0:
+            completion_rate = round((completed_tasks / total_tasks) * 100)
+        else:
+            completion_rate = 0
+
+        risk_points = (
+            overdue_tasks * 2
+            + blocked_tasks * 2
+            + open_risks * 2
+            + open_issues * 2
+        )
+
+        health_prediction = 100 - risk_points
+
+        if health_prediction < 0:
+            health_prediction = 0
+
+        if health_prediction >= 75:
+            ai_status = "Healthy"
+            forecast = "Project is likely to stay on track."
+        elif health_prediction >= 50:
+            ai_status = "Watch"
+            forecast = "Project may need management attention."
+        else:
+            ai_status = "At Risk"
+            forecast = "Project has a high chance of delay or escalation."
+
+        project_intelligence.append({
+            "project_name": project["name"],
+            "status": project["status"],
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "completion_rate": completion_rate,
+            "overdue_tasks": overdue_tasks,
+            "blocked_tasks": blocked_tasks,
+            "open_risks": open_risks,
+            "open_issues": open_issues,
+            "health_prediction": health_prediction,
+            "ai_status": ai_status,
+            "forecast": forecast
+        })
+
+    conn.close()
+
+    return render_template(
+        "ai_project_intelligence.html",
+        project_intelligence=project_intelligence
+    )
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
