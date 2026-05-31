@@ -850,6 +850,54 @@ def init_db():
     except:
         pass
 
+    # Governance Reviews Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS governance_reviews
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       review_name
+                       TEXT,
+
+                       review_type
+                       TEXT,
+
+                       review_date
+                       DATE,
+
+                       outcome
+                       TEXT,
+
+                       decision
+                       TEXT,
+
+                       actions
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       next_review_date
+                       DATE,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -6954,6 +7002,110 @@ def delete_approval(id):
     conn.close()
 
     return redirect("/approvals")
+
+@app.route("/governance-reviews")
+def governance_reviews():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            governance_reviews.*,
+            projects.name AS project_name
+        FROM governance_reviews
+        LEFT JOIN projects
+        ON governance_reviews.project_id = projects.id
+        WHERE governance_reviews.user_id = %s
+        ORDER BY governance_reviews.created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    reviews = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "governance_reviews.html",
+        reviews=reviews
+    )
+
+
+@app.route("/add-governance-review", methods=["GET", "POST"])
+def add_governance_review():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO governance_reviews
+            (
+                user_id,
+                project_id,
+                review_name,
+                review_type,
+                review_date,
+                outcome,
+                decision,
+                actions,
+                owner,
+                next_review_date,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["project_id"],
+            request.form["review_name"],
+            request.form["review_type"],
+            request.form["review_date"],
+            request.form["outcome"],
+            request.form["decision"],
+            request.form["actions"],
+            request.form["owner"],
+            request.form["next_review_date"],
+            request.form["status"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/governance-reviews")
+
+    conn.close()
+
+    return render_template(
+        "add_governance_review.html",
+        projects=projects
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Governance Review</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Governance Review</h1>
+
+                <p class="dashboard-subtitle">
+                    Record review outcomes, decisions and follow-up actions.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/governance-reviews" class="btn-primary">
+                    Back to Reviews
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Project</label>
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Review Name</label>
+                <input
+                    type="text"
+                    name="review_name"
+                    placeholder="Monthly Governance Review"
+                    required
+                >
+
+                <label>Review Type</label>
+                <select name="review_type" required>
+                    <option value="Monthly Review">Monthly Review</option>
+                    <option value="Stage Gate Review">Stage Gate Review</option>
+                    <option value="Portfolio Review">Portfolio Review</option>
+                    <option value="Exception Review">Exception Review</option>
+                    <option value="Closure Review">Closure Review</option>
+                </select>
+
+                <label>Review Date</label>
+                <input
+                    type="date"
+                    name="review_date"
+                    required
+                >
+
+                <label>Outcome</label>
+                <textarea
+                    name="outcome"
+                    rows="4"
+                    placeholder="Summarise the review outcome"
+                ></textarea>
+
+                <label>Decision</label>
+                <textarea
+                    name="decision"
+                    rows="4"
+                    placeholder="Record governance decision"
+                ></textarea>
+
+                <label>Actions</label>
+                <textarea
+                    name="actions"
+                    rows="4"
+                    placeholder="Record follow-up actions"
+                ></textarea>
+
+                <label>Owner</label>
+                <input
+                    type="text"
+                    name="owner"
+                    placeholder="Review owner"
+                >
+
+                <label>Next Review Date</label>
+                <input
+                    type="date"
+                    name="next_review_date"
+                >
+
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Escalated">Escalated</option>
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Review
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
