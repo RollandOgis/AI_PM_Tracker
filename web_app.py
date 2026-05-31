@@ -7499,6 +7499,77 @@ def add_portfolio_health():
 
     return render_template("add_portfolio_health.html")
 
+@app.route("/executive-charts")
+def executive_charts():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_projects = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_risks
+        FROM risks
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_risks = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_issues
+        FROM issues
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_issues = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_changes
+        FROM changes
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_changes = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_health
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (
+        session["user_id"],
+    ))
+    latest_health = cursor.fetchone()
+
+    conn.close()
+
+    return render_template(
+        "executive_charts.html",
+        total_projects=total_projects,
+        total_risks=total_risks,
+        total_issues=total_issues,
+        total_changes=total_changes,
+        latest_health=latest_health
+    )
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

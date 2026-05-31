@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Charts</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Executive Charts</h1>
+
+                <p class="dashboard-subtitle">
+                    Executive-level view of portfolio performance, governance pressure and delivery health.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects["total_projects"] }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Total Risks</h3>
+                <p>{{ total_risks["total_risks"] }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Total Issues</h3>
+                <p>{{ total_issues["total_issues"] }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Total Changes</h3>
+                <p>{{ total_changes["total_changes"] }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Portfolio Health Snapshot</h3>
+
+            {% if latest_health %}
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>{{ latest_health["health_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Exposure</span>
+                        <strong>{{ latest_health["risk_exposure"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Financial Health</span>
+                        <strong>{{ latest_health["financial_health"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Performance Score</span>
+                        <strong>{{ latest_health["performance_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Trend</span>
+                        <strong>{{ latest_health["trend"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Executive Commentary:</strong>
+
+                    <br><br>
+
+                    {{ latest_health["commentary"] or "No commentary added." }}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-box">
+
+                    <h3>No Portfolio Health Data</h3>
+
+                    <p>
+                        Add a portfolio health snapshot to populate this executive view.
+                    </p>
+
+                    <a href="/add-portfolio-health" class="btn-primary">
+                        Add Portfolio Health
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Governance Pressure</h3>
+
+            <div class="budget-section">
+
+                <div class="budget-row">
+                    <span>Risks</span>
+                    <strong>{{ total_risks["total_risks"] }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Issues</span>
+                    <strong>{{ total_issues["total_issues"] }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Changes</span>
+                    <strong>{{ total_changes["total_changes"] }}</strong>
+                </div>
+
+            </div>
+
+            <div class="smart-insight">
+
+                <strong>Executive Summary:</strong>
+
+                <br><br>
+
+                This dashboard gives a quick executive view of delivery volume,
+                governance pressure and portfolio health.
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
