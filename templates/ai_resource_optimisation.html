@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <title>AI Resource Optimisation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
 <body>
 
@@ -10,37 +16,41 @@
 
     {% include "sidebar.html" %}
 
-    <main class="main-content">
+    <div class="main-content">
 
         <h1>AI Resource Optimisation</h1>
 
-        <table>
+        <div class="card">
 
-            <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Active Tasks</th>
-                <th>Utilisation</th>
-                <th>Optimisation</th>
-                <th>Recommended Action</th>
-            </tr>
+            <h2>Resource Recommendations</h2>
 
-            {% for item in optimisation_data %}
+            <table>
 
-            <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.role }}</td>
-                <td>{{ item.active_tasks }}</td>
-                <td>{{ item.utilisation }}%</td>
-                <td>{{ item.optimisation }}</td>
-                <td>{{ item.action }}</td>
-            </tr>
+                <tr>
+                    <th>Team Member</th>
+                    <th>Allocated Tasks</th>
+                    <th>Recommendation</th>
+                </tr>
 
-            {% endfor %}
+                {% for member in recommendations %}
 
-        </table>
+                <tr>
 
-    </main>
+                    <td>{{ member.name }}</td>
+
+                    <td>{{ member.task_count }}</td>
+
+                    <td>{{ member.recommendation }}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+    </div>
 
 </div>
 

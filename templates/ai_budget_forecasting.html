@@ -3,53 +3,61 @@
 <head>
 
     <title>AI Budget Forecasting</title>
-    <link rel="stylesheet" href="/static/style.css">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 
 </head>
 <body>
 
-{% include "sidebar.html" %}
+<div class="layout">
 
-<div class="main-content">
+    {% include "sidebar.html" %}
 
-    <h1>AI Budget Forecasting</h1>
+    <div class="main-content">
 
-    <div class="card">
+        <h1>AI Budget Forecasting</h1>
 
-        <h2>Forecast Analysis</h2>
+        <div class="card">
 
-        <table>
+            <h2>Forecast Analysis</h2>
 
-            <tr>
-                <th>Project</th>
-                <th>Budget</th>
-                <th>Actual Cost</th>
-                <th>Forecast Cost</th>
-                <th>Variance</th>
-                <th>Status</th>
-            </tr>
+            <table>
 
-            {% for item in forecasts %}
+                <tr>
+                    <th>Project</th>
+                    <th>Budget</th>
+                    <th>Actual Cost</th>
+                    <th>Forecast Cost</th>
+                    <th>Variance</th>
+                    <th>Status</th>
+                </tr>
 
-            <tr>
+                {% for item in forecasts %}
 
-                <td>{{ item.project_name }}</td>
+                <tr>
 
-                <td>£{{ item.budget }}</td>
+                    <td>{{ item.project_name }}</td>
 
-                <td>£{{ item.actual_cost }}</td>
+                    <td>£{{ item.estimated_budget }}</td>
 
-                <td>£{{ item.forecast_cost }}</td>
+                    <td>£{{ item.actual_cost }}</td>
 
-                <td>£{{ item.variance }}</td>
+                    <td>£{{ item.forecast_cost }}</td>
 
-                <td>{{ item.status }}</td>
+                    <td>£{{ item.variance }}</td>
 
-            </tr>
+                    <td>{{ item.forecast_status }}</td>
 
-            {% endfor %}
+                </tr>
 
-        </table>
+                {% endfor %}
+
+            </table>
+
+        </div>
 
     </div>
 

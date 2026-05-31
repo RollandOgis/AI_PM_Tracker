@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <title>AI Schedule Forecasting</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
 <body>
 
@@ -10,37 +16,41 @@
 
     {% include "sidebar.html" %}
 
-    <main class="main-content">
+    <div class="main-content">
 
         <h1>AI Schedule Forecasting</h1>
 
-        <table>
+        <div class="card">
 
-            <tr>
-                <th>Project</th>
-                <th>Status</th>
-                <th>Completion</th>
-                <th>Overdue Tasks</th>
-                <th>Delay Risk</th>
-                <th>Forecast</th>
-            </tr>
+            <h2>Schedule Forecasts</h2>
 
-            {% for item in forecasts %}
+            <table>
 
-            <tr>
-                <td>{{ item.project_name }}</td>
-                <td>{{ item.status }}</td>
-                <td>{{ item.completion_rate }}%</td>
-                <td>{{ item.overdue_tasks }}</td>
-                <td>{{ item.delay_risk }}</td>
-                <td>{{ item.forecast }}</td>
-            </tr>
+                <tr>
+                    <th>Project</th>
+                    <th>Completion %</th>
+                    <th>Forecast</th>
+                </tr>
 
-            {% endfor %}
+                {% for project in forecasts %}
 
-        </table>
+                <tr>
 
-    </main>
+                    <td>{{ project.project_name }}</td>
+
+                    <td>{{ project.completion_rate }}%</td>
+
+                    <td>{{ project.forecast }}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+    </div>
 
 </div>
 
