@@ -9931,6 +9931,56 @@ def portfolio_roadmap():
         "portfolio_roadmap.html",
         roadmap_items=roadmap_items
     )
+@app.route("/portfolio-kanban")
+def portfolio_kanban():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    grouped_projects = {
+        "Planning": [],
+        "In Progress": [],
+        "Completed": [],
+        "On Hold": [],
+        "Cancelled": []
+    }
+
+    for project in projects:
+
+        status = project["status"]
+
+        if status in grouped_projects:
+            grouped_projects[status].append(project)
+        else:
+            grouped_projects["Planning"].append(project)
+
+    conn.close()
+
+    return render_template(
+        "portfolio_kanban.html",
+        grouped_projects=grouped_projects
+    )
+
 
 
 if __name__ == "__main__":
