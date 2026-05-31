@@ -41,8 +41,8 @@
                 <label>Project</label>
                 <select name="project_id" required>
                     {% for project in projects %}
-                        <option value="{{ project[0] }}">
-                            {{ project[1] }}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
                         </option>
                     {% endfor %}
                 </select>
