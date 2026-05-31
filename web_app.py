@@ -768,6 +768,47 @@ def init_db():
                    )
                    """)
 
+    # Stage Gates table
+
+    cursor.execute("""
+
+                   CREATE TABLE IF NOT EXISTS stage_gates
+
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       stage_name
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       reviewer
+                       TEXT,
+
+                       comments
+                       TEXT,
+
+                       review_date
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+
+                   """)
+
 
 
 
@@ -6440,6 +6481,96 @@ def skills_matrix():
     return render_template(
         "skills_matrix.html",
         team_members=team_members
+    )
+
+@app.route("/stage-gates")
+def stage_gates():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            stage_gates.*,
+            projects.name AS project_name
+        FROM stage_gates
+        LEFT JOIN projects
+        ON stage_gates.project_id = projects.id
+        WHERE stage_gates.user_id = %s
+        ORDER BY stage_gates.created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    stage_gates = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "stage_gates.html",
+        stage_gates=stage_gates
+    )
+
+@app.route("/edit-stage-gate/<int:gate_id>", methods=["GET", "POST"])
+def edit_stage_gate(gate_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM stage_gates
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        gate_id,
+        session["user_id"]
+    ))
+
+    gate = cursor.fetchone()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE stage_gates
+            SET
+                stage_name = %s,
+                status = %s,
+                reviewer = %s,
+                comments = %s,
+                review_date = %s
+            WHERE id = %s
+        """, (
+            request.form.get("stage_name"),
+            request.form.get("status"),
+            request.form.get("reviewer"),
+            request.form.get("comments"),
+            request.form.get("review_date"),
+            gate_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/stage-gates")
+
+    conn.close()
+
+    return render_template(
+        "edit_stage_gate.html",
+        gate=gate
     )
 
 if __name__ == "__main__":

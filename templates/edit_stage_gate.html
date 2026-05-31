@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Stage Gate</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Edit Stage Gate</h1>
+
+                <p class="dashboard-subtitle">
+                    Update governance review information.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Stage Name</label>
+
+                <select name="stage_name" required>
+
+                    <option
+                        value="Initiation Gate"
+                        {% if gate["stage_name"] == "Initiation Gate" %}selected{% endif %}
+                    >
+                        Initiation Gate
+                    </option>
+
+                    <option
+                        value="Planning Gate"
+                        {% if gate["stage_name"] == "Planning Gate" %}selected{% endif %}
+                    >
+                        Planning Gate
+                    </option>
+
+                    <option
+                        value="Execution Gate"
+                        {% if gate["stage_name"] == "Execution Gate" %}selected{% endif %}
+                    >
+                        Execution Gate
+                    </option>
+
+                    <option
+                        value="Testing Gate"
+                        {% if gate["stage_name"] == "Testing Gate" %}selected{% endif %}
+                    >
+                        Testing Gate
+                    </option>
+
+                    <option
+                        value="Closure Gate"
+                        {% if gate["stage_name"] == "Closure Gate" %}selected{% endif %}
+                    >
+                        Closure Gate
+                    </option>
+
+                </select>
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option
+                        value="Pending"
+                        {% if gate["status"] == "Pending" %}selected{% endif %}
+                    >
+                        Pending
+                    </option>
+
+                    <option
+                        value="Approved"
+                        {% if gate["status"] == "Approved" %}selected{% endif %}
+                    >
+                        Approved
+                    </option>
+
+                    <option
+                        value="Rejected"
+                        {% if gate["status"] == "Rejected" %}selected{% endif %}
+                    >
+                        Rejected
+                    </option>
+
+                    <option
+                        value="Deferred"
+                        {% if gate["status"] == "Deferred" %}selected{% endif %}
+                    >
+                        Deferred
+                    </option>
+
+                </select>
+
+                <label>Reviewer</label>
+
+                <input
+                    type="text"
+                    name="reviewer"
+                    value="{{ gate['reviewer'] or '' }}"
+                >
+
+                <label>Review Date</label>
+
+                <input
+                    type="date"
+                    name="review_date"
+                    value="{{ gate['review_date'] or '' }}"
+                >
+
+                <label>Comments</label>
+
+                <textarea
+                    name="comments"
+                    rows="6"
+                >{{ gate['comments'] or '' }}</textarea>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Update Stage Gate
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
