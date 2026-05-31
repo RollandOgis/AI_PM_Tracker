@@ -1048,6 +1048,29 @@ def init_db():
                    )
                    """)
 
+    # User Roles Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS user_roles
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       role
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -8316,7 +8339,70 @@ def add_audit_log(
     conn.commit()
     conn.close()
 
-    
+@app.route("/user-roles")
+def user_roles():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM user_roles
+        ORDER BY id DESC
+    """)
+
+    roles = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "user_roles.html",
+        roles=roles
+    )
+
+
+@app.route("/add-user-role", methods=["GET", "POST"])
+def add_user_role():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                created_at
+            )
+            VALUES (%s,%s,%s)
+        """, (
+            request.form["user_id"],
+            request.form["role"],
+            str(datetime.now())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/user-roles")
+
+    return render_template(
+        "add_user_role.html"
+    )
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
