@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Organisation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Organisation</h1>
+
+                <p class="dashboard-subtitle">
+                    Create an organisation account for multi-company workspace support.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/organisations" class="btn-primary">
+                    Back to Organisations
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Organisation Name</label>
+                <input
+                    type="text"
+                    name="organisation_name"
+                    placeholder="Example: Acme Group Ltd"
+                    required
+                >
+
+                <label>Industry</label>
+                <input
+                    type="text"
+                    name="industry"
+                    placeholder="Technology, Construction, Healthcare..."
+                >
+
+                <label>Plan</label>
+                <select name="plan" required>
+                    <option value="Trial">Trial</option>
+                    <option value="Free">Free</option>
+                    <option value="Pro">Pro</option>
+                    <option value="Enterprise">Enterprise</option>
+                </select>
+
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Active">Active</option>
+                    <option value="Trial">Trial</option>
+                    <option value="Suspended">Suspended</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Organisation
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

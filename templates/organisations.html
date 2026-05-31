@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organisations</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Organisations</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage company accounts, subscription plans and organisation status.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-organisation" class="btn-primary">
+                    + Add Organisation
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Organisations</h3>
+                <p>{{ organisations|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active</h3>
+                <p>{{ organisations | selectattr("status", "equalto", "Active") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Trial</h3>
+                <p>{{ organisations | selectattr("plan", "equalto", "Trial") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Enterprise</h3>
+                <p>{{ organisations | selectattr("plan", "equalto", "Enterprise") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if organisations %}
+
+        <div class="projects-grid">
+
+            {% for org in organisations %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ org["organisation_name"] }}</h3>
+
+                        {% if org["status"] == "Active" %}
+                            <span class="badge badge-green">Active</span>
+                        {% elif org["status"] == "Trial" %}
+                            <span class="badge badge-yellow">Trial</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ org["status"] }}</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Industry</span>
+                        <strong>{{ org["industry"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>{{ org["plan"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ org["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ org["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Organisations Added</h3>
+
+            <p>
+                Add an organisation account to begin multi-tenant setup.
+            </p>
+
+            <a href="/add-organisation" class="btn-primary">
+                Add First Organisation
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

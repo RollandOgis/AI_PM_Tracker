@@ -1103,6 +1103,36 @@ def init_db():
                    )
                    """)
 
+    # Organisations Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS organisations
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       organisation_name
+                       TEXT,
+
+                       industry
+                       TEXT,
+
+                       plan
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -8808,6 +8838,75 @@ def alerts():
         pending_approvals=pending_approvals
     )
 
+@app.route("/organisations")
+def organisations():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "organisations.html",
+        organisations=organisations
+    )
+
+
+@app.route("/add-organisation", methods=["GET", "POST"])
+def add_organisation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO organisations
+            (
+                user_id,
+                organisation_name,
+                industry,
+                plan,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["organisation_name"],
+            request.form["industry"],
+            request.form["plan"],
+            request.form["status"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/organisations")
+
+    return render_template("add_organisation.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
