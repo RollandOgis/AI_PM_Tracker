@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Customer Subscription</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Customer Subscription</h1>
+
+                <p class="dashboard-subtitle">
+                    Assign a subscription plan to an organisation.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/customer-subscriptions" class="btn-primary">
+                    Back to Subscriptions
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Organisation</label>
+                <select name="organisation_id" required>
+                    {% for organisation in organisations %}
+                        <option value="{{ organisation['id'] }}">
+                            {{ organisation['organisation_name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Subscription Plan</label>
+                <select name="plan_id" required>
+                    {% for plan in plans %}
+                        <option value="{{ plan['id'] }}">
+                            {{ plan['plan_name'] }} - £{{ plan['price'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Start Date</label>
+                <input
+                    type="date"
+                    name="start_date"
+                    required
+                >
+
+                <label>End Date</label>
+                <input
+                    type="date"
+                    name="end_date"
+                >
+
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Trial">Trial</option>
+                    <option value="Active">Active</option>
+                    <option value="Paused">Paused</option>
+                    <option value="Cancelled">Cancelled</option>
+                    <option value="Expired">Expired</option>
+                </select>
+
+                <label>Payment Status</label>
+                <select name="payment_status" required>
+                    <option value="Paid">Paid</option>
+                    <option value="Unpaid">Unpaid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Subscription
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

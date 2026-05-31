@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Subscriptions</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Customer Subscriptions</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage organisation subscriptions, plan status and payment status.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-customer-subscription" class="btn-primary">
+                    + Add Subscription
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Subscriptions</h3>
+                <p>{{ subscriptions|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active</h3>
+                <p>{{ subscriptions | selectattr("status", "equalto", "Active") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Trial</h3>
+                <p>{{ subscriptions | selectattr("status", "equalto", "Trial") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Unpaid</h3>
+                <p>{{ subscriptions | selectattr("payment_status", "equalto", "Unpaid") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if subscriptions %}
+
+        <div class="projects-grid">
+
+            {% for subscription in subscriptions %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ subscription["organisation_name"] or "No Organisation" }}</h3>
+
+                        {% if subscription["status"] == "Active" %}
+                            <span class="badge badge-green">Active</span>
+                        {% elif subscription["status"] == "Trial" %}
+                            <span class="badge badge-yellow">Trial</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ subscription["status"] }}</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>{{ subscription["plan_name"] or "No Plan" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Start Date</span>
+                        <strong>{{ subscription["start_date"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>End Date</span>
+                        <strong>{{ subscription["end_date"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ subscription["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Payment</span>
+                        <strong>{{ subscription["payment_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ subscription["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Customer Subscriptions Added</h3>
+
+            <p>
+                Add subscriptions to connect organisations with SaaS plans.
+            </p>
+
+            <a href="/add-customer-subscription" class="btn-primary">
+                Add First Subscription
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

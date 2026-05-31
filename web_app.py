@@ -1205,6 +1205,42 @@ def init_db():
                    )
                    """)
 
+    # Customer Subscriptions Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS customer_subscriptions
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       organisation_id
+                       INTEGER,
+
+                       plan_id
+                       INTEGER,
+
+                       start_date
+                       DATE,
+
+                       end_date
+                       DATE,
+
+                       status
+                       TEXT,
+
+                       payment_status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -9149,6 +9185,117 @@ def add_subscription_plan():
         return redirect("/subscription-plans")
 
     return render_template("add_subscription_plan.html")
+
+@app.route("/customer-subscriptions")
+def customer_subscriptions():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            customer_subscriptions.*,
+            organisations.organisation_name,
+            subscription_plans.plan_name
+        FROM customer_subscriptions
+        LEFT JOIN organisations
+        ON customer_subscriptions.organisation_id = organisations.id
+        LEFT JOIN subscription_plans
+        ON customer_subscriptions.plan_id = subscription_plans.id
+        WHERE customer_subscriptions.user_id = %s
+        ORDER BY customer_subscriptions.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    subscriptions = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "customer_subscriptions.html",
+        subscriptions=subscriptions
+    )
+
+
+@app.route("/add-customer-subscription", methods=["GET", "POST"])
+def add_customer_subscription():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM subscription_plans
+        WHERE user_id = %s
+        ORDER BY plan_name
+    """, (
+        session["user_id"],
+    ))
+
+    plans = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO customer_subscriptions
+            (
+                user_id,
+                organisation_id,
+                plan_id,
+                start_date,
+                end_date,
+                status,
+                payment_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["organisation_id"],
+            request.form["plan_id"],
+            request.form["start_date"],
+            request.form["end_date"],
+            request.form["status"],
+            request.form["payment_status"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/customer-subscriptions")
+
+    conn.close()
+
+    return render_template(
+        "add_customer_subscription.html",
+        organisations=organisations,
+        plans=plans
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
