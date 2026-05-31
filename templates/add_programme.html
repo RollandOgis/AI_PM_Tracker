@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Programme</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Programme</h1>
+
+                <p class="dashboard-subtitle">
+                    Create a programme to manage related projects and strategic benefits.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/programmes" class="btn-primary">
+                    Back to Programmes
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Programme Name</label>
+                <input
+                    type="text"
+                    name="programme_name"
+                    placeholder="Digital Transformation Programme"
+                    required
+                >
+
+                <label>Description</label>
+                <textarea
+                    name="description"
+                    rows="4"
+                    placeholder="Describe the programme"
+                ></textarea>
+
+                <label>Sponsor</label>
+                <input
+                    type="text"
+                    name="sponsor"
+                    placeholder="Executive sponsor"
+                >
+
+                <label>Programme Manager</label>
+                <input
+                    type="text"
+                    name="manager"
+                    placeholder="Programme manager"
+                >
+
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Planning">Planning</option>
+                    <option value="Active">Active</option>
+                    <option value="At Risk">At Risk</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Paused">Paused</option>
+                </select>
+
+                <label>Start Date</label>
+                <input
+                    type="date"
+                    name="start_date"
+                >
+
+                <label>End Date</label>
+                <input
+                    type="date"
+                    name="end_date"
+                >
+
+                <label>Budget</label>
+                <input
+                    type="number"
+                    name="budget"
+                    placeholder="Programme budget"
+                    step="0.01"
+                >
+
+                <label>Benefits</label>
+                <textarea
+                    name="benefits"
+                    rows="4"
+                    placeholder="Expected programme benefits"
+                ></textarea>
+
+                <label>Risks</label>
+                <textarea
+                    name="risks"
+                    rows="4"
+                    placeholder="Programme-level risks"
+                ></textarea>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Programme
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programmes</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Programme Management</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage related projects, strategic outcomes, programme budgets, risks and benefits.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-programme" class="btn-primary">
+                    + Add Programme
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Programmes</h3>
+                <p>{{ programmes|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active</h3>
+                <p>{{ programmes | selectattr("status", "equalto", "Active") | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Planning</h3>
+                <p>{{ programmes | selectattr("status", "equalto", "Planning") | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>At Risk</h3>
+                <p>{{ programmes | selectattr("status", "equalto", "At Risk") | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if programmes %}
+
+        <div class="projects-grid">
+
+            {% for programme in programmes %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ programme["programme_name"] }}</h3>
+
+                        {% if programme["status"] == "Active" %}
+
+                            <span class="badge badge-green">
+                                Active
+                            </span>
+
+                        {% elif programme["status"] == "Planning" %}
+
+                            <span class="badge badge-yellow">
+                                Planning
+                            </span>
+
+                        {% elif programme["status"] == "At Risk" %}
+
+                            <span class="badge badge-red">
+                                At Risk
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-blue">
+                                {{ programme["status"] }}
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    {{ programme["description"] or "No description added." }}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Sponsor</span>
+                        <strong>{{ programme["sponsor"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Manager</span>
+                        <strong>{{ programme["manager"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Start Date</span>
+                        <strong>{{ programme["start_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>End Date</span>
+                        <strong>{{ programme["end_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ programme["budget"] or 0 }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ programme["status"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Benefits:</strong>
+
+                    <br><br>
+
+                    {{ programme["benefits"] or "No benefits recorded." }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Risks:</strong>
+
+                    <br><br>
+
+                    {{ programme["risks"] or "No risks recorded." }}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Programmes Added</h3>
+
+            <p>
+                Add programmes to group related projects under strategic outcomes.
+            </p>
+
+            <a href="/add-programme" class="btn-primary">
+                Add First Programme
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

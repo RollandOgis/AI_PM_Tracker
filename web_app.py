@@ -934,6 +934,54 @@ def init_db():
                    )
                    """)
 
+    # Programmes Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS programmes
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       programme_name
+                       TEXT,
+
+                       description
+                       TEXT,
+
+                       sponsor
+                       TEXT,
+
+                       manager
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       start_date
+                       DATE,
+
+                       end_date
+                       DATE,
+
+                       budget
+                       NUMERIC,
+
+                       benefits
+                       TEXT,
+
+                       risks
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -7250,6 +7298,92 @@ def add_project_prioritisation():
         "add_project_prioritisation.html",
         projects=projects
     )
+
+@app.route("/programmes")
+def programmes():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM programmes
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    programmes = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "programmes.html",
+        programmes=programmes
+    )
+
+
+@app.route("/add-programme", methods=["GET", "POST"])
+def add_programme():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO programmes
+            (
+                user_id,
+                programme_name,
+                description,
+                sponsor,
+                manager,
+                status,
+                start_date,
+                end_date,
+                budget,
+                benefits,
+                risks,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["programme_name"],
+            request.form["description"],
+            request.form["sponsor"],
+            request.form["manager"],
+            request.form["status"],
+            request.form["start_date"],
+            request.form["end_date"],
+            request.form["budget"],
+            request.form["benefits"],
+            request.form["risks"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/programmes")
+
+    conn.close()
+
+    return render_template("add_programme.html")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
