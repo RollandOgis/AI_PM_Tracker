@@ -8521,6 +8521,28 @@ def delete_user_role(id):
 
     return redirect("/user-roles")
 
+@app.route("/delete-permission/<int:id>")
+def delete_permission(id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM permissions
+        WHERE id = %s
+    """, (
+        id,
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/permissions")
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

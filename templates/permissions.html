@@ -69,11 +69,13 @@
                 <div class="project-top">
 
                     <div>
+
                         <h3>{{ permission["role"] }}</h3>
 
                         <span class="badge badge-blue">
                             {{ permission["module"] }}
                         </span>
+
                     </div>
 
                 </div>
@@ -87,23 +89,58 @@
 
                     <div class="budget-row">
                         <span>Can View</span>
-                        <strong>{{ "Yes" if permission["can_view"] else "No" }}</strong>
+                        <strong>
+                            {% if permission["can_view"] %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Can Create</span>
-                        <strong>{{ "Yes" if permission["can_create"] else "No" }}</strong>
+                        <strong>
+                            {% if permission["can_create"] %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Can Edit</span>
-                        <strong>{{ "Yes" if permission["can_edit"] else "No" }}</strong>
+                        <strong>
+                            {% if permission["can_edit"] %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Can Delete</span>
-                        <strong>{{ "Yes" if permission["can_delete"] else "No" }}</strong>
+                        <strong>
+                            {% if permission["can_delete"] %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
                     </div>
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a
+                        href="/delete-permission/{{ permission['id'] }}"
+                        onclick="return confirm('Delete this permission?')"
+                    >
+                        Delete Permission
+                    </a>
 
                 </div>
 
