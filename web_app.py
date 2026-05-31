@@ -8556,32 +8556,6 @@ def delete_user_role(id):
     conn.commit()
     conn.close()
 
-@app.route("/permissions")
-def permissions():
-
-        if "user_id" not in session:
-            return redirect("/login")
-
-        conn = get_db_connection()
-
-        cursor = conn.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-                       SELECT *
-                       FROM permissions
-                       ORDER BY role, module
-                       """)
-
-        permissions = cursor.fetchall()
-
-        conn.close()
-
-        return render_template(
-            "permissions.html",
-            permissions=permissions
-        )
 
 @app.route("/permissions")
 def permissions():
