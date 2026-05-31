@@ -8153,13 +8153,12 @@ def ai_executive_assistant():
     open_issues = cursor.fetchone()["open_issues"]
 
     cursor.execute("""
-        SELECT COUNT(*) AS pending_changes
-        FROM changes
-        WHERE user_id = %s
-        AND status != 'Approved'
-    """, (
-        session["user_id"],
-    ))
+                   SELECT COUNT(*) AS pending_changes
+                   FROM changes
+                   WHERE user_id = %s
+                   """, (
+                       session["user_id"],
+                   ))
     pending_changes = cursor.fetchone()["pending_changes"]
 
     cursor.execute("""
