@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permissions</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Permissions</h1>
+
+                <p class="dashboard-subtitle">
+                    Control what each role can view, create, edit and delete.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-permission" class="btn-primary">
+                    + Add Permission
+                </a>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Permissions</h3>
+                <p>{{ permissions|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>View Access</h3>
+                <p>{{ permissions | selectattr("can_view", "equalto", True) | list | length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Create Access</h3>
+                <p>{{ permissions | selectattr("can_create", "equalto", True) | list | length }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Delete Access</h3>
+                <p>{{ permissions | selectattr("can_delete", "equalto", True) | list | length }}</p>
+            </div>
+
+        </div>
+
+        {% if permissions %}
+
+        <div class="projects-grid">
+
+            {% for permission in permissions %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ permission["role"] }}</h3>
+
+                        <span class="badge badge-blue">
+                            {{ permission["module"] }}
+                        </span>
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Module</span>
+                        <strong>{{ permission["module"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Can View</span>
+                        <strong>{{ "Yes" if permission["can_view"] else "No" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Can Create</span>
+                        <strong>{{ "Yes" if permission["can_create"] else "No" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Can Edit</span>
+                        <strong>{{ "Yes" if permission["can_edit"] else "No" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Can Delete</span>
+                        <strong>{{ "Yes" if permission["can_delete"] else "No" }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Permissions Added</h3>
+
+            <p>
+                Add permissions to define role-based access.
+            </p>
+
+            <a href="/add-permission" class="btn-primary">
+                Add First Permission
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

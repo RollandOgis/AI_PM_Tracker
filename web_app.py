@@ -1071,6 +1071,38 @@ def init_db():
                    )
                    """)
 
+    # Permissions Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS permissions
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       role
+                       TEXT,
+
+                       module
+                       TEXT,
+
+                       can_view
+                       BOOLEAN,
+
+                       can_create
+                       BOOLEAN,
+
+                       can_edit
+                       BOOLEAN,
+
+                       can_delete
+                       BOOLEAN
+
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -8421,6 +8453,71 @@ def delete_user_role(id):
 
     conn.commit()
     conn.close()
+
+    @app.route("/permissions")
+    def permissions():
+
+        if "user_id" not in session:
+            return redirect("/login")
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+                       SELECT *
+                       FROM permissions
+                       ORDER BY role, module
+                       """)
+
+        permissions = cursor.fetchall()
+
+        conn.close()
+
+        return render_template(
+            "permissions.html",
+            permissions=permissions
+        )
+
+    @app.route("/add-permission", methods=["GET", "POST"])
+    def add_permission():
+
+        if "user_id" not in session:
+            return redirect("/login")
+
+        if request.method == "POST":
+            conn = get_db_connection()
+
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                           INSERT INTO permissions
+                           (role,
+                            module,
+                            can_view,
+                            can_create,
+                            can_edit,
+                            can_delete)
+                           VALUES (%s, %s, %s, %s, %s, %s)
+                           """, (
+                               request.form["role"],
+                               request.form["module"],
+                               request.form.get("can_view") == "on",
+                               request.form.get("can_create") == "on",
+                               request.form.get("can_edit") == "on",
+                               request.form.get("can_delete") == "on"
+                           ))
+
+            conn.commit()
+            conn.close()
+
+            return redirect("/permissions")
+
+        return render_template(
+            "add_permission.html"
+        )
 
     return redirect("/user-roles")
 

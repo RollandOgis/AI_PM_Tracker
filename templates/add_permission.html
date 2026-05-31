@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Permission</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Add Permission</h1>
+
+                <p class="dashboard-subtitle">
+                    Assign module-level permissions to a role.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/permissions" class="btn-primary">
+                    Back to Permissions
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Role</label>
+                <select name="role" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Project Manager">Project Manager</option>
+                    <option value="Project Coordinator">Project Coordinator</option>
+                    <option value="Viewer">Viewer</option>
+                </select>
+
+                <label>Module</label>
+                <select name="module" required>
+                    <option value="Projects">Projects</option>
+                    <option value="Tasks">Tasks</option>
+                    <option value="Risks">Risks</option>
+                    <option value="Issues">Issues</option>
+                    <option value="Changes">Changes</option>
+                    <option value="Budgets">Budgets</option>
+                    <option value="Approvals">Approvals</option>
+                    <option value="Reports">Reports</option>
+                    <option value="Admin">Admin</option>
+                </select>
+
+                <div class="smart-insight">
+
+                    <label>
+                        <input type="checkbox" name="can_view">
+                        Can View
+                    </label>
+
+                    <br><br>
+
+                    <label>
+                        <input type="checkbox" name="can_create">
+                        Can Create
+                    </label>
+
+                    <br><br>
+
+                    <label>
+                        <input type="checkbox" name="can_edit">
+                        Can Edit
+                    </label>
+
+                    <br><br>
+
+                    <label>
+                        <input type="checkbox" name="can_delete">
+                        Can Delete
+                    </label>
+
+                </div>
+
+                <br>
+
+                <button type="submit" class="btn-primary">
+                    Save Permission
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
