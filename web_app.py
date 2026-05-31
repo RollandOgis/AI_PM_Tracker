@@ -6357,6 +6357,36 @@ def capacity_forecast():
         forecast_data=forecast_data
     )
 
+@app.route("/skills-matrix")
+def skills_matrix():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    team_members = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "skills_matrix.html",
+        team_members=team_members
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 

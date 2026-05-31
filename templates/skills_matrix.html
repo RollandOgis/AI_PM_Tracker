@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills Matrix</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Skills Matrix</h1>
+
+                <p class="dashboard-subtitle">
+                    View team capabilities, roles and skills coverage.
+                </p>
+            </div>
+        </div>
+
+        {% if team_members %}
+
+            <div class="projects-grid">
+
+                {% for member in team_members %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+                            <div>
+                                <h3>{{ member["name"] }}</h3>
+                                <p>{{ member["role"] }}</p>
+                            </div>
+
+                            {% if member["status"] == "Active" %}
+                                <span class="badge badge-green">Active</span>
+                            {% elif member["status"] == "Unavailable" %}
+                                <span class="badge badge-yellow">Unavailable</span>
+                            {% else %}
+                                <span class="badge badge-red">{{ member["status"] }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Email</span>
+                                <strong>{{ member["email"] or "N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Role</span>
+                                <strong>{{ member["role"] or "N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>{{ member["status"] or "N/A" }}</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="smart-insight">
+                            <strong>Skills:</strong>
+                            <br><br>
+                            {{ member["skills"] or "No skills added." }}
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Team Members Found</h3>
+
+                <p>
+                    Add team members and skills to generate the skills matrix.
+                </p>
+
+                <a href="/add-team-member" class="btn-primary">
+                    Add Team Member
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
