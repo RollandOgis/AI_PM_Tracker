@@ -1,101 +1,73 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Approval</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 
-{% block content %}
+<body>
 
 <div class="container">
 
-    <h2>Create Approval</h2>
+    <h1>Add Approval</h1>
 
     <form method="POST">
 
-        <div class="mb-3">
-            <label>Project</label>
+        <label>Project</label>
+        <select name="project_id" required>
+            {% for project in projects %}
+                <option value="{{ project[0] }}">{{ project[1] }}</option>
+            {% endfor %}
+        </select>
 
-            <select name="project_id" class="form-control">
+        <br><br>
 
-                {% for project in projects %}
-                    <option value="{{ project[0] }}">
-                        {{ project[1] }}
-                    </option>
-                {% endfor %}
+        <label>Item Type</label>
+        <input type="text" name="item_type" placeholder="Risk, Change, Budget, Stage Gate" required>
 
-            </select>
-        </div>
+        <br><br>
 
-        <div class="mb-3">
-            <label>Item Type</label>
-            <input
-                type="text"
-                name="item_type"
-                class="form-control"
-                placeholder="Change Request, Risk, Budget..."
-                required
-            >
-        </div>
+        <label>Item ID</label>
+        <input type="number" name="item_id" placeholder="Enter related item ID" required>
 
-        <div class="mb-3">
-            <label>Item ID</label>
-            <input
-                type="number"
-                name="item_id"
-                class="form-control"
-                required
-            >
-        </div>
+        <br><br>
 
-        <div class="mb-3">
-            <label>Submitted By</label>
-            <input
-                type="text"
-                name="submitted_by"
-                class="form-control"
-                required
-            >
-        </div>
+        <label>Submitted By</label>
+        <input type="text" name="submitted_by" required>
 
-        <div class="mb-3">
-            <label>Approver</label>
-            <input
-                type="text"
-                name="approver"
-                class="form-control"
-                required
-            >
-        </div>
+        <br><br>
 
-        <div class="mb-3">
-            <label>Status</label>
+        <label>Approver</label>
+        <input type="text" name="approver" required>
 
-            <select name="status" class="form-control">
-                <option value="Draft">Draft</option>
-                <option value="Submitted">Submitted</option>
-                <option value="Pending Approval">Pending Approval</option>
-                <option value="Approved">Approved</option>
-                <option value="Rejected">Rejected</option>
-            </select>
+        <br><br>
 
-        </div>
+        <label>Status</label>
+        <select name="status" required>
+            <option value="Draft">Draft</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Pending Approval">Pending Approval</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+        </select>
 
-        <div class="mb-3">
-            <label>Comments</label>
+        <br><br>
 
-            <textarea
-                name="comments"
-                class="form-control"
-                rows="4">
-            </textarea>
-        </div>
+        <label>Comments</label>
+        <textarea name="comments" rows="5"></textarea>
 
-        <button
-            type="submit"
-            class="btn btn-success">
+        <br><br>
 
-            Save Approval
-
-        </button>
+        <button type="submit">Save Approval</button>
 
     </form>
 
+    <br>
+
+    <a href="/approvals">Back to Approvals</a>
+
 </div>
 
-{% endblock %}
+</body>
+</html>

@@ -1,67 +1,56 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Approval Workflows</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 
-{% block content %}
+<body>
 
 <div class="container">
 
-    <div class="page-header">
-        <h2>Approval Workflows</h2>
-        <a href="/add-approval" class="btn btn-primary">+ New Approval</a>
-    </div>
+    <h1>Approval Workflows</h1>
 
-    <table class="table table-striped">
+    <a href="/add-approval" class="btn">+ New Approval</a>
 
+    <br><br>
+
+    <table>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Project</th>
-                <th>Type</th>
+                <th>Project ID</th>
+                <th>Item Type</th>
+                <th>Item ID</th>
                 <th>Submitted By</th>
                 <th>Approver</th>
                 <th>Status</th>
-                <th>Submitted</th>
+                <th>Submitted Date</th>
+                <th>Decision Date</th>
+                <th>Comments</th>
             </tr>
         </thead>
 
         <tbody>
-
-        {% for approval in approvals %}
-
+            {% for approval in approvals %}
             <tr>
                 <td>{{ approval[0] }}</td>
                 <td>{{ approval[1] }}</td>
                 <td>{{ approval[2] }}</td>
                 <td>{{ approval[3] }}</td>
                 <td>{{ approval[4] }}</td>
-                <td>
-
-                    {% if approval[5] == "Approved" %}
-                        <span class="badge bg-success">Approved</span>
-
-                    {% elif approval[5] == "Rejected" %}
-                        <span class="badge bg-danger">Rejected</span>
-
-                    {% elif approval[5] == "Pending Approval" %}
-                        <span class="badge bg-warning text-dark">Pending</span>
-
-                    {% else %}
-                        <span class="badge bg-secondary">
-                            {{ approval[5] }}
-                        </span>
-                    {% endif %}
-
-                </td>
-
+                <td>{{ approval[5] }}</td>
                 <td>{{ approval[6] }}</td>
-
+                <td>{{ approval[7] }}</td>
+                <td>{{ approval[8] }}</td>
+                <td>{{ approval[9] }}</td>
             </tr>
-
-        {% endfor %}
-
+            {% endfor %}
         </tbody>
-
     </table>
 
 </div>
 
-{% endblock %}
+</body>
+</html>
