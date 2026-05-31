@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Trends</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Portfolio Trend Charts</h1>
+
+                <p class="dashboard-subtitle">
+                    Track portfolio health, risk exposure, financial health and performance over time.
+                </p>
+            </div>
+
+        </div>
+
+        {% if trends %}
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Snapshots</h3>
+                <p>{{ trends|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Latest Health</h3>
+                <p>{{ trends[-1]["health_score"] }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Latest Risk</h3>
+                <p>{{ trends[-1]["risk_exposure"] }}%</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Latest Financial</h3>
+                <p>{{ trends[-1]["financial_health"] }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Portfolio Health Trend</h3>
+
+            <canvas id="portfolioTrendChart"></canvas>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Latest Portfolio Commentary</h3>
+
+            <div class="smart-insight">
+
+                <strong>Trend:</strong>
+                {{ trends[-1]["trend"] }}
+
+                <br><br>
+
+                <strong>Commentary:</strong>
+
+                <br><br>
+
+                {{ trends[-1]["commentary"] or "No commentary added." }}
+
+            </div>
+
+        </div>
+
+        <script>
+
+            const labels = [
+                {% for trend in trends %}
+                    "{{ trend['created_at'] }}",
+                {% endfor %}
+            ];
+
+            const healthScores = [
+                {% for trend in trends %}
+                    {{ trend['health_score'] }},
+                {% endfor %}
+            ];
+
+            const riskExposure = [
+                {% for trend in trends %}
+                    {{ trend['risk_exposure'] }},
+                {% endfor %}
+            ];
+
+            const financialHealth = [
+                {% for trend in trends %}
+                    {{ trend['financial_health'] }},
+                {% endfor %}
+            ];
+
+            const performanceScores = [
+                {% for trend in trends %}
+                    {{ trend['performance_score'] }},
+                {% endfor %}
+            ];
+
+            const ctx = document.getElementById("portfolioTrendChart");
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: "Health Score",
+                            data: healthScores,
+                            borderWidth: 3,
+                            tension: 0.3
+                        },
+                        {
+                            label: "Risk Exposure",
+                            data: riskExposure,
+                            borderWidth: 3,
+                            tension: 0.3
+                        },
+                        {
+                            label: "Financial Health",
+                            data: financialHealth,
+                            borderWidth: 3,
+                            tension: 0.3
+                        },
+                        {
+                            label: "Performance Score",
+                            data: performanceScores,
+                            borderWidth: 3,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+        </script>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Portfolio Trend Data</h3>
+
+            <p>
+                Add portfolio health snapshots first so trend charts can be generated.
+            </p>
+
+            <a href="/add-portfolio-health" class="btn-primary">
+                Add Portfolio Health Snapshot
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -7568,7 +7568,35 @@ def executive_charts():
         total_changes=total_changes,
         latest_health=latest_health
     )
+@app.route("/portfolio-trends")
+def portfolio_trends():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_health
+        WHERE user_id = %s
+        ORDER BY created_at ASC
+    """, (
+        session["user_id"],
+    ))
+
+    trends = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "portfolio_trends.html",
+        trends=trends
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
