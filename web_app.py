@@ -8704,6 +8704,36 @@ def admin_dashboard():
         recent_logs=recent_logs
     )
 
+@app.route("/user-management")
+def user_management():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            users.id,
+            users.username,
+            users.avatar_initials
+        FROM users
+        ORDER BY users.id DESC
+    """)
+
+    users = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "user_management.html",
+        users=users
+    )
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

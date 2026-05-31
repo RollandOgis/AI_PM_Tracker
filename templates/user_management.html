@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>User Management</h1>
+
+                <p class="dashboard-subtitle">
+                    View registered users and account details.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Users</h3>
+                <p>{{ users|length }}</p>
+            </div>
+
+        </div>
+
+        {% if users %}
+
+        <div class="projects-grid">
+
+            {% for user in users %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ user["username"] }}</h3>
+
+                        <span class="badge badge-blue">
+                            User ID: {{ user["id"] }}
+                        </span>
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Username</span>
+                        <strong>{{ user["username"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Avatar</span>
+                        <strong>{{ user["avatar_initials"] or "N/A" }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Users Found</h3>
+
+            <p>
+                Registered users will appear here.
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
