@@ -6669,14 +6669,27 @@ def edit_stage_gate(gate_id):
 @app.route("/approvals")
 def approvals():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
-        SELECT *
+        SELECT
+            approvals.*,
+            projects.name AS project_name
         FROM approvals
-        ORDER BY id DESC
-    """)
+        LEFT JOIN projects
+        ON approvals.project_id = projects.id
+        WHERE approvals.user_id = %s
+        ORDER BY approvals.id DESC
+    """, (
+        session["user_id"],
+    ))
 
     approvals = cursor.fetchall()
 
@@ -6687,25 +6700,36 @@ def approvals():
         approvals=approvals
     )
 
+
 @app.route("/add-approval", methods=["GET", "POST"])
 def add_approval():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
-
-        project_id = request.form["project_id"]
-        item_type = request.form["item_type"]
-        item_id = request.form["item_id"]
-        submitted_by = request.form["submitted_by"]
-        approver = request.form["approver"]
-        status = request.form["status"]
-        comments = request.form["comments"]
 
         cursor.execute("""
             INSERT INTO approvals
             (
+                user_id,
                 project_id,
                 item_type,
                 item_id,
@@ -6715,26 +6739,22 @@ def add_approval():
                 submitted_date,
                 comments
             )
-            VALUES
-            (%s,%s,%s,%s,%s,%s,CURRENT_DATE,%s)
-        """,
-        (
-            project_id,
-            item_type,
-            item_id,
-            submitted_by,
-            approver,
-            status,
-            comments
+            VALUES (%s,%s,%s,%s,%s,%s,%s,CURRENT_DATE,%s)
+        """, (
+            session["user_id"],
+            request.form["project_id"],
+            request.form["item_type"],
+            request.form["item_id"],
+            request.form["submitted_by"],
+            request.form["approver"],
+            request.form["status"],
+            request.form["comments"]
         ))
 
         conn.commit()
         conn.close()
 
         return redirect("/approvals")
-
-    cursor.execute("SELECT * FROM projects")
-    projects = cursor.fetchall()
 
     conn.close()
 
@@ -6743,18 +6763,104 @@ def add_approval():
         projects=projects
     )
 
+
+@app.route("/edit-approval/<int:id>", methods=["GET", "POST"])
+def edit_approval(id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM approvals
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
+
+    approval = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE approvals
+            SET
+                project_id = %s,
+                item_type = %s,
+                item_id = %s,
+                submitted_by = %s,
+                approver = %s,
+                status = %s,
+                comments = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form["project_id"],
+            request.form["item_type"],
+            request.form["item_id"],
+            request.form["submitted_by"],
+            request.form["approver"],
+            request.form["status"],
+            request.form["comments"],
+            id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/approvals")
+
+    conn.close()
+
+    return render_template(
+        "edit_approval.html",
+        approval=approval,
+        projects=projects
+    )
+
+
 @app.route("/approve-approval/<int:id>")
 def approve_approval(id):
 
+    if "user_id" not in session:
+        return redirect("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         UPDATE approvals
         SET status = 'Approved',
             decision_date = CURRENT_DATE
         WHERE id = %s
-    """, (id,))
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
 
     conn.commit()
     conn.close()
@@ -6765,15 +6871,25 @@ def approve_approval(id):
 @app.route("/reject-approval/<int:id>")
 def reject_approval(id):
 
+    if "user_id" not in session:
+        return redirect("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         UPDATE approvals
         SET status = 'Rejected',
             decision_date = CURRENT_DATE
         WHERE id = %s
-    """, (id,))
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
 
     conn.commit()
     conn.close()
@@ -6784,81 +6900,28 @@ def reject_approval(id):
 @app.route("/delete-approval/<int:id>")
 def delete_approval(id):
 
+    if "user_id" not in session:
+        return redirect("/login")
+
     conn = get_db_connection()
-    cursor = conn.cursor()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         DELETE FROM approvals
         WHERE id = %s
-    """, (id,))
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
 
     conn.commit()
     conn.close()
 
     return redirect("/approvals")
-
-@app.route("/edit-approval/<int:id>", methods=["GET", "POST"])
-def edit_approval(id):
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    if request.method == "POST":
-
-        project_id = request.form["project_id"]
-        item_type = request.form["item_type"]
-        item_id = request.form["item_id"]
-        submitted_by = request.form["submitted_by"]
-        approver = request.form["approver"]
-        status = request.form["status"]
-        comments = request.form["comments"]
-
-        cursor.execute("""
-            UPDATE approvals
-            SET
-                project_id=%s,
-                item_type=%s,
-                item_id=%s,
-                submitted_by=%s,
-                approver=%s,
-                status=%s,
-                comments=%s
-            WHERE id=%s
-        """,
-        (
-            project_id,
-            item_type,
-            item_id,
-            submitted_by,
-            approver,
-            status,
-            comments,
-            id
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/approvals")
-
-    cursor.execute(
-        "SELECT * FROM approvals WHERE id=%s",
-        (id,)
-    )
-
-    approval = cursor.fetchone()
-
-    cursor.execute("SELECT * FROM projects")
-
-    projects = cursor.fetchall()
-
-    conn.close()
-
-    return render_template(
-        "edit_approval.html",
-        approval=approval,
-        projects=projects
-    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
