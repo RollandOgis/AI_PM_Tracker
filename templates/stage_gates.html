@@ -60,128 +60,120 @@
 
         {% if stage_gates %}
 
-            <div class="projects-grid">
+        <div class="projects-grid">
 
-    {% for gate in stage_gates %}
+            {% for gate in stage_gates %}
 
-        <div class="project-card">
+            <div class="project-card">
 
-            <div class="project-top">
+                <div class="project-top">
 
-                <div>
+                    <div>
 
-                    <h3>{{ gate["stage_name"] }}</h3>
+                        <h3>{{ gate["stage_name"] }}</h3>
 
-                    {% if gate["status"] == "Approved" %}
+                        {% if gate["status"] == "Approved" %}
 
-                        <span class="badge badge-green">
-                            Approved
-                        </span>
+                            <span class="badge badge-green">
+                                Approved
+                            </span>
 
-                    {% elif gate["status"] == "Pending" %}
+                        {% elif gate["status"] == "Pending" %}
 
-                        <span class="badge badge-yellow">
-                            Pending
-                        </span>
+                            <span class="badge badge-yellow">
+                                Pending
+                            </span>
 
-                    {% else %}
+                        {% else %}
 
-                        <span class="badge badge-red">
+                            <span class="badge badge-red">
+                                {{ gate["status"] }}
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>
+                            {{ gate["project_name"] or "No Project" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Reviewer</span>
+                        <strong>
+                            {{ gate["reviewer"] or "Not assigned" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Review Date</span>
+                        <strong>
+                            {{ gate["review_date"] or "No date" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>
                             {{ gate["status"] }}
-                        </span>
+                        </strong>
+                    </div>
 
-                    {% endif %}
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Comments:</strong>
+
+                    <br><br>
+
+                    {{ gate["comments"] or "No comments added." }}
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-stage-gate/{{ gate['id'] }}">
+                        Edit Gate
+                    </a>
+
+                    <a
+                        href="/delete-stage-gate/{{ gate['id'] }}"
+                        onclick="return confirm('Delete this stage gate?')"
+                    >
+                        Delete Gate
+                    </a>
 
                 </div>
 
             </div>
 
-            <div class="budget-section">
-
-                <div class="budget-row">
-
-                    <span>Project</span>
-
-                    <strong>
-                        {{ gate["project_name"] or "No Project" }}
-                    </strong>
-
-                </div>
-
-                <div class="budget-row">
-
-                    <span>Reviewer</span>
-
-                    <strong>
-                        {{ gate["reviewer"] or "Not assigned" }}
-                    </strong>
-
-                </div>
-
-                <div class="budget-row">
-
-                    <span>Review Date</span>
-
-                    <strong>
-                        {{ gate["review_date"] or "No date" }}
-                    </strong>
-
-                </div>
-
-                <div class="budget-row">
-
-                    <span>Status</span>
-
-                    <strong>
-                        {{ gate["status"] }}
-                    </strong>
-
-                </div>
-
-            </div>
-
-            <div class="smart-insight">
-
-                <strong>Comments:</strong>
-
-                <br><br>
-
-                {{ gate["comments"] or "No comments added." }}
-
-            </div>
-
-            <div style="margin-top:15px;">
-
-                <a
-                    href="/edit-stage-gate/{{ gate['id'] }}"
-                    class="btn-primary"
-                >
-                    Edit Gate
-                </a>
-
-            </div>
+            {% endfor %}
 
         </div>
 
-    {% endfor %}
-
-</div>
-
         {% else %}
 
-            <div class="empty-box">
+        <div class="empty-box">
 
-                <h3>No Stage Gates Added</h3>
+            <h3>No Stage Gates Added</h3>
 
-                <p>
-                    Add stage gates to track formal project governance reviews.
-                </p>
+            <p>
+                Add stage gates to track formal project governance reviews.
+            </p>
 
-                <a href="/add-stage-gate" class="btn-primary">
-                    Add First Stage Gate
-                </a>
+            <a href="/add-stage-gate" class="btn-primary">
+                Add First Stage Gate
+            </a>
 
-            </div>
+        </div>
 
         {% endif %}
 

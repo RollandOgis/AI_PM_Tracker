@@ -6672,6 +6672,32 @@ def edit_stage_gate(gate_id):
         gate=gate
     )
 
+@app.route("/delete-stage-gate/<int:gate_id>")
+def delete_stage_gate(gate_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        DELETE FROM stage_gates
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        gate_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/stage-gates")
+
 @app.route("/approvals")
 def approvals():
 
