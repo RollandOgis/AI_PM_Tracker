@@ -13956,6 +13956,177 @@ def seed_demo_tasks():
     return "Demo tasks added successfully"
 
 
+@app.route("/seed-portfolio-programme-data")
+def seed_portfolio_programme_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    programmes = [
+        (
+            "Digital Transformation Programme",
+            "Enterprise-wide digital delivery programme.",
+            "Chief Transformation Officer",
+            "Michael Brown",
+            "In Progress",
+            "2026-06-01",
+            "2027-06-30",
+            2500000,
+            "Improved efficiency, better reporting and reduced manual work.",
+            "Resource pressure, supplier delays and budget exposure."
+        ),
+        (
+            "Infrastructure Modernisation Programme",
+            "Modernisation of construction and infrastructure delivery.",
+            "Operations Director",
+            "Sarah Johnson",
+            "Planning",
+            "2026-07-01",
+            "2027-12-31",
+            4000000,
+            "Improved delivery control and safer operations.",
+            "Regulatory delays and procurement issues."
+        ),
+        (
+            "SaaS Platform Commercialisation",
+            "Commercialisation of the AI PM Tracker SaaS platform.",
+            "Product Sponsor",
+            "Sophia White",
+            "In Progress",
+            "2026-05-01",
+            "2026-12-31",
+            500000,
+            "Revenue generation and scalable SaaS capability.",
+            "Security, billing and production readiness risks."
+        )
+    ]
+
+    for programme in programmes:
+
+        cursor.execute("""
+            INSERT INTO programmes
+            (
+                user_id,
+                programme_name,
+                description,
+                sponsor,
+                manager,
+                status,
+                start_date,
+                end_date,
+                budget,
+                benefits,
+                risks,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            programme[0],
+            programme[1],
+            programme[2],
+            programme[3],
+            programme[4],
+            programme[5],
+            programme[6],
+            programme[7],
+            programme[8],
+            programme[9],
+            str(date.today())
+        ))
+
+    for i, project in enumerate(projects):
+
+        business_value = 8 - (i % 3)
+        strategic_alignment = 9 - (i % 4)
+        risk_score = 4 + (i % 5)
+        cost_score = 5 + (i % 4)
+
+        priority_score = (
+            business_value
+            + strategic_alignment
+            - risk_score
+            + cost_score
+        )
+
+        cursor.execute("""
+            INSERT INTO project_prioritisation
+            (
+                user_id,
+                project_id,
+                business_value_score,
+                strategic_alignment_score,
+                risk_score,
+                cost_score,
+                priority_score,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project["id"],
+            business_value,
+            strategic_alignment,
+            risk_score,
+            cost_score,
+            priority_score,
+            str(date.today())
+        ))
+
+    cursor.execute("""
+        INSERT INTO portfolio_health
+        (
+            user_id,
+            health_score,
+            risk_exposure,
+            financial_health,
+            performance_score,
+            trend,
+            commentary,
+            created_at
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        76,
+        42,
+        81,
+        74,
+        "Stable",
+        "Portfolio is broadly healthy, with moderate risk exposure and improving financial control.",
+        str(date.today())
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return "Portfolio and programme demo data added successfully"
+
+
 
 
 if __name__ == "__main__":
