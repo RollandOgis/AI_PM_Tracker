@@ -2412,24 +2412,6 @@ body.dark-ready {
     height: 100%;
 }
 
-.layout {
-    display: flex;
-    min-height: 100vh;
-}
-
-.sidebar {
-    width: 260px;
-    min-height: 100vh;
-    flex-shrink: 0;
-}
-
-.main-content {
-    flex: 1;
-    padding: 30px;
-    margin-left: 0;
-    overflow-x: auto;
-}
-
 .table-container {
     width: 100%;
     overflow-x: auto;
