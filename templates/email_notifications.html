@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Notifications</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Email Notifications</h1>
+
+        <p class="page-subtitle">
+            Manage email notification drafts and delivery history.
+        </p>
+
+        <div style="margin-top:20px;margin-bottom:30px;">
+            <a href="/add-email-notification" class="btn-primary">
+                Add Email Notification
+            </a>
+        </div>
+
+        <div class="card">
+
+            <div class="table-container">
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Recipient</th>
+                            <th>Subject</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for notification in notifications %}
+
+                        <tr>
+                            <td>{{ notification.recipient_email }}</td>
+                            <td>{{ notification.subject }}</td>
+                            <td>{{ notification.message }}</td>
+                            <td>
+                                <span class="badge badge-yellow">
+                                    {{ notification.status }}
+                                </span>
+                            </td>
+                            <td>{{ notification.created_at }}</td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

@@ -1387,6 +1387,28 @@ def init_db():
     except:
         pass
 
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS email_notifications
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       user_id
+                       INTEGER,
+                       recipient_email
+                       TEXT,
+                       subject
+                       TEXT,
+                       message
+                       TEXT,
+                       status
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -10556,6 +10578,84 @@ def reset_password(token):
     return render_template(
         "reset_password.html",
         user=user
+    )
+
+@app.route("/email-notifications")
+def email_notifications():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM email_notifications
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    notifications = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "email_notifications.html",
+        notifications=notifications
+    )
+
+
+@app.route("/add-email-notification", methods=["GET", "POST"])
+def add_email_notification():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
+
+    if request.method == "POST":
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO email_notifications
+            (
+                user_id,
+                recipient_email,
+                subject,
+                message,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["recipient_email"],
+            request.form["subject"],
+            request.form["message"],
+            "Draft",
+            str(datetime.now())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/email-notifications")
+
+    return render_template(
+        "add_email_notification.html"
     )
 
 @app.route("/user-management")

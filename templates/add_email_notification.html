@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Email Notification</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Add Email Notification</h1>
+
+        <p class="page-subtitle">
+            Create a draft email notification record.
+        </p>
+
+        <form method="POST" class="form-card">
+
+            <label>Recipient Email</label>
+            <input type="email" name="recipient_email" required>
+
+            <label>Subject</label>
+            <input type="text" name="subject" required>
+
+            <label>Message</label>
+            <textarea name="message" rows="6" required></textarea>
+
+            <button type="submit" class="btn-primary">
+                Save Notification
+            </button>
+
+        </form>
+
+    </main>
+
+</div>
+
+</body>
+</html>
