@@ -1,10 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Workspace Roles</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
-$END$
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Workspace Roles</h1>
+
+        <p class="page-subtitle">
+            View users and their roles across organisations and workspaces.
+        </p>
+
+        <div class="card">
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Organisation</th>
+                            <th>Workspace</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for role in roles %}
+
+                        <tr>
+                            <td>{{ role.username or "Unknown User" }}</td>
+                            <td>{{ role.role }}</td>
+                            <td>{{ role.organisation_name or "No Organisation" }}</td>
+                            <td>{{ role.workspace_name or "No Workspace" }}</td>
+                            <td>{{ role.created_at }}</td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
 </body>
 </html>

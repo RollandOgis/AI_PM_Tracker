@@ -10871,6 +10871,46 @@ def workspace_switcher():
         workspaces=workspaces
     )
 
+@app.route("/workspace-roles")
+def workspace_roles():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            user_roles.*,
+            users.username,
+            organisations.organisation_name,
+            workspaces.workspace_name
+        FROM user_roles
+        LEFT JOIN users
+        ON user_roles.user_id = users.id
+        LEFT JOIN organisations
+        ON user_roles.organisation_id = organisations.id
+        LEFT JOIN workspaces
+        ON user_roles.workspace_id = workspaces.id
+        ORDER BY user_roles.id DESC
+    """)
+
+    roles = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "workspace_roles.html",
+        roles=roles
+    )
+
 
 @app.route("/subscription-plans")
 def subscription_plans():
