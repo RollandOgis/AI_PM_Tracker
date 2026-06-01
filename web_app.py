@@ -12184,23 +12184,6 @@ def portfolio_kanban():
         grouped_projects=grouped_projects
     )
 
-@app.route("/verify-all-users")
-def verify_all_users():
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE users
-        SET is_verified = TRUE
-    """)
-
-    conn.commit()
-    conn.close()
-
-    return "All users verified"
-
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
