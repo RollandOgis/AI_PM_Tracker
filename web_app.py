@@ -1300,6 +1300,42 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS status TEXT
                    """)
 
+    # User Invitations
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS user_invitations
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       organisation_id
+                       INTEGER,
+
+                       workspace_id
+                       INTEGER,
+
+                       invited_email
+                       TEXT,
+
+                       role
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       invitation_token
+                       TEXT,
+
+                       invited_by
+                       INTEGER,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     conn.commit()
 
@@ -10295,6 +10331,165 @@ def user_management():
     return render_template(
         "user_management.html",
         users=users
+    )
+
+@app.route(
+    "/add-user-invitation",
+    methods=["GET", "POST"]
+)
+def add_user_invitation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces = cursor.fetchall()
+
+    if request.method == "POST":
+
+        invitation_token = str(uuid.uuid4())
+
+        cursor.execute("""
+            INSERT INTO user_invitations
+            (
+                organisation_id,
+                workspace_id,
+                invited_email,
+                role,
+                status,
+                invitation_token,
+                invited_by,
+                created_at
+            )
+            VALUES
+            (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+
+            request.form["organisation_id"],
+            request.form["workspace_id"],
+            request.form["invited_email"],
+            request.form["role"],
+            "Pending",
+            invitation_token,
+            session["user_id"],
+            str(datetime.now())
+
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/user-invitations")
+
+    conn.close()
+
+    return render_template(
+        "add_user_invitation.html",
+        organisations=organisations,
+        workspaces=workspaces
+    )
+
+
+@app.route(
+    "/add-user-invitation",
+    methods=["GET", "POST"]
+)
+def add_user_invitation():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces = cursor.fetchall()
+
+    if request.method == "POST":
+
+        invitation_token = str(uuid.uuid4())
+
+        cursor.execute("""
+            INSERT INTO user_invitations
+            (
+                organisation_id,
+                workspace_id,
+                invited_email,
+                role,
+                status,
+                invitation_token,
+                invited_by,
+                created_at
+            )
+            VALUES
+            (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+
+            request.form["organisation_id"],
+            request.form["workspace_id"],
+            request.form["invited_email"],
+            request.form["role"],
+            "Pending",
+            invitation_token,
+            session["user_id"],
+            str(datetime.now())
+
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/user-invitations")
+
+    conn.close()
+
+    return render_template(
+        "add_user_invitation.html",
+        organisations=organisations,
+        workspaces=workspaces
     )
 
 

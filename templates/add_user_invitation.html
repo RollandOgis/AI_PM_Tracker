@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add User Invitation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Add User Invitation</h1>
+
+        <form method="POST" class="form-card">
+
+            <label>Organisation</label>
+            <select name="organisation_id" required>
+                {% for organisation in organisations %}
+                <option value="{{ organisation.id }}">
+                    {{ organisation.organisation_name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <label>Workspace</label>
+            <select name="workspace_id" required>
+                {% for workspace in workspaces %}
+                <option value="{{ workspace.id }}">
+                    {{ workspace.workspace_name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <label>Invited Email</label>
+            <input type="email" name="invited_email" required>
+
+            <label>Role</label>
+            <select name="role" required>
+                <option value="Admin">Admin</option>
+                <option value="Manager">Manager</option>
+                <option value="Team Member">Team Member</option>
+                <option value="Viewer">Viewer</option>
+            </select>
+
+            <button type="submit" class="btn-primary">
+                Send Invitation
+            </button>
+
+        </form>
+
+    </main>
+
+</div>
+
+</body>
+</html>
