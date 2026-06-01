@@ -12368,6 +12368,46 @@ def upgrade_plan(organisation_id):
         organisation_id=organisation_id
     )
 
+@app.route("/process-upgrade/<int:organisation_id>/<plan>")
+def process_upgrade(organisation_id, plan):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    allowed_plans = [
+        "Free",
+        "Basic",
+        "Professional",
+        "Enterprise"
+    ]
+
+    if plan not in allowed_plans:
+        return "Invalid plan"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE organisations
+        SET
+            plan = %s,
+            subscription_status = %s
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        plan,
+        "Active",
+        organisation_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/subscription-status")
+
+
 @app.route("/plan-limits")
 def plan_limits():
 
@@ -12413,6 +12453,7 @@ def plan_limits():
         "plan_limits.html",
         plan_data=plan_data
     )
+
 
 @app.route("/notification-settings")
 def notification_settings():
