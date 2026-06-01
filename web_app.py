@@ -13328,6 +13328,94 @@ def seed_demo_data():
     return "Demo clients and team members added successfully"
 
 
+@app.route("/seed-projects-and-budgets")
+def seed_projects_and_budgets():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    demo_projects = [
+        ("New Hospital Development", "Construction of a modern healthcare facility.", "In Progress", "2026-06-01", "2026-12-20", 850000, 420000),
+        ("School Expansion Programme", "Expansion of classrooms and learning facilities.", "Planning", "2026-06-10", "2026-11-30", 350000, 90000),
+        ("Smart Highway Upgrade", "Road infrastructure upgrade with smart traffic systems.", "In Progress", "2026-06-15", "2027-02-28", 1200000, 560000),
+        ("Staff Sign-In System", "Digital staff sign-in and attendance tracking system.", "Completed", "2026-04-01", "2026-05-30", 45000, 39000),
+        ("Learning Management Platform", "Online learning platform for students and staff.", "In Progress", "2026-05-15", "2026-09-30", 180000, 76000),
+        ("E-Commerce Website", "Retail e-commerce platform with payment integration.", "In Progress", "2026-06-01", "2026-10-15", 95000, 42000),
+        ("Customer Portal", "Self-service portal for customer support and account management.", "Planning", "2026-07-01", "2026-12-01", 120000, 15000),
+        ("Factory Automation", "Automation of manufacturing production workflows.", "In Progress", "2026-06-05", "2027-01-31", 650000, 310000),
+        ("Warehouse Optimisation", "Warehouse process and inventory optimisation project.", "In Progress", "2026-06-20", "2026-12-15", 280000, 110000),
+        ("ERP Transformation", "Enterprise-wide ERP implementation programme.", "Planning", "2026-07-10", "2027-06-30", 1500000, 200000),
+        ("CRM Migration", "Migration from legacy CRM to modern cloud CRM.", "In Progress", "2026-05-20", "2026-09-20", 160000, 85000),
+        ("Cyber Security Programme", "Security controls, monitoring and compliance uplift.", "In Progress", "2026-06-01", "2026-12-31", 400000, 175000),
+        ("Data Warehouse Project", "Centralised reporting and analytics data warehouse.", "Planning", "2026-07-01", "2027-01-15", 300000, 60000),
+        ("Vehicle Assembly Upgrade", "Upgrade of vehicle assembly production line.", "In Progress", "2026-06-10", "2027-03-31", 900000, 370000),
+        ("AI PM Tracker", "Internal SaaS project management platform build.", "In Progress", "2026-05-01", "2026-09-30", 75000, 18000)
+    ]
+
+    for project in demo_projects:
+
+        cursor.execute("""
+            INSERT INTO projects
+            (
+                user_id,
+                name,
+                description,
+                status,
+                start_date,
+                end_date,
+                estimated_budget,
+                actual_cost,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            project[0],
+            project[1],
+            project[2],
+            project[3],
+            project[4],
+            project[5],
+            project[6],
+            str(date.today())
+        ))
+
+        project_id = cursor.fetchone()[0]
+
+        cursor.execute("""
+            INSERT INTO budgets
+            (
+                user_id,
+                project_id,
+                budget_amount,
+                actual_cost,
+                forecast_cost,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            project[5],
+            project[6],
+            project[6] + 25000,
+            "Active",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo projects and budgets added successfully"
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
 
