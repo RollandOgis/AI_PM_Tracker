@@ -13781,6 +13781,182 @@ def seed_governance_extra_data():
 
     return "Extra governance demo data added successfully"
 
+@app.route("/seed-demo-tasks")
+def seed_demo_tasks():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id, name
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 15
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    task_templates = [
+
+        (
+            "Define Project Scope",
+            "Create detailed project scope and objectives.",
+            "High",
+            "Completed"
+        ),
+
+        (
+            "Gather Requirements",
+            "Conduct workshops and collect requirements.",
+            "High",
+            "In Progress"
+        ),
+
+        (
+            "Create Delivery Plan",
+            "Prepare project schedule and milestones.",
+            "Medium",
+            "Completed"
+        ),
+
+        (
+            "Create RAID Log",
+            "Document risks, assumptions, issues and dependencies.",
+            "Medium",
+            "Pending"
+        ),
+
+        (
+            "Design Review",
+            "Review technical and business design.",
+            "High",
+            "Pending"
+        ),
+
+        (
+            "Develop Solution",
+            "Build agreed functionality.",
+            "High",
+            "In Progress"
+        ),
+
+        (
+            "System Testing",
+            "Execute testing activities.",
+            "Medium",
+            "Pending"
+        ),
+
+        (
+            "User Acceptance Testing",
+            "Run UAT and obtain sign-off.",
+            "Medium",
+            "Blocked"
+        ),
+
+        (
+            "Deployment Preparation",
+            "Prepare release checklist.",
+            "Medium",
+            "Pending"
+        ),
+
+        (
+            "Project Closure",
+            "Complete closure report and lessons learned.",
+            "Low",
+            "Pending"
+        )
+
+    ]
+
+    team_names = [
+
+        "Sarah Johnson",
+        "Michael Brown",
+        "David Wilson",
+        "Emma Smith",
+        "James Taylor",
+        "Sophia White",
+        "Daniel Green",
+        "Olivia Harris",
+        "Ethan Walker",
+        "Ava Martin"
+
+    ]
+
+    for i, project in enumerate(projects):
+
+        for j, task in enumerate(task_templates):
+
+            due_day = min(28, 5 + j)
+
+            estimated_hours = 20 + (j * 5)
+
+            actual_hours = max(
+                0,
+                estimated_hours - 5
+            )
+
+            hourly_rate = 75
+
+            cursor.execute("""
+                INSERT INTO tasks
+                (
+                    project_id,
+                    title,
+                    description,
+                    assigned_to,
+                    priority,
+                    status,
+                    due_date,
+                    created_at,
+                    estimated_hours,
+                    actual_hours,
+                    hourly_rate
+                )
+                VALUES
+                (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+
+                project["id"],
+                task[0],
+                task[1],
+                team_names[
+                    (i + j) % len(team_names)
+                ],
+                task[2],
+                task[3],
+                f"2026-07-{due_day:02d}",
+                str(date.today()),
+                estimated_hours,
+                actual_hours,
+                hourly_rate
+
+            ))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo tasks added successfully"
+
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
