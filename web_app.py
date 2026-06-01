@@ -1373,6 +1373,43 @@ def init_db():
                        )
                    """)
 
+    # Invoices Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS invoices
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       organisation_id
+                       INTEGER,
+
+                       invoice_number
+                       TEXT,
+
+                       plan
+                       TEXT,
+
+                       amount
+                       NUMERIC
+                   (
+                       10,
+                       2
+                   ),
+
+                       status TEXT,
+
+                       invoice_date TEXT,
+
+                       created_at TEXT
+                       )
+                   """)
+
 
 
     cursor.execute("""
@@ -12593,7 +12630,101 @@ def add_billing_history():
         "add_billing_history.html",
         organisations=organisations
     )
+@app.route("/invoices")
+def invoices():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            invoices.*,
+            organisations.organisation_name
+        FROM invoices
+        LEFT JOIN organisations
+        ON invoices.organisation_id = organisations.id
+        WHERE invoices.user_id = %s
+        ORDER BY invoice_date DESC
+    """, (
+        session["user_id"],
+    ))
+
+    invoices_list = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "invoices.html",
+        invoices_list=invoices_list
+    )
+
+@app.route("/add-invoice", methods=["GET", "POST"])
+def add_invoice():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO invoices
+            (
+                user_id,
+                organisation_id,
+                invoice_number,
+                plan,
+                amount,
+                status,
+                invoice_date,
+                created_at
+            )
+            VALUES
+            (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form["organisation_id"],
+            request.form["invoice_number"],
+            request.form["plan"],
+            request.form["amount"],
+            request.form["status"],
+            request.form["invoice_date"],
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/invoices")
+
+    conn.close()
+
+    return render_template(
+        "add_invoice.html",
+        organisations=organisations
+    )
 
 @app.route("/notification-settings")
 def notification_settings():
