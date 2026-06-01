@@ -13586,7 +13586,156 @@ def seed_governance_data():
 
     return "Governance demo data added successfully"
 
+@app.route("/seed-governance-extra-data")
+def seed_governance_extra_data():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    for i, project in enumerate(projects):
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            INSERT INTO stakeholders
+            (
+                user_id,
+                project_id,
+                name,
+                role,
+                influence,
+                interest,
+                engagement_strategy,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Stakeholder {i + 1}",
+            "Sponsor",
+            "High",
+            "High",
+            "Weekly updates and governance review involvement",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO decisions
+            (
+                user_id,
+                project_id,
+                title,
+                decision,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Decision {i + 1}",
+            "Approved current delivery approach",
+            "Project Board",
+            "Approved",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO actions
+            (
+                user_id,
+                project_id,
+                title,
+                owner,
+                due_date,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Action {i + 1}",
+            "Project Manager",
+            str(date.today()),
+            "Open",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO lessons
+            (
+                user_id,
+                project_id,
+                title,
+                what_happened,
+                lesson,
+                recommendation,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Lesson {i + 1}",
+            "A delivery challenge occurred during project execution.",
+            "Earlier stakeholder alignment would have reduced delays.",
+            "Hold discovery workshops before major delivery phases.",
+            "Open",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO stage_gates
+            (
+                user_id,
+                project_id,
+                gate_name,
+                status,
+                decision,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            "Initiation Gate",
+            "Approved",
+            "Proceed to next phase",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Extra governance demo data added successfully"
 
 
 if __name__ == "__main__":
