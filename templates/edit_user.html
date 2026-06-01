@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit User</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Edit User</h1>
+
+        <p class="page-subtitle">
+            Update user account details.
+        </p>
+
+        <form method="POST" class="form-card">
+
+            <label>Username</label>
+            <input
+                type="text"
+                name="username"
+                value="{{ user.username }}"
+                required
+            >
+
+            <label>Email</label>
+            <input
+                type="email"
+                name="email"
+                value="{{ user.email or '' }}"
+            >
+
+            <label>Avatar Initials</label>
+            <input
+                type="text"
+                name="avatar_initials"
+                value="{{ user.avatar_initials or '' }}"
+            >
+
+            <button type="submit" class="btn-primary">
+                Update User
+            </button>
+
+        </form>
+
+    </main>
+
+</div>
+
+</body>
+</html>

@@ -10487,6 +10487,83 @@ def add_user_invitation():
         workspaces=workspaces
     )
 
+@app.route("/edit-user/<int:user_id>", methods=["GET", "POST"])
+def edit_user(user_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        WHERE id = %s
+    """, (user_id,))
+
+    user = cursor.fetchone()
+
+    if not user:
+        conn.close()
+        return redirect("/user-management")
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE users
+            SET
+                username = %s,
+                email = %s,
+                avatar_initials = %s
+            WHERE id = %s
+        """, (
+            request.form["username"],
+            request.form["email"],
+            request.form["avatar_initials"],
+            user_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/user-management")
+
+    conn.close()
+
+    return render_template(
+        "edit_user.html",
+        user=user
+    )
+
+@app.route("/delete-user/<int:user_id>")
+def delete_user(user_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM users
+        WHERE id = %s
+    """, (
+        user_id,
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/user-management")
+
 
 @app.route("/alerts")
 def alerts():
