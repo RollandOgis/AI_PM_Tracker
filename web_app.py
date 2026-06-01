@@ -13224,6 +13224,109 @@ def portfolio_kanban():
         grouped_projects=grouped_projects
     )
 
+@app.route("/seed-demo-data")
+def seed_demo_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    # CLIENTS
+    demo_clients = [
+        ("NHS Trust", "Healthcare", "contact@nhstrust-demo.com", "02070000001", "Active", "Healthcare digital transformation client", 250000),
+        ("HS2 Programme", "Transport", "contact@hs2-demo.com", "02070000002", "Active", "Infrastructure delivery programme", 500000),
+        ("Tesco PLC", "Retail", "contact@tesco-demo.com", "02070000003", "Active", "Retail systems and operations client", 300000),
+        ("Barclays Bank", "Finance", "contact@barclays-demo.com", "02070000004", "Lead", "Banking and compliance client", 450000),
+        ("Amazon UK", "Logistics", "contact@amazon-demo.com", "02070000005", "Active", "Warehouse and fulfilment optimisation client", 600000),
+        ("Microsoft UK", "Technology", "contact@microsoft-demo.com", "02070000006", "Lead", "Cloud and enterprise technology client", 700000),
+        ("University of Bedfordshire", "Education", "contact@beds-demo.com", "02070000007", "Active", "Education technology client", 150000),
+        ("BP Energy", "Energy", "contact@bp-demo.com", "02070000008", "Lead", "Energy systems transformation client", 400000),
+        ("Rolls Royce", "Manufacturing", "contact@rolls-demo.com", "02070000009", "Active", "Manufacturing excellence client", 550000),
+        ("Network Rail", "Rail", "contact@networkrail-demo.com", "02070000010", "Active", "Rail infrastructure client", 350000)
+    ]
+
+    for client in demo_clients:
+
+        cursor.execute("""
+            INSERT INTO clients
+            (
+                user_id,
+                name,
+                company,
+                email,
+                phone,
+                status,
+                notes,
+                estimated_value,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            client[0],
+            client[1],
+            client[2],
+            client[3],
+            client[4],
+            client[5],
+            client[6],
+            str(date.today())
+        ))
+
+    # TEAM MEMBERS
+    demo_team = [
+        ("Sarah Johnson", "Project Manager", "sarah.demo@example.com", "07100000001", "PRINCE2, Agile, Governance", "Active"),
+        ("Michael Brown", "Programme Manager", "michael.demo@example.com", "07100000002", "Programme Delivery, Stakeholders", "Active"),
+        ("David Wilson", "PMO Analyst", "david.demo@example.com", "07100000003", "Reporting, RAID, Excel", "Active"),
+        ("Emma Smith", "Business Analyst", "emma.demo@example.com", "07100000004", "Requirements, Process Mapping", "Active"),
+        ("James Taylor", "Scrum Master", "james.demo@example.com", "07100000005", "Scrum, Sprint Planning", "Active"),
+        ("Sophia White", "Product Owner", "sophia.demo@example.com", "07100000006", "Backlog, Roadmap, Stakeholders", "Active"),
+        ("Daniel Green", "Software Developer", "daniel.demo@example.com", "07100000007", "Python, Flask, APIs", "Active"),
+        ("Olivia Harris", "Software Developer", "olivia.demo@example.com", "07100000008", "React, JavaScript, UI", "Active"),
+        ("Ethan Walker", "QA Engineer", "ethan.demo@example.com", "07100000009", "Testing, Automation, UAT", "Active"),
+        ("Ava Martin", "QA Engineer", "ava.demo@example.com", "07100000010", "Regression Testing, Test Plans", "Active"),
+        ("Noah Clark", "Solution Architect", "noah.demo@example.com", "07100000011", "Architecture, Cloud, Security", "Active"),
+        ("Mia Lewis", "UX Designer", "mia.demo@example.com", "07100000012", "UX, Wireframes, Prototypes", "Active"),
+        ("Liam Young", "Data Analyst", "liam.demo@example.com", "07100000013", "SQL, Dashboards, Data Quality", "Active"),
+        ("Grace Hall", "Finance Manager", "grace.demo@example.com", "07100000014", "Budgets, Forecasting, Cost Control", "Active"),
+        ("Henry Allen", "Resource Manager", "henry.demo@example.com", "07100000015", "Capacity Planning, Allocation", "Active")
+    ]
+
+    for member in demo_team:
+
+        cursor.execute("""
+            INSERT INTO team_members
+            (
+                user_id,
+                name,
+                role,
+                email,
+                phone,
+                skills,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            member[0],
+            member[1],
+            member[2],
+            member[3],
+            member[4],
+            member[5],
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo clients and team members added successfully"
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
