@@ -1363,6 +1363,30 @@ def init_db():
     except:
         pass
 
+    try:
+        cursor.execute("""
+                       ALTER TABLE users
+                           ADD COLUMN is_verified BOOLEAN DEFAULT FALSE
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE users
+                           ADD COLUMN verification_token TEXT
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE users
+                           ADD COLUMN verification_token_created_at TEXT
+                       """)
+    except:
+        pass
+
 
     conn.commit()
 
@@ -3525,10 +3549,12 @@ def register():
     if request.method == "POST":
 
         username = request.form["username"]
+        email = request.form.get("email", "")
         password = request.form["password"]
 
         hashed_password = generate_password_hash(password)
         avatar_initials = username[:2].upper()
+        verification_token = str(uuid.uuid4())
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -3539,30 +3565,91 @@ def register():
                 INSERT INTO users
                 (
                     username,
+                    email,
                     password,
-                    avatar_initials
+                    avatar_initials,
+                    is_verified,
+                    verification_token,
+                    verification_token_created_at
                 )
-                VALUES (%s,%s,%s)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
             """, (
                 username,
+                email,
                 hashed_password,
-                avatar_initials
+                avatar_initials,
+                False,
+                verification_token,
+                str(datetime.now())
             ))
 
             conn.commit()
             conn.close()
 
-            return redirect("/login")
+            return f"""
+            <h2>Account Created</h2>
+            <p>Your account was created successfully.</p>
+            <p><strong>Verification Token:</strong> {verification_token}</p>
+            <p>
+                <a href="/verify-email/{verification_token}">
+                    Verify Email
+                </a>
+            </p>
+            """
 
-        except Exception:
+        except Exception as e:
 
             conn.close()
-            error = "Username already exists"
+            error = f"Registration failed: {str(e)}"
 
     return render_template(
         "register.html",
         error=error
     )
+
+
+@app.route("/verify-email/<token>")
+def verify_email(token):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        WHERE verification_token = %s
+    """, (
+        token,
+    ))
+
+    user = cursor.fetchone()
+
+    if not user:
+        conn.close()
+        return "Invalid verification token"
+
+    cursor.execute("""
+        UPDATE users
+        SET
+            is_verified = TRUE,
+            verification_token = NULL,
+            verification_token_created_at = NULL
+        WHERE id = %s
+    """, (
+        user["id"],
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return """
+    <h2>Email Verified</h2>
+    <p>Your email has been verified successfully.</p>
+    <p><a href="/login">Go to Login</a></p>
+    """
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -3596,6 +3683,12 @@ def login():
             stored_password = user["password"]
 
             if check_password_hash(stored_password, password) or stored_password == password:
+
+                if "is_verified" in user and user["is_verified"] is False:
+                    return """
+                    <h2>Email Not Verified</h2>
+                    <p>Please verify your email before logging in.</p>
+                    """
 
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
