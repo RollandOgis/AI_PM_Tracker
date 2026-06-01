@@ -7,6 +7,7 @@ from reportlab.pdfgen import canvas
 from datetime import date, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import uuid
 from openai import OpenAI
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
