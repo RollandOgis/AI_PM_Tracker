@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Usage Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Usage Analytics</h1>
+
+        <p class="page-subtitle">
+            Track SaaS usage across organisations, workspaces, projects, users and AI activity.
+        </p>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Organisations</h3>
+                <p>{{ total_organisations }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Workspaces</h3>
+                <p>{{ total_workspaces }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Users Invited</h3>
+                <p>{{ total_users }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>AI Usage</h3>
+                <p>{{ total_ai_usage }}</p>
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

@@ -12802,6 +12802,79 @@ def add_notification_setting():
 
     return render_template("add_notification_setting.html")
 
+@app.route("/usage-analytics")
+def usage_analytics():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_organisations
+        FROM organisations
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_organisations = cursor.fetchone()["total_organisations"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_workspaces
+        FROM workspaces
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_workspaces = cursor.fetchone()["total_workspaces"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_users
+        FROM user_invitations
+        WHERE invited_by = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_users = cursor.fetchone()["total_users"]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(usage_count),0) AS total_ai_usage
+        FROM ai_usage
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_ai_usage = cursor.fetchone()["total_ai_usage"]
+
+    conn.close()
+
+    return render_template(
+        "usage_analytics.html",
+        total_organisations=total_organisations,
+        total_workspaces=total_workspaces,
+        total_projects=total_projects,
+        total_users=total_users,
+        total_ai_usage=total_ai_usage
+    )
+
 
 @app.route("/billing-dashboard")
 def billing_dashboard():
