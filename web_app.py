@@ -14666,6 +14666,36 @@ def seed_notification_settings_data():
 
     return "Notification settings demo data added successfully"
 
+@app.route("/seed-menu")
+def seed_menu():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    return """
+    <h2>Demo Data Seed Menu</h2>
+
+    <p>Run these once to populate the platform with realistic test data.</p>
+
+    <ul>
+        <li><a href="/seed-demo-data">Seed Clients & Team Members</a></li>
+        <li><a href="/seed-projects-and-budgets">Seed Projects & Budgets</a></li>
+        <li><a href="/seed-demo-tasks">Seed Tasks</a></li>
+        <li><a href="/seed-governance-data">Seed Governance Data</a></li>
+        <li><a href="/seed-governance-extra-data">Seed Extra Governance Data</a></li>
+        <li><a href="/seed-portfolio-programme-data">Seed Portfolio & Programme Data</a></li>
+        <li><a href="/seed-approvals-reviews-data">Seed Approvals & Reviews</a></li>
+        <li><a href="/seed-billing-invoice-data">Seed Billing & Invoice Data</a></li>
+        <li><a href="/seed-admin-data">Seed Admin Data</a></li>
+        <li><a href="/seed-saas-extra-data">Seed SaaS Extra Data</a></li>
+        <li><a href="/seed-notification-settings-data">Seed Notification Settings</a></li>
+    </ul>
+
+    <br>
+
+    <p><strong>Important:</strong> remove these seed routes before production.</p>
+    """
+
 
 
 
