@@ -1337,6 +1337,42 @@ def init_db():
                    )
                    """)
 
+    # Billing History Table
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS billing_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       organisation_id
+                       INTEGER,
+
+                       plan
+                       TEXT,
+
+                       amount
+                       NUMERIC
+                   (
+                       10,
+                       2
+                   ),
+
+                       status TEXT,
+
+                       reference_number TEXT,
+
+                       billing_date TEXT,
+
+                       created_at TEXT
+                       )
+                   """)
+
 
 
     cursor.execute("""
@@ -12455,6 +12491,107 @@ def plan_limits():
     return render_template(
         "plan_limits.html",
         plan_data=plan_data
+    )
+
+@app.route("/billing-history")
+def billing_history():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            billing_history.*,
+            organisations.organisation_name
+        FROM billing_history
+        LEFT JOIN organisations
+        ON billing_history.organisation_id = organisations.id
+        WHERE billing_history.user_id = %s
+        ORDER BY billing_date DESC
+    """, (
+        session["user_id"],
+    ))
+
+    billing_records = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "billing_history.html",
+        billing_records=billing_records
+    )
+
+@app.route(
+    "/add-billing-history",
+    methods=["GET", "POST"]
+)
+def add_billing_history():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO billing_history
+            (
+                user_id,
+                organisation_id,
+                plan,
+                amount,
+                status,
+                reference_number,
+                billing_date,
+                created_at
+            )
+            VALUES
+            (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+
+            session["user_id"],
+            request.form["organisation_id"],
+            request.form["plan"],
+            request.form["amount"],
+            request.form["status"],
+            request.form["reference_number"],
+            request.form["billing_date"],
+            str(date.today())
+
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/billing-history")
+
+    conn.close()
+
+    return render_template(
+        "add_billing_history.html",
+        organisations=organisations
     )
 
 

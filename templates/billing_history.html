@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Billing History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Billing History</h1>
+
+        <div class="card">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Organisation</th>
+                        <th>Plan</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Reference</th>
+                        <th>Billing Date</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for record in billing_records %}
+
+                    <tr>
+
+                        <td>
+                            {{ record.organisation_name }}
+                        </td>
+
+                        <td>
+                            {{ record.plan }}
+                        </td>
+
+                        <td>
+                            £{{ record.amount }}
+                        </td>
+
+                        <td>
+                            {{ record.status }}
+                        </td>
+
+                        <td>
+                            {{ record.reference_number }}
+                        </td>
+
+                        <td>
+                            {{ record.billing_date }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>
