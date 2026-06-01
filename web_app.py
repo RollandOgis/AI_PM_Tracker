@@ -1717,6 +1717,39 @@ def can_invite_user():
 
     return True
 
+def can_create_workspace():
+
+    organisation = get_user_current_organisation()
+
+    if not organisation:
+        return True
+
+    limits = get_plan_limits(
+        organisation["plan"]
+    )
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM workspaces
+        WHERE organisation_id = %s
+    """, (
+        organisation["id"],
+    ))
+
+    workspace_count = cursor.fetchone()[0]
+
+    conn.close()
+
+    if workspace_count >= limits["max_workspaces"]:
+        return False
+
+    return True
+
+
 
 @app.route("/")
 def home():
@@ -11442,6 +11475,25 @@ def add_workspace():
 
     if not has_permission("Admin", "create"):
         return "Access denied"
+
+    if not can_create_workspace():
+
+        return """
+        <h2>Workspace Limit Reached</h2>
+
+        <p>
+            You have reached the maximum number of workspaces
+            allowed by your subscription plan.
+        </p>
+
+        <p>
+            Please upgrade your plan to create more workspaces.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
