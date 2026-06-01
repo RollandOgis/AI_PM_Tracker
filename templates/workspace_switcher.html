@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Workspace Switcher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Workspace Switcher</h1>
+
+        <p class="page-subtitle">
+            Switch between available workspaces for your organisation.
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Workspace</th>
+                        <th>Type</th>
+                        <th>Owner</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for workspace in workspaces %}
+
+                    <tr>
+                        <td>{{ workspace.workspace_name }}</td>
+                        <td>{{ workspace.workspace_type }}</td>
+                        <td>{{ workspace.owner }}</td>
+                        <td>{{ workspace.status }}</td>
+
+                        <td>
+                            <a href="/switch-workspace/{{ workspace.id }}" class="btn-primary">
+                                Switch
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

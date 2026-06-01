@@ -10553,6 +10553,67 @@ def add_workspace():
         organisations=organisations
     )
 
+@app.route("/switch-workspace/<int:workspace_id>")
+def switch_workspace(workspace_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        workspace_id,
+        session["user_id"]
+    ))
+
+    workspace = cursor.fetchone()
+
+    conn.close()
+
+    if workspace:
+        session["workspace_id"] = workspace_id
+
+    return redirect("/")
+
+@app.route("/workspace-switcher")
+def workspace_switcher():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        WHERE user_id = %s
+        ORDER BY workspace_name
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "workspace_switcher.html",
+        workspaces=workspaces
+    )
+
 
 @app.route("/subscription-plans")
 def subscription_plans():
