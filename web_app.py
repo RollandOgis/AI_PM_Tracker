@@ -1381,15 +1381,50 @@ def get_current_user_role():
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-    cursor.execute("""
-        SELECT role
-        FROM user_roles
-        WHERE user_id = %s
-        ORDER BY id DESC
-        LIMIT 1
-    """, (
-        session["user_id"],
-    ))
+    organisation_id = session.get("organisation_id")
+    workspace_id = session.get("workspace_id")
+
+    if organisation_id and workspace_id:
+
+        cursor.execute("""
+            SELECT role
+            FROM user_roles
+            WHERE user_id = %s
+            AND organisation_id = %s
+            AND workspace_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """, (
+            session["user_id"],
+            organisation_id,
+            workspace_id
+        ))
+
+    elif organisation_id:
+
+        cursor.execute("""
+            SELECT role
+            FROM user_roles
+            WHERE user_id = %s
+            AND organisation_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """, (
+            session["user_id"],
+            organisation_id
+        ))
+
+    else:
+
+        cursor.execute("""
+            SELECT role
+            FROM user_roles
+            WHERE user_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """, (
+            session["user_id"],
+        ))
 
     role = cursor.fetchone()
 
@@ -10923,18 +10958,20 @@ def accept_invitation(token):
         new_user_id = new_user["id"]
 
         cursor.execute("""
-            INSERT INTO user_roles
-            (
-                user_id,
-                role,
-                created_at
-            )
-            VALUES (%s,%s,%s)
-        """, (
-            new_user_id,
-            invitation["role"],
-            str(datetime.now())
-        ))
+                       INSERT INTO user_roles
+                       (user_id,
+                        role,
+                        organisation_id,
+                        workspace_id,
+                        created_at)
+                       VALUES (%s, %s, %s, %s, %s)
+                       """, (
+                           new_user_id,
+                           invitation["role"],
+                           invitation["organisation_id"],
+                           invitation["workspace_id"],
+                           str(datetime.now())
+                       ))
 
         cursor.execute("""
             UPDATE user_invitations
