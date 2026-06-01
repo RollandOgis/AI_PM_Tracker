@@ -4,7 +4,7 @@ import csv
 from io import StringIO, BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import uuid
@@ -1408,6 +1408,30 @@ def init_db():
                        TEXT
                    )
                    """)
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE organisations
+                           ADD COLUMN trial_start_date TEXT
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE organisations
+                           ADD COLUMN trial_end_date TEXT
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE organisations
+                           ADD COLUMN subscription_status TEXT DEFAULT 'Trial'
+                       """)
+    except:
+        pass
 
 
     conn.commit()
@@ -10998,14 +11022,14 @@ def add_organisation():
     if "user_id" not in session:
         return redirect("/login")
 
-    if not has_permission("Admin", "create"):
-        return "Access denied"
-
     if request.method == "POST":
 
         conn = get_db_connection()
 
         cursor = conn.cursor()
+
+        trial_start_date = date.today()
+        trial_end_date = date.today() + timedelta(days=14)
 
         cursor.execute("""
             INSERT INTO organisations
@@ -11015,15 +11039,21 @@ def add_organisation():
                 industry,
                 plan,
                 status,
+                trial_start_date,
+                trial_end_date,
+                subscription_status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form["organisation_name"],
             request.form["industry"],
             request.form["plan"],
             request.form["status"],
+            str(trial_start_date),
+            str(trial_end_date),
+            "Trial",
             str(date.today())
         ))
 
