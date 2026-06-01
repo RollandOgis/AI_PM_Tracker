@@ -1,9 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
+
     <title>User Invitations</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
 
 <body>
@@ -20,43 +27,102 @@
             Manage invitations sent to users for organisations and workspaces.
         </p>
 
-        <a href="/add-user-invitation" class="btn-primary">
-            Add Invitation
-        </a>
+        <div style="margin-top:20px;margin-bottom:30px;">
 
-        <br><br>
+            <a
+                href="/add-user-invitation"
+                class="btn-primary"
+            >
+                Add Invitation
+            </a>
 
-        <div class="table-container">
+        </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Organisation ID</th>
-                        <th>Workspace ID</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
+        <div class="card">
 
-                <tbody>
+            <div class="table-container">
 
-                    {% for invitation in invitations %}
+                <table>
 
-                    <tr>
-                        <td>{{ invitation.invited_email }}</td>
-                        <td>{{ invitation.role }}</td>
-                        <td>{{ invitation.status }}</td>
-                        <td>{{ invitation.organisation_id }}</td>
-                        <td>{{ invitation.workspace_id }}</td>
-                        <td>{{ invitation.created_at }}</td>
-                    </tr>
+                    <thead>
 
-                    {% endfor %}
+                        <tr>
 
-                </tbody>
-            </table>
+                            <th>Email</th>
+
+                            <th>Role</th>
+
+                            <th>Status</th>
+
+                            <th>Organisation ID</th>
+
+                            <th>Workspace ID</th>
+
+                            <th>Created</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for invitation in invitations %}
+
+                        <tr>
+
+                            <td>
+                                {{ invitation.invited_email }}
+                            </td>
+
+                            <td>
+                                {{ invitation.role }}
+                            </td>
+
+                            <td>
+
+                                {% if invitation.status == "Accepted" %}
+
+                                    <span class="badge badge-green">
+                                        Accepted
+                                    </span>
+
+                                {% elif invitation.status == "Pending" %}
+
+                                    <span class="badge badge-yellow">
+                                        Pending
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-red">
+                                        Declined
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ invitation.organisation_id }}
+                            </td>
+
+                            <td>
+                                {{ invitation.workspace_id }}
+                            </td>
+
+                            <td>
+                                {{ invitation.created_at }}
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
 
         </div>
 
