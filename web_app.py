@@ -10989,6 +10989,92 @@ def workspace_roles():
         roles=roles
     )
 
+@app.route("/edit-workspace-role/<int:role_id>", methods=["GET", "POST"])
+def edit_workspace_role(role_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM user_roles
+        WHERE id = %s
+    """, (
+        role_id,
+    ))
+
+    role = cursor.fetchone()
+
+    if not role:
+        conn.close()
+        return redirect("/workspace-roles")
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        ORDER BY username
+    """)
+
+    users = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        ORDER BY organisation_name
+    """)
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        ORDER BY workspace_name
+    """)
+
+    workspaces = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE user_roles
+            SET
+                user_id = %s,
+                role = %s,
+                organisation_id = %s,
+                workspace_id = %s
+            WHERE id = %s
+        """, (
+            request.form["user_id"],
+            request.form["role"],
+            request.form["organisation_id"],
+            request.form["workspace_id"],
+            role_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/workspace-roles")
+
+    conn.close()
+
+    return render_template(
+        "edit_workspace_role.html",
+        role=role,
+        users=users,
+        organisations=organisations,
+        workspaces=workspaces
+    )
+
 @app.route("/delete-workspace-role/<int:role_id>")
 def delete_workspace_role(role_id):
 

@@ -42,16 +42,11 @@
                         <tr>
 
                             <th>User</th>
-
                             <th>Role</th>
-
                             <th>Organisation</th>
-
                             <th>Workspace</th>
-
                             <th>Created</th>
-
-                            <th>Action</th>
+                            <th>Actions</th>
 
                         </tr>
 
@@ -110,6 +105,13 @@
                             </td>
 
                             <td>
+
+                                <a
+                                    href="/edit-workspace-role/{{ role.id }}"
+                                    class="btn-primary"
+                                >
+                                    Edit
+                                </a>
 
                                 <a
                                     href="/delete-workspace-role/{{ role.id }}"

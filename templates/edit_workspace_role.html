@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Workspace Role</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Edit Workspace Role</h1>
+
+        <p class="page-subtitle">
+            Update a user's role within an organisation and workspace.
+        </p>
+
+        <form method="POST" class="form-card">
+
+            <label>User</label>
+            <select name="user_id" required>
+                {% for user in users %}
+                    <option
+                        value="{{ user.id }}"
+                        {% if user.id == role.user_id %}selected{% endif %}
+                    >
+                        {{ user.username }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label>Role</label>
+            <select name="role" required>
+                <option value="Admin" {% if role.role == "Admin" %}selected{% endif %}>
+                    Admin
+                </option>
+
+                <option value="Manager" {% if role.role == "Manager" %}selected{% endif %}>
+                    Manager
+                </option>
+
+                <option value="Team Member" {% if role.role == "Team Member" %}selected{% endif %}>
+                    Team Member
+                </option>
+
+                <option value="Viewer" {% if role.role == "Viewer" %}selected{% endif %}>
+                    Viewer
+                </option>
+            </select>
+
+            <label>Organisation</label>
+            <select name="organisation_id" required>
+                {% for organisation in organisations %}
+                    <option
+                        value="{{ organisation.id }}"
+                        {% if organisation.id == role.organisation_id %}selected{% endif %}
+                    >
+                        {{ organisation.organisation_name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label>Workspace</label>
+            <select name="workspace_id" required>
+                {% for workspace in workspaces %}
+                    <option
+                        value="{{ workspace.id }}"
+                        {% if workspace.id == role.workspace_id %}selected{% endif %}
+                    >
+                        {{ workspace.workspace_name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn-primary">
+                Update Workspace Role
+            </button>
+
+        </form>
+
+    </main>
+
+</div>
+
+</body>
+</html>
