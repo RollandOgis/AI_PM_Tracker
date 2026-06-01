@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Organisation Switcher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Organisation Switcher</h1>
+
+        <p class="page-subtitle">
+            Switch between organisations linked to your account.
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Organisation</th>
+                        <th>Industry</th>
+                        <th>Plan</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for organisation in organisations %}
+
+                    <tr>
+                        <td>{{ organisation.organisation_name }}</td>
+                        <td>{{ organisation.industry }}</td>
+                        <td>{{ organisation.plan }}</td>
+                        <td>{{ organisation.status }}</td>
+
+                        <td>
+                            <a href="/switch-organisation/{{ organisation.id }}" class="btn-primary">
+                                Switch
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

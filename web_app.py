@@ -10452,6 +10452,75 @@ def add_organisation():
 
     return render_template("add_organisation.html")
 
+@app.route("/organisation-switcher")
+def organisation_switcher():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "organisation_switcher.html",
+        organisations=organisations
+    )
+
+
+@app.route("/switch-organisation/<int:organisation_id>")
+def switch_organisation(organisation_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        organisation_id,
+        session["user_id"]
+    ))
+
+    organisation = cursor.fetchone()
+
+    conn.close()
+
+    if organisation:
+        session["organisation_id"] = organisation_id
+        session.pop("workspace_id", None)
+
+    return redirect("/")
+
 
 @app.route("/workspaces")
 def workspaces():
