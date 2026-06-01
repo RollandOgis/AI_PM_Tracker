@@ -11856,11 +11856,46 @@ def subscription_status():
 
     organisations = cursor.fetchall()
 
+    today = date.today()
+
+    for organisation in organisations:
+
+        days_remaining = 0
+
+        if organisation["trial_end_date"]:
+
+            try:
+
+                trial_end = datetime.strptime(
+                    organisation["trial_end_date"],
+                    "%Y-%m-%d"
+                ).date()
+
+                days_remaining = (
+                    trial_end - today
+                ).days
+
+            except:
+                pass
+
+        organisation["days_remaining"] = days_remaining
+
     conn.close()
 
     return render_template(
         "subscription_status.html",
         organisations=organisations
+    )
+
+@app.route("/upgrade-plan/<int:organisation_id>")
+def upgrade_plan(organisation_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    return render_template(
+        "upgrade_plan.html",
+        organisation_id=organisation_id
     )
 
 @app.route("/notification-settings")
