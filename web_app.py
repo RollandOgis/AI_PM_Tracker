@@ -14438,6 +14438,184 @@ def seed_admin_data():
 
     return "Administration demo data added successfully"
 
+@app.route("/seed-saas-extra-data")
+def seed_saas_extra_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id, organisation_name
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 5
+    """, (
+        user_id,
+    ))
+
+    organisations = cursor.fetchall()
+
+    if not organisations:
+        conn.close()
+        return "Create organisations first"
+
+    workspace_types = [
+        "Project Delivery",
+        "Portfolio Office",
+        "Finance",
+        "Resource Management",
+        "Executive"
+    ]
+
+    for i, organisation in enumerate(organisations):
+
+        cursor.execute("""
+            INSERT INTO workspaces
+            (
+                user_id,
+                organisation_id,
+                workspace_name,
+                workspace_type,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            organisation["id"],
+            f"{organisation['organisation_name']} Workspace",
+            workspace_types[i % len(workspace_types)],
+            "Workspace Admin",
+            "Active",
+            str(date.today())
+        ))
+
+        workspace = cursor.fetchone()
+        workspace_id = workspace["id"]
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                organisation_id,
+                workspace_id,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            "Admin",
+            organisation["id"],
+            workspace_id,
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO user_invitations
+            (
+                organisation_id,
+                workspace_id,
+                invited_email,
+                role,
+                status,
+                invitation_token,
+                invited_by,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            organisation["id"],
+            workspace_id,
+            f"user{i + 1}@demo-company.com",
+            "Team Member",
+            "Pending",
+            str(uuid.uuid4()),
+            user_id,
+            str(date.today())
+        ))
+
+    subscription_plans = [
+        ("Free", 0, "Monthly", 3, 1, "Basic project tracking", "Active"),
+        ("Basic", 19, "Monthly", 10, 3, "Projects, tasks and governance", "Active"),
+        ("Professional", 49, "Monthly", 50, 10, "AI features, portfolio and advanced reporting", "Active"),
+        ("Enterprise", 99, "Monthly", 9999, 9999, "Unlimited usage, enterprise governance and premium support", "Active")
+    ]
+
+    for plan in subscription_plans:
+
+        cursor.execute("""
+            INSERT INTO subscription_plans
+            (
+                user_id,
+                plan_name,
+                price,
+                billing_cycle,
+                max_projects,
+                max_users,
+                features,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            plan[0],
+            plan[1],
+            plan[2],
+            plan[3],
+            plan[4],
+            plan[5],
+            plan[6],
+            str(date.today())
+        ))
+
+    email_notifications = [
+        ("admin@demo-company.com", "Trial Started", "Your organisation trial has started.", "Draft"),
+        ("finance@demo-company.com", "Invoice Created", "A new invoice has been generated.", "Draft"),
+        ("sponsor@demo-company.com", "Governance Review Reminder", "Your monthly governance review is due.", "Draft"),
+        ("team@demo-company.com", "Project Risk Alert", "A high risk has been identified.", "Draft"),
+        ("owner@demo-company.com", "Subscription Reminder", "Your subscription requires attention.", "Draft")
+    ]
+
+    for notification in email_notifications:
+
+        cursor.execute("""
+            INSERT INTO email_notifications
+            (
+                user_id,
+                recipient_email,
+                subject,
+                message,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            notification[0],
+            notification[1],
+            notification[2],
+            notification[3],
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "SaaS extra demo data added successfully"
+
 
 
 
