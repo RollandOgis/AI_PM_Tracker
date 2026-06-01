@@ -13503,20 +13503,26 @@ def seed_governance_data():
                 user_id,
                 project_id,
                 title,
+                description,
                 probability,
                 impact,
                 severity_score,
+                mitigation,
+                owner,
                 status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             risk_titles[i % len(risk_titles)],
+            "Demo risk created for testing dashboards and AI risk analysis.",
             "High",
             "High",
             8,
+            "Create mitigation plan and monitor weekly.",
+            "Project Manager",
             "Open",
             str(date.today())
         ))
@@ -13527,17 +13533,23 @@ def seed_governance_data():
                 user_id,
                 project_id,
                 title,
+                description,
                 priority,
+                owner,
                 status,
+                resolution,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             issue_titles[i % len(issue_titles)],
+            "Demo issue created for testing issue management and reporting.",
             "High",
+            "Project Manager",
             "Open",
+            "Resolution pending.",
             str(date.today())
         ))
 
@@ -13547,15 +13559,23 @@ def seed_governance_data():
                 user_id,
                 project_id,
                 title,
-                status,
+                description,
+                impact,
+                requested_by,
+                approval_status,
+                implementation_plan,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             change_titles[i % len(change_titles)],
+            "Demo change request created for change control testing.",
+            "Medium impact on scope, timeline or budget.",
+            "Project Sponsor",
             "Pending",
+            "Review through change control board.",
             str(date.today())
         ))
 
@@ -13565,15 +13585,25 @@ def seed_governance_data():
                 user_id,
                 project_id,
                 title,
+                description,
+                expected_value,
+                measurement_method,
+                owner,
                 status,
+                target_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             benefit_titles[i % len(benefit_titles)],
+            "Demo benefit created for benefits tracking.",
+            "Improved operational value",
+            "Measured through KPIs and monthly reporting",
+            "Benefits Owner",
             "Tracking",
+            "2026-12-31",
             str(date.today())
         ))
 
@@ -13625,9 +13655,12 @@ def seed_governance_extra_data():
                 role,
                 influence,
                 interest,
+                communication_plan,
+                owner,
+                status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
@@ -13635,6 +13668,9 @@ def seed_governance_extra_data():
             "Sponsor",
             "High",
             "High",
+            "Weekly project update and monthly governance review.",
+            "Project Manager",
+            "Active",
             str(date.today())
         ))
 
@@ -13644,19 +13680,23 @@ def seed_governance_extra_data():
                 user_id,
                 project_id,
                 title,
-                decision,
-                owner,
+                decision_maker,
+                impact,
+                reason,
                 status,
+                decision_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             f"Decision {i + 1}",
-            "Approved current delivery approach",
             "Project Board",
+            "Medium",
+            "Approved current delivery approach to maintain momentum.",
             "Approved",
+            str(date.today()),
             str(date.today())
         ))
 
@@ -13666,19 +13706,23 @@ def seed_governance_extra_data():
                 user_id,
                 project_id,
                 title,
+                description,
                 owner,
-                due_date,
+                priority,
                 status,
+                due_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             f"Action {i + 1}",
+            "Follow up on open project governance item.",
             "Project Manager",
-            str(date.today()),
+            "High",
             "Open",
+            "2026-07-15",
             str(date.today())
         ))
 
@@ -13689,20 +13733,22 @@ def seed_governance_extra_data():
                 project_id,
                 title,
                 what_happened,
-                lesson,
+                what_went_well,
+                what_went_wrong,
                 recommendation,
-                status,
+                owner,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             f"Lesson {i + 1}",
             "A delivery challenge occurred during project execution.",
-            "Earlier stakeholder alignment would have reduced delays.",
+            "Stakeholder communication improved after weekly updates were introduced.",
+            "Earlier alignment would have reduced delays.",
             "Hold discovery workshops before major delivery phases.",
-            "Open",
+            "Project Manager",
             str(date.today())
         ))
 
@@ -13711,18 +13757,22 @@ def seed_governance_extra_data():
             (
                 user_id,
                 project_id,
-                gate_name,
+                stage_name,
                 status,
-                decision,
+                reviewer,
+                comments,
+                review_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             "Initiation Gate",
             "Approved",
-            "Proceed to next phase",
+            "Programme Manager",
+            "Proceed to next phase.",
+            str(date.today()),
             str(date.today())
         ))
 
