@@ -10709,6 +10709,84 @@ def switch_organisation(organisation_id):
 
     return redirect("/")
 
+@app.route(
+    "/add-workspace-role",
+    methods=["GET", "POST"]
+)
+def add_workspace_role():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        ORDER BY username
+    """)
+
+    users = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        ORDER BY organisation_name
+    """)
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        ORDER BY workspace_name
+    """)
+
+    workspaces = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                organisation_id,
+                workspace_id,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+
+            request.form["user_id"],
+            request.form["role"],
+            request.form["organisation_id"],
+            request.form["workspace_id"],
+            str(datetime.now())
+
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/workspace-roles")
+
+    conn.close()
+
+    return render_template(
+        "add_workspace_role.html",
+        users=users,
+        organisations=organisations,
+        workspaces=workspaces
+    )
+
 
 @app.route("/workspaces")
 def workspaces():
