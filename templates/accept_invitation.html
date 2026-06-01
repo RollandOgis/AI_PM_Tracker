@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accept Invitation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="main-content">
+
+    <h1>Accept Invitation</h1>
+
+    <p>
+        You have been invited as:
+        <strong>{{ invitation.role }}</strong>
+    </p>
+
+    <form method="POST" class="form-card">
+
+        <label>Username</label>
+        <input type="text" name="username" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
+        <button type="submit" class="btn-primary">
+            Create Account
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+</html>

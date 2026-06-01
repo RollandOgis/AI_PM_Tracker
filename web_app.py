@@ -1336,6 +1336,16 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS organisation_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+                   """)
+
 
     conn.commit()
 
@@ -10337,7 +10347,9 @@ def user_management():
     "/add-user-invitation",
     methods=["GET", "POST"]
 )
-def add_user_invitation():
+
+@app.route("/user-invitations")
+def user_invitations():
 
     if "user_id" not in session:
         return redirect("/login")
@@ -10350,73 +10362,19 @@ def add_user_invitation():
 
     cursor.execute("""
         SELECT *
-        FROM organisations
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
+        FROM user_invitations
+        ORDER BY id DESC
+    """)
 
-    organisations = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT *
-        FROM workspaces
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
-    workspaces = cursor.fetchall()
-
-    if request.method == "POST":
-
-        invitation_token = str(uuid.uuid4())
-
-        cursor.execute("""
-            INSERT INTO user_invitations
-            (
-                organisation_id,
-                workspace_id,
-                invited_email,
-                role,
-                status,
-                invitation_token,
-                invited_by,
-                created_at
-            )
-            VALUES
-            (%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-
-            request.form["organisation_id"],
-            request.form["workspace_id"],
-            request.form["invited_email"],
-            request.form["role"],
-            "Pending",
-            invitation_token,
-            session["user_id"],
-            str(datetime.now())
-
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/user-invitations")
+    invitations = cursor.fetchall()
 
     conn.close()
 
     return render_template(
-        "add_user_invitation.html",
-        organisations=organisations,
-        workspaces=workspaces
+        "user_invitations.html",
+        invitations=invitations
     )
 
-
-@app.route(
-    "/add-user-invitation",
-    methods=["GET", "POST"]
-)
 def add_user_invitation():
 
     if "user_id" not in session:
@@ -10910,6 +10868,92 @@ def subscription_plans():
     return render_template(
         "subscription_plans.html",
         plans=plans
+    )
+
+@app.route("/accept-invitation/<token>", methods=["GET", "POST"])
+def accept_invitation(token):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM user_invitations
+        WHERE invitation_token = %s
+        AND status = 'Pending'
+    """, (
+        token,
+    ))
+
+    invitation = cursor.fetchone()
+
+    if not invitation:
+        conn.close()
+        return "Invalid or expired invitation"
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        password = request.form["password"]
+
+        hashed_password = generate_password_hash(password)
+        avatar_initials = username[:2].upper()
+
+        cursor.execute("""
+            INSERT INTO users
+            (
+                username,
+                email,
+                password,
+                avatar_initials
+            )
+            VALUES (%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            username,
+            invitation["invited_email"],
+            hashed_password,
+            avatar_initials
+        ))
+
+        new_user = cursor.fetchone()
+        new_user_id = new_user["id"]
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                created_at
+            )
+            VALUES (%s,%s,%s)
+        """, (
+            new_user_id,
+            invitation["role"],
+            str(datetime.now())
+        ))
+
+        cursor.execute("""
+            UPDATE user_invitations
+            SET status = 'Accepted'
+            WHERE id = %s
+        """, (
+            invitation["id"],
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/login")
+
+    conn.close()
+
+    return render_template(
+        "accept_invitation.html",
+        invitation=invitation
     )
 
 
