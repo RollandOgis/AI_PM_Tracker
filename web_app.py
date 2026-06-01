@@ -1685,6 +1685,38 @@ def can_create_project():
 
     return True
 
+def can_invite_user():
+
+    organisation = get_user_current_organisation()
+
+    if not organisation:
+        return True
+
+    limits = get_plan_limits(
+        organisation["plan"]
+    )
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM user_roles
+        WHERE organisation_id = %s
+    """, (
+        organisation["id"],
+    ))
+
+    user_count = cursor.fetchone()[0]
+
+    conn.close()
+
+    if user_count >= limits["max_users"]:
+        return False
+
+    return True
+
 
 @app.route("/")
 def home():
@@ -10886,6 +10918,25 @@ def add_user_invitation():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not can_invite_user():
+
+        return """
+        <h2>User Limit Reached</h2>
+
+        <p>
+            You have reached the maximum number of users
+            allowed by your subscription plan.
+        </p>
+
+        <p>
+            Please upgrade your plan to invite more users.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
