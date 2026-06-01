@@ -10364,6 +10364,7 @@ def user_management():
         SELECT
             users.id,
             users.username,
+            users.email,
             users.avatar_initials
         FROM users
         ORDER BY users.id DESC
@@ -10378,10 +10379,6 @@ def user_management():
         users=users
     )
 
-@app.route(
-    "/add-user-invitation",
-    methods=["GET", "POST"]
-)
 
 @app.route("/user-invitations")
 def user_invitations():
@@ -10410,6 +10407,11 @@ def user_invitations():
         invitations=invitations
     )
 
+
+@app.route(
+    "/add-user-invitation",
+    methods=["GET", "POST"]
+)
 def add_user_invitation():
 
     if "user_id" not in session:
