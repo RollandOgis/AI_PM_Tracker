@@ -1508,6 +1508,30 @@ def init_db():
     except:
         pass
 
+    try:
+        cursor.execute("""
+                       ALTER TABLE organisations
+                           ADD COLUMN stripe_customer_id TEXT
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE organisations
+                           ADD COLUMN stripe_subscription_id TEXT
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE organisations
+                           ADD COLUMN stripe_checkout_session_id TEXT
+                       """)
+    except:
+        pass
+
 
 
     conn.commit()
