@@ -10393,6 +10393,62 @@ def admin_reset_password(user_id):
 
     return f"Reset Token Generated: {reset_token}"
 
+@app.route(
+    "/reset-password/<token>",
+    methods=["GET", "POST"]
+)
+def reset_password(token):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        WHERE reset_token = %s
+    """, (
+        token,
+    ))
+
+    user = cursor.fetchone()
+
+    if not user:
+        conn.close()
+        return "Invalid reset token"
+
+    if request.method == "POST":
+
+        new_password = generate_password_hash(
+            request.form["password"]
+        )
+
+        cursor.execute("""
+            UPDATE users
+            SET
+                password = %s,
+                reset_token = NULL,
+                reset_token_created_at = NULL
+            WHERE id = %s
+        """, (
+            new_password,
+            user["id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/login")
+
+    conn.close()
+
+    return render_template(
+        "reset_password.html",
+        user=user
+    )
+
 @app.route("/user-management")
 def user_management():
 
