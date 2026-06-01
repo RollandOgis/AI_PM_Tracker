@@ -53,11 +53,38 @@
 
             <h2>Copilot Recommendations</h2>
 
-            <ul>
-                {% for recommendation in recommendations %}
-                <li>{{ recommendation }}</li>
-                {% endfor %}
-            </ul>
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Priority</th>
+                            <th>Recommendation</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for recommendation in recommendations %}
+
+                        <tr>
+                            <td>
+                                <span class="badge badge-yellow">
+                                    Action Required
+                                </span>
+                            </td>
+
+                            <td>{{ recommendation }}</td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
 
         </div>
 

@@ -22,86 +22,79 @@
 
         {% for item in allocation_data %}
 
-        <div class="card">
+        <div class="card" style="margin-bottom: 30px;">
 
-            <h2>{{ item.member.name }}</h2>
+            <div class="stats-grid">
 
-            <p>
-                <strong>Role:</strong>
-                {{ item.member.role }}
-            </p>
+                <div class="stat-card blue-card">
+                    <h3>{{ item.member.name }}</h3>
+                    <p>{{ item.member.role }}</p>
+                </div>
 
-            <p>
-                <strong>Active Tasks:</strong>
-                {{ item.active_tasks }}
-            </p>
+                <div class="stat-card amber-card">
+                    <h3>Active Tasks</h3>
+                    <p>{{ item.active_tasks }}</p>
+                </div>
 
-            <p>
-                <strong>Completed Tasks:</strong>
-                {{ item.completed_tasks }}
-            </p>
+                <div class="stat-card green-card">
+                    <h3>Completed</h3>
+                    <p>{{ item.completed_tasks }}</p>
+                </div>
 
-            <p>
-                <strong>Utilisation:</strong>
-                {{ item.utilisation }}%
-            </p>
+                <div class="stat-card blue-card">
+                    <h3>Utilisation</h3>
+                    <p>{{ item.utilisation }}%</p>
+                </div>
+
+            </div>
 
             <p>
                 <strong>Status:</strong>
 
                 {% if item.allocation_status == "Available" %}
-                    <span class="badge badge-green">
-                        Available
-                    </span>
-
+                    <span class="badge badge-green">Available</span>
                 {% elif item.allocation_status == "Allocated" %}
-                    <span class="badge badge-yellow">
-                        Allocated
-                    </span>
-
+                    <span class="badge badge-yellow">Allocated</span>
                 {% else %}
-                    <span class="badge badge-red">
-                        Overallocated
-                    </span>
-
+                    <span class="badge badge-red">Overallocated</span>
                 {% endif %}
             </p>
 
-            <h3>Assigned Tasks</h3>
+            <h2>Assigned Tasks</h2>
 
-            <table>
+            <div class="table-container">
 
-                <thead>
-                    <tr>
-                        <th>Task</th>
-                        <th>Project</th>
-                        <th>Priority</th>
-                        <th>Status</th>
-                        <th>Due Date</th>
-                    </tr>
-                </thead>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Project</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                        </tr>
+                    </thead>
 
-                <tbody>
+                    <tbody>
 
-                {% for task in item.tasks %}
+                        {% for task in item.tasks %}
 
-                    <tr>
-                        <td>{{ task.title }}</td>
-                        <td>{{ task.project_name }}</td>
-                        <td>{{ task.priority }}</td>
-                        <td>{{ task.status }}</td>
-                        <td>{{ task.due_date }}</td>
-                    </tr>
+                        <tr>
+                            <td>{{ task.title }}</td>
+                            <td>{{ task.project_name }}</td>
+                            <td>{{ task.priority }}</td>
+                            <td>{{ task.status }}</td>
+                            <td>{{ task.due_date }}</td>
+                        </tr>
 
-                {% endfor %}
+                        {% endfor %}
 
-                </tbody>
+                    </tbody>
+                </table>
 
-            </table>
+            </div>
 
         </div>
-
-        <br>
 
         {% endfor %}
 
