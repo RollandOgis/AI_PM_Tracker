@@ -10989,6 +10989,31 @@ def workspace_roles():
         roles=roles
     )
 
+@app.route("/delete-workspace-role/<int:role_id>")
+def delete_workspace_role(role_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM user_roles
+        WHERE id = %s
+    """, (
+        role_id,
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/workspace-roles")
+
 
 @app.route("/subscription-plans")
 def subscription_plans():

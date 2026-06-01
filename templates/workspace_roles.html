@@ -20,6 +20,17 @@
             View users and their roles across organisations and workspaces.
         </p>
 
+        <div style="margin-top:20px;margin-bottom:30px;">
+
+            <a
+                href="/add-workspace-role"
+                class="btn-primary"
+            >
+                Add Workspace Role
+            </a>
+
+        </div>
+
         <div class="card">
 
             <div class="table-container">
@@ -27,13 +38,23 @@
                 <table>
 
                     <thead>
+
                         <tr>
+
                             <th>User</th>
+
                             <th>Role</th>
+
                             <th>Organisation</th>
+
                             <th>Workspace</th>
+
                             <th>Created</th>
+
+                            <th>Action</th>
+
                         </tr>
+
                     </thead>
 
                     <tbody>
@@ -41,11 +62,65 @@
                         {% for role in roles %}
 
                         <tr>
-                            <td>{{ role.username or "Unknown User" }}</td>
-                            <td>{{ role.role }}</td>
-                            <td>{{ role.organisation_name or "No Organisation" }}</td>
-                            <td>{{ role.workspace_name or "No Workspace" }}</td>
-                            <td>{{ role.created_at }}</td>
+
+                            <td>
+                                {{ role.username or "Unknown User" }}
+                            </td>
+
+                            <td>
+
+                                {% if role.role == "Admin" %}
+
+                                    <span class="badge badge-red">
+                                        Admin
+                                    </span>
+
+                                {% elif role.role == "Manager" %}
+
+                                    <span class="badge badge-yellow">
+                                        Manager
+                                    </span>
+
+                                {% elif role.role == "Viewer" %}
+
+                                    <span class="badge badge-blue">
+                                        Viewer
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-green">
+                                        Team Member
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ role.organisation_name or "No Organisation" }}
+                            </td>
+
+                            <td>
+                                {{ role.workspace_name or "No Workspace" }}
+                            </td>
+
+                            <td>
+                                {{ role.created_at }}
+                            </td>
+
+                            <td>
+
+                                <a
+                                    href="/delete-workspace-role/{{ role.id }}"
+                                    class="btn-danger"
+                                    onclick="return confirm('Delete this role?')"
+                                >
+                                    Delete
+                                </a>
+
+                            </td>
+
                         </tr>
 
                         {% endfor %}
