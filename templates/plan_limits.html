@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plan Limits</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Plan Limits</h1>
+
+        <p class="page-subtitle">
+            View project, user, workspace and AI access limits by subscription plan.
+        </p>
+
+        <div class="card">
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Organisation</th>
+                            <th>Plan</th>
+                            <th>Max Projects</th>
+                            <th>Max Users</th>
+                            <th>Max Workspaces</th>
+                            <th>AI Enabled</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in plan_data %}
+
+                        <tr>
+                            <td>{{ item.organisation.organisation_name }}</td>
+                            <td>{{ item.organisation.plan }}</td>
+                            <td>{{ item.max_projects }}</td>
+                            <td>{{ item.max_users }}</td>
+                            <td>{{ item.max_workspaces }}</td>
+
+                            <td>
+                                {% if item.ai_enabled %}
+                                    <span class="badge badge-green">Yes</span>
+                                {% else %}
+                                    <span class="badge badge-red">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

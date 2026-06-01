@@ -1592,6 +1592,37 @@ def is_subscription_active(organisation):
 
     return False
 
+def get_plan_limits(plan):
+
+    limits = {
+        "Free": {
+            "max_projects": 3,
+            "max_users": 1,
+            "max_workspaces": 1,
+            "ai_enabled": False
+        },
+        "Basic": {
+            "max_projects": 10,
+            "max_users": 3,
+            "max_workspaces": 1,
+            "ai_enabled": False
+        },
+        "Professional": {
+            "max_projects": 50,
+            "max_users": 10,
+            "max_workspaces": 5,
+            "ai_enabled": True
+        },
+        "Enterprise": {
+            "max_projects": 9999,
+            "max_users": 9999,
+            "max_workspaces": 9999,
+            "ai_enabled": True
+        }
+    }
+
+    return limits.get(plan, limits["Free"])
+
 
 @app.route("/")
 def home():
@@ -11896,6 +11927,52 @@ def upgrade_plan(organisation_id):
     return render_template(
         "upgrade_plan.html",
         organisation_id=organisation_id
+    )
+
+@app.route("/plan-limits")
+def plan_limits():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    plan_data = []
+
+    for organisation in organisations:
+
+        limits = get_plan_limits(
+            organisation["plan"]
+        )
+
+        plan_data.append({
+            "organisation": organisation,
+            "max_projects": limits["max_projects"],
+            "max_users": limits["max_users"],
+            "max_workspaces": limits["max_workspaces"],
+            "ai_enabled": limits["ai_enabled"]
+        })
+
+    conn.close()
+
+    return render_template(
+        "plan_limits.html",
+        plan_data=plan_data
     )
 
 @app.route("/notification-settings")
