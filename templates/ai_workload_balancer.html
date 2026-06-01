@@ -20,49 +20,47 @@
             Analyse workload pressure and identify who can take on more work.
         </p>
 
-        <div class="table-container">
+        <div class="card">
 
-            <table>
+            <h2>Workload Balance</h2>
 
-                <thead>
-                    <tr>
-                        <th>Team Member</th>
-                        <th>Role</th>
-                        <th>Active Tasks</th>
-                        <th>Utilisation</th>
-                        <th>Status</th>
-                        <th>AI Recommendation</th>
-                    </tr>
-                </thead>
+            <div class="table-container">
 
-                <tbody>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Team Member</th>
+                            <th>Role</th>
+                            <th>Active Tasks</th>
+                            <th>Utilisation</th>
+                            <th>Status</th>
+                            <th>AI Recommendation</th>
+                        </tr>
+                    </thead>
 
-                    {% for item in workload_data %}
+                    <tbody>
+                        {% for item in workload_data %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.role }}</td>
+                            <td>{{ item.active_tasks }}</td>
+                            <td>{{ item.utilisation }}%</td>
+                            <td>
+                                {% if item.workload_status == "Overloaded" %}
+                                    <span class="badge badge-red">Overloaded</span>
+                                {% elif item.workload_status == "Balanced" %}
+                                    <span class="badge badge-yellow">Balanced</span>
+                                {% else %}
+                                    <span class="badge badge-green">Available</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.recommendation }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-                    <tr>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.role }}</td>
-                        <td>{{ item.active_tasks }}</td>
-                        <td>{{ item.utilisation }}%</td>
-
-                        <td>
-                            {% if item.workload_status == "Overloaded" %}
-                                <span class="badge badge-red">Overloaded</span>
-                            {% elif item.workload_status == "Balanced" %}
-                                <span class="badge badge-yellow">Balanced</span>
-                            {% else %}
-                                <span class="badge badge-green">Available</span>
-                            {% endif %}
-                        </td>
-
-                        <td>{{ item.recommendation }}</td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            </div>
 
         </div>
 

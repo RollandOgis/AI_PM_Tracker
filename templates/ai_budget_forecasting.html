@@ -1,65 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
     <title>AI Budget Forecasting</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
 
     {% include "sidebar.html" %}
 
-    <div class="main-content">
+    <main class="main-content">
 
         <h1>AI Budget Forecasting</h1>
+
+        <p class="page-subtitle">
+            Forecast final project costs using current actual spend and delivery progress.
+        </p>
 
         <div class="card">
 
             <h2>Forecast Analysis</h2>
 
-            <table>
+            <div class="table-container">
 
-                <tr>
-                    <th>Project</th>
-                    <th>Budget</th>
-                    <th>Actual Cost</th>
-                    <th>Forecast Cost</th>
-                    <th>Variance</th>
-                    <th>Status</th>
-                </tr>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Budget</th>
+                            <th>Actual Cost</th>
+                            <th>Forecast Cost</th>
+                            <th>Variance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
 
-                {% for item in forecasts %}
+                    <tbody>
+                        {% for item in forecasts %}
+                        <tr>
+                            <td>{{ item.project_name }}</td>
+                            <td>£{{ "{:,.0f}".format(item.estimated_budget) }}</td>
+                            <td>£{{ "{:,.0f}".format(item.actual_cost) }}</td>
+                            <td>£{{ "{:,.0f}".format(item.forecast_cost) }}</td>
+                            <td>£{{ "{:,.0f}".format(item.variance) }}</td>
+                            <td>
+                                {% if item.forecast_status == "Over Budget" %}
+                                    <span class="badge badge-red">Over Budget</span>
+                                {% elif item.forecast_status == "On Budget" %}
+                                    <span class="badge badge-yellow">On Budget</span>
+                                {% else %}
+                                    <span class="badge badge-green">Under Budget</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-                <tr>
-
-                    <td>{{ item.project_name }}</td>
-
-                    <td>£{{ item.estimated_budget }}</td>
-
-                    <td>£{{ item.actual_cost }}</td>
-
-                    <td>£{{ item.forecast_cost }}</td>
-
-                    <td>£{{ item.variance }}</td>
-
-                    <td>{{ item.forecast_status }}</td>
-
-                </tr>
-
-                {% endfor %}
-
-            </table>
+            </div>
 
         </div>
 
-    </div>
+    </main>
 
 </div>
 

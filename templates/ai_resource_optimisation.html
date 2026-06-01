@@ -1,56 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
     <title>AI Resource Optimisation</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
 
     {% include "sidebar.html" %}
 
-    <div class="main-content">
+    <main class="main-content">
 
         <h1>AI Resource Optimisation</h1>
+
+        <p class="page-subtitle">
+            Optimise resource allocation based on workload and utilisation.
+        </p>
 
         <div class="card">
 
             <h2>Resource Recommendations</h2>
 
-            <table>
+            <div class="table-container">
 
-                <tr>
-                    <th>Team Member</th>
-                    <th>Allocated Tasks</th>
-                    <th>Recommendation</th>
-                </tr>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Active Tasks</th>
+                            <th>Utilisation</th>
+                            <th>Optimisation</th>
+                            <th>Recommended Action</th>
+                        </tr>
+                    </thead>
 
-                {% for member in recommendations %}
+                    <tbody>
+                        {% for item in optimisation_data %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.role }}</td>
+                            <td>{{ item.active_tasks }}</td>
+                            <td>{{ item.utilisation }}%</td>
+                            <td>{{ item.optimisation }}</td>
+                            <td>{{ item.action }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-                <tr>
-
-                    <td>{{ member.name }}</td>
-
-                    <td>{{ member.task_count }}</td>
-
-                    <td>{{ member.recommendation }}</td>
-
-                </tr>
-
-                {% endfor %}
-
-            </table>
+            </div>
 
         </div>
 
-    </div>
+    </main>
 
 </div>
 

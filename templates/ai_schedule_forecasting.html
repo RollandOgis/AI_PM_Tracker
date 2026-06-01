@@ -1,56 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
     <title>AI Schedule Forecasting</title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
 
     {% include "sidebar.html" %}
 
-    <div class="main-content">
+    <main class="main-content">
 
         <h1>AI Schedule Forecasting</h1>
 
+        <p class="page-subtitle">
+            Forecast delivery delay risk using completion rate and overdue tasks.
+        </p>
+
         <div class="card">
 
-            <h2>Schedule Forecasts</h2>
+            <h2>Schedule Forecast Analysis</h2>
 
-            <table>
+            <div class="table-container">
 
-                <tr>
-                    <th>Project</th>
-                    <th>Completion %</th>
-                    <th>Forecast</th>
-                </tr>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th>Completion</th>
+                            <th>Overdue Tasks</th>
+                            <th>Delay Risk</th>
+                            <th>Forecast</th>
+                        </tr>
+                    </thead>
 
-                {% for project in forecasts %}
+                    <tbody>
+                        {% for item in forecasts %}
+                        <tr>
+                            <td>{{ item.project_name }}</td>
+                            <td>{{ item.status }}</td>
+                            <td>{{ item.completion_rate }}%</td>
+                            <td>{{ item.overdue_tasks }}</td>
+                            <td>{{ item.delay_risk }}</td>
+                            <td>
+                                {% if item.forecast == "High Delay Risk" %}
+                                    <span class="badge badge-red">High Delay Risk</span>
+                                {% elif item.forecast == "Minor Delay Risk" %}
+                                    <span class="badge badge-yellow">Minor Delay Risk</span>
+                                {% else %}
+                                    <span class="badge badge-green">On Track</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-                <tr>
-
-                    <td>{{ project.project_name }}</td>
-
-                    <td>{{ project.completion_rate }}%</td>
-
-                    <td>{{ project.forecast }}</td>
-
-                </tr>
-
-                {% endfor %}
-
-            </table>
+            </div>
 
         </div>
 
-    </div>
+    </main>
 
 </div>
 

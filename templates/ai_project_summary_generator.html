@@ -20,45 +20,45 @@
             Generate executive-style project summaries using delivery, risk and issue indicators.
         </p>
 
-        <div class="table-container">
+        <div class="card">
 
-            <table>
+            <h2>Generated Project Summaries</h2>
 
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Status</th>
-                        <th>Completion</th>
-                        <th>Tasks</th>
-                        <th>Overdue</th>
-                        <th>Blocked</th>
-                        <th>Risks</th>
-                        <th>Issues</th>
-                        <th>AI Summary</th>
-                    </tr>
-                </thead>
+            <div class="table-container">
 
-                <tbody>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th>Completion</th>
+                            <th>Tasks</th>
+                            <th>Overdue</th>
+                            <th>Blocked</th>
+                            <th>Risks</th>
+                            <th>Issues</th>
+                            <th>AI Summary</th>
+                        </tr>
+                    </thead>
 
-                    {% for item in summaries %}
+                    <tbody>
+                        {% for item in summaries %}
+                        <tr>
+                            <td>{{ item.project_name }}</td>
+                            <td>{{ item.status }}</td>
+                            <td>{{ item.completion_rate }}%</td>
+                            <td>{{ item.completed_tasks }} / {{ item.total_tasks }}</td>
+                            <td>{{ item.overdue_tasks }}</td>
+                            <td>{{ item.blocked_tasks }}</td>
+                            <td>{{ item.open_risks }}</td>
+                            <td>{{ item.open_issues }}</td>
+                            <td>{{ item.summary }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-                    <tr>
-                        <td>{{ item.project_name }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.completion_rate }}%</td>
-                        <td>{{ item.completed_tasks }} / {{ item.total_tasks }}</td>
-                        <td>{{ item.overdue_tasks }}</td>
-                        <td>{{ item.blocked_tasks }}</td>
-                        <td>{{ item.open_risks }}</td>
-                        <td>{{ item.open_issues }}</td>
-                        <td>{{ item.summary }}</td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            </div>
 
         </div>
 
