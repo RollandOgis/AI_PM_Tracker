@@ -1623,6 +1623,68 @@ def get_plan_limits(plan):
 
     return limits.get(plan, limits["Free"])
 
+def get_user_current_organisation():
+
+    organisation_id = session.get("organisation_id")
+
+    if not organisation_id:
+        return None
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        organisation_id,
+        session["user_id"]
+    ))
+
+    organisation = cursor.fetchone()
+
+    conn.close()
+
+    return organisation
+
+
+def can_create_project():
+
+    organisation = get_user_current_organisation()
+
+    if not organisation:
+        return True
+
+    limits = get_plan_limits(
+        organisation["plan"]
+    )
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    project_count = cursor.fetchone()[0]
+
+    conn.close()
+
+    if project_count >= limits["max_projects"]:
+        return False
+
+    return True
+
 
 @app.route("/")
 def home():
@@ -3427,6 +3489,25 @@ def add_project():
 
     if not has_permission("Projects", "create"):
         return "Access denied"
+
+    if not can_create_project():
+
+        return """
+        <h2>Plan Limit Reached</h2>
+
+        <p>
+            You have reached the maximum number of projects
+            allowed by your subscription plan.
+        </p>
+
+        <p>
+            Please upgrade your plan to create more projects.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
