@@ -14126,7 +14126,104 @@ def seed_portfolio_programme_data():
 
     return "Portfolio and programme demo data added successfully"
 
+@app.route("/seed-approvals-reviews-data")
+def seed_approvals_reviews_data():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    for i, project in enumerate(projects):
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            INSERT INTO approvals
+            (
+                user_id,
+                project_id,
+                item_type,
+                item_id,
+                submitted_by,
+                approver,
+                status,
+                submitted_date,
+                decision_date,
+                comments
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            "Change Request",
+            project_id,
+            "Project Manager",
+            "Programme Manager",
+            "Approved" if i % 2 == 0 else "Pending",
+            date.today(),
+            date.today() if i % 2 == 0 else None,
+            "Demo approval record for governance testing."
+        ))
+
+        cursor.execute("""
+            INSERT INTO governance_reviews
+            (
+                user_id,
+                project_id,
+                review_name,
+                review_type,
+                review_date,
+                outcome,
+                decision,
+                actions,
+                owner,
+                next_review_date,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Monthly Governance Review {i + 1}",
+            "Monthly Review",
+            date.today(),
+            "Project reviewed against scope, risk, budget and delivery indicators.",
+            "Continue with current delivery approach.",
+            "Review open risks and update action owners.",
+            "Project Manager",
+            date.today(),
+            "Completed" if i % 2 == 0 else "Scheduled",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Approvals and governance reviews demo data added successfully"
 
 
 if __name__ == "__main__":
