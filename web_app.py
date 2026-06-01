@@ -1337,6 +1337,8 @@ def init_db():
                    )
                    """)
 
+
+
     cursor.execute("""
                    ALTER TABLE user_roles
                        ADD COLUMN IF NOT EXISTS organisation_id INTEGER
@@ -1432,6 +1434,7 @@ def init_db():
                        """)
     except:
         pass
+
 
 
     conn.commit()
