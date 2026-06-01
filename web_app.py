@@ -13415,6 +13415,179 @@ def seed_projects_and_budgets():
 
     return "Demo projects and budgets added successfully"
 
+@app.route("/seed-governance-data")
+def seed_governance_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    risk_titles = [
+        "Supplier Delay",
+        "Budget Overrun",
+        "Resource Shortage",
+        "Scope Creep",
+        "Security Vulnerability",
+        "Vendor Dependency",
+        "Stakeholder Resistance",
+        "Data Quality Risk",
+        "Integration Failure",
+        "Regulatory Compliance Risk"
+    ]
+
+    issue_titles = [
+        "API Failure",
+        "Server Downtime",
+        "Missing Requirements",
+        "Testing Delay",
+        "Vendor Escalation",
+        "Data Migration Error",
+        "Performance Issue",
+        "Security Defect",
+        "Reporting Failure",
+        "Environment Outage"
+    ]
+
+    change_titles = [
+        "Additional Reporting Requirement",
+        "UI Redesign Request",
+        "Database Migration",
+        "Compliance Update",
+        "Infrastructure Upgrade",
+        "New Dashboard Request",
+        "Workflow Enhancement",
+        "Security Requirement Change"
+    ]
+
+    benefit_titles = [
+        "Reduce Processing Time",
+        "Increase Revenue",
+        "Improve Customer Satisfaction",
+        "Reduce Manual Work",
+        "Improve Reporting Accuracy",
+        "Improve Compliance",
+        "Reduce Operational Costs",
+        "Increase Productivity"
+    ]
+
+    for i, project in enumerate(projects):
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            INSERT INTO risks
+            (
+                user_id,
+                project_id,
+                title,
+                owner,
+                probability,
+                impact,
+                severity_score,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            risk_titles[i % len(risk_titles)],
+            "Project Manager",
+            "High",
+            "High",
+            8,
+            "Open",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO issues
+            (
+                user_id,
+                project_id,
+                title,
+                owner,
+                priority,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            issue_titles[i % len(issue_titles)],
+            "Project Manager",
+            "High",
+            "Open",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO changes
+            (
+                user_id,
+                project_id,
+                title,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            change_titles[i % len(change_titles)],
+            "Pending",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO benefits
+            (
+                user_id,
+                project_id,
+                title,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            benefit_titles[i % len(benefit_titles)],
+            "Tracking",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Governance demo data added successfully"
+
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
