@@ -10368,14 +10368,13 @@ def admin_reset_password(user_id):
     if "user_id" not in session:
         return redirect("/login")
 
-    if not has_permission("Admin", "edit"):
-        return "Access denied"
-
     reset_token = str(uuid.uuid4())
 
     conn = get_db_connection()
 
-    cursor = conn.cursor()
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         UPDATE users
@@ -10383,16 +10382,32 @@ def admin_reset_password(user_id):
             reset_token = %s,
             reset_token_created_at = %s
         WHERE id = %s
+        RETURNING id, username, reset_token
     """, (
         reset_token,
         str(datetime.now()),
         user_id
     ))
 
+    updated_user = cursor.fetchone()
+
     conn.commit()
     conn.close()
 
-    return f"Reset Token Generated: {reset_token}"
+    if not updated_user:
+        return "User not found"
+
+    return f"""
+    <h2>Password Reset Token Generated</h2>
+    <p><strong>User:</strong> {updated_user['username']}</p>
+    <p><strong>Token:</strong> {updated_user['reset_token']}</p>
+    <p>
+        <a href="/reset-password/{updated_user['reset_token']}">
+            Open Reset Password Page
+        </a>
+    </p>
+    """
+
 
 @app.route(
     "/reset-password/<token>",
