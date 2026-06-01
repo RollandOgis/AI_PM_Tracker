@@ -14616,6 +14616,56 @@ def seed_saas_extra_data():
 
     return "SaaS extra demo data added successfully"
 
+@app.route("/seed-notification-settings-data")
+def seed_notification_settings_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    settings = [
+        ("Project Alerts", "Email", "Yes", "Daily"),
+        ("Risk Alerts", "Email", "Yes", "Immediate"),
+        ("Issue Alerts", "Email", "Yes", "Immediate"),
+        ("Billing Alerts", "Email", "Yes", "Monthly"),
+        ("Governance Reviews", "Email", "Yes", "Weekly"),
+        ("Subscription Reminders", "Email", "Yes", "Weekly"),
+        ("AI Insights", "Dashboard", "Yes", "Daily"),
+        ("Task Reminders", "Dashboard", "Yes", "Daily")
+    ]
+
+    for setting in settings:
+
+        cursor.execute("""
+            INSERT INTO notification_settings
+            (
+                user_id,
+                notification_type,
+                channel,
+                enabled,
+                frequency,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            setting[0],
+            setting[1],
+            setting[2],
+            setting[3],
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Notification settings demo data added successfully"
+
 
 
 
