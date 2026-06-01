@@ -1346,6 +1346,22 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS workspace_id INTEGER
                    """)
 
+    try:
+        cursor.execute("""
+                       ALTER TABLE users
+                           ADD COLUMN reset_token TEXT
+                       """)
+    except:
+        pass
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE users
+                           ADD COLUMN reset_token_created_at TEXT
+                       """)
+    except:
+        pass
+
 
     conn.commit()
 
@@ -10345,6 +10361,38 @@ def admin_dashboard():
         recent_logs=recent_logs
     )
 
+@app.route("/admin-reset-password/<int:user_id>")
+def admin_reset_password(user_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    reset_token = str(uuid.uuid4())
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE users
+        SET
+            reset_token = %s,
+            reset_token_created_at = %s
+        WHERE id = %s
+    """, (
+        reset_token,
+        str(datetime.now()),
+        user_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return f"Reset Token Generated: {reset_token}"
+
 @app.route("/user-management")
 def user_management():
 
@@ -10563,6 +10611,8 @@ def delete_user(user_id):
     conn.close()
 
     return redirect("/user-management")
+
+
 
 
 @app.route("/alerts")

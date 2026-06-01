@@ -72,6 +72,13 @@
                                 </a>
 
                                 <a
+                                    href="/admin-reset-password/{{ user.id }}"
+                                    class="btn-warning"
+                                >
+                                    Reset Password
+                                </a>
+
+                                <a
                                     href="/delete-user/{{ user.id }}"
                                     class="btn-danger"
                                     onclick="return confirm('Delete this user?')"

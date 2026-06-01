@@ -2431,3 +2431,12 @@ td {
     text-align: left;
     vertical-align: top;
 }
+
+.btn-warning {
+    background: orange;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-right: 5px;
+}
