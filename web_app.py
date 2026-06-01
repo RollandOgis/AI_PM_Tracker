@@ -14225,6 +14225,107 @@ def seed_approvals_reviews_data():
 
     return "Approvals and governance reviews demo data added successfully"
 
+@app.route("/seed-billing-invoice-data")
+def seed_billing_invoice_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id, organisation_name, plan
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 5
+    """, (
+        user_id,
+    ))
+
+    organisations = cursor.fetchall()
+
+    if not organisations:
+        conn.close()
+        return "Create organisations first"
+
+    for i, organisation in enumerate(organisations):
+
+        plan = organisation["plan"] or "Professional"
+
+        if plan == "Enterprise":
+            amount = 9900
+        elif plan == "Professional":
+            amount = 4900
+        elif plan == "Basic":
+            amount = 1900
+        else:
+            amount = 0
+
+        reference_number = f"BILL-{organisation['id']}-{i + 1:03d}"
+        invoice_number = f"INV-{organisation['id']}-{i + 1:03d}"
+
+        cursor.execute("""
+            INSERT INTO billing_history
+            (
+                user_id,
+                organisation_id,
+                plan,
+                amount,
+                status,
+                reference_number,
+                billing_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            organisation["id"],
+            plan,
+            amount,
+            "Paid" if amount > 0 else "Trial",
+            reference_number,
+            str(date.today()),
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO invoices
+            (
+                user_id,
+                organisation_id,
+                invoice_number,
+                plan,
+                amount,
+                status,
+                invoice_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            organisation["id"],
+            invoice_number,
+            plan,
+            amount,
+            "Paid" if amount > 0 else "Trial",
+            str(date.today()),
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Billing and invoice demo data added successfully"
+
+
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
