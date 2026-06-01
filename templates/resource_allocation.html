@@ -22,14 +22,38 @@
 
         {% for item in allocation_data %}
 
-        <div class="card" style="margin-bottom: 30px;">
+        <div class="card" style="margin-bottom: 35px;">
+
+            <div style="margin-bottom: 20px;">
+
+                <h2 style="margin-bottom: 8px;">
+                    {{ item.member.name }}
+                </h2>
+
+                <span class="badge badge-blue">
+                    {{ item.member.role }}
+                </span>
+
+                {% if item.allocation_status == "Available" %}
+                    <span class="badge badge-green">
+                        Available
+                    </span>
+
+                {% elif item.allocation_status == "Allocated" %}
+                    <span class="badge badge-yellow">
+                        Allocated
+                    </span>
+
+                {% else %}
+                    <span class="badge badge-red">
+                        Overallocated
+                    </span>
+
+                {% endif %}
+
+            </div>
 
             <div class="stats-grid">
-
-                <div class="stat-card blue-card">
-                    <h3>{{ item.member.name }}</h3>
-                    <p>{{ item.member.role }}</p>
-                </div>
 
                 <div class="stat-card amber-card">
                     <h3>Active Tasks</h3>
@@ -48,23 +72,14 @@
 
             </div>
 
-            <p>
-                <strong>Status:</strong>
-
-                {% if item.allocation_status == "Available" %}
-                    <span class="badge badge-green">Available</span>
-                {% elif item.allocation_status == "Allocated" %}
-                    <span class="badge badge-yellow">Allocated</span>
-                {% else %}
-                    <span class="badge badge-red">Overallocated</span>
-                {% endif %}
-            </p>
-
-            <h2>Assigned Tasks</h2>
+            <h2 style="margin-top: 25px;">
+                Assigned Tasks
+            </h2>
 
             <div class="table-container">
 
                 <table>
+
                     <thead>
                         <tr>
                             <th>Task</th>
@@ -90,6 +105,7 @@
                         {% endfor %}
 
                     </tbody>
+
                 </table>
 
             </div>
