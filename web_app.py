@@ -1749,6 +1749,19 @@ def can_create_workspace():
 
     return True
 
+def can_use_ai_features():
+
+    organisation = get_user_current_organisation()
+
+    if not organisation:
+        return True
+
+    limits = get_plan_limits(
+        organisation["plan"]
+    )
+
+    return limits["ai_enabled"]
+
 
 
 @app.route("/")
@@ -9036,6 +9049,25 @@ def ai_risk_engine():
     if not has_permission("AI", "view"):
         return "Access denied"
 
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -9110,6 +9142,25 @@ def ai_project_intelligence():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -9254,6 +9305,25 @@ def ai_sprint_management():
     if not has_permission("AI", "view"):
         return "Access denied"
 
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -9346,6 +9416,25 @@ def ai_executive_assistant():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -9456,6 +9545,8 @@ def ai_executive_assistant():
         executive_summary=executive_summary,
         board_recommendation=board_recommendation
     )
+
+
 @app.route("/ai-predictive-risk-scoring")
 def ai_predictive_risk_scoring():
 
@@ -9464,6 +9555,25 @@ def ai_predictive_risk_scoring():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -9598,11 +9708,34 @@ def ai_predictive_risk_scoring():
         risk_predictions=risk_predictions
     )
 
+
 @app.route("/ai-budget-forecasting")
 def ai_budget_forecasting():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -9699,11 +9832,34 @@ def ai_budget_forecasting():
         forecasts=forecasts
     )
 
+
 @app.route("/ai-schedule-forecasting")
 def ai_schedule_forecasting():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("AI", "view"):
+        return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -9804,6 +9960,25 @@ def ai_workload_balancer():
     if not has_permission("AI", "view"):
         return "Access denied"
 
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -9876,6 +10051,7 @@ def ai_workload_balancer():
         workload_data=workload_data
     )
 
+
 @app.route("/ai-resource-optimisation")
 def ai_resource_optimisation():
 
@@ -9884,6 +10060,25 @@ def ai_resource_optimisation():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -9962,6 +10157,7 @@ def ai_resource_optimisation():
         optimisation_data=optimisation_data
     )
 
+
 @app.route("/ai-portfolio-health-predictor")
 def ai_portfolio_health_predictor():
 
@@ -9970,6 +10166,25 @@ def ai_portfolio_health_predictor():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -10130,6 +10345,7 @@ def ai_portfolio_health_predictor():
         recommendation=recommendation
     )
 
+
 @app.route("/ai-project-summary-generator")
 def ai_project_summary_generator():
 
@@ -10138,6 +10354,25 @@ def ai_project_summary_generator():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
@@ -10259,6 +10494,7 @@ def ai_project_summary_generator():
         summaries=summaries
     )
 
+
 @app.route("/ai-pm-copilot")
 def ai_pm_copilot():
 
@@ -10267,6 +10503,25 @@ def ai_pm_copilot():
 
     if not has_permission("AI", "view"):
         return "Access denied"
+
+    if not can_use_ai_features():
+
+        return """
+        <h2>AI Feature Locked</h2>
+
+        <p>
+            AI features are only available on the Professional
+            and Enterprise plans.
+        </p>
+
+        <p>
+            Please upgrade your plan to use AI intelligence features.
+        </p>
+
+        <a href="/subscription-status">
+            View Subscription
+        </a>
+        """
 
     conn = get_db_connection()
 
