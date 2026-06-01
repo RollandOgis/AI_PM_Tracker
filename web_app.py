@@ -3706,7 +3706,7 @@ def login():
 
             if check_password_hash(stored_password, password) or stored_password == password:
 
-                if "is_verified" in user and user["is_verified"] is False:
+                if user.get("email") and user.get("is_verified") is False:
                     return """
                     <h2>Email Not Verified</h2>
                     <p>Please verify your email before logging in.</p>
