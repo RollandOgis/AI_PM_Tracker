@@ -13503,19 +13503,17 @@ def seed_governance_data():
                 user_id,
                 project_id,
                 title,
-                owner,
                 probability,
                 impact,
                 severity_score,
                 status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             risk_titles[i % len(risk_titles)],
-            "Project Manager",
             "High",
             "High",
             8,
@@ -13529,17 +13527,15 @@ def seed_governance_data():
                 user_id,
                 project_id,
                 title,
-                owner,
                 priority,
                 status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
             issue_titles[i % len(issue_titles)],
-            "Project Manager",
             "High",
             "Open",
             str(date.today())
@@ -13629,10 +13625,9 @@ def seed_governance_extra_data():
                 role,
                 influence,
                 interest,
-                engagement_strategy,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
         """, (
             user_id,
             project_id,
@@ -13640,7 +13635,6 @@ def seed_governance_extra_data():
             "Sponsor",
             "High",
             "High",
-            "Weekly updates and governance review involvement",
             str(date.today())
         ))
 
