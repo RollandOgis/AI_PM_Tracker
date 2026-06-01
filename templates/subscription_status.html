@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Subscription Status</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <h1>Subscription Status</h1>
+
+        <p class="page-subtitle">
+            View trial periods and subscription status for organisations.
+        </p>
+
+        <div class="card">
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Organisation</th>
+                            <th>Plan</th>
+                            <th>Trial Start</th>
+                            <th>Trial End</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for organisation in organisations %}
+
+                        <tr>
+
+                            <td>{{ organisation.organisation_name }}</td>
+
+                            <td>{{ organisation.plan }}</td>
+
+                            <td>{{ organisation.trial_start_date }}</td>
+
+                            <td>{{ organisation.trial_end_date }}</td>
+
+                            <td>
+
+                                {% if organisation.subscription_status == "Active" %}
+                                    <span class="badge badge-green">
+                                        Active
+                                    </span>
+
+                                {% elif organisation.subscription_status == "Trial" %}
+                                    <span class="badge badge-yellow">
+                                        Trial
+                                    </span>
+
+                                {% else %}
+                                    <span class="badge badge-red">
+                                        Expired
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

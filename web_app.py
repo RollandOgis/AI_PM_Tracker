@@ -1571,6 +1571,27 @@ def has_permission(
 
     return False
 
+def is_subscription_active(organisation):
+
+    if organisation.get("subscription_status") == "Active":
+        return True
+
+    if organisation.get("subscription_status") == "Trial":
+
+        trial_end = organisation.get("trial_end_date")
+
+        if trial_end:
+
+            end_date = datetime.strptime(
+                trial_end,
+                "%Y-%m-%d"
+            ).date()
+
+            if date.today() <= end_date:
+                return True
+
+    return False
+
 
 @app.route("/")
 def home():
@@ -11812,6 +11833,35 @@ def add_customer_subscription():
         plans=plans
     )
 
+@app.route("/subscription-status")
+def subscription_status():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "subscription_status.html",
+        organisations=organisations
+    )
 
 @app.route("/notification-settings")
 def notification_settings():
