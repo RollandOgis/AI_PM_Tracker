@@ -14324,6 +14324,120 @@ def seed_billing_invoice_data():
 
     return "Billing and invoice demo data added successfully"
 
+@app.route("/seed-admin-data")
+def seed_admin_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    audit_entries = [
+
+        ("Create Project", "Projects", "New project created"),
+        ("Update Risk", "Risks", "Risk severity updated"),
+        ("Approve Change", "Changes", "Change request approved"),
+        ("Add User", "Administration", "User invitation created"),
+        ("Generate Report", "Reports", "Executive report generated"),
+        ("Create Budget", "Finance", "Budget record created"),
+        ("Update Task", "Tasks", "Task status changed"),
+        ("Review Governance", "Governance", "Governance review completed"),
+        ("Switch Workspace", "Workspace", "Workspace changed"),
+        ("Upgrade Plan", "SaaS", "Organisation upgraded plan")
+
+    ]
+
+    for entry in audit_entries:
+
+        cursor.execute("""
+            INSERT INTO audit_logs
+            (
+                user_id,
+                action,
+                module,
+                details,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            entry[0],
+            entry[1],
+            entry[2],
+            str(date.today())
+        ))
+
+    roles = [
+        "Admin",
+        "Project Manager",
+        "PMO",
+        "Executive",
+        "Team Member"
+    ]
+
+    for role in roles:
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                created_at
+            )
+            VALUES (%s,%s,%s)
+        """, (
+            user_id,
+            role,
+            str(date.today())
+        ))
+
+    permission_data = [
+
+        ("Admin", "Projects"),
+        ("Admin", "Governance"),
+        ("Admin", "Finance"),
+        ("Admin", "AI"),
+        ("Project Manager", "Projects"),
+        ("Project Manager", "Governance"),
+        ("PMO", "Reports"),
+        ("Executive", "Portfolio"),
+        ("Team Member", "Tasks")
+
+    ]
+
+    for permission in permission_data:
+
+        cursor.execute("""
+            INSERT INTO permissions
+            (
+                role,
+                module,
+                can_view,
+                can_create,
+                can_edit,
+                can_delete
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            permission[0],
+            permission[1],
+            True,
+            True,
+            True,
+            False
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Administration demo data added successfully"
+
 
 
 
