@@ -318,16 +318,17 @@
                             </div>
 
 
-                      <div class="progress-wrapper">
+                      <div class="overview-progress-wrapper">
 
-    <div class="progress-info">
+    <div class="overview-progress-info">
         <span>Progress</span>
-        <span>{{ item.completion }}%</span>
+        <span>{{ item["completion"] }}%</span>
     </div>
 
-    <div class="project-progress-bar">
+    <div class="overview-progress-track">
         <div
-            class="project-progress-fill progress-{{ item.completion }}"
+            class="overview-progress-fill"
+            data-progress="{{ item['completion'] }}"
         ></div>
     </div>
 
@@ -409,6 +410,15 @@
     </div>
 
 </div>
+
+        <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".overview-progress-fill").forEach(function (bar) {
+            const progress = Number(bar.dataset.progress || 0);
+            bar.style.width = progress + "%";
+        });
+    });
+</script>
 
 </body>
 </html>
