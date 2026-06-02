@@ -1555,6 +1555,81 @@ def is_overdue(due_date, status):
 
     return due_date < str(date.today()) and status != "Completed"
 
+def calculate_weighted_progress(tasks):
+
+    if not tasks:
+        return 0
+
+    progress_points = 0
+
+    for task in tasks:
+
+        status = task["status"]
+
+        if status == "Completed":
+            progress_points += 100
+
+        elif status == "In Progress":
+            progress_points += 50
+
+        elif status == "Blocked":
+            progress_points += 25
+
+        else:
+            progress_points += 0
+
+    return round(progress_points / len(tasks))
+
+
+def calculate_financial_health(budget_amount, actual_cost):
+
+    budget_amount = float(budget_amount or 0)
+    actual_cost = float(actual_cost or 0)
+
+    if budget_amount <= 0:
+        return 50
+
+    usage = round((actual_cost / budget_amount) * 100)
+
+    if usage <= 50:
+        return 90
+
+    elif usage <= 70:
+        return 80
+
+    elif usage <= 90:
+        return 65
+
+    elif usage <= 100:
+        return 50
+
+    else:
+        return max(0, 50 - ((usage - 100) * 2))
+
+
+def calculate_risk_health(high_risks, medium_risks, low_risks, open_issues):
+
+    risk_health = 100
+
+    risk_health -= high_risks * 10
+    risk_health -= medium_risks * 5
+    risk_health -= low_risks * 2
+    risk_health -= open_issues * 4
+
+    return max(0, min(100, round(risk_health)))
+
+
+def get_health_status(score):
+
+    if score >= 75:
+        return "Green"
+
+    elif score >= 50:
+        return "Amber"
+
+    else:
+        return "Red"
+
 # PASTE HERE
 
 def get_current_user_role():
@@ -7253,13 +7328,15 @@ def project_health():
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
+    user_id = session["user_id"]
+
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
         ORDER BY name
     """, (
-        session["user_id"],
+        user_id,
     ))
 
     projects = cursor.fetchall()
@@ -7271,35 +7348,82 @@ def project_health():
         project_id = project["id"]
 
         cursor.execute("""
-            SELECT COUNT(*) AS total_tasks
+            SELECT *
             FROM tasks
             WHERE project_id = %s
         """, (
             project_id,
         ))
 
-        total_tasks = cursor.fetchone()["total_tasks"]
+        tasks = cursor.fetchall()
+
+        total_tasks = len(tasks)
+
+        completed_tasks = len([
+            task for task in tasks
+            if task["status"] == "Completed"
+        ])
+
+        overdue_tasks = len([
+            task for task in tasks
+            if is_overdue(
+                task["due_date"],
+                task["status"]
+            )
+        ])
+
+        blocked_tasks = len([
+            task for task in tasks
+            if task["status"] == "Blocked"
+        ])
+
+        schedule_score = calculate_weighted_progress(tasks)
+
+        if overdue_tasks > 0:
+            schedule_score -= overdue_tasks * 8
+
+        if blocked_tasks > 0:
+            schedule_score -= blocked_tasks * 6
+
+        schedule_score = max(
+            0,
+            min(100, schedule_score)
+        )
 
         cursor.execute("""
-            SELECT COUNT(*) AS completed_tasks
-            FROM tasks
-            WHERE project_id = %s
-            AND status = 'Completed'
-        """, (
-            project_id,
-        ))
-
-        completed_tasks = cursor.fetchone()["completed_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS risk_count
+            SELECT
+                COUNT(*) FILTER (WHERE severity_score >= 6 AND status != 'Closed') AS high_risks,
+                COUNT(*) FILTER (WHERE severity_score >= 3 AND severity_score < 6 AND status != 'Closed') AS medium_risks,
+                COUNT(*) FILTER (WHERE severity_score < 3 AND status != 'Closed') AS low_risks
             FROM risks
             WHERE project_id = %s
         """, (
             project_id,
         ))
 
-        risk_count = cursor.fetchone()["risk_count"]
+        risk_data = cursor.fetchone()
+
+        high_risks = risk_data["high_risks"] or 0
+        medium_risks = risk_data["medium_risks"] or 0
+        low_risks = risk_data["low_risks"] or 0
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project_id,
+        ))
+
+        open_issues = cursor.fetchone()["open_issues"] or 0
+
+        risk_score = calculate_risk_health(
+            high_risks,
+            medium_risks,
+            low_risks,
+            open_issues
+        )
 
         cursor.execute("""
             SELECT *
@@ -7312,43 +7436,23 @@ def project_health():
 
         budget = cursor.fetchone()
 
-        schedule_score = 100
-
-        if total_tasks > 0:
-            schedule_score = round((completed_tasks / total_tasks) * 100)
-
-        risk_score = max(
-            100 - (risk_count * 10),
-            0
-        )
-
-        budget_score = 100
-
         if budget:
-
-            budget_amount = float(budget["budget_amount"] or 0)
-            actual_cost = float(budget["actual_cost"] or 0)
-
-            if budget_amount > 0:
-                budget_score = max(
-                    100 - round((actual_cost / budget_amount) * 100),
-                    0
-                )
+            budget_score = calculate_financial_health(
+                budget["budget_amount"],
+                budget["actual_cost"]
+            )
+        else:
+            budget_score = 50
 
         overall_health = round(
             (
-                schedule_score +
-                risk_score +
-                budget_score
-            ) / 3
+                schedule_score * 0.4 +
+                risk_score * 0.35 +
+                budget_score * 0.25
+            )
         )
 
-        if overall_health >= 75:
-            status = "Green"
-        elif overall_health >= 50:
-            status = "Amber"
-        else:
-            status = "Red"
+        status = get_health_status(overall_health)
 
         project_scores.append({
             "project_name": project["name"],
@@ -7531,16 +7635,10 @@ def executive_dashboard():
     else:
         budget_usage = 0
 
-    if budget_usage <= 50:
-        financial_health = 90
-    elif budget_usage <= 70:
-        financial_health = 80
-    elif budget_usage <= 90:
-        financial_health = 65
-    elif budget_usage <= 100:
-        financial_health = 50
-    else:
-        financial_health = max(0, 50 - ((budget_usage - 100) * 2))
+    financial_health = calculate_financial_health(
+        total_budget,
+        total_actual
+    )
 
     if total_tasks > 0:
         completion_rate = round((completed_tasks / total_tasks) * 100)
@@ -7548,11 +7646,15 @@ def executive_dashboard():
         completion_rate = 0
 
     # Stable Risk Health Formula
-    risk_health = 100
-    risk_health -= high_risks * 8
-    risk_health -= max(total_risks - high_risks, 0) * 3
-    risk_health -= total_issues * 4
-    risk_health = max(0, min(100, round(risk_health)))
+    medium_risks = max(total_risks - high_risks, 0)
+    low_risks = 0
+
+    risk_health = calculate_risk_health(
+        high_risks,
+        medium_risks,
+        low_risks,
+        total_issues
+    )
 
     # Stable Portfolio Health Formula
     delivery_score = completion_rate
@@ -7606,12 +7708,9 @@ def executive_dashboard():
         ) / 5
     )
 
-    if overall_executive_health >= 75:
-        executive_status = "Green"
-    elif overall_executive_health >= 50:
-        executive_status = "Amber"
-    else:
-        executive_status = "Red"
+    executive_status = get_health_status(
+        overall_executive_health
+    )
 
     executive_recommendations = []
 
