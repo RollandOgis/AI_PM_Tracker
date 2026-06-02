@@ -2689,37 +2689,33 @@ td {
     background: #22c55e;
 }
 
-/* CLEAN PROJECT CARD SHOWCASE ALIGNMENT */
+/* SIMPLE PROJECT CARD ALIGNMENT FIX */
 
 .projects-grid .project-card {
-    min-height: 720px;
+    min-height: 700px;
 }
 
 .projects-grid .project-card .project-top {
-    min-height: 270px;
+    min-height: auto;
 }
 
 .projects-grid .project-card .project-actions {
-    margin-top: 22px;
-    margin-bottom: 14px;
-}
-
-.projects-grid .project-card .project-card-body {
-    min-height: 285px;
+    margin-top: 18px;
+    margin-bottom: 16px;
 }
 
 .projects-grid .project-card .recommendation-box {
-    min-height: 155px;
+    min-height: 140px;
 }
 
 .projects-grid .project-card .overview-progress-wrapper {
-    margin-top: 18px;
+    margin-top: 22px;
 }
 
 .projects-grid .project-card .project-dates {
-    min-height: 78px;
+    margin-top: 22px;
 }
 
 .projects-grid .project-card .budget-section {
-    margin-top: 0;
+    margin-top: 22px;
 }
