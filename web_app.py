@@ -13461,15 +13461,28 @@ def seed_linkedin_demo():
     user_id = session["user_id"]
     today = str(date.today())
 
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM projects
-        WHERE user_id = %s
-    """, (user_id,))
+    # Remove previous LinkedIn demo data
 
-    if cursor.fetchone()[0] > 0:
-        conn.close()
-        return "LinkedIn demo data already exists. Clear demo data first."
+    cursor.execute("""
+                   DELETE
+                   FROM tasks
+                   WHERE project_id IN (SELECT id
+                                        FROM projects
+                                        WHERE user_id = %s)
+                   """, (user_id,))
+
+    cursor.execute("DELETE FROM risks WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM issues WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM benefits WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM assumptions WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM dependencies WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM approvals WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM stage_gates WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM governance_reviews WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM budgets WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM projects WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM clients WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM team_members WHERE user_id = %s", (user_id,))
 
     # =====================
     # CLIENTS
@@ -14295,6 +14308,39 @@ def seed_linkedin_demo():
     conn.close()
 
     return "LinkedIn-ready AI PM Tracker demo data added successfully"
+
+
+@app.route("/reset-linkedin-demo")
+def reset_linkedin_demo():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        DELETE FROM tasks
+        WHERE project_id IN (
+            SELECT id FROM projects
+            WHERE user_id = %s
+        )
+    """, (user_id,))
+
+    cursor.execute("DELETE FROM risks WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM issues WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM benefits WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM budgets WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM clients WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM team_members WHERE user_id = %s", (user_id,))
+    cursor.execute("DELETE FROM projects WHERE user_id = %s", (user_id,))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/seed-linkedin-demo")
 
 
 if __name__ == "__main__":
