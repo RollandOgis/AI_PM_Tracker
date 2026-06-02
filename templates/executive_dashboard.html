@@ -103,21 +103,7 @@
                 <h3>Executive Recommendation</h3>
 
                 <div class="smart-insight">
-
-                    {% if executive_status == "Green" %}
-
-                        Portfolio performance is healthy. Continue monitoring delivery, finances and risks.
-
-                    {% elif executive_status == "Amber" %}
-
-                        Portfolio performance is moderate. Focus attention on risk exposure, delivery slippage and budget consumption.
-
-                    {% else %}
-
-                        Portfolio performance requires immediate management intervention and recovery planning.
-
-                    {% endif %}
-
+                    {{ executive_recommendation }}
                 </div>
 
             </div>

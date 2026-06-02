@@ -7323,8 +7323,7 @@ def executive_dashboard():
     cursor.execute("""
         SELECT COUNT(*) AS total_tasks
         FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
+        JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
     """, (session["user_id"],))
     total_tasks = cursor.fetchone()["total_tasks"]
@@ -7332,62 +7331,40 @@ def executive_dashboard():
     cursor.execute("""
         SELECT COUNT(*) AS completed_tasks
         FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
+        JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
         AND tasks.status = 'Completed'
     """, (session["user_id"],))
     completed_tasks = cursor.fetchone()["completed_tasks"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS overdue_tasks
-                        FROM tasks
-                        JOIN projects
-                        ON tasks.project_id = projects.id
-                         WHERE projects.user_id = %s
-                         AND tasks.status != 'Completed'
-                         AND tasks.due_date IS NOT NULL
-                         AND tasks.due_date != ''
-                       AND TO_DATE(tasks.due_date, 'YYYY-MM-DD') < CURRENT_DATE
-                   """, (session["user_id"],))
-
+        SELECT COUNT(*) AS overdue_tasks
+        FROM tasks
+        JOIN projects ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status != 'Completed'
+        AND tasks.due_date IS NOT NULL
+        AND tasks.due_date != ''
+        AND TO_DATE(tasks.due_date, 'YYYY-MM-DD') < CURRENT_DATE
+    """, (session["user_id"],))
     overdue_tasks = cursor.fetchone()["overdue_tasks"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS blocked_tasks
-                   FROM tasks
-                            JOIN projects
-                                 ON tasks.project_id = projects.id
-                   WHERE projects.user_id = %s
-                     AND tasks.status = 'Blocked'
-                   """, (session["user_id"],))
-
+        SELECT COUNT(*) AS blocked_tasks
+        FROM tasks
+        JOIN projects ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Blocked'
+    """, (session["user_id"],))
     blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
     cursor.execute("""
-                   SELECT COUNT(*) AS over_budget_projects
-                   FROM budgets
-                   WHERE user_id = %s
-                     AND actual_cost > budget_amount
-                   """, (session["user_id"],))
-
+        SELECT COUNT(*) AS over_budget_projects
+        FROM budgets
+        WHERE user_id = %s
+        AND actual_cost > budget_amount
+    """, (session["user_id"],))
     over_budget_projects = cursor.fetchone()["over_budget_projects"]
-
-    portfolio_health = 100
-
-    portfolio_health -= overdue_tasks * 3
-    portfolio_health -= blocked_tasks * 2
-    portfolio_health -= over_budget_projects * 5
-
-    portfolio_health += (
-                                completed_tasks /
-                                max(total_tasks, 1)
-                        ) * 20
-
-    portfolio_health = max(
-        0,
-        min(100, round(portfolio_health))
-    )
 
     cursor.execute("""
         SELECT COUNT(*) AS total_risks
@@ -7411,18 +7388,19 @@ def executive_dashboard():
     """, (session["user_id"],))
     high_risks = cursor.fetchone()["high_risks"]
 
-    # Risk Health
+    portfolio_health = 100
+    portfolio_health -= overdue_tasks * 3
+    portfolio_health -= blocked_tasks * 2
+    portfolio_health -= over_budget_projects * 5
+    portfolio_health -= min(total_risks * 0.5, 15)
+    portfolio_health -= min(total_issues * 0.5, 15)
+    portfolio_health += (completed_tasks / max(total_tasks, 1)) * 20
+    portfolio_health = max(0, min(100, round(portfolio_health)))
+
     risk_health = 100
-
-    risk_health -= high_risks * 5
-    risk_health -= (
-                           total_risks - high_risks
-                   ) * 2
-
-    risk_health = max(
-        0,
-        min(100, risk_health)
-    )
+    risk_health -= min(high_risks * 2, 70)
+    risk_health -= min((total_risks - high_risks) * 1, 20)
+    risk_health = max(0, min(100, round(risk_health)))
 
     cursor.execute("""
         SELECT COUNT(*) AS total_benefits
@@ -7440,9 +7418,7 @@ def executive_dashboard():
     realised_benefits = cursor.fetchone()["realised_benefits"]
 
     if total_benefits > 0:
-        benefits_health = round(
-            (realised_benefits / total_benefits) * 100
-        )
+        benefits_health = round((realised_benefits / total_benefits) * 100)
     else:
         benefits_health = 0
 
@@ -7456,36 +7432,20 @@ def executive_dashboard():
 
     budget_data = cursor.fetchone()
 
-    total_budget = float(
-        budget_data["total_budget"] or 0
-    )
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual = float(budget_data["total_actual"] or 0)
 
-    total_actual = float(
-        budget_data["total_actual"] or 0
-    )
-
-    # Financial Health
     if total_budget > 0:
-
-        budget_usage = round(
-            (total_actual / total_budget) * 100
-        )
+        budget_usage = round((total_actual / total_budget) * 100)
 
         if budget_usage <= 70:
             financial_health = 100
-
         elif budget_usage <= 90:
             financial_health = 80
-
         elif budget_usage <= 100:
             financial_health = 60
-
         else:
-            financial_health = max(
-                0,
-                60 - ((budget_usage - 100) * 2)
-            )
-
+            financial_health = max(0, 60 - ((budget_usage - 100) * 2))
     else:
         financial_health = 0
 
@@ -7494,34 +7454,21 @@ def executive_dashboard():
         FROM team_members
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_team_members = cursor.fetchone()["total_team_members"]
 
-    # Resource Health
-    active_tasks = (
-            total_tasks -
-            completed_tasks
-    )
+    active_tasks = total_tasks - completed_tasks
 
     if total_team_members > 0:
-
-        tasks_per_person = (
-                active_tasks /
-                total_team_members
-        )
+        tasks_per_person = active_tasks / total_team_members
 
         if tasks_per_person <= 5:
             resource_health = 90
-
         elif tasks_per_person <= 10:
             resource_health = 75
-
         elif tasks_per_person <= 15:
             resource_health = 60
-
         else:
             resource_health = 40
-
     else:
         resource_health = 0
 
@@ -7537,19 +7484,65 @@ def executive_dashboard():
 
     if overall_executive_health >= 75:
         executive_status = "Green"
-
     elif overall_executive_health >= 50:
         executive_status = "Amber"
-
     else:
         executive_status = "Red"
+
+    executive_recommendations = []
+
+    if portfolio_health < 50:
+        executive_recommendations.append(
+            "Portfolio performance requires recovery planning."
+        )
+
+    if risk_health < 50:
+        executive_recommendations.append(
+            "High portfolio risk exposure requires mitigation review."
+        )
+
+    if financial_health < 60:
+        executive_recommendations.append(
+            "Financial controls should be reviewed."
+        )
+
+    if resource_health < 60:
+        executive_recommendations.append(
+            "Resource workload balancing is recommended."
+        )
+
+    if benefits_health < 50:
+        executive_recommendations.append(
+            "Benefits realisation is below target."
+        )
+
+    if overdue_tasks > 0:
+        executive_recommendations.append(
+            f"Resolve {overdue_tasks} overdue task(s)."
+        )
+
+    if blocked_tasks > 0:
+        executive_recommendations.append(
+            f"Escalate {blocked_tasks} blocked task(s)."
+        )
+
+    if over_budget_projects > 0:
+        executive_recommendations.append(
+            f"Review {over_budget_projects} over-budget project(s)."
+        )
+
+    if not executive_recommendations:
+        executive_recommendations.append(
+            "Portfolio performance is healthy. Continue current execution plan."
+        )
+
+    executive_recommendation = " ".join(executive_recommendations)
 
     cursor.execute("""
         SELECT COUNT(*) AS total_assumptions
         FROM assumptions
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_assumptions = cursor.fetchone()["total_assumptions"]
 
     cursor.execute("""
@@ -7557,7 +7550,6 @@ def executive_dashboard():
         FROM dependencies
         WHERE user_id = %s
     """, (session["user_id"],))
-
     total_dependencies = cursor.fetchone()["total_dependencies"]
 
     raid_total = (
@@ -7569,10 +7561,8 @@ def executive_dashboard():
 
     if raid_total <= 5:
         raid_health = "Green"
-
     elif raid_total <= 12:
         raid_health = "Amber"
-
     else:
         raid_health = "Red"
 
@@ -7582,7 +7572,6 @@ def executive_dashboard():
         WHERE user_id = %s
         AND status = 'Completed'
     """, (session["user_id"],))
-
     healthy_projects = cursor.fetchone()["healthy_projects"]
 
     cursor.execute("""
@@ -7591,7 +7580,6 @@ def executive_dashboard():
         WHERE user_id = %s
         AND status = 'In Progress'
     """, (session["user_id"],))
-
     active_projects = cursor.fetchone()["active_projects"]
 
     conn.close()
@@ -7601,6 +7589,9 @@ def executive_dashboard():
         total_projects=total_projects,
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
+        overdue_tasks=overdue_tasks,
+        blocked_tasks=blocked_tasks,
+        over_budget_projects=over_budget_projects,
         total_risks=total_risks,
         total_issues=total_issues,
         high_risks=high_risks,
@@ -7618,7 +7609,8 @@ def executive_dashboard():
         healthy_projects=healthy_projects,
         active_projects=active_projects,
         overall_executive_health=overall_executive_health,
-        executive_status=executive_status
+        executive_status=executive_status,
+        executive_recommendation=executive_recommendation
     )
 
 @app.route("/resource-heatmap")
