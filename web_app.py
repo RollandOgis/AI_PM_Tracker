@@ -14906,7 +14906,38 @@ def seed_menu():
     """
 
 
+@app.route("/clear-demo-data")
+def clear_demo_data():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    cursor.execute("DELETE FROM tasks WHERE project_id IN (SELECT id FROM projects WHERE user_id=%s)", (user_id,))
+    cursor.execute("DELETE FROM risks WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM issues WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM changes WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM benefits WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM stakeholders WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM decisions WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM actions WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM lessons WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM stage_gates WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM approvals WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM governance_reviews WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM budgets WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM projects WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM team_members WHERE user_id=%s", (user_id,))
+    cursor.execute("DELETE FROM clients WHERE user_id=%s", (user_id,))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo data cleared"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
