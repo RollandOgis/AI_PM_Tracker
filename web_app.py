@@ -13433,9 +13433,8 @@ def portfolio_kanban():
         grouped_projects=grouped_projects
     )
 
-@app.route("/clear-saas-demo-data")
-def clear_saas_demo_data():
-
+@app.route("/seed-linkedin-demo")
+def seed_linkedin_demo():
     if "user_id" not in session:
         return redirect("/login")
 
@@ -13443,24 +13442,16 @@ def clear_saas_demo_data():
     cursor = conn.cursor()
 
     user_id = session["user_id"]
+    today = str(date.today())
 
-    cursor.execute("DELETE FROM billing_history WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM invoices WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM email_notifications WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM notification_settings WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM customer_subscriptions WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM subscription_plans WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM user_invitations WHERE invited_by = %s", (user_id,))
-    cursor.execute("DELETE FROM user_roles WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM permissions")
-    cursor.execute("DELETE FROM workspaces WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM organisations WHERE user_id = %s", (user_id,))
-    cursor.execute("DELETE FROM audit_logs WHERE user_id = %s", (user_id,))
+    cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = %s", (user_id,))
+    existing_projects = cursor.fetchone()[0]
 
-    conn.commit()
-    conn.close()
+    if existing_projects > 0:
+        conn.close()
+        return "LinkedIn demo already seeded. Clear demo data first."
 
-    return "SaaS demo data cleared successfully"
+    return "Ready for LinkedIn demo seed route"
 
 
 
