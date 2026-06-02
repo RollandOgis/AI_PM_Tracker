@@ -7341,12 +7341,14 @@ def executive_dashboard():
 
     cursor.execute("""
                    SELECT COUNT(*) AS overdue_tasks
-                   FROM tasks
-                            JOIN projects
-                                 ON tasks.project_id = projects.id
-                   WHERE projects.user_id = %s
-                     AND tasks.status != 'Completed'
-    AND tasks.due_date < CURRENT_DATE
+                        FROM tasks
+                        JOIN projects
+                        ON tasks.project_id = projects.id
+                         WHERE projects.user_id = %s
+                         AND tasks.status != 'Completed'
+                         AND tasks.due_date IS NOT NULL
+                         AND tasks.due_date != ''
+                       AND TO_DATE(tasks.due_date, 'YYYY-MM-DD') < CURRENT_DATE
                    """, (session["user_id"],))
 
     overdue_tasks = cursor.fetchone()["overdue_tasks"]
