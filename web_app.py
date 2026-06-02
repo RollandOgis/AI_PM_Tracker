@@ -7338,9 +7338,10 @@ def executive_dashboard():
     """, (session["user_id"],))
     high_risks = cursor.fetchone()["high_risks"]
 
+    # Risk Health
     risk_health = max(
-        100 - (high_risks * 20),
-        0
+        100 - (high_risks * 10),
+        20
     )
 
     cursor.execute("""
@@ -7383,13 +7384,28 @@ def executive_dashboard():
         budget_data["total_actual"] or 0
     )
 
+    # Financial Health
     if total_budget > 0:
-        financial_health = max(
-            100 - round(
-                (total_actual / total_budget) * 100
-            ),
-            0
+
+        budget_usage = round(
+            (total_actual / total_budget) * 100
         )
+
+        if budget_usage <= 70:
+            financial_health = 100
+
+        elif budget_usage <= 90:
+            financial_health = 80
+
+        elif budget_usage <= 100:
+            financial_health = 60
+
+        else:
+            financial_health = max(
+                0,
+                60 - ((budget_usage - 100) * 2)
+            )
+
     else:
         financial_health = 0
 
@@ -7401,10 +7417,18 @@ def executive_dashboard():
 
     total_team_members = cursor.fetchone()["total_team_members"]
 
-    resource_health = 100
-
+    # Resource Health
     if total_team_members == 0:
         resource_health = 0
+
+    elif total_team_members <= 3:
+        resource_health = 70
+
+    elif total_team_members <= 10:
+        resource_health = 85
+
+    else:
+        resource_health = 100
 
     overall_executive_health = round(
         (
