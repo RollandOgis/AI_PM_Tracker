@@ -2119,9 +2119,14 @@ def home():
                 and project_overdue_tasks == 0
                 and project_blocked_tasks == 0
         ):
-            ai_recommendation.append(
-                "Delivery healthy. Continue current execution plan."
-            )
+            if project["status"] == "Completed":
+                ai_recommendation.append(
+                    "Project successfully delivered. Closure and benefits tracking are underway."
+                )
+            else:
+                ai_recommendation.append(
+                    "Delivery healthy. Continue current execution plan."
+                )
 
         if (
                 completion < 30
