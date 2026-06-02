@@ -2623,3 +2623,11 @@ td {
 .projects-grid .budget-section {
     margin-top: auto;
 }
+
+.projects-grid .project-short-description {
+    margin-top: 14px;
+    min-height: 54px;
+    font-size: 15px;
+    line-height: 1.35;
+    color: #374151;
+}

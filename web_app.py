@@ -2043,6 +2043,9 @@ def home():
         else:
             completion = 0
 
+        if project["status"] == "Completed":
+            completion = 100
+
         if project["status"] == "Planning" and completion == 0 and budget_used_percent > 0:
             completion = min(25, max(10, budget_used_percent))
 
@@ -2124,9 +2127,14 @@ def home():
                 completion < 30
                 and project_overdue_tasks == 0
         ):
-            ai_recommendation.append(
-                "Project delivery pace is behind schedule."
-            )
+            if project["status"] == "Planning":
+                ai_recommendation.append(
+                    "Planning activities are underway. Delivery mobilisation is progressing."
+                )
+            else:
+                ai_recommendation.append(
+                    "Project delivery pace is behind schedule."
+                )
 
         if len(ai_recommendation) == 0:
             ai_recommendation.append(
@@ -2141,6 +2149,7 @@ def home():
                 project["start_date"],
                 project["end_date"]
             ),
+            "description": project["description"],
             "tasks": task_list,
             "completion": completion,
             "estimated_budget": estimated_budget,
