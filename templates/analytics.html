@@ -13,7 +13,6 @@
 <div class="layout">
      {% include "sidebar.html" %}
 
-
     <div class="main-content">
 
         <div class="dashboard-header">
@@ -39,7 +38,7 @@
 
             <div class="stat-card">
                 <h3>In Progress</h3>
-                <p>{{ progress_tasks }}</p>
+                <p>{{ in_progress_tasks }}</p>
             </div>
 
             <div class="stat-card">
@@ -75,7 +74,7 @@
                     </div>
 
                     <div class="smart-insight">
-                        <strong>{{ progress_tasks }}</strong> task(s) are currently in progress.
+                        <strong>{{ in_progress_tasks }}</strong> task(s) are currently in progress.
                     </div>
 
                     <div class="smart-insight">
@@ -123,7 +122,7 @@
 
 <script>
     const completedTasks = Number("{{ completed_tasks }}");
-    const progressTasks = Number("{{ progress_tasks }}");
+    const progressTasks = Number("{{ in_progress_tasks }}");
     const pendingTasks = Number("{{ pending_tasks }}");
     const blockedTasks = Number("{{ blocked_tasks }}");
 
