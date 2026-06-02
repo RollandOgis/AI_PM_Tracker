@@ -1,303 +1,144 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Dashboard</title>
+<div class="project-card">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-
-<body>
-
-<div class="layout">
-
-    {% include "sidebar.html" %}
-
-    <div class="main-content">
-
-        <div class="dashboard-header">
-
-            <div>
-
-                <h1>Executive Dashboard</h1>
-
-                <p class="dashboard-subtitle">
-                    Enterprise portfolio overview across delivery, governance, finance, resources and benefits.
-                </p>
-
-            </div>
-
-        </div>
-
-        <div class="stats-grid">
-
-            <div class="stat-card blue-card">
-
-                <h3>Projects</h3>
-
-                <p>{{ total_projects }}</p>
-
-            </div>
-
-            <div class="stat-card green-card">
-
-                <h3>Portfolio Health</h3>
-
-                <p>{{ portfolio_health }}%</p>
-
-            </div>
-
-            <div class="stat-card amber-card">
-
-                <h3>Financial Health</h3>
-
-                <p>{{ financial_health }}%</p>
-
-            </div>
-
-            <div class="stat-card red-card">
-
-                <h3>Risk Health</h3>
-
-                <p>{{ risk_health }}%</p>
-
-            </div>
-
-        </div>
-
-        <div class="workload-summary-grid">
-
-            <div class="project-card">
-
-                <h3>Executive Health Summary</h3>
-
-                <div class="smart-insight">
-
-                    <p>
-
-                        Overall Executive Health:
-
-                        <strong>
-                            {{ overall_executive_health }}%
-                        </strong>
-
-                    </p>
-
-                    <p>
-
-                        Status:
-
-                        <strong>
-                            {{ executive_status }}
-                        </strong>
-
-                    </p>
-
-                </div>
-
-            </div>
-
-            <div class="project-card">
-
-                <h3>Executive Recommendation</h3>
-
-                <div class="smart-insight">
-                    {{ executive_recommendation }}
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class="projects-grid">
-
-            <div class="project-card">
-
-                <h3>Portfolio Performance</h3>
-
-                <div class="budget-section">
-
-                    <div class="budget-row">
-                        <span>Total Tasks</span>
-                        <strong>{{ total_tasks }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Completed Tasks</span>
-                        <strong>{{ completed_tasks }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Portfolio Health</span>
-                        <strong>{{ portfolio_health }}%</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="project-card">
-
-                <h3>Risk Overview</h3>
-
-                <div class="budget-section">
-
-                    <div class="budget-row">
-                        <span>Total Risks</span>
-                        <strong>{{ total_risks }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>High Risks</span>
-                        <strong>{{ high_risks }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Risk Health</span>
-                        <strong>{{ risk_health }}%</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-          <div class="project-card">
-
-    <h3>RAID Analytics</h3>
+    <h3>Portfolio Summary</h3>
 
     <div class="budget-section">
 
         <div class="budget-row">
-            <span>Risks</span>
-            <strong>{{ total_risks }}</strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Assumptions</span>
-            <strong>{{ total_assumptions }}</strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Issues</span>
-            <strong>{{ total_issues }}</strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Dependencies</span>
-            <strong>{{ total_dependencies }}</strong>
-        </div>
-
-        <div class="budget-row">
-            <span>RAID Total</span>
-            <strong>{{ raid_total }}</strong>
-        </div>
-
-        <div class="budget-row">
-            <span>RAID Health</span>
-            <strong>{{ raid_health }}</strong>
-        </div>
-
-    </div>
-
-</div>
-          <div class="project-card">
-
-    <h3>Project Health Summary</h3>
-
-    <div class="budget-section">
-
-        <div class="budget-row">
-
-            <span>Healthy Projects</span>
-
-            <strong>{{ healthy_projects }}</strong>
-
-        </div>
-
-        <div class="budget-row">
-
-            <span>Active Projects</span>
-
-            <strong>{{ active_projects }}</strong>
-
-        </div>
-
-        <div class="budget-row">
-
             <span>Total Projects</span>
-
             <strong>{{ total_projects }}</strong>
-
         </div>
 
-    </div>
+        <div class="budget-row">
+            <span>Active Projects</span>
+            <strong>{{ active_projects }}</strong>
+        </div>
 
-    <div class="smart-insight">
+        <div class="budget-row">
+            <span>Completed Projects</span>
+            <strong>{{ healthy_projects }}</strong>
+        </div>
 
-        Portfolio currently contains
-        {{ total_projects }}
-        projects.
-
-    </div>
-
-</div>
-
-            <div class="project-card">
-
-                <h3>Benefits Overview</h3>
-
-                <div class="budget-section">
-
-                    <div class="budget-row">
-                        <span>Total Benefits</span>
-                        <strong>{{ total_benefits }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Realised Benefits</span>
-                        <strong>{{ realised_benefits }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Benefits Health</span>
-                        <strong>{{ benefits_health }}%</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <div class="project-card">
-
-                <h3>Resource Overview</h3>
-
-                <div class="budget-section">
-
-                    <div class="budget-row">
-                        <span>Resource Health</span>
-                        <strong>{{ resource_health }}%</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Executive Status</span>
-                        <strong>{{ executive_status }}</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Financial Health</span>
-                        <strong>{{ financial_health }}%</strong>
-                    </div>
-
-                </div>
-
-            </div>
-
+        <div class="budget-row">
+            <span>Portfolio Completion</span>
+            <strong>{{ portfolio_completion }}%</strong>
         </div>
 
     </div>
 
 </div>
 
-</body>
-</html>
+<div class="project-card">
+
+    <h3>Team Summary</h3>
+
+    <div class="budget-section">
+
+        <div class="budget-row">
+            <span>Team Members</span>
+            <strong>{{ total_team_members }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Active Tasks</span>
+            <strong>{{ active_tasks }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Tasks Per Resource</span>
+            <strong>{{ tasks_per_person }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Workload Status</span>
+            <strong>{{ workload_status }}</strong>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="project-card">
+
+    <h3>Trend Indicators</h3>
+
+    <div class="budget-section">
+
+        <div class="budget-row">
+            <span>Portfolio Trend</span>
+            <strong>{{ portfolio_trend }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Risk Trend</span>
+            <strong>{{ risk_trend }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Resource Trend</span>
+            <strong>{{ resource_trend }}</strong>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="project-card">
+
+    <h3>Forecast Analytics</h3>
+
+    <div class="budget-section">
+
+        <div class="budget-row">
+            <span>Completion Rate</span>
+            <strong>{{ completion_rate }}%</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Forecast Status</span>
+            <strong>{{ forecast_status }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Overdue Tasks</span>
+            <strong>{{ overdue_tasks }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Blocked Tasks</span>
+            <strong>{{ blocked_tasks }}</strong>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="project-card">
+
+    <h3>Resource Analytics</h3>
+
+    <div class="budget-section">
+
+        <div class="budget-row">
+            <span>Total Resources</span>
+            <strong>{{ total_team_members }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Average Workload</span>
+            <strong>{{ tasks_per_person }}</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Resource Health</span>
+            <strong>{{ resource_health }}%</strong>
+        </div>
+
+        <div class="budget-row">
+            <span>Workload Status</span>
+            <strong>{{ workload_status }}</strong>
+        </div>
+
+    </div>
+
+</div>

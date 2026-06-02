@@ -7313,11 +7313,13 @@ def executive_dashboard():
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
+    user_id = session["user_id"]
+
     cursor.execute("""
         SELECT COUNT(*) AS total_projects
         FROM projects
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_projects = cursor.fetchone()["total_projects"]
 
     cursor.execute("""
@@ -7325,7 +7327,7 @@ def executive_dashboard():
         FROM tasks
         JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_tasks = cursor.fetchone()["total_tasks"]
 
     cursor.execute("""
@@ -7334,7 +7336,7 @@ def executive_dashboard():
         JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
         AND tasks.status = 'Completed'
-    """, (session["user_id"],))
+    """, (user_id,))
     completed_tasks = cursor.fetchone()["completed_tasks"]
 
     cursor.execute("""
@@ -7346,7 +7348,7 @@ def executive_dashboard():
         AND tasks.due_date IS NOT NULL
         AND tasks.due_date != ''
         AND TO_DATE(tasks.due_date, 'YYYY-MM-DD') < CURRENT_DATE
-    """, (session["user_id"],))
+    """, (user_id,))
     overdue_tasks = cursor.fetchone()["overdue_tasks"]
 
     cursor.execute("""
@@ -7355,7 +7357,7 @@ def executive_dashboard():
         JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
         AND tasks.status = 'Blocked'
-    """, (session["user_id"],))
+    """, (user_id,))
     blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
     cursor.execute("""
@@ -7363,21 +7365,21 @@ def executive_dashboard():
         FROM budgets
         WHERE user_id = %s
         AND actual_cost > budget_amount
-    """, (session["user_id"],))
+    """, (user_id,))
     over_budget_projects = cursor.fetchone()["over_budget_projects"]
 
     cursor.execute("""
         SELECT COUNT(*) AS total_risks
         FROM risks
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_risks = cursor.fetchone()["total_risks"]
 
     cursor.execute("""
         SELECT COUNT(*) AS total_issues
         FROM issues
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_issues = cursor.fetchone()["total_issues"]
 
     cursor.execute("""
@@ -7385,7 +7387,7 @@ def executive_dashboard():
         FROM risks
         WHERE user_id = %s
         AND severity_score >= 6
-    """, (session["user_id"],))
+    """, (user_id,))
     high_risks = cursor.fetchone()["high_risks"]
 
     portfolio_health = 100
@@ -7406,7 +7408,7 @@ def executive_dashboard():
         SELECT COUNT(*) AS total_benefits
         FROM benefits
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_benefits = cursor.fetchone()["total_benefits"]
 
     cursor.execute("""
@@ -7414,7 +7416,7 @@ def executive_dashboard():
         FROM benefits
         WHERE user_id = %s
         AND status = 'Realised'
-    """, (session["user_id"],))
+    """, (user_id,))
     realised_benefits = cursor.fetchone()["realised_benefits"]
 
     if total_benefits > 0:
@@ -7428,7 +7430,7 @@ def executive_dashboard():
             SUM(actual_cost) AS total_actual
         FROM budgets
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
 
     budget_data = cursor.fetchone()
 
@@ -7447,19 +7449,20 @@ def executive_dashboard():
         else:
             financial_health = max(0, 60 - ((budget_usage - 100) * 2))
     else:
+        budget_usage = 0
         financial_health = 0
 
     cursor.execute("""
         SELECT COUNT(*) AS total_team_members
         FROM team_members
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_team_members = cursor.fetchone()["total_team_members"]
 
     active_tasks = total_tasks - completed_tasks
 
     if total_team_members > 0:
-        tasks_per_person = active_tasks / total_team_members
+        tasks_per_person = round(active_tasks / total_team_members, 1)
 
         if tasks_per_person <= 5:
             resource_health = 90
@@ -7470,6 +7473,7 @@ def executive_dashboard():
         else:
             resource_health = 40
     else:
+        tasks_per_person = 0
         resource_health = 0
 
     overall_executive_health = round(
@@ -7542,14 +7546,14 @@ def executive_dashboard():
         SELECT COUNT(*) AS total_assumptions
         FROM assumptions
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_assumptions = cursor.fetchone()["total_assumptions"]
 
     cursor.execute("""
         SELECT COUNT(*) AS total_dependencies
         FROM dependencies
         WHERE user_id = %s
-    """, (session["user_id"],))
+    """, (user_id,))
     total_dependencies = cursor.fetchone()["total_dependencies"]
 
     raid_total = (
@@ -7571,7 +7575,7 @@ def executive_dashboard():
         FROM projects
         WHERE user_id = %s
         AND status = 'Completed'
-    """, (session["user_id"],))
+    """, (user_id,))
     healthy_projects = cursor.fetchone()["healthy_projects"]
 
     cursor.execute("""
@@ -7579,8 +7583,52 @@ def executive_dashboard():
         FROM projects
         WHERE user_id = %s
         AND status = 'In Progress'
-    """, (session["user_id"],))
+    """, (user_id,))
     active_projects = cursor.fetchone()["active_projects"]
+
+    if total_projects > 0:
+        portfolio_completion = round((healthy_projects / total_projects) * 100)
+    else:
+        portfolio_completion = 0
+
+    completion_rate = round(
+        (completed_tasks / max(total_tasks, 1)) * 100
+    )
+
+    if portfolio_health >= 70:
+        portfolio_trend = "▲ Healthy"
+    elif portfolio_health >= 40:
+        portfolio_trend = "► Watch"
+    else:
+        portfolio_trend = "▼ Declining"
+
+    if risk_health >= 70:
+        risk_trend = "▲ Controlled"
+    elif risk_health >= 40:
+        risk_trend = "► Watch"
+    else:
+        risk_trend = "▼ High Risk"
+
+    if resource_health >= 70:
+        resource_trend = "▲ Stable"
+    elif resource_health >= 50:
+        resource_trend = "► Moderate"
+    else:
+        resource_trend = "▼ Pressure"
+
+    if completion_rate < 50:
+        forecast_status = "Behind Plan"
+    elif completion_rate < 75:
+        forecast_status = "Needs Monitoring"
+    else:
+        forecast_status = "On Track"
+
+    if tasks_per_person > 15:
+        workload_status = "High"
+    elif tasks_per_person > 8:
+        workload_status = "Moderate"
+    else:
+        workload_status = "Healthy"
 
     conn.close()
 
@@ -7610,7 +7658,18 @@ def executive_dashboard():
         active_projects=active_projects,
         overall_executive_health=overall_executive_health,
         executive_status=executive_status,
-        executive_recommendation=executive_recommendation
+        executive_recommendation=executive_recommendation,
+        total_team_members=total_team_members,
+        active_tasks=active_tasks,
+        tasks_per_person=tasks_per_person,
+        portfolio_completion=portfolio_completion,
+        completion_rate=completion_rate,
+        budget_usage=budget_usage,
+        portfolio_trend=portfolio_trend,
+        risk_trend=risk_trend,
+        resource_trend=resource_trend,
+        forecast_status=forecast_status,
+        workload_status=workload_status
     )
 
 @app.route("/resource-heatmap")
@@ -13449,6 +13508,7 @@ def seed_demo_data():
 
     return "Demo clients and team members added successfully"
 
+
 @app.route("/seed-projects-and-budgets")
 def seed_projects_and_budgets():
 
@@ -13535,6 +13595,1287 @@ def seed_projects_and_budgets():
     conn.close()
 
     return "Demo projects and budgets added successfully"
+
+@app.route("/seed-governance-data")
+def seed_governance_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    risk_titles = [
+        "Supplier Delay",
+        "Budget Overrun",
+        "Resource Shortage",
+        "Scope Creep",
+        "Security Vulnerability",
+        "Vendor Dependency",
+        "Stakeholder Resistance",
+        "Data Quality Risk",
+        "Integration Failure",
+        "Regulatory Compliance Risk"
+    ]
+
+    issue_titles = [
+        "API Failure",
+        "Server Downtime",
+        "Missing Requirements",
+        "Testing Delay",
+        "Vendor Escalation",
+        "Data Migration Error",
+        "Performance Issue",
+        "Security Defect",
+        "Reporting Failure",
+        "Environment Outage"
+    ]
+
+    change_titles = [
+        "Additional Reporting Requirement",
+        "UI Redesign Request",
+        "Database Migration",
+        "Compliance Update",
+        "Infrastructure Upgrade",
+        "New Dashboard Request",
+        "Workflow Enhancement",
+        "Security Requirement Change"
+    ]
+
+    benefit_titles = [
+        "Reduce Processing Time",
+        "Increase Revenue",
+        "Improve Customer Satisfaction",
+        "Reduce Manual Work",
+        "Improve Reporting Accuracy",
+        "Improve Compliance",
+        "Reduce Operational Costs",
+        "Increase Productivity"
+    ]
+
+    for i, project in enumerate(projects):
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            INSERT INTO risks
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                probability,
+                impact,
+                severity_score,
+                mitigation,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            risk_titles[i % len(risk_titles)],
+            "Demo risk created for testing dashboards and AI risk analysis.",
+            "High",
+            "High",
+            8,
+            "Create mitigation plan and monitor weekly.",
+            "Project Manager",
+            "Open",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO issues
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                priority,
+                owner,
+                status,
+                resolution,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            issue_titles[i % len(issue_titles)],
+            "Demo issue created for testing issue management and reporting.",
+            "High",
+            "Project Manager",
+            "Open",
+            "Resolution pending.",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO changes
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                impact,
+                requested_by,
+                approval_status,
+                implementation_plan,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            change_titles[i % len(change_titles)],
+            "Demo change request created for change control testing.",
+            "Medium impact on scope, timeline or budget.",
+            "Project Sponsor",
+            "Pending",
+            "Review through change control board.",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO benefits
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                expected_value,
+                measurement_method,
+                owner,
+                status,
+                target_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            benefit_titles[i % len(benefit_titles)],
+            "Demo benefit created for benefits tracking.",
+            "Improved operational value",
+            "Measured through KPIs and monthly reporting",
+            "Benefits Owner",
+            "Tracking",
+            "2026-12-31",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Governance demo data added successfully"
+
+@app.route("/seed-governance-extra-data")
+def seed_governance_extra_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    for i, project in enumerate(projects):
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            INSERT INTO stakeholders
+            (
+                user_id,
+                project_id,
+                name,
+                role,
+                influence,
+                interest,
+                communication_plan,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Stakeholder {i + 1}",
+            "Sponsor",
+            "High",
+            "High",
+            "Weekly project update and monthly governance review.",
+            "Project Manager",
+            "Active",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO decisions
+            (
+                user_id,
+                project_id,
+                title,
+                decision_maker,
+                impact,
+                reason,
+                status,
+                decision_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Decision {i + 1}",
+            "Project Board",
+            "Medium",
+            "Approved current delivery approach to maintain momentum.",
+            "Approved",
+            str(date.today()),
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO actions
+            (
+                user_id,
+                project_id,
+                title,
+                description,
+                owner,
+                priority,
+                status,
+                due_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Action {i + 1}",
+            "Follow up on open project governance item.",
+            "Project Manager",
+            "High",
+            "Open",
+            "2026-07-15",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO lessons
+            (
+                user_id,
+                project_id,
+                title,
+                what_happened,
+                what_went_well,
+                what_went_wrong,
+                recommendation,
+                owner,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Lesson {i + 1}",
+            "A delivery challenge occurred during project execution.",
+            "Stakeholder communication improved after weekly updates were introduced.",
+            "Earlier alignment would have reduced delays.",
+            "Hold discovery workshops before major delivery phases.",
+            "Project Manager",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO stage_gates
+            (
+                user_id,
+                project_id,
+                stage_name,
+                status,
+                reviewer,
+                comments,
+                review_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            "Initiation Gate",
+            "Approved",
+            "Programme Manager",
+            "Proceed to next phase.",
+            str(date.today()),
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Extra governance demo data added successfully"
+
+@app.route("/seed-demo-tasks")
+def seed_demo_tasks():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id, name
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 15
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    task_templates = [
+
+        (
+            "Define Project Scope",
+            "Create detailed project scope and objectives.",
+            "High",
+            "Completed"
+        ),
+
+        (
+            "Gather Requirements",
+            "Conduct workshops and collect requirements.",
+            "High",
+            "In Progress"
+        ),
+
+        (
+            "Create Delivery Plan",
+            "Prepare project schedule and milestones.",
+            "Medium",
+            "Completed"
+        ),
+
+        (
+            "Create RAID Log",
+            "Document risks, assumptions, issues and dependencies.",
+            "Medium",
+            "Pending"
+        ),
+
+        (
+            "Design Review",
+            "Review technical and business design.",
+            "High",
+            "Pending"
+        ),
+
+        (
+            "Develop Solution",
+            "Build agreed functionality.",
+            "High",
+            "In Progress"
+        ),
+
+        (
+            "System Testing",
+            "Execute testing activities.",
+            "Medium",
+            "Pending"
+        ),
+
+        (
+            "User Acceptance Testing",
+            "Run UAT and obtain sign-off.",
+            "Medium",
+            "Blocked"
+        ),
+
+        (
+            "Deployment Preparation",
+            "Prepare release checklist.",
+            "Medium",
+            "Pending"
+        ),
+
+        (
+            "Project Closure",
+            "Complete closure report and lessons learned.",
+            "Low",
+            "Pending"
+        )
+
+    ]
+
+    team_names = [
+
+        "Sarah Johnson",
+        "Michael Brown",
+        "David Wilson",
+        "Emma Smith",
+        "James Taylor",
+        "Sophia White",
+        "Daniel Green",
+        "Olivia Harris",
+        "Ethan Walker",
+        "Ava Martin"
+
+    ]
+
+    for i, project in enumerate(projects):
+
+        for j, task in enumerate(task_templates):
+
+            due_day = min(28, 5 + j)
+
+            estimated_hours = 20 + (j * 5)
+
+            actual_hours = max(
+                0,
+                estimated_hours - 5
+            )
+
+            hourly_rate = 75
+
+            cursor.execute("""
+                INSERT INTO tasks
+                (
+                    project_id,
+                    title,
+                    description,
+                    assigned_to,
+                    priority,
+                    status,
+                    due_date,
+                    created_at,
+                    estimated_hours,
+                    actual_hours,
+                    hourly_rate
+                )
+                VALUES
+                (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+
+                project["id"],
+                task[0],
+                task[1],
+                team_names[
+                    (i + j) % len(team_names)
+                ],
+                task[2],
+                task[3],
+                f"2026-07-{due_day:02d}",
+                str(date.today()),
+                estimated_hours,
+                actual_hours,
+                hourly_rate
+
+            ))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo tasks added successfully"
+
+
+@app.route("/seed-portfolio-programme-data")
+def seed_portfolio_programme_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    programmes = [
+        (
+            "Digital Transformation Programme",
+            "Enterprise-wide digital delivery programme.",
+            "Chief Transformation Officer",
+            "Michael Brown",
+            "In Progress",
+            "2026-06-01",
+            "2027-06-30",
+            2500000,
+            "Improved efficiency, better reporting and reduced manual work.",
+            "Resource pressure, supplier delays and budget exposure."
+        ),
+        (
+            "Infrastructure Modernisation Programme",
+            "Modernisation of construction and infrastructure delivery.",
+            "Operations Director",
+            "Sarah Johnson",
+            "Planning",
+            "2026-07-01",
+            "2027-12-31",
+            4000000,
+            "Improved delivery control and safer operations.",
+            "Regulatory delays and procurement issues."
+        ),
+        (
+            "SaaS Platform Commercialisation",
+            "Commercialisation of the AI PM Tracker SaaS platform.",
+            "Product Sponsor",
+            "Sophia White",
+            "In Progress",
+            "2026-05-01",
+            "2026-12-31",
+            500000,
+            "Revenue generation and scalable SaaS capability.",
+            "Security, billing and production readiness risks."
+        )
+    ]
+
+    for programme in programmes:
+
+        cursor.execute("""
+            INSERT INTO programmes
+            (
+                user_id,
+                programme_name,
+                description,
+                sponsor,
+                manager,
+                status,
+                start_date,
+                end_date,
+                budget,
+                benefits,
+                risks,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            programme[0],
+            programme[1],
+            programme[2],
+            programme[3],
+            programme[4],
+            programme[5],
+            programme[6],
+            programme[7],
+            programme[8],
+            programme[9],
+            str(date.today())
+        ))
+
+    for i, project in enumerate(projects):
+
+        business_value = 8 - (i % 3)
+        strategic_alignment = 9 - (i % 4)
+        risk_score = 4 + (i % 5)
+        cost_score = 5 + (i % 4)
+
+        priority_score = (
+            business_value
+            + strategic_alignment
+            - risk_score
+            + cost_score
+        )
+
+        cursor.execute("""
+            INSERT INTO project_prioritisation
+            (
+                user_id,
+                project_id,
+                business_value_score,
+                strategic_alignment_score,
+                risk_score,
+                cost_score,
+                priority_score,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project["id"],
+            business_value,
+            strategic_alignment,
+            risk_score,
+            cost_score,
+            priority_score,
+            str(date.today())
+        ))
+
+    cursor.execute("""
+        INSERT INTO portfolio_health
+        (
+            user_id,
+            health_score,
+            risk_exposure,
+            financial_health,
+            performance_score,
+            trend,
+            commentary,
+            created_at
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        76,
+        42,
+        81,
+        74,
+        "Stable",
+        "Portfolio is broadly healthy, with moderate risk exposure and improving financial control.",
+        str(date.today())
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return "Portfolio and programme demo data added successfully"
+
+@app.route("/seed-approvals-reviews-data")
+def seed_approvals_reviews_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 10
+    """, (
+        user_id,
+    ))
+
+    projects = cursor.fetchall()
+
+    if not projects:
+        conn.close()
+        return "Create projects first"
+
+    for i, project in enumerate(projects):
+
+        project_id = project["id"]
+
+        cursor.execute("""
+            INSERT INTO approvals
+            (
+                user_id,
+                project_id,
+                item_type,
+                item_id,
+                submitted_by,
+                approver,
+                status,
+                submitted_date,
+                decision_date,
+                comments
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            "Change Request",
+            project_id,
+            "Project Manager",
+            "Programme Manager",
+            "Approved" if i % 2 == 0 else "Pending",
+            date.today(),
+            date.today() if i % 2 == 0 else None,
+            "Demo approval record for governance testing."
+        ))
+
+        cursor.execute("""
+            INSERT INTO governance_reviews
+            (
+                user_id,
+                project_id,
+                review_name,
+                review_type,
+                review_date,
+                outcome,
+                decision,
+                actions,
+                owner,
+                next_review_date,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            f"Monthly Governance Review {i + 1}",
+            "Monthly Review",
+            date.today(),
+            "Project reviewed against scope, risk, budget and delivery indicators.",
+            "Continue with current delivery approach.",
+            "Review open risks and update action owners.",
+            "Project Manager",
+            date.today(),
+            "Completed" if i % 2 == 0 else "Scheduled",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Approvals and governance reviews demo data added successfully"
+
+@app.route("/seed-billing-invoice-data")
+def seed_billing_invoice_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id, organisation_name, plan
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 5
+    """, (
+        user_id,
+    ))
+
+    organisations = cursor.fetchall()
+
+    if not organisations:
+        conn.close()
+        return "Create organisations first"
+
+    for i, organisation in enumerate(organisations):
+
+        plan = organisation["plan"] or "Professional"
+
+        if plan == "Enterprise":
+            amount = 9900
+        elif plan == "Professional":
+            amount = 4900
+        elif plan == "Basic":
+            amount = 1900
+        else:
+            amount = 0
+
+        reference_number = f"BILL-{organisation['id']}-{i + 1:03d}"
+        invoice_number = f"INV-{organisation['id']}-{i + 1:03d}"
+
+        cursor.execute("""
+            INSERT INTO billing_history
+            (
+                user_id,
+                organisation_id,
+                plan,
+                amount,
+                status,
+                reference_number,
+                billing_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            organisation["id"],
+            plan,
+            amount,
+            "Paid" if amount > 0 else "Trial",
+            reference_number,
+            str(date.today()),
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO invoices
+            (
+                user_id,
+                organisation_id,
+                invoice_number,
+                plan,
+                amount,
+                status,
+                invoice_date,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            organisation["id"],
+            invoice_number,
+            plan,
+            amount,
+            "Paid" if amount > 0 else "Trial",
+            str(date.today()),
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Billing and invoice demo data added successfully"
+
+@app.route("/seed-admin-data")
+def seed_admin_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    audit_entries = [
+
+        ("Create Project", "Projects", "New project created"),
+        ("Update Risk", "Risks", "Risk severity updated"),
+        ("Approve Change", "Changes", "Change request approved"),
+        ("Add User", "Administration", "User invitation created"),
+        ("Generate Report", "Reports", "Executive report generated"),
+        ("Create Budget", "Finance", "Budget record created"),
+        ("Update Task", "Tasks", "Task status changed"),
+        ("Review Governance", "Governance", "Governance review completed"),
+        ("Switch Workspace", "Workspace", "Workspace changed"),
+        ("Upgrade Plan", "SaaS", "Organisation upgraded plan")
+
+    ]
+
+    for entry in audit_entries:
+
+        cursor.execute("""
+            INSERT INTO audit_logs
+            (
+                user_id,
+                action,
+                module,
+                details,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            entry[0],
+            entry[1],
+            entry[2],
+            str(date.today())
+        ))
+
+    roles = [
+        "Admin",
+        "Project Manager",
+        "PMO",
+        "Executive",
+        "Team Member"
+    ]
+
+    for role in roles:
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                created_at
+            )
+            VALUES (%s,%s,%s)
+        """, (
+            user_id,
+            role,
+            str(date.today())
+        ))
+
+    permission_data = [
+
+        ("Admin", "Projects"),
+        ("Admin", "Governance"),
+        ("Admin", "Finance"),
+        ("Admin", "AI"),
+        ("Project Manager", "Projects"),
+        ("Project Manager", "Governance"),
+        ("PMO", "Reports"),
+        ("Executive", "Portfolio"),
+        ("Team Member", "Tasks")
+
+    ]
+
+    for permission in permission_data:
+
+        cursor.execute("""
+            INSERT INTO permissions
+            (
+                role,
+                module,
+                can_view,
+                can_create,
+                can_edit,
+                can_delete
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            permission[0],
+            permission[1],
+            True,
+            True,
+            True,
+            False
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Administration demo data added successfully"
+
+@app.route("/seed-saas-extra-data")
+def seed_saas_extra_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    user_id = session["user_id"]
+
+    cursor.execute("""
+        SELECT id, organisation_name
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY id
+        LIMIT 5
+    """, (
+        user_id,
+    ))
+
+    organisations = cursor.fetchall()
+
+    if not organisations:
+        conn.close()
+        return "Create organisations first"
+
+    workspace_types = [
+        "Project Delivery",
+        "Portfolio Office",
+        "Finance",
+        "Resource Management",
+        "Executive"
+    ]
+
+    for i, organisation in enumerate(organisations):
+
+        cursor.execute("""
+            INSERT INTO workspaces
+            (
+                user_id,
+                organisation_id,
+                workspace_name,
+                workspace_type,
+                owner,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            organisation["id"],
+            f"{organisation['organisation_name']} Workspace",
+            workspace_types[i % len(workspace_types)],
+            "Workspace Admin",
+            "Active",
+            str(date.today())
+        ))
+
+        workspace = cursor.fetchone()
+        workspace_id = workspace["id"]
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                organisation_id,
+                workspace_id,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            "Admin",
+            organisation["id"],
+            workspace_id,
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO user_invitations
+            (
+                organisation_id,
+                workspace_id,
+                invited_email,
+                role,
+                status,
+                invitation_token,
+                invited_by,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            organisation["id"],
+            workspace_id,
+            f"user{i + 1}@demo-company.com",
+            "Team Member",
+            "Pending",
+            str(uuid.uuid4()),
+            user_id,
+            str(date.today())
+        ))
+
+    subscription_plans = [
+        ("Free", 0, "Monthly", 3, 1, "Basic project tracking", "Active"),
+        ("Basic", 19, "Monthly", 10, 3, "Projects, tasks and governance", "Active"),
+        ("Professional", 49, "Monthly", 50, 10, "AI features, portfolio and advanced reporting", "Active"),
+        ("Enterprise", 99, "Monthly", 9999, 9999, "Unlimited usage, enterprise governance and premium support", "Active")
+    ]
+
+    for plan in subscription_plans:
+
+        cursor.execute("""
+            INSERT INTO subscription_plans
+            (
+                user_id,
+                plan_name,
+                price,
+                billing_cycle,
+                max_projects,
+                max_users,
+                features,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            plan[0],
+            plan[1],
+            plan[2],
+            plan[3],
+            plan[4],
+            plan[5],
+            plan[6],
+            str(date.today())
+        ))
+
+    email_notifications = [
+        ("admin@demo-company.com", "Trial Started", "Your organisation trial has started.", "Draft"),
+        ("finance@demo-company.com", "Invoice Created", "A new invoice has been generated.", "Draft"),
+        ("sponsor@demo-company.com", "Governance Review Reminder", "Your monthly governance review is due.", "Draft"),
+        ("team@demo-company.com", "Project Risk Alert", "A high risk has been identified.", "Draft"),
+        ("owner@demo-company.com", "Subscription Reminder", "Your subscription requires attention.", "Draft")
+    ]
+
+    for notification in email_notifications:
+
+        cursor.execute("""
+            INSERT INTO email_notifications
+            (
+                user_id,
+                recipient_email,
+                subject,
+                message,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            notification[0],
+            notification[1],
+            notification[2],
+            notification[3],
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "SaaS extra demo data added successfully"
+
+@app.route("/seed-notification-settings-data")
+def seed_notification_settings_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    settings = [
+        ("Project Alerts", "Email", "Yes", "Daily"),
+        ("Risk Alerts", "Email", "Yes", "Immediate"),
+        ("Issue Alerts", "Email", "Yes", "Immediate"),
+        ("Billing Alerts", "Email", "Yes", "Monthly"),
+        ("Governance Reviews", "Email", "Yes", "Weekly"),
+        ("Subscription Reminders", "Email", "Yes", "Weekly"),
+        ("AI Insights", "Dashboard", "Yes", "Daily"),
+        ("Task Reminders", "Dashboard", "Yes", "Daily")
+    ]
+
+    for setting in settings:
+
+        cursor.execute("""
+            INSERT INTO notification_settings
+            (
+                user_id,
+                notification_type,
+                channel,
+                enabled,
+                frequency,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            setting[0],
+            setting[1],
+            setting[2],
+            setting[3],
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Notification settings demo data added successfully"
+
+@app.route("/seed-menu")
+def seed_menu():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    return """
+    <h2>Demo Data Seed Menu</h2>
+
+    <p>Run these once to populate the platform with realistic test data.</p>
+
+    <ul>
+        <li><a href="/seed-demo-data">Seed Clients & Team Members</a></li>
+        <li><a href="/seed-projects-and-budgets">Seed Projects & Budgets</a></li>
+        <li><a href="/seed-demo-tasks">Seed Tasks</a></li>
+        <li><a href="/seed-governance-data">Seed Governance Data</a></li>
+        <li><a href="/seed-governance-extra-data">Seed Extra Governance Data</a></li>
+        <li><a href="/seed-portfolio-programme-data">Seed Portfolio & Programme Data</a></li>
+        <li><a href="/seed-approvals-reviews-data">Seed Approvals & Reviews</a></li>
+        <li><a href="/seed-billing-invoice-data">Seed Billing & Invoice Data</a></li>
+        <li><a href="/seed-admin-data">Seed Admin Data</a></li>
+        <li><a href="/seed-saas-extra-data">Seed SaaS Extra Data</a></li>
+        <li><a href="/seed-notification-settings-data">Seed Notification Settings</a></li>
+    </ul>
+
+    <br>
+
+    <p><strong>Important:</strong> remove these seed routes before production.</p>
+    """
 
 
 
