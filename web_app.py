@@ -7372,6 +7372,7 @@ def executive_dashboard():
         SELECT COUNT(*) AS total_risks
         FROM risks
         WHERE user_id = %s
+        AND status != 'Closed'
     """, (user_id,))
     total_risks = cursor.fetchone()["total_risks"]
 
@@ -7379,6 +7380,7 @@ def executive_dashboard():
         SELECT COUNT(*) AS total_issues
         FROM issues
         WHERE user_id = %s
+        AND status != 'Closed'
     """, (user_id,))
     total_issues = cursor.fetchone()["total_issues"]
 
@@ -7387,22 +7389,9 @@ def executive_dashboard():
         FROM risks
         WHERE user_id = %s
         AND severity_score >= 6
+        AND status != 'Closed'
     """, (user_id,))
     high_risks = cursor.fetchone()["high_risks"]
-
-    portfolio_health = 100
-    portfolio_health -= overdue_tasks * 3
-    portfolio_health -= blocked_tasks * 2
-    portfolio_health -= over_budget_projects * 5
-    portfolio_health -= min(total_risks * 0.5, 15)
-    portfolio_health -= min(total_issues * 0.5, 15)
-    portfolio_health += (completed_tasks / max(total_tasks, 1)) * 20
-    portfolio_health = max(0, min(100, round(portfolio_health)))
-
-    risk_health = 100
-    risk_health -= min(high_risks * 2, 70)
-    risk_health -= min((total_risks - high_risks) * 1, 20)
-    risk_health = max(0, min(100, round(risk_health)))
 
     cursor.execute("""
         SELECT COUNT(*) AS total_benefits
@@ -7422,12 +7411,12 @@ def executive_dashboard():
     if total_benefits > 0:
         benefits_health = round((realised_benefits / total_benefits) * 100)
     else:
-        benefits_health = 0
+        benefits_health = 50
 
     cursor.execute("""
         SELECT
-            SUM(budget_amount) AS total_budget,
-            SUM(actual_cost) AS total_actual
+            COALESCE(SUM(budget_amount), 0) AS total_budget,
+            COALESCE(SUM(actual_cost), 0) AS total_actual
         FROM budgets
         WHERE user_id = %s
     """, (user_id,))
@@ -7439,18 +7428,49 @@ def executive_dashboard():
 
     if total_budget > 0:
         budget_usage = round((total_actual / total_budget) * 100)
-
-        if budget_usage <= 70:
-            financial_health = 100
-        elif budget_usage <= 90:
-            financial_health = 80
-        elif budget_usage <= 100:
-            financial_health = 60
-        else:
-            financial_health = max(0, 60 - ((budget_usage - 100) * 2))
     else:
         budget_usage = 0
-        financial_health = 0
+
+    if budget_usage <= 50:
+        financial_health = 90
+    elif budget_usage <= 70:
+        financial_health = 80
+    elif budget_usage <= 90:
+        financial_health = 65
+    elif budget_usage <= 100:
+        financial_health = 50
+    else:
+        financial_health = max(0, 50 - ((budget_usage - 100) * 2))
+
+    if total_tasks > 0:
+        completion_rate = round((completed_tasks / total_tasks) * 100)
+    else:
+        completion_rate = 0
+
+    # Stable Risk Health Formula
+    risk_health = 100
+    risk_health -= high_risks * 8
+    risk_health -= max(total_risks - high_risks, 0) * 3
+    risk_health -= total_issues * 4
+    risk_health = max(0, min(100, round(risk_health)))
+
+    # Stable Portfolio Health Formula
+    delivery_score = completion_rate
+    governance_score = risk_health
+    finance_score = financial_health
+
+    portfolio_health = round(
+        (
+            delivery_score * 0.4 +
+            governance_score * 0.35 +
+            finance_score * 0.25
+        )
+    )
+
+    portfolio_health -= overdue_tasks * 5
+    portfolio_health -= blocked_tasks * 7
+    portfolio_health -= over_budget_projects * 8
+    portfolio_health = max(0, min(100, portfolio_health))
 
     cursor.execute("""
         SELECT COUNT(*) AS total_team_members
@@ -7464,11 +7484,11 @@ def executive_dashboard():
     if total_team_members > 0:
         tasks_per_person = round(active_tasks / total_team_members, 1)
 
-        if tasks_per_person <= 5:
+        if tasks_per_person <= 3:
             resource_health = 90
-        elif tasks_per_person <= 10:
+        elif tasks_per_person <= 6:
             resource_health = 75
-        elif tasks_per_person <= 15:
+        elif tasks_per_person <= 10:
             resource_health = 60
         else:
             resource_health = 40
@@ -7495,24 +7515,24 @@ def executive_dashboard():
 
     executive_recommendations = []
 
-    if portfolio_health < 50:
+    if portfolio_health < 60:
         executive_recommendations.append(
-            "Portfolio performance requires recovery planning."
+            "Portfolio delivery needs closer management attention."
         )
 
-    if risk_health < 50:
+    if risk_health < 70:
         executive_recommendations.append(
-            "High portfolio risk exposure requires mitigation review."
+            f"Review {high_risks} high-severity risk(s)."
         )
 
-    if financial_health < 60:
+    if financial_health < 70:
         executive_recommendations.append(
-            "Financial controls should be reviewed."
+            "Budget usage requires monitoring."
         )
 
-    if resource_health < 60:
+    if resource_health < 70:
         executive_recommendations.append(
-            "Resource workload balancing is recommended."
+            "Resource workload should be reviewed."
         )
 
     if benefits_health < 50:
@@ -7537,7 +7557,7 @@ def executive_dashboard():
 
     if not executive_recommendations:
         executive_recommendations.append(
-            "Portfolio performance is healthy. Continue current execution plan."
+            "Portfolio is stable. Continue monitoring delivery, risks and financial controls."
         )
 
     executive_recommendation = " ".join(executive_recommendations)
@@ -7563,9 +7583,9 @@ def executive_dashboard():
         total_dependencies
     )
 
-    if raid_total <= 5:
+    if raid_total <= 8:
         raid_health = "Green"
-    elif raid_total <= 12:
+    elif raid_total <= 16:
         raid_health = "Amber"
     else:
         raid_health = "Red"
@@ -7591,41 +7611,37 @@ def executive_dashboard():
     else:
         portfolio_completion = 0
 
-    completion_rate = round(
-        (completed_tasks / max(total_tasks, 1)) * 100
-    )
-
-    if portfolio_health >= 70:
+    if portfolio_health >= 75:
         portfolio_trend = "▲ Healthy"
-    elif portfolio_health >= 40:
+    elif portfolio_health >= 50:
         portfolio_trend = "► Watch"
     else:
         portfolio_trend = "▼ Declining"
 
-    if risk_health >= 70:
+    if risk_health >= 75:
         risk_trend = "▲ Controlled"
-    elif risk_health >= 40:
+    elif risk_health >= 50:
         risk_trend = "► Watch"
     else:
         risk_trend = "▼ High Risk"
 
-    if resource_health >= 70:
+    if resource_health >= 75:
         resource_trend = "▲ Stable"
     elif resource_health >= 50:
         resource_trend = "► Moderate"
     else:
         resource_trend = "▼ Pressure"
 
-    if completion_rate < 50:
+    if completion_rate < 40:
         forecast_status = "Behind Plan"
-    elif completion_rate < 75:
+    elif completion_rate < 70:
         forecast_status = "Needs Monitoring"
     else:
         forecast_status = "On Track"
 
-    if tasks_per_person > 15:
+    if tasks_per_person > 10:
         workload_status = "High"
-    elif tasks_per_person > 8:
+    elif tasks_per_person > 6:
         workload_status = "Moderate"
     else:
         workload_status = "Healthy"
