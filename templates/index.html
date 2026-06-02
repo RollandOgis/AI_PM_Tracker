@@ -204,7 +204,10 @@
 
                     {% for item in projects %}
 
-                        <div class="project-card">
+                        <div class="project-card
+                            {% if item['project'][2] == 'Planning' %}planning-project{% endif %}
+                            {% if item['project'][2] == 'Completed' %}completed-project{% endif %}
+                            ">
 
                             <div class="project-top">
 

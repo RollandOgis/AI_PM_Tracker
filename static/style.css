@@ -2631,3 +2631,15 @@ td {
     line-height: 1.35;
     color: #374151;
 }
+
+.project-card.completed-project {
+    border-left: 6px solid #22c55e;
+}
+
+.project-card.planning-project {
+    border-left: 6px solid #f59e0b;
+}
+
+.project-actions {
+    margin-bottom: 12px;
+}
