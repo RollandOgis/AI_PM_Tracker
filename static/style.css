@@ -2643,3 +2643,19 @@ td {
 .project-actions {
     margin-bottom: 12px;
 }
+
+.project-short-description {
+    margin-bottom: 20px;
+}
+
+.progress-planning {
+    background: #f59e0b;
+}
+
+.progress-in-progress {
+    background: #2563eb;
+}
+
+.progress-completed {
+    background: #22c55e;
+}
