@@ -2166,6 +2166,22 @@ def home():
         )
     )
 
+    status_showcase_priority = {
+        "Planning": 1,
+        "In Progress": 2,
+        "Completed": 3
+    }
+
+    all_projects = sorted(
+        all_projects,
+        key=lambda item: (
+            status_showcase_priority.get(
+                item["project"][2],
+                4
+            ),
+            -item["completion"]
+        )
+    )
 
     upcoming_deadlines = sorted(
         upcoming_deadlines,

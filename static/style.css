@@ -1169,18 +1169,47 @@ body.dark-ready {
 
 .project-actions {
     display: flex;
-    gap: 14px;
+    gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-.project-actions a {
+.project-action {
     text-decoration: none;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 700;
-    color: #2563eb;
+    cursor: pointer;
+    transition: 0.2s ease;
 }
 
-.project-actions a:hover {
-    text-decoration: underline;
+.view-action {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.view-action:hover {
+    background: #bfdbfe;
+}
+
+.edit-action {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.edit-action:hover {
+    background: #bbf7d0;
+}
+
+.delete-action {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.delete-action:hover {
+    background: #fecaca;
 }
 
 .search-form {
@@ -2431,4 +2460,49 @@ td {
     display: block;
 }
 
+.project-status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.status-planning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-in-progress {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status-completed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.projects-grid .project-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 620px;
+}
+
+.projects-grid .project-card .smart-insight {
+    margin-bottom: 10px;
+}
+
+.projects-grid .project-card .recommendation-box {
+    min-height: 140px;
+}
+
+.projects-grid .project-card .project-top {
+    min-height: 90px;
+}
+
+.projects-grid .project-card .budget-section {
+    margin-top: auto;
+}
 
