@@ -2663,6 +2663,49 @@ td {
     margin-top: auto;
 }
 
+/* FINAL HARD FIX FOR OVERVIEW PROJECT CARD ALIGNMENT */
+
+.projects-grid .project-card .project-top {
+    height: 235px;
+    min-height: 235px;
+    max-height: 235px;
+}
+
+.projects-grid .project-card .project-actions {
+    margin-top: 18px;
+}
+
+.projects-grid .project-card .project-card-body {
+    height: 300px;
+    min-height: 300px;
+    max-height: 300px;
+}
+
+.projects-grid .project-card .smart-insight {
+    min-height: 58px;
+}
+
+.projects-grid .project-card .recommendation-box {
+    height: 150px;
+    min-height: 150px;
+    max-height: 150px;
+}
+
+.projects-grid .project-card .overview-progress-wrapper {
+    height: 56px;
+    min-height: 56px;
+    margin-top: 10px;
+}
+
+.projects-grid .project-card .project-dates {
+    height: 70px;
+    min-height: 70px;
+}
+
+.projects-grid .project-card .budget-section {
+    margin-top: 0;
+}
+
 .project-card.planning-project {
     border-left: 6px solid #f59e0b;
 }
