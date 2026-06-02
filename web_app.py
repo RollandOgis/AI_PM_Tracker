@@ -13346,6 +13346,195 @@ def portfolio_kanban():
         grouped_projects=grouped_projects
     )
 
+@app.route("/seed-demo-data")
+def seed_demo_data():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    # CLIENTS
+    demo_clients = [
+        ("NHS Trust", "Healthcare", "contact@nhstrust-demo.com", "02070000001", "Active", "Healthcare digital transformation client", 250000),
+        ("HS2 Programme", "Transport", "contact@hs2-demo.com", "02070000002", "Active", "Infrastructure delivery programme", 500000),
+        ("Tesco PLC", "Retail", "contact@tesco-demo.com", "02070000003", "Active", "Retail systems and operations client", 300000),
+        ("Barclays Bank", "Finance", "contact@barclays-demo.com", "02070000004", "Lead", "Banking and compliance client", 450000),
+        ("Amazon UK", "Logistics", "contact@amazon-demo.com", "02070000005", "Active", "Warehouse and fulfilment optimisation client", 600000),
+        ("Microsoft UK", "Technology", "contact@microsoft-demo.com", "02070000006", "Lead", "Cloud and enterprise technology client", 700000),
+        ("University of Bedfordshire", "Education", "contact@beds-demo.com", "02070000007", "Active", "Education technology client", 150000),
+        ("BP Energy", "Energy", "contact@bp-demo.com", "02070000008", "Lead", "Energy systems transformation client", 400000),
+        ("Rolls Royce", "Manufacturing", "contact@rolls-demo.com", "02070000009", "Active", "Manufacturing excellence client", 550000),
+        ("Network Rail", "Rail", "contact@networkrail-demo.com", "02070000010", "Active", "Rail infrastructure client", 350000)
+    ]
+
+    for client in demo_clients:
+
+        cursor.execute("""
+            INSERT INTO clients
+            (
+                user_id,
+                name,
+                company,
+                email,
+                phone,
+                status,
+                notes,
+                estimated_value,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            client[0],
+            client[1],
+            client[2],
+            client[3],
+            client[4],
+            client[5],
+            client[6],
+            str(date.today())
+        ))
+
+    # TEAM MEMBERS
+    demo_team = [
+        ("Sarah Johnson", "Project Manager", "sarah.demo@example.com", "07100000001", "PRINCE2, Agile, Governance", "Active"),
+        ("Michael Brown", "Programme Manager", "michael.demo@example.com", "07100000002", "Programme Delivery, Stakeholders", "Active"),
+        ("David Wilson", "PMO Analyst", "david.demo@example.com", "07100000003", "Reporting, RAID, Excel", "Active"),
+        ("Emma Smith", "Business Analyst", "emma.demo@example.com", "07100000004", "Requirements, Process Mapping", "Active"),
+        ("James Taylor", "Scrum Master", "james.demo@example.com", "07100000005", "Scrum, Sprint Planning", "Active"),
+        ("Sophia White", "Product Owner", "sophia.demo@example.com", "07100000006", "Backlog, Roadmap, Stakeholders", "Active"),
+        ("Daniel Green", "Software Developer", "daniel.demo@example.com", "07100000007", "Python, Flask, APIs", "Active"),
+        ("Olivia Harris", "Software Developer", "olivia.demo@example.com", "07100000008", "React, JavaScript, UI", "Active"),
+        ("Ethan Walker", "QA Engineer", "ethan.demo@example.com", "07100000009", "Testing, Automation, UAT", "Active"),
+        ("Ava Martin", "QA Engineer", "ava.demo@example.com", "07100000010", "Regression Testing, Test Plans", "Active"),
+        ("Noah Clark", "Solution Architect", "noah.demo@example.com", "07100000011", "Architecture, Cloud, Security", "Active"),
+        ("Mia Lewis", "UX Designer", "mia.demo@example.com", "07100000012", "UX, Wireframes, Prototypes", "Active"),
+        ("Liam Young", "Data Analyst", "liam.demo@example.com", "07100000013", "SQL, Dashboards, Data Quality", "Active"),
+        ("Grace Hall", "Finance Manager", "grace.demo@example.com", "07100000014", "Budgets, Forecasting, Cost Control", "Active"),
+        ("Henry Allen", "Resource Manager", "henry.demo@example.com", "07100000015", "Capacity Planning, Allocation", "Active")
+    ]
+
+    for member in demo_team:
+
+        cursor.execute("""
+            INSERT INTO team_members
+            (
+                user_id,
+                name,
+                role,
+                email,
+                phone,
+                skills,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            member[0],
+            member[1],
+            member[2],
+            member[3],
+            member[4],
+            member[5],
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo clients and team members added successfully"
+
+@app.route("/seed-projects-and-budgets")
+def seed_projects_and_budgets():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session["user_id"]
+
+    demo_projects = [
+        ("New Hospital Development", "Construction of a modern healthcare facility.", "In Progress", "2026-06-01", "2026-12-20", 850000, 420000),
+        ("School Expansion Programme", "Expansion of classrooms and learning facilities.", "Planning", "2026-06-10", "2026-11-30", 350000, 90000),
+        ("Smart Highway Upgrade", "Road infrastructure upgrade with smart traffic systems.", "In Progress", "2026-06-15", "2027-02-28", 1200000, 560000),
+        ("Staff Sign-In System", "Digital staff sign-in and attendance tracking system.", "Completed", "2026-04-01", "2026-05-30", 45000, 39000),
+        ("Learning Management Platform", "Online learning platform for students and staff.", "In Progress", "2026-05-15", "2026-09-30", 180000, 76000),
+        ("E-Commerce Website", "Retail e-commerce platform with payment integration.", "In Progress", "2026-06-01", "2026-10-15", 95000, 42000),
+        ("Customer Portal", "Self-service portal for customer support and account management.", "Planning", "2026-07-01", "2026-12-01", 120000, 15000),
+        ("Factory Automation", "Automation of manufacturing production workflows.", "In Progress", "2026-06-05", "2027-01-31", 650000, 310000),
+        ("Warehouse Optimisation", "Warehouse process and inventory optimisation project.", "In Progress", "2026-06-20", "2026-12-15", 280000, 110000),
+        ("ERP Transformation", "Enterprise-wide ERP implementation programme.", "Planning", "2026-07-10", "2027-06-30", 1500000, 200000),
+        ("CRM Migration", "Migration from legacy CRM to modern cloud CRM.", "In Progress", "2026-05-20", "2026-09-20", 160000, 85000),
+        ("Cyber Security Programme", "Security controls, monitoring and compliance uplift.", "In Progress", "2026-06-01", "2026-12-31", 400000, 175000),
+        ("Data Warehouse Project", "Centralised reporting and analytics data warehouse.", "Planning", "2026-07-01", "2027-01-15", 300000, 60000),
+        ("Vehicle Assembly Upgrade", "Upgrade of vehicle assembly production line.", "In Progress", "2026-06-10", "2027-03-31", 900000, 370000),
+        ("AI PM Tracker", "Internal SaaS project management platform build.", "In Progress", "2026-05-01", "2026-09-30", 75000, 18000)
+    ]
+
+    for project in demo_projects:
+
+        cursor.execute("""
+            INSERT INTO projects
+            (
+                user_id,
+                name,
+                description,
+                status,
+                start_date,
+                end_date,
+                estimated_budget,
+                actual_cost,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            project[0],
+            project[1],
+            project[2],
+            project[3],
+            project[4],
+            project[5],
+            project[6],
+            str(date.today())
+        ))
+
+        project_id = cursor.fetchone()[0]
+
+        cursor.execute("""
+            INSERT INTO budgets
+            (
+                user_id,
+                project_id,
+                budget_amount,
+                actual_cost,
+                forecast_cost,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            project[5],
+            project[6],
+            project[6] + 25000,
+            "Active",
+            str(date.today())
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "Demo projects and budgets added successfully"
 
 
 
