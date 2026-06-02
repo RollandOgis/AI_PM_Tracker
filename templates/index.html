@@ -219,10 +219,7 @@
                                 {{ item["project"][2] }}
                             </span>
                         </div>
-
-                        <div class="showcase-progress-number">
-                            {{ item["completion"] }}%
-                        </div>
+                        
 
                     </div>
 
@@ -231,15 +228,19 @@
                     </p>
 
                     <div class="overview-progress-track">
-                        <div
-                            class="overview-progress-fill
-                            {% if item['project'][2] == 'Planning' %}progress-planning{% endif %}
-                            {% if item['project'][2] == 'In Progress' %}progress-in-progress{% endif %}
-                            {% if item['project'][2] == 'Completed' %}progress-completed{% endif %}
-                            "
-                            data-progress="{{ item['completion'] }}"
-                        ></div>
-                    </div>
+
+    <div
+        class="overview-progress-fill
+        {% if item['project'][2] == 'Planning' %}progress-planning{% endif %}
+        {% if item['project'][2] == 'In Progress' %}progress-in-progress{% endif %}
+        {% if item['project'][2] == 'Completed' %}progress-completed{% endif %}
+        "
+        data-progress="{{ item['completion'] }}"
+    >
+        {{ item["completion"] }}%
+    </div>
+
+</div>
 
                     <div class="showcase-info-box">
                         <span>Client</span>
