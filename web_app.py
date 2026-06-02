@@ -2266,12 +2266,23 @@ def home():
     else:
         issue_card_class = "red-card"
 
+    # Overall dashboard health score
     health_score = 100
 
-    health_score -= (overdue_tasks * 10)
-    health_score -= (blocked_tasks * 5)
-    health_score -= (open_risks * 5)
-    health_score -= (open_issues * 3)
+    # Delivery pressure
+    health_score -= min(overdue_tasks * 4, 20)
+    health_score -= min(blocked_tasks * 3, 20)
+
+    # Governance pressure
+    health_score -= min(open_risks * 1, 20)
+    health_score -= min(open_issues * 1, 15)
+
+    # Financial pressure
+    health_score -= min(over_budget_projects * 5, 15)
+
+    # Completion pressure
+    if total_tasks > 0 and completion_rate < 30:
+        health_score -= 10
 
     health_score = max(0, min(100, health_score))
 
