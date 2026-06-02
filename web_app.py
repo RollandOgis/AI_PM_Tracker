@@ -2043,6 +2043,9 @@ def home():
         else:
             completion = 0
 
+        if project["status"] == "Planning" and completion == 0 and budget_used_percent > 0:
+            completion = min(25, max(10, budget_used_percent))
+
         risk_score = 0
 
         if completion < 30:
@@ -2182,6 +2185,48 @@ def home():
             -item["completion"]
         )
     )
+
+    planning_projects = [
+        item for item in all_projects
+        if item["project"][2] == "Planning"
+    ]
+
+    in_progress_projects = [
+        item for item in all_projects
+        if item["project"][2] == "In Progress"
+    ]
+
+    completed_projects = [
+        item for item in all_projects
+        if item["project"][2] == "Completed"
+    ]
+
+    planning_projects = sorted(planning_projects, key=lambda item: -item["completion"])
+    in_progress_projects = sorted(in_progress_projects, key=lambda item: -item["completion"])
+    completed_projects = sorted(completed_projects, key=lambda item: -item["completion"])
+
+    showcase_projects = []
+
+    if planning_projects:
+        showcase_projects.append(planning_projects[0])
+
+    if in_progress_projects:
+        showcase_projects.append(in_progress_projects[0])
+
+    if completed_projects:
+        showcase_projects.append(completed_projects[0])
+
+    remaining_projects = [
+        item for item in all_projects
+        if item not in showcase_projects
+    ]
+
+    remaining_projects = sorted(
+        remaining_projects,
+        key=lambda item: -item["completion"]
+    )
+
+    all_projects = showcase_projects + remaining_projects
 
     upcoming_deadlines = sorted(
         upcoming_deadlines,
