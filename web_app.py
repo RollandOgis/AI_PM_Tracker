@@ -7377,13 +7377,17 @@ def project_health():
             if task["status"] == "Blocked"
         ])
 
-        schedule_score = calculate_weighted_progress(tasks)
+        if project["status"] == "Planning":
+            schedule_score = 70
 
-        if overdue_tasks > 0:
-            schedule_score -= overdue_tasks * 8
+        else:
+            schedule_score = calculate_weighted_progress(tasks)
 
-        if blocked_tasks > 0:
-            schedule_score -= blocked_tasks * 6
+            if overdue_tasks > 0:
+                schedule_score -= overdue_tasks * 8
+
+            if blocked_tasks > 0:
+                schedule_score -= blocked_tasks * 6
 
         schedule_score = max(
             0,
@@ -7542,6 +7546,15 @@ def executive_dashboard():
         AND tasks.status = 'Completed'
     """, (user_id,))
     completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    cursor.execute("""
+                   SELECT COUNT(*) AS in_progress_tasks
+                   FROM tasks
+                            JOIN projects ON tasks.project_id = projects.id
+                   WHERE projects.user_id = %s
+                     AND tasks.status = 'In Progress'
+                   """, (user_id,))
+    in_progress_tasks = cursor.fetchone()["in_progress_tasks"]
 
     cursor.execute("""
         SELECT COUNT(*) AS overdue_tasks
@@ -7852,6 +7865,7 @@ def executive_dashboard():
         total_projects=total_projects,
         total_tasks=total_tasks,
         completed_tasks=completed_tasks,
+        in_progress_tasks=in_progress_tasks,
         overdue_tasks=overdue_tasks,
         blocked_tasks=blocked_tasks,
         over_budget_projects=over_budget_projects,
