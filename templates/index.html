@@ -254,19 +254,22 @@
                     <div class="showcase-info-box">
                         <span>AI Risk</span>
 
-                        {% if item["risk_score"] >= 70 %}
-                            <strong class="health-warning">
-                                {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
-                            </strong>
-                        {% elif item["risk_score"] >= 45 %}
-                            <strong class="health-neutral">
-                                {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
-                            </strong>
-                        {% else %}
-                            <strong class="health-good">
-                                {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
-                            </strong>
-                        {% endif %}
+{% if item["risk_score"] >= 70 %}
+    <strong class="health-warning">
+        {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+    </strong>
+
+{% elif item["risk_score"] >= 20 %}
+    <strong class="health-neutral">
+        {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+    </strong>
+
+{% else %}
+    <strong class="health-good">
+        {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+    </strong>
+
+{% endif %}
                     </div>
 
                     <div class="showcase-recommendation">
