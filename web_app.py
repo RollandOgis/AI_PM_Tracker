@@ -13541,14 +13541,26 @@ def seed_linkedin_demo():
     # =====================
 
     projects = [
-        ("AI PM Tracker SaaS Platform", "Enterprise AI project management platform with dashboards, governance, SaaS controls and reporting.", "In Progress", "2026-05-01", "2026-09-30", 75000, 28000, "CloudCore Solutions"),
-        ("Hospital Digital Command Centre", "Real-time operational dashboard for hospital capacity, staffing and service performance.", "In Progress", "2026-06-01", "2026-12-20", 850000, 410000, "Northbridge NHS Trust"),
-        ("Smart Highway Upgrade", "Road infrastructure upgrade with smart traffic monitoring and delivery governance.", "In Progress", "2026-06-15", "2027-02-28", 1200000, 560000, "MetroLink Transport Authority"),
-        ("Retail CRM Migration", "Migration from legacy CRM to a cloud-based customer platform.", "In Progress", "2026-05-20", "2026-09-20", 160000, 82000, "Apex Retail Group"),
-        ("Customer Self-Service Portal", "Customer account portal with case tracking, billing visibility and support workflows.", "Planning", "2026-07-01", "2026-12-01", 120000, 18000, "Apex Retail Group"),
-        ("Financial Compliance Data Hub", "Centralised reporting and compliance data platform for regulatory reporting.", "In Progress", "2026-06-10", "2027-01-15", 400000, 175000, "Sterling Finance"),
-        ("Learning Management Platform", "Digital learning platform with staff training, assessments and reporting.", "In Progress", "2026-05-15", "2026-09-30", 180000, 76000, "Northbridge NHS Trust"),
-        ("Warehouse Optimisation Programme", "Inventory, fulfilment and warehouse process optimisation.", "In Progress", "2026-06-20", "2026-12-15", 280000, 118000, "Apex Retail Group")
+        ("AI PM Tracker SaaS Platform",
+         "Enterprise AI project management platform with dashboards, governance, SaaS controls and reporting.",
+         "In Progress", "2026-05-01", "2026-09-30", 75000, 28000, "CloudCore Solutions"),
+        ("Hospital Digital Command Centre",
+         "Real-time operational dashboard for hospital capacity, staffing and service performance.", "In Progress",
+         "2026-06-01", "2026-12-20", 850000, 410000, "Northbridge NHS Trust"),
+        ("Smart Highway Upgrade", "Road infrastructure upgrade with smart traffic monitoring and delivery governance.",
+         "In Progress", "2026-06-15", "2027-02-28", 1200000, 560000, "MetroLink Transport Authority"),
+        ("Retail CRM Migration", "Migration from legacy CRM to a cloud-based customer platform.", "Completed",
+         "2026-05-20", "2026-09-20", 160000, 82000, "Apex Retail Group"),
+        ("Customer Self-Service Portal",
+         "Customer account portal with case tracking, billing visibility and support workflows.", "Planning",
+         "2026-07-01", "2026-12-01", 120000, 18000, "Apex Retail Group"),
+        ("Financial Compliance Data Hub",
+         "Centralised reporting and compliance data platform for regulatory reporting.", "In Progress", "2026-06-10",
+         "2027-01-15", 400000, 175000, "Sterling Finance"),
+        ("Learning Management Platform", "Digital learning platform with staff training, assessments and reporting.",
+         "In Progress", "2026-05-15", "2026-09-30", 180000, 76000, "Northbridge NHS Trust"),
+        ("Warehouse Optimisation Programme", "Inventory, fulfilment and warehouse process optimisation.", "In Progress",
+         "2026-06-20", "2026-12-15", 280000, 118000, "Apex Retail Group")
     ]
 
     project_ids = {}
@@ -13596,33 +13608,56 @@ def seed_linkedin_demo():
 
     task_data = {
         "AI PM Tracker SaaS Platform": [
-            ("Complete Executive Dashboard QA", "Validate dashboard formulas and executive recommendations.", "Sarah Johnson", "High", "Completed", "2026-06-05"),
-            ("Fix Usage Analytics Error", "Resolve the SaaS usage analytics internal server error.", "Daniel Green", "High", "In Progress", "2026-06-12"),
-            ("Validate Permission Enforcement", "Check organisation and workspace access controls.", "David Wilson", "High", "In Progress", "2026-06-18"),
-            ("Prepare LinkedIn Demo Screenshots", "Create realistic demo portfolio screenshots.", "Sarah Johnson", "Medium", "Completed", "2026-06-02"),
-            ("Complete SaaS Billing Workflow Review", "Review subscriptions, invoices and billing history.", "Grace Hall", "Medium", "Pending", "2026-06-20")
+            ("Complete Executive Dashboard QA", "Validate dashboard formulas and executive recommendations.",
+             "Sarah Johnson", "High", "Completed", "2026-06-05"),
+            ("Prepare LinkedIn Demo Screenshots", "Create realistic demo portfolio screenshots.", "Sarah Johnson",
+             "Medium", "Completed", "2026-06-02"),
+            ("Fix Usage Analytics Error", "Resolve the SaaS usage analytics internal server error.", "Daniel Green",
+             "High", "Completed", "2026-06-12"),
+            ("Validate Permission Enforcement", "Check organisation and workspace access controls.", "David Wilson",
+             "High", "In Progress", "2026-06-18"),
+            ("Complete SaaS Billing Workflow Review", "Review subscriptions, invoices and billing history.",
+             "Grace Hall", "Medium", "In Progress", "2026-06-20")
         ],
+
         "Hospital Digital Command Centre": [
-            ("Capture Ward Capacity Requirements", "Document reporting requirements from operational teams.", "Emma Smith", "High", "Completed", "2026-06-08"),
-            ("Integrate Staffing Data Feed", "Connect staffing data feed into command dashboard.", "Daniel Green", "High", "In Progress", "2026-06-20"),
-            ("Design Executive Capacity Dashboard", "Create leadership view for hospital capacity.", "Olivia Harris", "Medium", "In Progress", "2026-06-25"),
-            ("Run Clinical UAT Workshop", "Validate dashboard with hospital leads.", "Sarah Johnson", "High", "Pending", "2026-07-02"),
-            ("Prepare Go-Live Readiness Report", "Summarise risks, issues and deployment readiness.", "David Wilson", "Medium", "Pending", "2026-07-10")
+            ("Capture Ward Capacity Requirements", "Document reporting requirements from operational teams.",
+             "Emma Smith", "High", "Completed", "2026-06-08"),
+            ("Design Executive Capacity Dashboard", "Create leadership view for hospital capacity.", "Olivia Harris",
+             "Medium", "Completed", "2026-06-25"),
+            ("Integrate Staffing Data Feed", "Connect staffing data feed into command dashboard.", "Daniel Green",
+             "High", "In Progress", "2026-06-20"),
+            ("Run Clinical UAT Workshop", "Validate dashboard with hospital leads.", "Sarah Johnson", "High",
+             "In Progress", "2026-07-02"),
+            ("Prepare Go-Live Readiness Report", "Summarise risks, issues and deployment readiness.", "David Wilson",
+             "Medium", "Pending", "2026-07-10")
         ],
+
         "Smart Highway Upgrade": [
-            ("Confirm Sensor Installation Locations", "Validate roadside monitoring points.", "Michael Brown", "High", "Completed", "2026-06-15"),
-            ("Procure Monitoring Devices", "Complete procurement for traffic monitoring hardware.", "Sarah Johnson", "High", "Blocked", "2026-06-22"),
-            ("Complete Civil Works Schedule", "Finalise lane closure and construction phasing.", "Emma Smith", "Medium", "In Progress", "2026-06-28"),
-            ("Integrate Traffic Data Platform", "Connect sensor data to reporting dashboard.", "Daniel Green", "High", "Pending", "2026-07-12"),
-            ("Complete Safety Assurance Review", "Review operational safety controls.", "David Wilson", "High", "Pending", "2026-07-18")
+            ("Confirm Sensor Installation Locations", "Validate roadside monitoring points.", "Michael Brown", "High",
+             "Completed", "2026-06-15"),
+            ("Complete Civil Works Schedule", "Finalise lane closure and construction phasing.", "Emma Smith", "Medium",
+             "Completed", "2026-06-28"),
+            ("Procure Monitoring Devices", "Complete procurement for traffic monitoring hardware.", "Sarah Johnson",
+             "High", "Blocked", "2026-06-22"),
+            ("Integrate Traffic Data Platform", "Connect sensor data to reporting dashboard.", "Daniel Green", "High",
+             "In Progress", "2026-07-12"),
+            ("Complete Safety Assurance Review", "Review operational safety controls.", "David Wilson", "High",
+             "Pending", "2026-07-18")
         ],
+
         "Retail CRM Migration": [
-            ("Complete Data Mapping", "Map legacy CRM data to target platform.", "Emma Smith", "High", "Completed", "2026-06-07"),
-            ("Clean Duplicate Customer Records", "Remove duplicate and incomplete records.", "David Wilson", "High", "In Progress", "2026-06-18"),
-            ("Build Migration Scripts", "Develop repeatable customer migration scripts.", "Daniel Green", "High", "In Progress", "2026-06-24"),
-            ("Run Sales Team UAT", "Validate CRM workflows with sales users.", "Sarah Johnson", "Medium", "Pending", "2026-07-04"),
-            ("Prepare Go-Live Checklist", "Confirm cutover and support plan.", "Michael Brown", "Medium", "Pending", "2026-07-12")
-        ]
+            ("Complete Data Mapping", "Map legacy CRM data to target platform.", "Emma Smith", "High", "Completed",
+             "2026-06-07"),
+            ("Clean Duplicate Customer Records", "Remove duplicate and incomplete records.", "David Wilson", "High",
+             "Completed", "2026-06-18"),
+            ("Build Migration Scripts", "Develop repeatable customer migration scripts.", "Daniel Green", "High",
+             "In Progress", "2026-06-24"),
+            ("Run Sales Team UAT", "Validate CRM workflows with sales users.", "Sarah Johnson", "Medium", "In Progress",
+             "2026-07-04"),
+            ("Prepare Go-Live Checklist", "Confirm cutover and support plan.", "Michael Brown", "Medium", "Pending",
+             "2026-07-12")
+        ],
     }
 
     for project_name, tasks in task_data.items():
@@ -13650,11 +13685,50 @@ def seed_linkedin_demo():
     # =====================
 
     risks = [
-        ("Smart Highway Upgrade", "Procurement Delay", "Monitoring devices may arrive later than planned.", "High", "High", 8, "Escalate supplier plan and agree contingency.", "Sarah Johnson"),
-        ("Hospital Digital Command Centre", "Data Feed Instability", "Operational data feeds may not refresh consistently.", "Medium", "High", 7, "Add monitoring and fallback reporting.", "Daniel Green"),
-        ("Retail CRM Migration", "Data Quality Risk", "Legacy customer records contain duplicates.", "High", "Medium", 7, "Complete data cleansing before migration.", "David Wilson"),
-        ("Financial Compliance Data Hub", "Regulatory Reporting Risk", "Reporting rules may change during delivery.", "Medium", "High", 7, "Schedule fortnightly compliance reviews.", "Michael Brown"),
-        ("AI PM Tracker SaaS Platform", "Permission Enforcement Risk", "Organisation and workspace permissions require final validation.", "Medium", "High", 7, "Run security and access review.", "David Wilson")
+        ("Smart Highway Upgrade",
+         "Procurement Delay",
+         "Monitoring devices may arrive later than planned.",
+         "High",
+         "High",
+         8,
+         "Escalate supplier plan and agree contingency.",
+         "Sarah Johnson"),
+
+        ("Hospital Digital Command Centre",
+         "Data Feed Instability",
+         "Operational data feeds may not refresh consistently.",
+         "Medium",
+         "High",
+         7,
+         "Add monitoring and fallback reporting.",
+         "Daniel Green"),
+
+        ("Retail CRM Migration",
+         "Data Quality Risk",
+         "Legacy customer records contain duplicates.",
+         "Medium",
+         "Medium",
+         5,
+         "Complete data cleansing before migration.",
+         "David Wilson"),
+
+        ("Financial Compliance Data Hub",
+         "Regulatory Reporting Risk",
+         "Reporting rules may change during delivery.",
+         "Medium",
+         "Medium",
+         4,
+         "Schedule fortnightly compliance reviews.",
+         "Michael Brown"),
+
+        ("AI PM Tracker SaaS Platform",
+         "Permission Enforcement Risk",
+         "Organisation and workspace permissions require final validation.",
+         "Low",
+         "Medium",
+         3,
+         "Run security and access review.",
+         "David Wilson")
     ]
 
     for risk in risks:
@@ -13677,9 +13751,35 @@ def seed_linkedin_demo():
         ))
 
     issues = [
-        ("Smart Highway Upgrade", "Supplier Lead Time Extension", "Supplier confirmed a two-week delay.", "High", "Sarah Johnson", "Open", "Escalation raised with procurement."),
-        ("Retail CRM Migration", "Duplicate Customer Records", "Migration rehearsal found duplicate records.", "High", "David Wilson", "Open", "Data cleansing in progress."),
-        ("AI PM Tracker SaaS Platform", "Usage Analytics Page Error", "Usage analytics route requires debugging.", "Medium", "Daniel Green", "Open", "Route and query review required.")
+        (
+            "Smart Highway Upgrade",
+            "Supplier Lead Time Extension",
+            "Supplier confirmed a two-week delay.",
+            "High",
+            "Sarah Johnson",
+            "Open",
+            "Escalation raised with procurement."
+        ),
+
+        (
+            "Retail CRM Migration",
+            "Duplicate Customer Records",
+            "Migration rehearsal found duplicate records.",
+            "Medium",
+            "David Wilson",
+            "Open",
+            "Data cleansing in progress."
+        ),
+
+        (
+            "AI PM Tracker SaaS Platform",
+            "Usage Analytics Page Error",
+            "Usage analytics route requires debugging.",
+            "Medium",
+            "Daniel Green",
+            "Open",
+            "Route and query review required."
+        )
     ]
 
     for issue in issues:
@@ -13863,9 +13963,32 @@ def seed_linkedin_demo():
         ))
 
     benefits = [
-        ("AI PM Tracker SaaS Platform", "Improve PMO Reporting Speed", "Reduce manual dashboard preparation time.", "30% faster reporting cycle", "Weekly reporting effort comparison", "PMO Lead", "Tracking", "2026-09-30"),
-        ("Hospital Digital Command Centre", "Improve Operational Visibility", "Provide live hospital capacity view.", "Faster operational decisions", "Monthly operational review", "Operations Director", "Tracking", "2026-12-20"),
-        ("Retail CRM Migration", "Improve Customer Data Quality", "Create a single accurate customer view.", "20% reduction in duplicate records", "CRM data quality score", "CRM Owner", "Tracking", "2026-09-20")
+        ("AI PM Tracker SaaS Platform",
+         "Improve PMO Reporting Speed",
+         "Reduce manual dashboard preparation time.",
+         "30% faster reporting cycle",
+         "Weekly reporting effort comparison",
+         "PMO Lead",
+         "Realised",
+         "2026-09-30"),
+
+        ("Hospital Digital Command Centre",
+         "Improve Operational Visibility",
+         "Provide live hospital capacity view.",
+         "Faster operational decisions",
+         "Monthly operational review",
+         "Operations Director",
+         "Realised",
+         "2026-12-20"),
+
+        ("Retail CRM Migration",
+         "Improve Customer Data Quality",
+         "Create a single accurate customer view.",
+         "20% reduction in duplicate records",
+         "CRM data quality score",
+         "CRM Owner",
+         "Tracking",
+         "2026-09-20")
     ]
 
     for benefit in benefits:
