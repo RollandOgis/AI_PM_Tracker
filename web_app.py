@@ -2075,20 +2075,50 @@ def home():
 
         ai_recommendation = []
 
-        if project_overdue_tasks > 0:
-            ai_recommendation.append("Resolve overdue tasks immediately.")
+        if project_overdue_tasks >= 3:
+            ai_recommendation.append(
+                f"Resolve {project_overdue_tasks} overdue tasks immediately."
+            )
 
-        if project_blocked_tasks > 0:
-            ai_recommendation.append("Blocked tasks require escalation.")
+        if project_blocked_tasks >= 2:
+            ai_recommendation.append(
+                f"Escalate {project_blocked_tasks} blocked activities."
+            )
 
-        if budget_used_percent > 90:
-            ai_recommendation.append("Budget usage is critically high.")
+        if budget_used_percent >= 90:
+            ai_recommendation.append(
+                "Budget consumption exceeds 90%. Review spending."
+            )
 
-        if completion < 30:
-            ai_recommendation.append("Project delivery pace is behind schedule.")
+        if (
+                project_high_priority >= 5
+                and completion < 50
+        ):
+            ai_recommendation.append(
+                "High-priority workload threatens delivery dates."
+            )
 
-        if not ai_recommendation:
-            ai_recommendation.append("Project performance currently appears stable.")
+        if (
+                completion >= 80
+                and project_overdue_tasks == 0
+                and project_blocked_tasks == 0
+        ):
+            ai_recommendation.append(
+                "Delivery healthy. Continue current execution plan."
+            )
+
+        if (
+                completion < 30
+                and project_overdue_tasks == 0
+        ):
+            ai_recommendation.append(
+                "Project delivery pace is behind schedule."
+            )
+
+        if len(ai_recommendation) == 0:
+            ai_recommendation.append(
+                "No major delivery risks detected."
+            )
 
         all_projects.append({
             "project": (
@@ -7309,12 +7339,53 @@ def executive_dashboard():
     """, (session["user_id"],))
     completed_tasks = cursor.fetchone()["completed_tasks"]
 
-    if total_tasks > 0:
-        portfolio_health = round(
-            (completed_tasks / total_tasks) * 100
-        )
-    else:
-        portfolio_health = 0
+    cursor.execute("""
+                   SELECT COUNT(*) AS overdue_tasks
+                   FROM tasks
+                            JOIN projects
+                                 ON tasks.project_id = projects.id
+                   WHERE projects.user_id = %s
+                     AND tasks.status != 'Completed'
+    AND tasks.due_date < CURRENT_DATE
+                   """, (session["user_id"],))
+
+    overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+    cursor.execute("""
+                   SELECT COUNT(*) AS blocked_tasks
+                   FROM tasks
+                            JOIN projects
+                                 ON tasks.project_id = projects.id
+                   WHERE projects.user_id = %s
+                     AND tasks.status = 'Blocked'
+                   """, (session["user_id"],))
+
+    blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+    cursor.execute("""
+                   SELECT COUNT(*) AS over_budget_projects
+                   FROM budgets
+                   WHERE user_id = %s
+                     AND actual_cost > budget_amount
+                   """, (session["user_id"],))
+
+    over_budget_projects = cursor.fetchone()["over_budget_projects"]
+
+    portfolio_health = 100
+
+    portfolio_health -= overdue_tasks * 3
+    portfolio_health -= blocked_tasks * 2
+    portfolio_health -= over_budget_projects * 5
+
+    portfolio_health += (
+                                completed_tasks /
+                                max(total_tasks, 1)
+                        ) * 20
+
+    portfolio_health = max(
+        0,
+        min(100, round(portfolio_health))
+    )
 
     cursor.execute("""
         SELECT COUNT(*) AS total_risks
@@ -7339,9 +7410,16 @@ def executive_dashboard():
     high_risks = cursor.fetchone()["high_risks"]
 
     # Risk Health
+    risk_health = 100
+
+    risk_health -= high_risks * 5
+    risk_health -= (
+                           total_risks - high_risks
+                   ) * 2
+
     risk_health = max(
-        100 - (high_risks * 10),
-        20
+        0,
+        min(100, risk_health)
     )
 
     cursor.execute("""
@@ -7418,17 +7496,32 @@ def executive_dashboard():
     total_team_members = cursor.fetchone()["total_team_members"]
 
     # Resource Health
-    if total_team_members == 0:
-        resource_health = 0
+    active_tasks = (
+            total_tasks -
+            completed_tasks
+    )
 
-    elif total_team_members <= 3:
-        resource_health = 70
+    if total_team_members > 0:
 
-    elif total_team_members <= 10:
-        resource_health = 85
+        tasks_per_person = (
+                active_tasks /
+                total_team_members
+        )
+
+        if tasks_per_person <= 5:
+            resource_health = 90
+
+        elif tasks_per_person <= 10:
+            resource_health = 75
+
+        elif tasks_per_person <= 15:
+            resource_health = 60
+
+        else:
+            resource_health = 40
 
     else:
-        resource_health = 100
+        resource_health = 0
 
     overall_executive_health = round(
         (
