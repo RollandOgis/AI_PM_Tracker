@@ -11673,6 +11673,7 @@ def alerts():
     )
 
     today = str(date.today())
+    user_id = session["user_id"]
 
     cursor.execute("""
         SELECT
@@ -11686,11 +11687,16 @@ def alerts():
         AND tasks.status != 'Completed'
         ORDER BY tasks.due_date ASC
     """, (
-        session["user_id"],
+        user_id,
         today
     ))
 
     overdue_tasks = cursor.fetchall()
+
+    for task in overdue_tasks:
+        task["owner"] = task["assigned_to"] or "Unassigned"
+        task["severity"] = "Critical"
+        task["severity_class"] = "red-card"
 
     cursor.execute("""
         SELECT
@@ -11704,10 +11710,27 @@ def alerts():
         AND risks.status != 'Closed'
         ORDER BY risks.severity_score DESC
     """, (
-        session["user_id"],
+        user_id,
     ))
 
     high_risks = cursor.fetchall()
+
+    for risk in high_risks:
+
+        risk["owner"] = risk.get("owner") or "Project Manager"
+
+        if risk["severity_score"] >= 8:
+            risk["severity"] = "Critical"
+            risk["severity_class"] = "red-card"
+        elif risk["severity_score"] >= 6:
+            risk["severity"] = "High"
+            risk["severity_class"] = "amber-card"
+        elif risk["severity_score"] >= 4:
+            risk["severity"] = "Medium"
+            risk["severity_class"] = "blue-card"
+        else:
+            risk["severity"] = "Low"
+            risk["severity_class"] = "green-card"
 
     cursor.execute("""
         SELECT
@@ -11720,10 +11743,15 @@ def alerts():
         AND approvals.status = 'Pending Approval'
         ORDER BY approvals.submitted_date ASC
     """, (
-        session["user_id"],
+        user_id,
     ))
 
     pending_approvals = cursor.fetchall()
+
+    for approval in pending_approvals:
+        approval["owner"] = approval.get("submitted_by") or "Project Manager"
+        approval["severity"] = "Medium"
+        approval["severity_class"] = "blue-card"
 
     conn.close()
 

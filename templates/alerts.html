@@ -17,7 +17,6 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
                 <h1>Alerts</h1>
 
@@ -25,7 +24,6 @@
                     Monitor overdue tasks, high risks and pending approvals.
                 </p>
             </div>
-
         </div>
 
         <div class="stats-grid">
@@ -57,15 +55,32 @@
 
                     {% for task in overdue_tasks %}
 
-                        <div class="budget-row">
-                            <span>
-                                {{ task["title"] }}
-                                - {{ task["project_name"] }}
-                            </span>
+                        <div class="smart-insight">
 
                             <strong>
-                                Due: {{ task["due_date"] }}
+                                {{ task["title"] }}
+                                - {{ task["project_name"] }}
                             </strong>
+
+                            <div class="budget-row">
+                                <span>Due Date</span>
+                                <strong class="health-warning">
+                                    {{ task["due_date"] }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Owner</span>
+                                <strong>{{ task["owner"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Severity</span>
+                                <strong class="health-warning">
+                                    {{ task["severity"] }}
+                                </strong>
+                            </div>
+
                         </div>
 
                     {% endfor %}
@@ -92,15 +107,41 @@
 
                     {% for risk in high_risks %}
 
-                        <div class="budget-row">
-                            <span>
-                                {{ risk["title"] }}
-                                - {{ risk["project_name"] or "No Project" }}
-                            </span>
+                        <div class="smart-insight">
 
                             <strong>
-                                Score: {{ risk["severity_score"] }}
+                                {{ risk["title"] }}
+                                - {{ risk["project_name"] or "No Project" }}
                             </strong>
+
+                            <div class="budget-row">
+                                <span>Score</span>
+                                <strong>{{ risk["severity_score"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Owner</span>
+                                <strong>{{ risk["owner"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Severity</span>
+
+                                {% if risk["severity"] == "Critical" %}
+                                    <strong class="health-warning">
+                                        {{ risk["severity"] }}
+                                    </strong>
+                                {% elif risk["severity"] == "High" %}
+                                    <strong class="health-neutral">
+                                        {{ risk["severity"] }}
+                                    </strong>
+                                {% else %}
+                                    <strong class="health-good">
+                                        {{ risk["severity"] }}
+                                    </strong>
+                                {% endif %}
+                            </div>
+
                         </div>
 
                     {% endfor %}
@@ -127,15 +168,30 @@
 
                     {% for approval in pending_approvals %}
 
-                        <div class="budget-row">
-                            <span>
-                                {{ approval["item_type"] }}
-                                - {{ approval["project_name"] or "No Project" }}
-                            </span>
+                        <div class="smart-insight">
 
                             <strong>
-                                {{ approval["status"] }}
+                                {{ approval["item_type"] }}
+                                - {{ approval["project_name"] or "No Project" }}
                             </strong>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>{{ approval["status"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Owner</span>
+                                <strong>{{ approval["owner"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Severity</span>
+                                <strong class="health-neutral">
+                                    {{ approval["severity"] }}
+                                </strong>
+                            </div>
+
                         </div>
 
                     {% endfor %}
