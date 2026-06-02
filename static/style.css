@@ -630,7 +630,8 @@ body.dark-ready {
 }
 
 .health-neutral {
-    color: #6b7280 !important;
+    color: #f59e0b;
+    font-weight: 700;
 }
 
 .stat-card {
@@ -2878,4 +2879,34 @@ td {
 
 .progress-completed {
     background: #22c55e;
+}
+
+.showcase-progress-number {
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+/* Planning percentage */
+.showcase-project-card.planning-project .showcase-progress-number {
+    color: #f59e0b;
+}
+
+/* In Progress percentage */
+.showcase-project-card.in-progress-project .showcase-progress-number {
+    color: #2563eb;
+}
+
+/* Completed percentage */
+.showcase-project-card.completed-project .showcase-progress-number {
+    color: #22c55e;
+}
+
+/* Medium risk amber fix */
+.health-neutral {
+    color: #f59e0b !important;
+    font-weight: 800;
 }
