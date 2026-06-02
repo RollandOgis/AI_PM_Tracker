@@ -13435,6 +13435,7 @@ def portfolio_kanban():
 
 @app.route("/seed-linkedin-demo")
 def seed_linkedin_demo():
+
     if "user_id" not in session:
         return redirect("/login")
 
@@ -13444,15 +13445,717 @@ def seed_linkedin_demo():
     user_id = session["user_id"]
     today = str(date.today())
 
-    cursor.execute("SELECT COUNT(*) FROM projects WHERE user_id = %s", (user_id,))
-    existing_projects = cursor.fetchone()[0]
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM projects
+        WHERE user_id = %s
+    """, (user_id,))
 
-    if existing_projects > 0:
+    if cursor.fetchone()[0] > 0:
         conn.close()
-        return "LinkedIn demo already seeded. Clear demo data first."
+        return "LinkedIn demo data already exists. Clear demo data first."
 
-    return "Ready for LinkedIn demo seed route"
+    # =====================
+    # CLIENTS
+    # =====================
 
+    clients = [
+        ("Northbridge NHS Trust", "Healthcare", "pmoffice@northbridge-nhs.co.uk", "02070001001", "Active", "Hospital digital transformation and operational command centre programme.", 850000),
+        ("MetroLink Transport Authority", "Transport", "delivery@metrolink-demo.co.uk", "02070001002", "Active", "Smart highway and transport infrastructure delivery.", 1200000),
+        ("Apex Retail Group", "Retail", "projects@apexretail-demo.com", "02070001003", "Active", "CRM, e-commerce and customer portal transformation.", 450000),
+        ("Sterling Finance", "Financial Services", "change@sterlingfinance-demo.com", "02070001004", "Active", "Compliance data, reporting and governance transformation.", 700000),
+        ("CloudCore Solutions", "Technology", "pmo@cloudcore-demo.com", "02070001005", "Lead", "SaaS, AI and enterprise platform implementation.", 500000)
+    ]
+
+    client_ids = {}
+
+    for client in clients:
+        cursor.execute("""
+            INSERT INTO clients
+            (user_id, name, company, email, phone, status, notes, estimated_value, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            client[0],
+            client[1],
+            client[2],
+            client[3],
+            client[4],
+            client[5],
+            client[6],
+            today
+        ))
+
+        client_ids[client[0]] = cursor.fetchone()[0]
+
+    # =====================
+    # TEAM MEMBERS
+    # =====================
+
+    team_members = [
+        ("Sarah Johnson", "Senior Project Manager", "sarah.johnson@demo.com", "07100000001", "PRINCE2, Agile, Governance, Stakeholder Management", "Active"),
+        ("Michael Brown", "Programme Manager", "michael.brown@demo.com", "07100000002", "Programme Delivery, Portfolio Governance, Steering Committees", "Active"),
+        ("Emma Smith", "Business Analyst", "emma.smith@demo.com", "07100000003", "Requirements, Process Mapping, UAT", "Active"),
+        ("Daniel Green", "Software Developer", "daniel.green@demo.com", "07100000004", "Python, Flask, APIs, SaaS Platforms", "Active"),
+        ("Olivia Harris", "Frontend Developer", "olivia.harris@demo.com", "07100000005", "UI, JavaScript, Dashboards, Accessibility", "Active"),
+        ("David Wilson", "PMO Analyst", "david.wilson@demo.com", "07100000006", "Reporting, RAID, Benefits, Excel", "Active"),
+        ("Grace Hall", "Finance Manager", "grace.hall@demo.com", "07100000007", "Budgets, Forecasting, Cost Control", "Active"),
+        ("Henry Allen", "Resource Manager", "henry.allen@demo.com", "07100000008", "Capacity Planning, Allocation, Workforce Planning", "Active")
+    ]
+
+    for member in team_members:
+        cursor.execute("""
+            INSERT INTO team_members
+            (user_id, name, role, email, phone, skills, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            member[0],
+            member[1],
+            member[2],
+            member[3],
+            member[4],
+            member[5],
+            today
+        ))
+
+    # =====================
+    # PROJECTS + BUDGETS
+    # =====================
+
+    projects = [
+        ("AI PM Tracker SaaS Platform", "Enterprise AI project management platform with dashboards, governance, SaaS controls and reporting.", "In Progress", "2026-05-01", "2026-09-30", 75000, 28000, "CloudCore Solutions"),
+        ("Hospital Digital Command Centre", "Real-time operational dashboard for hospital capacity, staffing and service performance.", "In Progress", "2026-06-01", "2026-12-20", 850000, 410000, "Northbridge NHS Trust"),
+        ("Smart Highway Upgrade", "Road infrastructure upgrade with smart traffic monitoring and delivery governance.", "In Progress", "2026-06-15", "2027-02-28", 1200000, 560000, "MetroLink Transport Authority"),
+        ("Retail CRM Migration", "Migration from legacy CRM to a cloud-based customer platform.", "In Progress", "2026-05-20", "2026-09-20", 160000, 82000, "Apex Retail Group"),
+        ("Customer Self-Service Portal", "Customer account portal with case tracking, billing visibility and support workflows.", "Planning", "2026-07-01", "2026-12-01", 120000, 18000, "Apex Retail Group"),
+        ("Financial Compliance Data Hub", "Centralised reporting and compliance data platform for regulatory reporting.", "In Progress", "2026-06-10", "2027-01-15", 400000, 175000, "Sterling Finance"),
+        ("Learning Management Platform", "Digital learning platform with staff training, assessments and reporting.", "In Progress", "2026-05-15", "2026-09-30", 180000, 76000, "Northbridge NHS Trust"),
+        ("Warehouse Optimisation Programme", "Inventory, fulfilment and warehouse process optimisation.", "In Progress", "2026-06-20", "2026-12-15", 280000, 118000, "Apex Retail Group")
+    ]
+
+    project_ids = {}
+
+    for project in projects:
+        cursor.execute("""
+            INSERT INTO projects
+            (user_id, name, description, status, start_date, end_date, estimated_budget, actual_cost, created_at, client_id)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            project[0],
+            project[1],
+            project[2],
+            project[3],
+            project[4],
+            project[5],
+            project[6],
+            today,
+            client_ids[project[7]]
+        ))
+
+        project_id = cursor.fetchone()[0]
+        project_ids[project[0]] = project_id
+
+        cursor.execute("""
+            INSERT INTO budgets
+            (user_id, project_id, budget_amount, actual_cost, forecast_cost, approved_by, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_id,
+            project[5],
+            project[6],
+            project[6] + 25000,
+            "Grace Hall",
+            "Active",
+            today
+        ))
+
+    # =====================
+    # TASKS
+    # =====================
+
+    task_data = {
+        "AI PM Tracker SaaS Platform": [
+            ("Complete Executive Dashboard QA", "Validate dashboard formulas and executive recommendations.", "Sarah Johnson", "High", "Completed", "2026-06-05"),
+            ("Fix Usage Analytics Error", "Resolve the SaaS usage analytics internal server error.", "Daniel Green", "High", "In Progress", "2026-06-12"),
+            ("Validate Permission Enforcement", "Check organisation and workspace access controls.", "David Wilson", "High", "In Progress", "2026-06-18"),
+            ("Prepare LinkedIn Demo Screenshots", "Create realistic demo portfolio screenshots.", "Sarah Johnson", "Medium", "Completed", "2026-06-02"),
+            ("Complete SaaS Billing Workflow Review", "Review subscriptions, invoices and billing history.", "Grace Hall", "Medium", "Pending", "2026-06-20")
+        ],
+        "Hospital Digital Command Centre": [
+            ("Capture Ward Capacity Requirements", "Document reporting requirements from operational teams.", "Emma Smith", "High", "Completed", "2026-06-08"),
+            ("Integrate Staffing Data Feed", "Connect staffing data feed into command dashboard.", "Daniel Green", "High", "In Progress", "2026-06-20"),
+            ("Design Executive Capacity Dashboard", "Create leadership view for hospital capacity.", "Olivia Harris", "Medium", "In Progress", "2026-06-25"),
+            ("Run Clinical UAT Workshop", "Validate dashboard with hospital leads.", "Sarah Johnson", "High", "Pending", "2026-07-02"),
+            ("Prepare Go-Live Readiness Report", "Summarise risks, issues and deployment readiness.", "David Wilson", "Medium", "Pending", "2026-07-10")
+        ],
+        "Smart Highway Upgrade": [
+            ("Confirm Sensor Installation Locations", "Validate roadside monitoring points.", "Michael Brown", "High", "Completed", "2026-06-15"),
+            ("Procure Monitoring Devices", "Complete procurement for traffic monitoring hardware.", "Sarah Johnson", "High", "Blocked", "2026-06-22"),
+            ("Complete Civil Works Schedule", "Finalise lane closure and construction phasing.", "Emma Smith", "Medium", "In Progress", "2026-06-28"),
+            ("Integrate Traffic Data Platform", "Connect sensor data to reporting dashboard.", "Daniel Green", "High", "Pending", "2026-07-12"),
+            ("Complete Safety Assurance Review", "Review operational safety controls.", "David Wilson", "High", "Pending", "2026-07-18")
+        ],
+        "Retail CRM Migration": [
+            ("Complete Data Mapping", "Map legacy CRM data to target platform.", "Emma Smith", "High", "Completed", "2026-06-07"),
+            ("Clean Duplicate Customer Records", "Remove duplicate and incomplete records.", "David Wilson", "High", "In Progress", "2026-06-18"),
+            ("Build Migration Scripts", "Develop repeatable customer migration scripts.", "Daniel Green", "High", "In Progress", "2026-06-24"),
+            ("Run Sales Team UAT", "Validate CRM workflows with sales users.", "Sarah Johnson", "Medium", "Pending", "2026-07-04"),
+            ("Prepare Go-Live Checklist", "Confirm cutover and support plan.", "Michael Brown", "Medium", "Pending", "2026-07-12")
+        ]
+    }
+
+    for project_name, tasks in task_data.items():
+        for task in tasks:
+            cursor.execute("""
+                INSERT INTO tasks
+                (project_id, title, description, assigned_to, priority, status, due_date, created_at, estimated_hours, actual_hours, hourly_rate)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                project_ids[project_name],
+                task[0],
+                task[1],
+                task[2],
+                task[3],
+                task[4],
+                task[5],
+                today,
+                24,
+                12 if task[4] == "Completed" else 8,
+                75
+            ))
+
+    # =====================
+    # GOVERNANCE
+    # =====================
+
+    risks = [
+        ("Smart Highway Upgrade", "Procurement Delay", "Monitoring devices may arrive later than planned.", "High", "High", 8, "Escalate supplier plan and agree contingency.", "Sarah Johnson"),
+        ("Hospital Digital Command Centre", "Data Feed Instability", "Operational data feeds may not refresh consistently.", "Medium", "High", 7, "Add monitoring and fallback reporting.", "Daniel Green"),
+        ("Retail CRM Migration", "Data Quality Risk", "Legacy customer records contain duplicates.", "High", "Medium", 7, "Complete data cleansing before migration.", "David Wilson"),
+        ("Financial Compliance Data Hub", "Regulatory Reporting Risk", "Reporting rules may change during delivery.", "Medium", "High", 7, "Schedule fortnightly compliance reviews.", "Michael Brown"),
+        ("AI PM Tracker SaaS Platform", "Permission Enforcement Risk", "Organisation and workspace permissions require final validation.", "Medium", "High", 7, "Run security and access review.", "David Wilson")
+    ]
+
+    for risk in risks:
+        cursor.execute("""
+            INSERT INTO risks
+            (user_id, project_id, title, description, probability, impact, severity_score, mitigation, owner, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[risk[0]],
+            risk[1],
+            risk[2],
+            risk[3],
+            risk[4],
+            risk[5],
+            risk[6],
+            risk[7],
+            "Open",
+            today
+        ))
+
+    issues = [
+        ("Smart Highway Upgrade", "Supplier Lead Time Extension", "Supplier confirmed a two-week delay.", "High", "Sarah Johnson", "Open", "Escalation raised with procurement."),
+        ("Retail CRM Migration", "Duplicate Customer Records", "Migration rehearsal found duplicate records.", "High", "David Wilson", "Open", "Data cleansing in progress."),
+        ("AI PM Tracker SaaS Platform", "Usage Analytics Page Error", "Usage analytics route requires debugging.", "Medium", "Daniel Green", "Open", "Route and query review required.")
+    ]
+
+    for issue in issues:
+        cursor.execute("""
+            INSERT INTO issues
+            (user_id, project_id, title, description, priority, owner, status, resolution, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[issue[0]],
+            issue[1],
+            issue[2],
+            issue[3],
+            issue[4],
+            issue[5],
+            issue[6],
+            today
+        ))
+
+    for project_name in list(project_ids.keys())[:5]:
+        cursor.execute("""
+            INSERT INTO changes
+            (user_id, project_id, title, description, impact, requested_by, approval_status, implementation_plan, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Dashboard Reporting Enhancement",
+            "Request to improve executive reporting visibility.",
+            "Medium impact on reporting scope.",
+            "Project Sponsor",
+            "Pending",
+            "Review through change control board.",
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO assumptions
+            (user_id, project_id, title, description, owner, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Stakeholders Available for Review",
+            "Key stakeholders will be available for planned review sessions.",
+            "Sarah Johnson",
+            "Open",
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO dependencies
+            (user_id, project_id, title, description, owner, status, target_date, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Supplier Delivery Dependency",
+            "Delivery depends on supplier confirmation and technical inputs.",
+            "Michael Brown",
+            "Open",
+            "2026-07-15",
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO stakeholders
+            (user_id, project_id, name, role, influence, interest, communication_plan, owner, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Executive Sponsor",
+            "Sponsor",
+            "High",
+            "High",
+            "Monthly steering update and exception reporting.",
+            "Sarah Johnson",
+            "Active",
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO decisions
+            (user_id, project_id, title, decision_maker, impact, reason, status, decision_date, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Approve Delivery Approach",
+            "Project Board",
+            "Medium",
+            "Delivery approach approved to maintain programme momentum.",
+            "Approved",
+            today,
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO actions
+            (user_id, project_id, title, description, owner, priority, status, due_date, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Update Governance Pack",
+            "Refresh governance pack for next steering review.",
+            "David Wilson",
+            "High",
+            "Open",
+            "2026-07-10",
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO lessons
+            (user_id, project_id, title, what_happened, what_went_well, what_went_wrong, recommendation, owner, created_at, status)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Early Stakeholder Alignment",
+            "Stakeholder input was needed earlier than planned.",
+            "Weekly communication improved decision speed.",
+            "Initial requirement assumptions needed more validation.",
+            "Run discovery workshops before delivery starts.",
+            "Project Manager",
+            today,
+            "Open"
+        ))
+
+        cursor.execute("""
+            INSERT INTO stage_gates
+            (user_id, project_id, stage_name, status, reviewer, comments, review_date, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Delivery Readiness Gate",
+            "Approved",
+            "Programme Manager",
+            "Project can proceed with controlled monitoring.",
+            today,
+            today
+        ))
+
+        cursor.execute("""
+            INSERT INTO approvals
+            (user_id, project_id, item_type, item_id, submitted_by, approver, status, submitted_date, decision_date, comments)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Change Request",
+            project_ids[project_name],
+            "Project Manager",
+            "Programme Manager",
+            "Pending Approval",
+            date.today(),
+            None,
+            "Awaiting governance review."
+        ))
+
+        cursor.execute("""
+            INSERT INTO governance_reviews
+            (user_id, project_id, review_name, review_type, review_date, outcome, decision, actions, owner, next_review_date, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            "Monthly Governance Review",
+            "Monthly Review",
+            date.today(),
+            "Project reviewed against risk, budget and delivery indicators.",
+            "Continue with controlled delivery.",
+            "Update RAID actions before next review.",
+            "Project Manager",
+            date.today(),
+            "Scheduled",
+            today
+        ))
+
+    benefits = [
+        ("AI PM Tracker SaaS Platform", "Improve PMO Reporting Speed", "Reduce manual dashboard preparation time.", "30% faster reporting cycle", "Weekly reporting effort comparison", "PMO Lead", "Tracking", "2026-09-30"),
+        ("Hospital Digital Command Centre", "Improve Operational Visibility", "Provide live hospital capacity view.", "Faster operational decisions", "Monthly operational review", "Operations Director", "Tracking", "2026-12-20"),
+        ("Retail CRM Migration", "Improve Customer Data Quality", "Create a single accurate customer view.", "20% reduction in duplicate records", "CRM data quality score", "CRM Owner", "Tracking", "2026-09-20")
+    ]
+
+    for benefit in benefits:
+        cursor.execute("""
+            INSERT INTO benefits
+            (user_id, project_id, title, description, expected_value, measurement_method, owner, status, target_date, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[benefit[0]],
+            benefit[1],
+            benefit[2],
+            benefit[3],
+            benefit[4],
+            benefit[5],
+            benefit[6],
+            benefit[7],
+            today
+        ))
+
+    # =====================
+    # PORTFOLIO / PROGRAMME
+    # =====================
+
+    cursor.execute("""
+        INSERT INTO programmes
+        (user_id, programme_name, description, sponsor, manager, status, start_date, end_date, budget, benefits, risks, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        "Enterprise Digital Transformation Programme",
+        "Portfolio of digital, SaaS, CRM and reporting projects.",
+        "Chief Transformation Officer",
+        "Michael Brown",
+        "In Progress",
+        "2026-05-01",
+        "2027-06-30",
+        3500000,
+        "Improved reporting, better governance and reduced manual effort.",
+        "Supplier delays, permission controls and data quality.",
+        today
+    ))
+
+    for i, project_name in enumerate(project_ids.keys()):
+        business_value = 9 - (i % 3)
+        strategic_alignment = 8 - (i % 2)
+        risk_score = 4 + (i % 4)
+        cost_score = 6 + (i % 3)
+        priority_score = business_value + strategic_alignment - risk_score + cost_score
+
+        cursor.execute("""
+            INSERT INTO project_prioritisation
+            (user_id, project_id, business_value_score, strategic_alignment_score, risk_score, cost_score, priority_score, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            project_ids[project_name],
+            business_value,
+            strategic_alignment,
+            risk_score,
+            cost_score,
+            priority_score,
+            today
+        ))
+
+    cursor.execute("""
+        INSERT INTO portfolio_health
+        (user_id, health_score, risk_exposure, financial_health, performance_score, trend, commentary, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        74,
+        38,
+        82,
+        71,
+        "Stable",
+        "Portfolio is progressing with controlled risk exposure and strong financial discipline.",
+        today
+    ))
+
+    # =====================
+    # ADMIN / SAAS
+    # =====================
+
+    roles = ["Admin", "Project Manager", "PMO", "Executive", "Team Member"]
+
+    for role in roles:
+        cursor.execute("""
+            INSERT INTO user_roles
+            (user_id, role, created_at)
+            VALUES (%s,%s,%s)
+        """, (user_id, role, today))
+
+    permissions = [
+        ("Admin", "Projects", True, True, True, True),
+        ("Admin", "Governance", True, True, True, True),
+        ("Admin", "Finance", True, True, True, True),
+        ("Admin", "Reports", True, True, True, True),
+        ("Project Manager", "Projects", True, True, True, False),
+        ("Project Manager", "Governance", True, True, True, False),
+        ("PMO", "Reports", True, True, True, False),
+        ("Executive", "Portfolio", True, False, False, False),
+        ("Team Member", "Tasks", True, False, True, False)
+    ]
+
+    for permission in permissions:
+        cursor.execute("""
+            INSERT INTO permissions
+            (role, module, can_view, can_create, can_edit, can_delete)
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, permission)
+
+    cursor.execute("""
+        INSERT INTO organisations
+        (user_id, organisation_name, industry, plan, status, created_at, trial_start_date, trial_end_date, subscription_status)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        RETURNING id
+    """, (
+        user_id,
+        "AI PM Tracker Demo Organisation",
+        "Technology",
+        "Professional",
+        "Active",
+        today,
+        today,
+        "2026-06-16",
+        "Trial"
+    ))
+
+    organisation_id = cursor.fetchone()[0]
+
+    cursor.execute("""
+        INSERT INTO workspaces
+        (user_id, organisation_id, workspace_name, workspace_type, owner, status, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s)
+        RETURNING id
+    """, (
+        user_id,
+        organisation_id,
+        "PMO Delivery Workspace",
+        "Portfolio Office",
+        "Workspace Admin",
+        "Active",
+        today
+    ))
+
+    workspace_id = cursor.fetchone()[0]
+
+    cursor.execute("""
+        INSERT INTO user_roles
+        (user_id, role, organisation_id, workspace_id, created_at)
+        VALUES (%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        "Admin",
+        organisation_id,
+        workspace_id,
+        today
+    ))
+
+    plans = [
+        ("Free", 0, "Monthly", 3, 1, "Basic project tracking", "Active"),
+        ("Professional", 49, "Monthly", 50, 10, "AI dashboards, governance and reporting", "Active"),
+        ("Enterprise", 99, "Monthly", 9999, 9999, "Unlimited usage, premium support and enterprise governance", "Active")
+    ]
+
+    plan_ids = {}
+
+    for plan in plans:
+        cursor.execute("""
+            INSERT INTO subscription_plans
+            (user_id, plan_name, price, billing_cycle, max_projects, max_users, features, status, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            user_id,
+            plan[0],
+            plan[1],
+            plan[2],
+            plan[3],
+            plan[4],
+            plan[5],
+            plan[6],
+            today
+        ))
+
+        plan_ids[plan[0]] = cursor.fetchone()[0]
+
+    cursor.execute("""
+        INSERT INTO customer_subscriptions
+        (user_id, organisation_id, plan_id, start_date, end_date, status, payment_status, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        organisation_id,
+        plan_ids["Professional"],
+        date.today(),
+        date.today(),
+        "Trial",
+        "Pending",
+        today
+    ))
+
+    cursor.execute("""
+        INSERT INTO billing_history
+        (user_id, organisation_id, plan, amount, status, reference_number, billing_date, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        organisation_id,
+        "Professional",
+        49,
+        "Trial",
+        "BILL-DEMO-001",
+        today,
+        today
+    ))
+
+    cursor.execute("""
+        INSERT INTO invoices
+        (user_id, organisation_id, invoice_number, plan, amount, status, invoice_date, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        organisation_id,
+        "INV-DEMO-001",
+        "Professional",
+        49,
+        "Draft",
+        today,
+        today
+    ))
+
+    cursor.execute("""
+        INSERT INTO user_invitations
+        (organisation_id, workspace_id, invited_email, role, status, invitation_token, invited_by, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        organisation_id,
+        workspace_id,
+        "new.user@demo-company.com",
+        "Project Manager",
+        "Pending",
+        f"linkedin-demo-token-{user_id}",
+        user_id,
+        today
+    ))
+
+    notifications = [
+        ("Risk Alerts", "Email", "Yes", "Immediate"),
+        ("Issue Alerts", "Email", "Yes", "Immediate"),
+        ("Governance Reviews", "Email", "Yes", "Weekly"),
+        ("AI Insights", "Dashboard", "Yes", "Daily")
+    ]
+
+    for notification in notifications:
+        cursor.execute("""
+            INSERT INTO notification_settings
+            (user_id, notification_type, channel, enabled, frequency, created_at)
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            notification[0],
+            notification[1],
+            notification[2],
+            notification[3],
+            today
+        ))
+
+    cursor.execute("""
+        INSERT INTO email_notifications
+        (user_id, recipient_email, subject, message, status, created_at)
+        VALUES (%s,%s,%s,%s,%s,%s)
+    """, (
+        user_id,
+        "sponsor@demo-company.com",
+        "Executive Portfolio Update",
+        "Your weekly AI PM Tracker portfolio report is ready.",
+        "Draft",
+        today
+    ))
+
+    audit_entries = [
+        ("Create Project", "Projects", "AI PM Tracker SaaS Platform created"),
+        ("Update Dashboard", "Reports", "Executive dashboard formulas improved"),
+        ("Review Governance", "Governance", "Monthly governance review scheduled"),
+        ("Create Subscription", "SaaS", "Professional trial subscription created")
+    ]
+
+    for entry in audit_entries:
+        cursor.execute("""
+            INSERT INTO audit_logs
+            (user_id, action, module, details, created_at)
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            user_id,
+            entry[0],
+            entry[1],
+            entry[2],
+            today
+        ))
+
+    conn.commit()
+    conn.close()
+
+    return "LinkedIn-ready AI PM Tracker demo data added successfully"
 
 
 if __name__ == "__main__":
