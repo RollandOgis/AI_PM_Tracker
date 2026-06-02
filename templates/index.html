@@ -298,9 +298,13 @@
 
                                 <div class="overview-progress-track">
                                     <div
-                                        class="overview-progress-fill"
-                                        data-progress="{{ item['completion'] }}"
-                                    ></div>
+    class="overview-progress-fill
+    {% if item['project'][2] == 'Planning' %}progress-planning{% endif %}
+    {% if item['project'][2] == 'In Progress' %}progress-in-progress{% endif %}
+    {% if item['project'][2] == 'Completed' %}progress-completed{% endif %}
+    "
+    data-progress="{{ item['completion'] }}"
+></div>
                                 </div>
                             </div>
 
