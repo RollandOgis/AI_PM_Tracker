@@ -196,183 +196,172 @@
 
         <div class="projects-section">
 
-            <h2>Portfolio Delivery Overview</h2>
+    <h2>Portfolio Delivery Overview</h2>
 
-            {% if projects %}
+    {% if projects %}
 
-                <div class="projects-grid">
+        <div class="projects-grid showcase-projects-grid">
 
-                    {% for item in projects %}
+            {% for item in projects %}
 
-                        <div class="project-card
-                            {% if item['project'][2] == 'Planning' %}planning-project{% endif %}
-                            {% if item['project'][2] == 'Completed' %}completed-project{% endif %}
-                            ">
+                <div class="showcase-project-card
+                    {% if item['project'][2] == 'Planning' %}planning-project{% endif %}
+                    {% if item['project'][2] == 'In Progress' %}in-progress-project{% endif %}
+                    {% if item['project'][2] == 'Completed' %}completed-project{% endif %}
+                ">
 
-                            <div class="project-top">
+                    <div class="showcase-card-header">
 
-                                <div>
-                                    <h3>{{ item["project"][1] }}</h3>
+                        <div>
+                            <h3>{{ item["project"][1] }}</h3>
 
-                                    <span class="project-status-badge status-{{ item['project'][2]|lower|replace(' ', '-') }}">
-                                        {{ item["project"][2] }}
-                                    </span>
-                                    <p class="project-short-description">
-                                        {{ item["description"] }}
-                                    </p>
-                                </div>
-
-                                <div class="project-actions">
-
-                                    <a href="/project/{{ item['project'][0] }}" class="view-btn">
-                                        View
-                                    </a>
-
-                                    <a href="/edit-project/{{ item['project'][0] }}" class="edit-btn">
-                                        Edit
-                                    </a>
-
-                                    <form
-                                        action="/delete-project/{{ item['project'][0] }}"
-                                        method="POST"
-                                        class="inline-form"
-                                        onsubmit="return confirm('Delete this project and all associated tasks?');"
-                                    >
-                                        <button type="submit" class="delete-btn">
-                                            Delete
-                                        </button>
-                                    </form>
-
-                                </div>
-
-                            </div>
-
-                            <div class="project-card-body">
-
-                                <div class="smart-insight">
-                                    <strong>AI Risk:</strong>
-
-                                    {% if item["risk_score"] >= 70 %}
-                                        <span class="health-warning">
-                                            {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
-                                        </span>
-                                    {% elif item["risk_score"] >= 45 %}
-                                        <span class="health-neutral">
-                                            {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
-                                        </span>
-                                    {% else %}
-                                        <span class="health-good">
-                                            {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
-                                        </span>
-                                    {% endif %}
-                                </div>
-
-                                {% if item["client_name"] %}
-                                    <div class="smart-insight">
-                                        <strong>Client:</strong>
-                                        {{ item["client_name"] }}
-
-                                        {% if item["client_company"] %}
-                                            · {{ item["client_company"] }}
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-
-                                <div class="smart-insight recommendation-box">
-                                    <strong>AI Recommendation:</strong>
-
-                                    <ul class="ai-list">
-                                        {% for recommendation in item["ai_recommendation"] %}
-                                            <li>{{ recommendation }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-
-                            </div>
-
-                            <div class="overview-progress-wrapper">
-                                <div class="overview-progress-info">
-                                    <span>Progress</span>
-                                    <span>{{ item["completion"] }}%</span>
-                                </div>
-
-                                <div class="overview-progress-track">
-                                    <div
-    class="overview-progress-fill
-    {% if item['project'][2] == 'Planning' %}progress-planning{% endif %}
-    {% if item['project'][2] == 'In Progress' %}progress-in-progress{% endif %}
-    {% if item['project'][2] == 'Completed' %}progress-completed{% endif %}
-    "
-    data-progress="{{ item['completion'] }}"
-></div>
-                                </div>
-                            </div>
-
-                            <div class="project-dates">
-                                <div>
-                                    <strong>Start:</strong>
-                                    {{ item["project"][3] }}
-                                </div>
-
-                                <div>
-                                    <strong>End:</strong>
-                                    {{ item["project"][4] }}
-                                </div>
-                            </div>
-
-                            <div class="budget-section">
-
-                                <div class="budget-row">
-                                    <span>Budget</span>
-                                    <strong>£{{ "{:,.0f}".format(item["estimated_budget"]) }}</strong>
-                                </div>
-
-                                <div class="budget-row">
-                                    <span>Actual Cost</span>
-                                    <strong>£{{ "{:,.0f}".format(item["actual_cost"]) }}</strong>
-                                </div>
-
-                                <div class="budget-row">
-                                    <span>Remaining</span>
-
-                                    {% if item["remaining_budget"] < 0 %}
-                                        <strong class="health-warning">
-                                            £{{ "{:,.0f}".format(item["remaining_budget"]) }}
-                                        </strong>
-                                    {% else %}
-                                        <strong class="health-good">
-                                            £{{ "{:,.0f}".format(item["remaining_budget"]) }}
-                                        </strong>
-                                    {% endif %}
-                                </div>
-
-                                <div class="budget-row">
-                                    <span>Budget Used</span>
-                                    <strong>{{ item["budget_used_percent"] }}%</strong>
-                                </div>
-
-                            </div>
-
+                            <span class="project-status-badge status-{{ item['project'][2]|lower|replace(' ', '-') }}">
+                                {{ item["project"][2] }}
+                            </span>
                         </div>
 
-                    {% endfor %}
+                        <div class="showcase-progress-number">
+                            {{ item["completion"] }}%
+                        </div>
+
+                    </div>
+
+                    <p class="project-short-description">
+                        {{ item["description"] }}
+                    </p>
+
+                    <div class="overview-progress-track">
+                        <div
+                            class="overview-progress-fill
+                            {% if item['project'][2] == 'Planning' %}progress-planning{% endif %}
+                            {% if item['project'][2] == 'In Progress' %}progress-in-progress{% endif %}
+                            {% if item['project'][2] == 'Completed' %}progress-completed{% endif %}
+                            "
+                            data-progress="{{ item['completion'] }}"
+                        ></div>
+                    </div>
+
+                    <div class="showcase-info-box">
+                        <span>Client</span>
+                        <strong>
+                            {{ item["client_name"] }}
+                            {% if item["client_company"] %}
+                                · {{ item["client_company"] }}
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="showcase-info-box">
+                        <span>AI Risk</span>
+
+                        {% if item["risk_score"] >= 70 %}
+                            <strong class="health-warning">
+                                {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+                            </strong>
+                        {% elif item["risk_score"] >= 45 %}
+                            <strong class="health-neutral">
+                                {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+                            </strong>
+                        {% else %}
+                            <strong class="health-good">
+                                {{ item["risk_label"] }} ({{ item["risk_score"] }}%)
+                            </strong>
+                        {% endif %}
+                    </div>
+
+                    <div class="showcase-recommendation">
+                        <span>AI Recommendation</span>
+
+                        <ul>
+                            {% for recommendation in item["ai_recommendation"] %}
+                                <li>{{ recommendation }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div class="showcase-budget-grid">
+
+                        <div>
+                            <span>Budget</span>
+                            <strong>£{{ "{:,.0f}".format(item["estimated_budget"]) }}</strong>
+                        </div>
+
+                        <div>
+                            <span>Actual</span>
+                            <strong>£{{ "{:,.0f}".format(item["actual_cost"]) }}</strong>
+                        </div>
+
+                        <div>
+                            <span>Remaining</span>
+
+                            {% if item["remaining_budget"] < 0 %}
+                                <strong class="health-warning">
+                                    £{{ "{:,.0f}".format(item["remaining_budget"]) }}
+                                </strong>
+                            {% else %}
+                                <strong class="health-good">
+                                    £{{ "{:,.0f}".format(item["remaining_budget"]) }}
+                                </strong>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                    <div class="showcase-meta-row">
+                        <span>
+                            <strong>Start:</strong>
+                            {{ item["project"][3] }}
+                        </span>
+
+                        <span>
+                            <strong>End:</strong>
+                            {{ item["project"][4] }}
+                        </span>
+                    </div>
+
+                    <div class="project-actions showcase-actions">
+
+                        <a href="/project/{{ item['project'][0] }}" class="view-btn">
+                            View
+                        </a>
+
+                        <a href="/edit-project/{{ item['project'][0] }}" class="edit-btn">
+                            Edit
+                        </a>
+
+                        <form
+                            action="/delete-project/{{ item['project'][0] }}"
+                            method="POST"
+                            class="inline-form"
+                            onsubmit="return confirm('Delete this project and all associated tasks?');"
+                        >
+                            <button type="submit" class="delete-btn">
+                                Delete
+                            </button>
+                        </form>
+
+                    </div>
 
                 </div>
 
-            {% else %}
-
-                <div class="empty-box">
-                    <h3>No Projects Yet</h3>
-                    <p>Create your first project to begin managing tasks.</p>
-
-                    <a href="/add-project" class="btn-primary">
-                        Create Project
-                    </a>
-                </div>
-
-            {% endif %}
+            {% endfor %}
 
         </div>
+
+    {% else %}
+
+        <div class="empty-box">
+            <h3>No Projects Yet</h3>
+            <p>Create your first project to begin managing tasks.</p>
+
+            <a href="/add-project" class="btn-primary">
+                Create Project
+            </a>
+        </div>
+
+    {% endif %}
+
+</div>
 
     </div>
 

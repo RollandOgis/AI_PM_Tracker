@@ -2719,3 +2719,164 @@ td {
 .projects-grid .project-card .budget-section {
     margin-top: 22px;
 }
+
+
+/* PROFESSIONAL LINKEDIN PROJECT SHOWCASE CARDS */
+
+.showcase-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 26px;
+    align-items: stretch;
+}
+
+.showcase-project-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    border-left: 6px solid #2563eb;
+    display: flex;
+    flex-direction: column;
+    min-height: 620px;
+}
+
+.showcase-project-card.planning-project {
+    border-left-color: #f59e0b;
+}
+
+.showcase-project-card.in-progress-project {
+    border-left-color: #2563eb;
+}
+
+.showcase-project-card.completed-project {
+    border-left-color: #22c55e;
+}
+
+.showcase-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-start;
+    min-height: 82px;
+}
+
+.showcase-card-header h3 {
+    margin: 0 0 12px 0;
+    font-size: 22px;
+    line-height: 1.15;
+}
+
+.showcase-progress-number {
+    font-size: 28px;
+    font-weight: 900;
+    color: #111827;
+}
+
+.project-short-description {
+    min-height: 68px;
+    margin: 16px 0 18px 0;
+    color: #374151;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.showcase-info-box {
+    background: #eef2ff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 14px;
+    min-height: 72px;
+}
+
+.showcase-info-box span,
+.showcase-recommendation span,
+.showcase-budget-grid span {
+    display: block;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+.showcase-info-box strong {
+    color: #312e81;
+    font-size: 15px;
+}
+
+.showcase-recommendation {
+    background: #eef2ff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 14px;
+    min-height: 118px;
+}
+
+.showcase-recommendation ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.showcase-recommendation li {
+    color: #312e81;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.showcase-budget-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.showcase-budget-grid div {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.showcase-budget-grid strong {
+    font-size: 14px;
+    color: #111827;
+}
+
+.showcase-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+    color: #111827;
+    font-size: 14px;
+}
+
+.showcase-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.showcase-actions .view-btn,
+.showcase-actions .edit-btn,
+.showcase-actions .delete-btn {
+    margin-top: 0;
+    padding: 9px 18px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.progress-planning {
+    background: #f59e0b;
+}
+
+.progress-in-progress {
+    background: #2563eb;
+}
+
+.progress-completed {
+    background: #22c55e;
+}
