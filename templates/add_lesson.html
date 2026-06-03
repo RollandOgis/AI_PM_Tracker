@@ -17,17 +17,12 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-
                 <h1>Add Lesson Learned</h1>
-
                 <p class="dashboard-subtitle">
                     Capture project lessons and continuous improvement opportunities.
                 </p>
-
             </div>
-
         </div>
 
         <div class="form-container">
@@ -35,7 +30,6 @@
             <form method="POST">
 
                 <label>Project</label>
-
                 <select name="project_id" required>
                     {% for project in projects %}
                         <option value="{{ project['id'] }}">
@@ -46,6 +40,20 @@
 
                 <label>Lesson Title</label>
                 <input type="text" name="title" required>
+
+                <label>Category</label>
+                <select name="category" required>
+                    <option value="">Select Category</option>
+                    <option value="Process">Process</option>
+                    <option value="Governance">Governance</option>
+                    <option value="Risk">Risk</option>
+                    <option value="Schedule">Schedule</option>
+                    <option value="Budget">Budget</option>
+                    <option value="Stakeholder">Stakeholder</option>
+                    <option value="Resource">Resource</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Quality">Quality</option>
+                </select>
 
                 <label>What Happened</label>
                 <textarea name="what_happened" rows="4"></textarea>

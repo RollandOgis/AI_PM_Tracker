@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Lesson Learned</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Edit Lesson Learned</h1>
+
+                <p class="dashboard-subtitle">
+                    Update lessons learned and continuous improvement actions.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == lesson['project_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Lesson Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    value="{{ lesson['title'] }}"
+                    required
+                >
+
+                <label>Category</label>
+
+                <select name="category" required>
+
+                    <option value="Process"
+                        {% if lesson['category'] == 'Process' %}selected{% endif %}>
+                        Process
+                    </option>
+
+                    <option value="Governance"
+                        {% if lesson['category'] == 'Governance' %}selected{% endif %}>
+                        Governance
+                    </option>
+
+                    <option value="Risk"
+                        {% if lesson['category'] == 'Risk' %}selected{% endif %}>
+                        Risk
+                    </option>
+
+                    <option value="Schedule"
+                        {% if lesson['category'] == 'Schedule' %}selected{% endif %}>
+                        Schedule
+                    </option>
+
+                    <option value="Budget"
+                        {% if lesson['category'] == 'Budget' %}selected{% endif %}>
+                        Budget
+                    </option>
+
+                    <option value="Stakeholder"
+                        {% if lesson['category'] == 'Stakeholder' %}selected{% endif %}>
+                        Stakeholder
+                    </option>
+
+                    <option value="Resource"
+                        {% if lesson['category'] == 'Resource' %}selected{% endif %}>
+                        Resource
+                    </option>
+
+                    <option value="Technical"
+                        {% if lesson['category'] == 'Technical' %}selected{% endif %}>
+                        Technical
+                    </option>
+
+                    <option value="Quality"
+                        {% if lesson['category'] == 'Quality' %}selected{% endif %}>
+                        Quality
+                    </option>
+
+                </select>
+
+                <label>What Happened</label>
+
+                <textarea
+                    name="what_happened"
+                    rows="4"
+                >{{ lesson['what_happened'] }}</textarea>
+
+                <label>What Went Well</label>
+
+                <textarea
+                    name="what_went_well"
+                    rows="4"
+                >{{ lesson['what_went_well'] }}</textarea>
+
+                <label>What Went Wrong</label>
+
+                <textarea
+                    name="what_went_wrong"
+                    rows="4"
+                >{{ lesson['what_went_wrong'] }}</textarea>
+
+                <label>Recommendation</label>
+
+                <textarea
+                    name="recommendation"
+                    rows="4"
+                >{{ lesson['recommendation'] }}</textarea>
+
+                <label>Owner</label>
+
+                <input
+                    type="text"
+                    name="owner"
+                    value="{{ lesson['owner'] }}"
+                >
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option value="Open"
+                        {% if lesson['status'] == 'Open' %}selected{% endif %}>
+                        Open
+                    </option>
+
+                    <option value="Implemented"
+                        {% if lesson['status'] == 'Implemented' %}selected{% endif %}>
+                        Implemented
+                    </option>
+
+                    <option value="Archived"
+                        {% if lesson['status'] == 'Archived' %}selected{% endif %}>
+                        Archived
+                    </option>
+
+                </select>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Update Lesson
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -702,6 +702,11 @@ def init_db():
 
                    """)
 
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS category TEXT
+                   """)
+
     # Actions table
 
     cursor.execute("""
@@ -7121,6 +7126,7 @@ def add_lesson():
                 user_id,
                 project_id,
                 title,
+                category,
                 what_happened,
                 what_went_well,
                 what_went_wrong,
@@ -7129,11 +7135,12 @@ def add_lesson():
                 status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("project_id"),
             request.form.get("title"),
+            request.form.get("category"),
             request.form.get("what_happened"),
             request.form.get("what_went_well"),
             request.form.get("what_went_wrong"),
@@ -7146,6 +7153,10 @@ def add_lesson():
         conn.commit()
         conn.close()
 
+        create_activity(
+            f"{session['username']} added a lesson learned"
+        )
+
         return redirect("/lessons")
 
     conn.close()
@@ -7154,6 +7165,127 @@ def add_lesson():
         "add_lesson.html",
         projects=projects
     )
+
+@app.route("/edit-lesson/<int:lesson_id>", methods=["GET", "POST"])
+def edit_lesson(lesson_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Lessons", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM lessons
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        lesson_id,
+        session["user_id"]
+    ))
+
+    lesson = cursor.fetchone()
+
+    if not lesson:
+        conn.close()
+        return redirect("/lessons")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE lessons
+            SET
+                project_id = %s,
+                title = %s,
+                category = %s,
+                what_happened = %s,
+                what_went_well = %s,
+                what_went_wrong = %s,
+                recommendation = %s,
+                owner = %s,
+                status = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            request.form.get("title", ""),
+            request.form.get("category", ""),
+            request.form.get("what_happened", ""),
+            request.form.get("what_went_well", ""),
+            request.form.get("what_went_wrong", ""),
+            request.form.get("recommendation", ""),
+            request.form.get("owner", ""),
+            request.form.get("status", "Open"),
+            lesson_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a lesson learned"
+        )
+
+        return redirect("/lessons")
+
+    conn.close()
+
+    return render_template(
+        "edit_lesson.html",
+        lesson=lesson,
+        projects=projects
+    )
+
+
+@app.route("/delete-lesson/<int:lesson_id>")
+def delete_lesson(lesson_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Lessons", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM lessons
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        lesson_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a lesson learned"
+    )
+
+    return redirect("/lessons")
 
 
 @app.route("/budgets")
