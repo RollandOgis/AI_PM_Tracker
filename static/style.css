@@ -2924,3 +2924,17 @@ td {
 .executive-stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
+
+.raid-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.raid-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    align-self: start;
+}
