@@ -11,196 +11,321 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
 
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Tasks</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage delivery tasks and team ownership.
+                    Manage delivery tasks, dependencies, comments, history and team ownership.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-task" class="btn-primary">
                     + Add Task
                 </a>
-
             </div>
 
         </div>
 
-
         {% if all_tasks %}
 
-            <div class="projects-grid">
+            <form method="POST" action="/bulk-update-tasks">
 
-                {% for item in all_tasks %}
+                <div class="bulk-actions-bar">
 
-                    <div class="project-card">
+                    <select name="bulk_action" required>
+                        <option value="">Select Bulk Action</option>
+                        <option value="complete">Mark Completed</option>
+                        <option value="in_progress">Mark In Progress</option>
+                        <option value="blocked">Mark Blocked</option>
+                        <option value="delete">Delete Selected</option>
+                    </select>
 
-                        <div class="project-top">
+                    <button type="submit" class="btn-primary">
+                        Apply
+                    </button>
 
-                            <div>
+                </div>
 
-                                <h3>
-                                    {{ item["task"]["title"] }}
-                                </h3>
+                <div class="projects-grid">
 
-                                <span class="project-status">
-                                    {{ item["task"]["status"] }}
-                                </span>
+                    {% for item in all_tasks %}
 
-                            </div>
+                        <div class="project-card">
 
-                           <div class="project-actions">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="task_ids"
+                                    value="{{ item['task']['id'] }}"
+                                >
+                                Select Task
+                            </label>
 
-    <a href="/edit-task/{{ item['task']['id'] }}">
-        Edit
-    </a>
+                            <div class="project-top">
 
-    <form
-        action="/delete-task/{{ item['task']['id'] }}"
-        method="POST"
-        class="inline-form"
-        onsubmit="return confirm('Delete this task?');"
-    >
-        <button type="submit" class="link-button">
-            Delete
-        </button>
-    </form>
+                                <div>
+                                    <h3>
+                                        {{ item["task"]["title"] }}
+                                    </h3>
 
-</div>
+                                    <span class="project-status">
+                                        {{ item["task"]["status"] }}
+                                    </span>
+                                </div>
 
-                        </div>
+                                <div class="project-actions">
 
+                                    <a href="/edit-task/{{ item['task']['id'] }}">
+                                        Edit
+                                    </a>
 
-                        <div class="budget-section">
+                                    <a
+                                        href="/delete-task/{{ item['task']['id'] }}"
+                                        onclick="return confirm('Delete this task?');"
+                                    >
+                                        Delete
+                                    </a>
 
-                            <div class="budget-row">
-
-                                <span>Project</span>
-
-                                <strong>
-                                    {{ item["task"]["project_name"] }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Priority</span>
-
-                                <strong>
-                                    {{ item["task"]["priority"] }}
-                                </strong>
+                                </div>
 
                             </div>
 
-                            <div class="budget-row">
+                            <div class="budget-section">
 
-                                <span>Due Date</span>
+                                <div class="budget-row">
+                                    <span>Project</span>
+                                    <strong>{{ item["task"]["project_name"] }}</strong>
+                                </div>
 
-                                <strong>
-                                    {{ item["task"]["due_date"] or "N/A" }}
-                                </strong>
+                                <div class="budget-row">
+                                    <span>Priority</span>
+                                    <strong>{{ item["task"]["priority"] }}</strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Due Date</span>
+                                    <strong>{{ item["task"]["due_date"] or "N/A" }}</strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Recurring</span>
+                                    <strong>
+                                        {% if item["task"]["is_recurring"] %}
+                                            Yes - {{ item["task"]["recurring_frequency"] or "Not Set" }}
+                                        {% else %}
+                                            No
+                                        {% endif %}
+                                    </strong>
+                                </div>
 
                             </div>
 
-                        </div>
+                            {% if item["team_members"] %}
 
+                                <div class="smart-insight">
 
-                        {% if item["team_members"] %}
+                                    <strong>Team Members:</strong>
+
+                                    <ul class="ai-list">
+                                        {% for member in item["team_members"] %}
+                                            <li>{{ member }}</li>
+                                        {% endfor %}
+                                    </ul>
+
+                                </div>
+
+                            {% elif item["task"]["assigned_to"] %}
+
+                                <div class="smart-insight">
+
+                                    <strong>Assigned To:</strong>
+
+                                    <br><br>
+
+                                    {{ item["task"]["assigned_to"] }}
+
+                                </div>
+
+                            {% endif %}
 
                             <div class="smart-insight">
 
-                                <strong>Team Members:</strong>
-
-                                <ul class="ai-list">
-
-                                    {% for member in item["team_members"] %}
-
-                                        <li>{{ member }}</li>
-
-                                    {% endfor %}
-
-                                </ul>
-
-                            </div>
-
-                        {% elif item["task"]["assigned_to"] %}
-
-                            <div class="smart-insight">
-
-                                <strong>Assigned To:</strong>
+                                <strong>Description:</strong>
 
                                 <br><br>
 
-                                {{ item["task"]["assigned_to"] }}
+                                {{ item["task"]["description"] or "No description provided." }}
 
                             </div>
 
-                        {% endif %}
+                            {% if item["dependencies"] %}
 
+                                <div class="smart-insight">
 
-                        <div class="smart-insight">
+                                    <strong>Dependencies:</strong>
 
-                            <strong>Description:</strong>
+                                    <ul class="ai-list">
+                                        {% for dependency in item["dependencies"] %}
+                                            <li>{{ dependency["dependency_title"] }}</li>
+                                        {% endfor %}
+                                    </ul>
 
-                            <br><br>
+                                </div>
 
-                            {{ item["task"]["description"] or "No description provided." }}
+                            {% endif %}
+
+                            {% if item["task"]["acceptance_criteria"] %}
+
+                                <div class="smart-insight">
+
+                                    <strong>Acceptance Criteria:</strong>
+
+                                    <br><br>
+
+                                    {{ item["task"]["acceptance_criteria"] }}
+
+                                </div>
+
+                            {% endif %}
+
+                            {% if item["task"]["checklist"] %}
+
+                                <div class="smart-insight">
+
+                                    <strong>Checklist:</strong>
+
+                                    <br><br>
+
+                                    {{ item["task"]["checklist"] }}
+
+                                </div>
+
+                            {% endif %}
+
+                            {% if item["task"]["attachment_name"] or item["task"]["attachment_url"] %}
+
+                                <div class="smart-insight">
+
+                                    <strong>Attachment:</strong>
+
+                                    <br><br>
+
+                                    {% if item["task"]["attachment_url"] %}
+                                        <a href="{{ item['task']['attachment_url'] }}" target="_blank">
+                                            {{ item["task"]["attachment_name"] or "Open Attachment" }}
+                                        </a>
+                                    {% else %}
+                                        {{ item["task"]["attachment_name"] }}
+                                    {% endif %}
+
+                                </div>
+
+                            {% endif %}
+
+                            <div class="budget-section">
+
+                                <div class="budget-row">
+                                    <span>Estimated Hours</span>
+                                    <strong>{{ item["task"]["estimated_hours"] or 0 }}</strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Actual Hours</span>
+                                    <strong>{{ item["task"]["actual_hours"] or 0 }}</strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Hourly Rate</span>
+                                    <strong>£{{ item["task"]["hourly_rate"] or 0 }}</strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Estimated Cost</span>
+                                    <strong>
+                                        £{{ "{:,.0f}".format((item["task"]["estimated_hours"] or 0) * (item["task"]["hourly_rate"] or 0)) }}
+                                    </strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Actual Cost</span>
+                                    <strong>
+                                        £{{ "{:,.0f}".format((item["task"]["actual_hours"] or 0) * (item["task"]["hourly_rate"] or 0)) }}
+                                    </strong>
+                                </div>
+
+                            </div>
+
+                            <div class="smart-insight">
+
+                                <strong>Add Comment:</strong>
+
+                                <br><br>
+
+                                <textarea
+                                    name="comment_{{ item['task']['id'] }}"
+                                    rows="2"
+                                    placeholder="Add a comment..."
+                                ></textarea>
+
+                                <button
+                                    type="submit"
+                                    name="bulk_action"
+                                    value="comment_{{ item['task']['id'] }}"
+                                    class="btn-secondary"
+                                    style="margin-top:10px;"
+                                >
+                                    Add Comment
+                                </button>
+
+                            </div>
+
+                            {% if item["comments"] %}
+
+                                <div class="smart-insight">
+
+                                    <strong>Recent Comments:</strong>
+
+                                    <ul class="ai-list">
+                                        {% for comment in item["comments"] %}
+                                            <li>{{ comment["comment"] }}</li>
+                                        {% endfor %}
+                                    </ul>
+
+                                </div>
+
+                            {% endif %}
+
+                            {% if item["history"] %}
+
+                                <div class="smart-insight">
+
+                                    <strong>Task History:</strong>
+
+                                    <ul class="ai-list">
+                                        {% for history in item["history"] %}
+                                            <li>{{ history["action"] }} - {{ history["created_at"] }}</li>
+                                        {% endfor %}
+                                    </ul>
+
+                                </div>
+
+                            {% endif %}
 
                         </div>
 
+                    {% endfor %}
 
-                        <div class="budget-section">
+                </div>
 
-                            <div class="budget-row">
-
-                                <span>Estimated Hours</span>
-
-                                <strong>
-                                    {{ item["task"]["estimated_hours"] or 0 }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Actual Hours</span>
-
-                                <strong>
-                                    {{ item["task"]["actual_hours"] or 0 }}
-                                </strong>
-
-                            </div>
-
-                            <div class="budget-row">
-
-                                <span>Hourly Rate</span>
-
-                                <strong>
-                                    £{{ item["task"]["hourly_rate"] or 0 }}
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
+            </form>
 
         {% else %}
 

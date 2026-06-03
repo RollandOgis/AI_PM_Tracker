@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -35,7 +36,6 @@
 
                 </select>
 
-
                 <label>Task Title</label>
 
                 <input
@@ -44,14 +44,12 @@
                     required
                 >
 
-
                 <label>Description</label>
 
                 <textarea
                     name="description"
                     rows="5"
                 ></textarea>
-
 
                 <label>Assigned To</label>
 
@@ -60,7 +58,6 @@
                     name="assigned_to"
                     placeholder="Optional manual assignment"
                 >
-
 
                 <label>Team Members</label>
 
@@ -86,6 +83,26 @@
                     Hold Ctrl on Windows or Command on Mac to select multiple team members.
                 </small>
 
+                <label>Task Dependencies</label>
+
+                <select name="depends_on_task_ids" multiple>
+
+                    {% for task in existing_tasks %}
+
+                        <option value="{{ task['id'] }}">
+
+                            {{ task['title'] }}
+                            ({{ task['project_name'] }})
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small>
+                    Select tasks that must be completed before this task.
+                </small>
 
                 <label>Priority</label>
 
@@ -105,7 +122,6 @@
 
                 </select>
 
-
                 <label>Status</label>
 
                 <select name="status">
@@ -122,8 +138,11 @@
                         Completed
                     </option>
 
-                </select>
+                    <option value="Blocked">
+                        Blocked
+                    </option>
 
+                </select>
 
                 <label>Due Date</label>
 
@@ -131,7 +150,6 @@
                     type="date"
                     name="due_date"
                 >
-
 
                 <label>Estimated Hours</label>
 
@@ -141,7 +159,6 @@
                     name="estimated_hours"
                 >
 
-
                 <label>Actual Hours</label>
 
                 <input
@@ -149,7 +166,6 @@
                     step="0.1"
                     name="actual_hours"
                 >
-
 
                 <label>Hourly Rate (£)</label>
 
@@ -159,6 +175,77 @@
                     name="hourly_rate"
                 >
 
+                <label>Attachment Name</label>
+
+                <input
+                    type="text"
+                    name="attachment_name"
+                    placeholder="Requirements Document"
+                >
+
+                <label>Attachment URL</label>
+
+                <input
+                    type="text"
+                    name="attachment_url"
+                    placeholder="https://..."
+                >
+
+                <label>Acceptance Criteria</label>
+
+                <textarea
+                    name="acceptance_criteria"
+                    rows="4"
+                    placeholder="What must be true before this task is complete?"
+                ></textarea>
+
+                <label>Checklist</label>
+
+                <textarea
+                    name="checklist"
+                    rows="4"
+                    placeholder="Example:
+- Build API
+- Complete Testing
+- Obtain Approval"
+                ></textarea>
+
+                <label>
+
+                    <input
+                        type="checkbox"
+                        name="is_recurring"
+                    >
+
+                    Recurring Task
+
+                </label>
+
+                <label>Recurring Frequency</label>
+
+                <select name="recurring_frequency">
+
+                    <option value="">
+                        Not Recurring
+                    </option>
+
+                    <option value="Daily">
+                        Daily
+                    </option>
+
+                    <option value="Weekly">
+                        Weekly
+                    </option>
+
+                    <option value="Monthly">
+                        Monthly
+                    </option>
+
+                    <option value="Quarterly">
+                        Quarterly
+                    </option>
+
+                </select>
 
                 <button type="submit" class="btn-primary">
                     Create Task

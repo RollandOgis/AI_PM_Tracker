@@ -219,6 +219,88 @@ def init_db():
     except Exception:
         pass
 
+    cursor.execute("""
+                   ALTER TABLE tasks
+                       ADD COLUMN IF NOT EXISTS attachment_name TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE tasks
+                       ADD COLUMN IF NOT EXISTS attachment_url TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE tasks
+                       ADD COLUMN IF NOT EXISTS acceptance_criteria TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE tasks
+                       ADD COLUMN IF NOT EXISTS checklist TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE tasks
+                       ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE tasks
+                       ADD COLUMN IF NOT EXISTS recurring_frequency TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS task_dependencies
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       task_id
+                       INTEGER,
+                       depends_on_task_id
+                       INTEGER,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS task_comments
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       task_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       comment
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS task_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       task_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     # CLIENTS
     cursor.execute("""
@@ -3579,7 +3661,6 @@ def project_detail(project_id):
         completion=completion
     )
 
-
 @app.route("/tasks")
 def tasks():
 
@@ -3629,9 +3710,43 @@ def tasks():
             else:
                 team_members.append(member["name"])
 
+        cursor.execute("""
+            SELECT
+                dependency_tasks.title AS dependency_title
+            FROM task_dependencies
+            JOIN tasks AS dependency_tasks
+            ON task_dependencies.depends_on_task_id = dependency_tasks.id
+            WHERE task_dependencies.task_id = %s
+        """, (task["id"],))
+
+        dependencies = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT *
+            FROM task_comments
+            WHERE task_id = %s
+            ORDER BY id DESC
+            LIMIT 3
+        """, (task["id"],))
+
+        comments = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT *
+            FROM task_history
+            WHERE task_id = %s
+            ORDER BY id DESC
+            LIMIT 3
+        """, (task["id"],))
+
+        history = cursor.fetchall()
+
         all_tasks.append({
             "task": task,
-            "team_members": team_members
+            "team_members": team_members,
+            "dependencies": dependencies,
+            "comments": comments,
+            "history": history
         })
 
     conn.close()
@@ -3640,6 +3755,7 @@ def tasks():
         "tasks.html",
         all_tasks=all_tasks
     )
+
 @app.route("/add-task", methods=["GET", "POST"])
 def add_task():
 
@@ -3656,6 +3772,7 @@ def add_task():
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (session["user_id"],))
 
@@ -3670,6 +3787,19 @@ def add_task():
 
     team_members = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        ORDER BY tasks.title ASC
+    """, (session["user_id"],))
+
+    existing_tasks = cursor.fetchall()
+
     if request.method == "POST":
 
         project_id = request.form.get("project_id")
@@ -3681,10 +3811,18 @@ def add_task():
         due_date = request.form.get("due_date", "")
 
         selected_team_members = request.form.getlist("team_member_ids")
+        selected_dependencies = request.form.getlist("depends_on_task_ids")
 
         estimated_hours = float(request.form.get("estimated_hours", 0) or 0)
         actual_hours = float(request.form.get("actual_hours", 0) or 0)
         hourly_rate = float(request.form.get("hourly_rate", 0) or 0)
+
+        attachment_name = request.form.get("attachment_name", "")
+        attachment_url = request.form.get("attachment_url", "")
+        acceptance_criteria = request.form.get("acceptance_criteria", "")
+        checklist = request.form.get("checklist", "")
+        is_recurring = True if request.form.get("is_recurring") == "on" else False
+        recurring_frequency = request.form.get("recurring_frequency", "")
 
         cursor.execute("""
             INSERT INTO tasks
@@ -3699,9 +3837,15 @@ def add_task():
                 estimated_hours,
                 actual_hours,
                 hourly_rate,
+                attachment_name,
+                attachment_url,
+                acceptance_criteria,
+                checklist,
+                is_recurring,
+                recurring_frequency,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             RETURNING id
         """, (
             project_id,
@@ -3714,13 +3858,18 @@ def add_task():
             estimated_hours,
             actual_hours,
             hourly_rate,
+            attachment_name,
+            attachment_url,
+            acceptance_criteria,
+            checklist,
+            is_recurring,
+            recurring_frequency,
             str(date.today())
         ))
 
         task_id = cursor.fetchone()["id"]
 
         for member_id in selected_team_members:
-
             cursor.execute("""
                 INSERT INTO task_team_members
                 (
@@ -3732,6 +3881,37 @@ def add_task():
                 task_id,
                 member_id
             ))
+
+        for dependency_id in selected_dependencies:
+            cursor.execute("""
+                INSERT INTO task_dependencies
+                (
+                    task_id,
+                    depends_on_task_id,
+                    created_at
+                )
+                VALUES (%s,%s,%s)
+            """, (
+                task_id,
+                dependency_id,
+                str(date.today())
+            ))
+
+        cursor.execute("""
+            INSERT INTO task_history
+            (
+                task_id,
+                user_id,
+                action,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s)
+        """, (
+            task_id,
+            session["user_id"],
+            "Task created",
+            str(date.today())
+        ))
 
         conn.commit()
         conn.close()
@@ -3747,9 +3927,9 @@ def add_task():
     return render_template(
         "add_task.html",
         projects=projects,
-        team_members=team_members
+        team_members=team_members,
+        existing_tasks=existing_tasks
     )
-
 
 @app.route("/edit-task/<int:task_id>", methods=["GET", "POST"])
 def edit_task(task_id):
@@ -3786,6 +3966,7 @@ def edit_task(task_id):
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (session["user_id"],))
 
@@ -3801,6 +3982,23 @@ def edit_task(task_id):
     team_members = cursor.fetchall()
 
     cursor.execute("""
+        SELECT
+            tasks.*,
+            projects.name AS project_name
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.id != %s
+        ORDER BY tasks.title ASC
+    """, (
+        session["user_id"],
+        task_id
+    ))
+
+    existing_tasks = cursor.fetchall()
+
+    cursor.execute("""
         SELECT team_member_id
         FROM task_team_members
         WHERE task_id = %s
@@ -3811,6 +4009,19 @@ def edit_task(task_id):
     selected_member_ids = [
         member["team_member_id"]
         for member in selected_members
+    ]
+
+    cursor.execute("""
+        SELECT depends_on_task_id
+        FROM task_dependencies
+        WHERE task_id = %s
+    """, (task_id,))
+
+    selected_dependencies = cursor.fetchall()
+
+    selected_dependency_ids = [
+        dependency["depends_on_task_id"]
+        for dependency in selected_dependencies
     ]
 
     if request.method == "POST":
@@ -3824,10 +4035,18 @@ def edit_task(task_id):
         due_date = request.form.get("due_date", "")
 
         selected_team_members = request.form.getlist("team_member_ids")
+        selected_dependencies = request.form.getlist("depends_on_task_ids")
 
         estimated_hours = float(request.form.get("estimated_hours", 0) or 0)
         actual_hours = float(request.form.get("actual_hours", 0) or 0)
         hourly_rate = float(request.form.get("hourly_rate", 0) or 0)
+
+        attachment_name = request.form.get("attachment_name", "")
+        attachment_url = request.form.get("attachment_url", "")
+        acceptance_criteria = request.form.get("acceptance_criteria", "")
+        checklist = request.form.get("checklist", "")
+        is_recurring = True if request.form.get("is_recurring") == "on" else False
+        recurring_frequency = request.form.get("recurring_frequency", "")
 
         cursor.execute("""
             UPDATE tasks
@@ -3841,7 +4060,13 @@ def edit_task(task_id):
                 due_date = %s,
                 estimated_hours = %s,
                 actual_hours = %s,
-                hourly_rate = %s
+                hourly_rate = %s,
+                attachment_name = %s,
+                attachment_url = %s,
+                acceptance_criteria = %s,
+                checklist = %s,
+                is_recurring = %s,
+                recurring_frequency = %s
             WHERE id = %s
         """, (
             project_id,
@@ -3854,6 +4079,12 @@ def edit_task(task_id):
             estimated_hours,
             actual_hours,
             hourly_rate,
+            attachment_name,
+            attachment_url,
+            acceptance_criteria,
+            checklist,
+            is_recurring,
+            recurring_frequency,
             task_id
         ))
 
@@ -3863,7 +4094,6 @@ def edit_task(task_id):
         """, (task_id,))
 
         for member_id in selected_team_members:
-
             cursor.execute("""
                 INSERT INTO task_team_members
                 (
@@ -3875,6 +4105,42 @@ def edit_task(task_id):
                 task_id,
                 member_id
             ))
+
+        cursor.execute("""
+            DELETE FROM task_dependencies
+            WHERE task_id = %s
+        """, (task_id,))
+
+        for dependency_id in selected_dependencies:
+            cursor.execute("""
+                INSERT INTO task_dependencies
+                (
+                    task_id,
+                    depends_on_task_id,
+                    created_at
+                )
+                VALUES (%s,%s,%s)
+            """, (
+                task_id,
+                dependency_id,
+                str(date.today())
+            ))
+
+        cursor.execute("""
+            INSERT INTO task_history
+            (
+                task_id,
+                user_id,
+                action,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s)
+        """, (
+            task_id,
+            session["user_id"],
+            "Task updated",
+            str(date.today())
+        ))
 
         conn.commit()
         conn.close()
@@ -3892,8 +4158,11 @@ def edit_task(task_id):
         task=task,
         projects=projects,
         team_members=team_members,
-        selected_member_ids=selected_member_ids
+        existing_tasks=existing_tasks,
+        selected_member_ids=selected_member_ids,
+        selected_dependency_ids=selected_dependency_ids
     )
+
 
 
 @app.route("/delete-task/<int:task_id>", methods=["POST"])
@@ -3940,6 +4209,164 @@ def delete_task(task_id):
         create_activity(
             f"{session.get('username', 'User')} deleted task {task['title']}"
         )
+
+    return redirect("/tasks")
+
+@app.route("/add-task-comment/<int:task_id>", methods=["POST"])
+def add_task_comment(task_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    comment = request.form.get("comment", "").strip()
+
+    if comment:
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO task_comments
+            (
+                task_id,
+                user_id,
+                comment,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s)
+        """, (
+            task_id,
+            session["user_id"],
+            comment,
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO task_history
+            (
+                task_id,
+                user_id,
+                action,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s)
+        """, (
+            task_id,
+            session["user_id"],
+            "Comment added",
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+    return redirect("/tasks")
+
+@app.route("/bulk-update-tasks", methods=["POST"])
+def bulk_update_tasks():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Tasks", "edit"):
+        return "Access denied"
+
+    selected_tasks = request.form.getlist("task_ids")
+    bulk_action = request.form.get("bulk_action")
+
+    if not selected_tasks:
+        return redirect("/tasks")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    for task_id in selected_tasks:
+
+        if bulk_action == "complete":
+            cursor.execute("""
+                UPDATE tasks
+                SET status = 'Completed'
+                WHERE id = %s
+                AND project_id IN (
+                    SELECT id FROM projects WHERE user_id = %s
+                )
+            """, (
+                task_id,
+                session["user_id"]
+            ))
+
+            history_action = "Task marked as completed"
+
+        elif bulk_action == "in_progress":
+            cursor.execute("""
+                UPDATE tasks
+                SET status = 'In Progress'
+                WHERE id = %s
+                AND project_id IN (
+                    SELECT id FROM projects WHERE user_id = %s
+                )
+            """, (
+                task_id,
+                session["user_id"]
+            ))
+
+            history_action = "Task moved to in progress"
+
+        elif bulk_action == "blocked":
+            cursor.execute("""
+                UPDATE tasks
+                SET status = 'Blocked'
+                WHERE id = %s
+                AND project_id IN (
+                    SELECT id FROM projects WHERE user_id = %s
+                )
+            """, (
+                task_id,
+                session["user_id"]
+            ))
+
+            history_action = "Task marked as blocked"
+
+        elif bulk_action == "delete":
+            cursor.execute("""
+                DELETE FROM tasks
+                WHERE id = %s
+                AND project_id IN (
+                    SELECT id FROM projects WHERE user_id = %s
+                )
+            """, (
+                task_id,
+                session["user_id"]
+            ))
+
+            history_action = "Task deleted by bulk action"
+
+        else:
+            continue
+
+        if bulk_action != "delete":
+            cursor.execute("""
+                INSERT INTO task_history
+                (
+                    task_id,
+                    user_id,
+                    action,
+                    created_at
+                )
+                VALUES (%s,%s,%s,%s)
+            """, (
+                task_id,
+                session["user_id"],
+                history_action,
+                str(date.today())
+            ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} performed a bulk task update"
+    )
 
     return redirect("/tasks")
 
