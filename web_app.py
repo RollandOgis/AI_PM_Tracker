@@ -14148,6 +14148,26 @@ def seed_linkedin_demo():
             "Open",
             "Route and query review required."
         )
+
+            (
+            "Hospital Digital Command Centre",
+            "Late User Acceptance Testing",
+            "Business users were unavailable for planned UAT sessions.",
+            "Medium",
+            "Sarah Johnson",
+            "Open",
+            "Reschedule workshops and secure stakeholder attendance."
+        ),
+
+        (
+            "AI PM Tracker SaaS Platform",
+            "API Authentication Failure",
+            "Authentication errors identified during integration testing.",
+            "High",
+            "Daniel Green",
+            "Open",
+            "Review token configuration and API security settings."
+        ),
     ]
 
     for issue in issues:
