@@ -11,8 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
 
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -29,7 +29,6 @@
                     name="name"
                     required
                 >
-
 
                 <label>Client</label>
 
@@ -55,6 +54,95 @@
 
                 </select>
 
+                <label>Project Sponsor</label>
+
+                <select name="sponsor_id">
+
+                    <option value="">
+                        No Sponsor
+                    </option>
+
+                    {% for stakeholder in stakeholders %}
+
+                        <option value="{{ stakeholder['id'] }}">
+
+                            {{ stakeholder['name'] }}
+
+                            {% if stakeholder['role'] %}
+                                - {{ stakeholder['role'] }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Project Manager</label>
+
+                <select name="project_manager_id">
+
+                    <option value="">
+                        No Project Manager
+                    </option>
+
+                    {% for member in team_members %}
+
+                        <option value="{{ member['id'] }}">
+
+                            {{ member['name'] }}
+
+                            {% if member['role'] %}
+                                - {{ member['role'] }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Project Type</label>
+
+                <select name="project_type">
+
+                    <option value="Software">
+                        Software
+                    </option>
+
+                    <option value="Infrastructure">
+                        Infrastructure
+                    </option>
+
+                    <option value="Business Change">
+                        Business Change
+                    </option>
+
+                    <option value="Transformation">
+                        Transformation
+                    </option>
+
+                    <option value="Compliance">
+                        Compliance
+                    </option>
+
+                </select>
+
+                <label>Programme</label>
+
+                <input
+                    type="text"
+                    name="programme"
+                    placeholder="Example: Digital Transformation Programme"
+                >
+
+                <label>Portfolio</label>
+
+                <input
+                    type="text"
+                    name="portfolio"
+                    placeholder="Example: Enterprise Change Portfolio"
+                >
 
                 <label>Description</label>
 
@@ -63,7 +151,6 @@
                     rows="5"
                     required
                 ></textarea>
-
 
                 <label>Status</label>
 
@@ -87,7 +174,6 @@
 
                 </select>
 
-
                 <label>Start Date</label>
 
                 <input
@@ -95,14 +181,12 @@
                     name="start_date"
                 >
 
-
                 <label>End Date</label>
 
                 <input
                     type="date"
                     name="end_date"
                 >
-
 
                 <label>Estimated Budget (£)</label>
 
@@ -112,7 +196,6 @@
                     name="estimated_budget"
                 >
 
-
                 <label>Actual Cost (£)</label>
 
                 <input
@@ -120,7 +203,6 @@
                     step="0.01"
                     name="actual_cost"
                 >
-
 
                 <button type="submit" class="btn-primary">
                     Create Project

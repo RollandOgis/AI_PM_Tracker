@@ -247,6 +247,44 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS project_manager_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS sponsor_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS project_type TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS programme TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS portfolio TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE
+                   """)
+
+    try:
+        cursor.execute("""
+                       ALTER TABLE projects
+                           ADD COLUMN client_id INTEGER
+                       """)
+    except Exception:
+        pass
+
 
     # ACTIVITIES
     cursor.execute("""
@@ -3930,6 +3968,24 @@ def add_project():
 
     clients = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    team_members = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM stakeholders
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    stakeholders = cursor.fetchall()
+
     if request.method == "POST":
 
         name = request.form.get("name", "")
@@ -3939,6 +3995,12 @@ def add_project():
         end_date = request.form.get("end_date", "")
         client_id = request.form.get("client_id")
 
+        project_manager_id = request.form.get("project_manager_id")
+        sponsor_id = request.form.get("sponsor_id")
+        project_type = request.form.get("project_type", "")
+        programme = request.form.get("programme", "")
+        portfolio = request.form.get("portfolio", "")
+
         estimated_budget = float(request.form.get("estimated_budget", 0) or 0)
         actual_cost = float(request.form.get("actual_cost", 0) or 0)
 
@@ -3947,26 +4009,38 @@ def add_project():
             (
                 user_id,
                 client_id,
+                project_manager_id,
+                sponsor_id,
                 name,
                 description,
                 start_date,
                 end_date,
                 status,
+                project_type,
+                programme,
+                portfolio,
                 estimated_budget,
                 actual_cost,
+                is_archived,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             client_id if client_id else None,
+            project_manager_id if project_manager_id else None,
+            sponsor_id if sponsor_id else None,
             name,
             description,
             start_date,
             end_date,
             status,
+            project_type,
+            programme,
+            portfolio,
             estimated_budget,
             actual_cost,
+            False,
             str(date.today())
         ))
 
@@ -3983,7 +4057,9 @@ def add_project():
 
     return render_template(
         "add_project.html",
-        clients=clients
+        clients=clients,
+        team_members=team_members,
+        stakeholders=stakeholders
     )
 
 
@@ -4024,6 +4100,24 @@ def edit_project(project_id):
 
     clients = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT *
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    team_members = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM stakeholders
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (session["user_id"],))
+
+    stakeholders = cursor.fetchall()
+
     if request.method == "POST":
 
         name = request.form.get("name", "")
@@ -4033,6 +4127,12 @@ def edit_project(project_id):
         end_date = request.form.get("end_date", "")
         client_id = request.form.get("client_id")
 
+        project_manager_id = request.form.get("project_manager_id")
+        sponsor_id = request.form.get("sponsor_id")
+        project_type = request.form.get("project_type", "")
+        programme = request.form.get("programme", "")
+        portfolio = request.form.get("portfolio", "")
+
         estimated_budget = float(request.form.get("estimated_budget", 0) or 0)
         actual_cost = float(request.form.get("actual_cost", 0) or 0)
 
@@ -4040,22 +4140,32 @@ def edit_project(project_id):
             UPDATE projects
             SET
                 client_id = %s,
+                project_manager_id = %s,
+                sponsor_id = %s,
                 name = %s,
                 description = %s,
                 start_date = %s,
                 end_date = %s,
                 status = %s,
+                project_type = %s,
+                programme = %s,
+                portfolio = %s,
                 estimated_budget = %s,
                 actual_cost = %s
             WHERE id = %s
             AND user_id = %s
         """, (
             client_id if client_id else None,
+            project_manager_id if project_manager_id else None,
+            sponsor_id if sponsor_id else None,
             name,
             description,
             start_date,
             end_date,
             status,
+            project_type,
+            programme,
+            portfolio,
             estimated_budget,
             actual_cost,
             project_id,
@@ -4076,7 +4186,9 @@ def edit_project(project_id):
     return render_template(
         "edit_project.html",
         project=project,
-        clients=clients
+        clients=clients,
+        team_members=team_members,
+        stakeholders=stakeholders
     )
 
 

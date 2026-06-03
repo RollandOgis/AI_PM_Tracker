@@ -11,8 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
 
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -30,7 +30,6 @@
                     value="{{ project['name'] }}"
                     required
                 >
-
 
                 <label>Client</label>
 
@@ -71,6 +70,121 @@
                     {% endfor %}
 
                 </select>
+
+
+                <label>Project Sponsor</label>
+
+                <select name="sponsor_id">
+
+                    <option value="">
+                        No Sponsor
+                    </option>
+
+                    {% for stakeholder in stakeholders %}
+
+                        <option
+                            value="{{ stakeholder['id'] }}"
+                            {% if project['sponsor_id'] == stakeholder['id'] %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ stakeholder['name'] }}
+
+                            {% if stakeholder['role'] %}
+                                - {{ stakeholder['role'] }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Project Manager</label>
+
+                <select name="project_manager_id">
+
+                    <option value="">
+                        No Project Manager
+                    </option>
+
+                    {% for member in team_members %}
+
+                        <option
+                            value="{{ member['id'] }}"
+                            {% if project['project_manager_id'] == member['id'] %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ member['name'] }}
+
+                            {% if member['role'] %}
+                                - {{ member['role'] }}
+                            {% endif %}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Project Type</label>
+
+                <select name="project_type">
+
+                    <option value="Software"
+                        {% if project['project_type'] == 'Software' %}selected{% endif %}
+                    >
+                        Software
+                    </option>
+
+                    <option value="Infrastructure"
+                        {% if project['project_type'] == 'Infrastructure' %}selected{% endif %}
+                    >
+                        Infrastructure
+                    </option>
+
+                    <option value="Business Change"
+                        {% if project['project_type'] == 'Business Change' %}selected{% endif %}
+                    >
+                        Business Change
+                    </option>
+
+                    <option value="Transformation"
+                        {% if project['project_type'] == 'Transformation' %}selected{% endif %}
+                    >
+                        Transformation
+                    </option>
+
+                    <option value="Compliance"
+                        {% if project['project_type'] == 'Compliance' %}selected{% endif %}
+                    >
+                        Compliance
+                    </option>
+
+                </select>
+
+
+                <label>Programme</label>
+
+                <input
+                    type="text"
+                    name="programme"
+                    value="{{ project['programme'] or '' }}"
+                >
+
+
+                <label>Portfolio</label>
+
+                <input
+                    type="text"
+                    name="portfolio"
+                    value="{{ project['portfolio'] or '' }}"
+                >
 
 
                 <label>Description</label>
