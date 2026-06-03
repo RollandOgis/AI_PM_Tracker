@@ -14184,34 +14184,100 @@ def seed_linkedin_demo():
             today
         ))
 
-        cursor.execute("""
-            INSERT INTO assumptions
-            (user_id, project_id, title, description, owner, status, created_at)
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            user_id,
-            project_ids[project_name],
-            "Stakeholders Available for Review",
-            "Key stakeholders will be available for planned review sessions.",
-            "Sarah Johnson",
-            "Open",
-            today
-        ))
+        assumption_templates = [
+            (
+                "Stakeholders Available for Review",
+                "Key stakeholders will be available for scheduled review sessions and approvals.",
+                "Sarah Johnson"
+            ),
+            (
+                "Supplier Delivery on Schedule",
+                "Third-party supplier will deliver agreed components according to plan.",
+                "Michael Brown"
+            ),
+            (
+                "Budget Approval Maintained",
+                "Approved project funding will remain available throughout delivery.",
+                "Grace Hall"
+            ),
+            (
+                "Resources Remain Available",
+                "Project resources will remain allocated for the duration of delivery.",
+                "Henry Allen"
+            ),
+            (
+                "Infrastructure Supports Deployment",
+                "Existing infrastructure capacity will support planned deployment activities.",
+                "Daniel Green"
+            )
+        ]
+
+        dependency_templates = [
+            (
+                "Identity Provider Integration",
+                "Delivery depends on identity provider configuration being completed.",
+                "Daniel Green",
+                "2026-07-05"
+            ),
+            (
+                "Third Party API Availability",
+                "Delivery depends on external API availability during integration testing.",
+                "Daniel Green",
+                "2026-07-10"
+            ),
+            (
+                "Security Approval",
+                "Release depends on security review and approval.",
+                "David Wilson",
+                "2026-07-15"
+            ),
+            (
+                "Infrastructure Provisioning",
+                "Deployment depends on infrastructure environments being available.",
+                "Michael Brown",
+                "2026-07-20"
+            ),
+            (
+                "Production Release Window",
+                "Go-live depends on an agreed production release window.",
+                "Sarah Johnson",
+                "2026-07-25"
+            )
+        ]
+
+        project_index = list(project_ids.keys()).index(project_name)
+
+        assumption = assumption_templates[project_index]
+        dependency = dependency_templates[project_index]
 
         cursor.execute("""
-            INSERT INTO dependencies
-            (user_id, project_id, title, description, owner, status, target_date, created_at)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            user_id,
-            project_ids[project_name],
-            "Supplier Delivery Dependency",
-            "Delivery depends on supplier confirmation and technical inputs.",
-            "Michael Brown",
-            "Open",
-            "2026-07-15",
-            today
-        ))
+                       INSERT INTO assumptions
+                           (user_id, project_id, title, description, owner, status, created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)
+                       """, (
+                           user_id,
+                           project_ids[project_name],
+                           assumption[0],
+                           assumption[1],
+                           assumption[2],
+                           "Open",
+                           today
+                       ))
+
+        cursor.execute("""
+                       INSERT INTO dependencies
+                       (user_id, project_id, title, description, owner, status, target_date, created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                       """, (
+                           user_id,
+                           project_ids[project_name],
+                           dependency[0],
+                           dependency[1],
+                           dependency[2],
+                           "Open",
+                           dependency[3],
+                           today
+                       ))
 
         cursor.execute("""
             INSERT INTO stakeholders
