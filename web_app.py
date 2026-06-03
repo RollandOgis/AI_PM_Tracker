@@ -14128,7 +14128,6 @@ def seed_linkedin_demo():
             "Open",
             "Escalation raised with procurement."
         ),
-
         (
             "Retail CRM Migration",
             "Duplicate Customer Records",
@@ -14138,7 +14137,6 @@ def seed_linkedin_demo():
             "Open",
             "Data cleansing in progress."
         ),
-
         (
             "AI PM Tracker SaaS Platform",
             "Usage Analytics Page Error",
@@ -14147,8 +14145,7 @@ def seed_linkedin_demo():
             "Daniel Green",
             "Open",
             "Route and query review required."
-        )
-
+        ),
         (
             "Hospital Digital Command Centre",
             "Late User Acceptance Testing",
@@ -14158,7 +14155,6 @@ def seed_linkedin_demo():
             "Open",
             "Reschedule workshops and secure stakeholder attendance."
         ),
-
         (
             "AI PM Tracker SaaS Platform",
             "API Authentication Failure",
