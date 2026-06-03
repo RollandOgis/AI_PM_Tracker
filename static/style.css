@@ -2925,16 +2925,36 @@ td {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+/* FINAL RAID CARD ALIGNMENT FIX */
+
 .raid-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
+    align-items: stretch;
 }
 
 .raid-card {
     background: white;
     border-radius: 16px;
-    padding: 20px;
+    padding: 22px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    align-self: start;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+}
+
+.raid-card h3 {
+    margin-bottom: 18px;
+}
+
+.raid-item {
+    min-height: 105px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.raid-item:last-child {
+    border-bottom: none;
 }
