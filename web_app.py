@@ -6326,7 +6326,7 @@ def raid():
         SELECT *
         FROM risks
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY id ASC
     """, (
         session["user_id"],
     ))
@@ -6336,7 +6336,7 @@ def raid():
         SELECT *
         FROM assumptions
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY id ASC
     """, (
         session["user_id"],
     ))
@@ -6346,7 +6346,7 @@ def raid():
         SELECT *
         FROM issues
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY id ASC
     """, (
         session["user_id"],
     ))
@@ -6356,7 +6356,7 @@ def raid():
         SELECT *
         FROM dependencies
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY id ASC
     """, (
         session["user_id"],
     ))
@@ -6371,7 +6371,6 @@ def raid():
         issues=issues,
         dependencies=dependencies
     )
-
 
 @app.route("/add-assumption", methods=["GET", "POST"])
 def add_assumption():
