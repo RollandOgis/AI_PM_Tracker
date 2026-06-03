@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -40,7 +41,6 @@
 
                 </select>
 
-
                 <label>Benefit Title</label>
 
                 <input
@@ -50,7 +50,6 @@
                     required
                 >
 
-
                 <label>Description</label>
 
                 <textarea
@@ -59,6 +58,36 @@
                     required
                 >{{ benefit['description'] }}</textarea>
 
+                <label>Benefit Type</label>
+
+                <select name="benefit_type" required>
+
+                    <option value="Financial"
+                        {% if benefit['benefit_type'] == 'Financial' %}selected{% endif %}>
+                        Financial
+                    </option>
+
+                    <option value="Operational"
+                        {% if benefit['benefit_type'] == 'Operational' %}selected{% endif %}>
+                        Operational
+                    </option>
+
+                    <option value="Customer"
+                        {% if benefit['benefit_type'] == 'Customer' %}selected{% endif %}>
+                        Customer
+                    </option>
+
+                    <option value="Compliance"
+                        {% if benefit['benefit_type'] == 'Compliance' %}selected{% endif %}>
+                        Compliance
+                    </option>
+
+                    <option value="Strategic"
+                        {% if benefit['benefit_type'] == 'Strategic' %}selected{% endif %}>
+                        Strategic
+                    </option>
+
+                </select>
 
                 <label>Expected Value</label>
 
@@ -69,7 +98,6 @@
                     required
                 >
 
-
                 <label>Measurement Method</label>
 
                 <textarea
@@ -77,7 +105,6 @@
                     rows="4"
                     required
                 >{{ benefit['measurement_method'] }}</textarea>
-
 
                 <label>Benefit Owner</label>
 
@@ -87,7 +114,6 @@
                     value="{{ benefit['owner'] }}"
                     required
                 >
-
 
                 <label>Status</label>
 
@@ -123,7 +149,6 @@
 
                 </select>
 
-
                 <label>Target Date</label>
 
                 <input
@@ -132,6 +157,13 @@
                     value="{{ benefit['target_date'] }}"
                 >
 
+                <label>Realised Date</label>
+
+                <input
+                    type="date"
+                    name="realised_date"
+                    value="{{ benefit['realised_date'] }}"
+                >
 
                 <button type="submit" class="btn-primary">
                     Update Benefit

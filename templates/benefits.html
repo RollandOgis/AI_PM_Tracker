@@ -74,6 +74,11 @@
                     </p>
 
                     <p>
+                        Benefit Type:
+                        {{ top_benefit["benefit_type"] or "Not set" }}
+                    </p>
+
+                    <p>
                         Expected Value:
                         {{ top_benefit["expected_value"] }}
                     </p>
@@ -138,6 +143,11 @@
                             </div>
 
                             <div class="budget-row">
+                                <span>Benefit Type</span>
+                                <strong>{{ benefit["benefit_type"] or "Not set" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
                                 <span>Expected Value</span>
                                 <strong>{{ benefit["expected_value"] }}</strong>
                             </div>
@@ -150,6 +160,11 @@
                             <div class="budget-row">
                                 <span>Target Date</span>
                                 <strong>{{ benefit["target_date"] or "No date" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Realised Date</span>
+                                <strong>{{ benefit["realised_date"] or "Not realised" }}</strong>
                             </div>
 
                             <div class="budget-row">

@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Benefit</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
+
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -20,21 +23,65 @@
             <form method="POST">
 
                 <label>Project</label>
+
                 <select name="project_id" required>
+
                     {% for project in projects %}
+
                         <option value="{{ project['id'] }}">
                             {{ project['name'] }}
                         </option>
+
                     {% endfor %}
+
                 </select>
 
                 <label>Benefit Title</label>
-                <input type="text" name="title" required>
+
+                <input
+                    type="text"
+                    name="title"
+                    required
+                >
 
                 <label>Description</label>
-                <textarea name="description" rows="4" required></textarea>
+
+                <textarea
+                    name="description"
+                    rows="4"
+                    required
+                ></textarea>
+
+                <label>Benefit Type</label>
+
+                <select name="benefit_type" required>
+
+                    <option value="">Select Type</option>
+
+                    <option value="Financial">
+                        Financial
+                    </option>
+
+                    <option value="Operational">
+                        Operational
+                    </option>
+
+                    <option value="Customer">
+                        Customer
+                    </option>
+
+                    <option value="Compliance">
+                        Compliance
+                    </option>
+
+                    <option value="Strategic">
+                        Strategic
+                    </option>
+
+                </select>
 
                 <label>Expected Value</label>
+
                 <input
                     type="text"
                     name="expected_value"
@@ -43,6 +90,7 @@
                 >
 
                 <label>Measurement Method</label>
+
                 <textarea
                     name="measurement_method"
                     rows="4"
@@ -51,20 +99,53 @@
                 ></textarea>
 
                 <label>Benefit Owner</label>
-                <input type="text" name="owner" required>
+
+                <input
+                    type="text"
+                    name="owner"
+                    required
+                >
 
                 <label>Status</label>
+
                 <select name="status" required>
-                    <option value="Planned">Planned</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Realised">Realised</option>
-                    <option value="At Risk">At Risk</option>
+
+                    <option value="Planned">
+                        Planned
+                    </option>
+
+                    <option value="In Progress">
+                        In Progress
+                    </option>
+
+                    <option value="Realised">
+                        Realised
+                    </option>
+
+                    <option value="At Risk">
+                        At Risk
+                    </option>
+
                 </select>
 
                 <label>Target Date</label>
-                <input type="date" name="target_date">
 
-                <button type="submit" class="btn-primary">
+                <input
+                    type="date"
+                    name="target_date"
+                >
+
+                <label>Realised Date</label>
+
+                <input
+                    type="date"
+                    name="realised_date"
+                >
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Save Benefit
                 </button>
 
@@ -75,5 +156,6 @@
     </div>
 
 </div>
+
 </body>
 </html>

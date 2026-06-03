@@ -379,6 +379,16 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS benefit_type TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS realised_date TEXT
+                   """)
+
 
     # TEAM MEMBERS
     cursor.execute("""
@@ -5822,6 +5832,7 @@ def add_benefit():
         SELECT *
         FROM projects
         WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -5830,15 +5841,6 @@ def add_benefit():
 
     if request.method == "POST":
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        expected_value = request.form["expected_value"]
-        measurement_method = request.form["measurement_method"]
-        owner = request.form["owner"]
-        status = request.form["status"]
-        target_date = request.form["target_date"]
-
         cursor.execute("""
             INSERT INTO benefits
             (
@@ -5846,24 +5848,28 @@ def add_benefit():
                 project_id,
                 title,
                 description,
+                benefit_type,
                 expected_value,
                 measurement_method,
                 owner,
                 status,
                 target_date,
+                realised_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            project_id,
-            title,
-            description,
-            expected_value,
-            measurement_method,
-            owner,
-            status,
-            target_date,
+            request.form.get("project_id"),
+            request.form.get("title", ""),
+            request.form.get("description", ""),
+            request.form.get("benefit_type", ""),
+            request.form.get("expected_value", ""),
+            request.form.get("measurement_method", ""),
+            request.form.get("owner", ""),
+            request.form.get("status", "Planned"),
+            request.form.get("target_date", ""),
+            request.form.get("realised_date", ""),
             str(date.today())
         ))
 
@@ -5934,22 +5940,26 @@ def edit_benefit(benefit_id):
                 project_id = %s,
                 title = %s,
                 description = %s,
+                benefit_type = %s,
                 expected_value = %s,
                 measurement_method = %s,
                 owner = %s,
                 status = %s,
-                target_date = %s
+                target_date = %s,
+                realised_date = %s
             WHERE id = %s
             AND user_id = %s
         """, (
             request.form.get("project_id"),
             request.form.get("title", ""),
             request.form.get("description", ""),
+            request.form.get("benefit_type", ""),
             request.form.get("expected_value", ""),
             request.form.get("measurement_method", ""),
             request.form.get("owner", ""),
             request.form.get("status", "Planned"),
             request.form.get("target_date", ""),
+            request.form.get("realised_date", ""),
             benefit_id,
             session["user_id"]
         ))
