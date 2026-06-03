@@ -2008,18 +2008,26 @@ def home():
     )
 
     cursor.execute("""
-    SELECT
-        projects.*,
-        clients.name AS client_name,
-        clients.company AS client_company
-    FROM projects
-    LEFT JOIN clients
-    ON projects.client_id = clients.id
-    WHERE projects.user_id = %s
-    ORDER BY projects.id DESC
-    """, (
-        session["user_id"],
-    ))
+                   SELECT projects.*,
+                          clients.name      AS client_name,
+                          clients.company   AS client_company,
+                          team_members.name AS project_manager_name,
+                          team_members.role AS project_manager_role,
+                          stakeholders.name AS sponsor_name,
+                          stakeholders.role AS sponsor_role
+                   FROM projects
+                            LEFT JOIN clients
+                                      ON projects.client_id = clients.id
+                            LEFT JOIN team_members
+                                      ON projects.project_manager_id = team_members.id
+                            LEFT JOIN stakeholders
+                                      ON projects.sponsor_id = stakeholders.id
+                   WHERE projects.user_id = %s
+                     AND COALESCE(projects.is_archived, FALSE) = FALSE
+                   ORDER BY projects.id DESC
+                   """, (
+                       session["user_id"],
+                   ))
 
     projects = cursor.fetchall()
 
@@ -2291,6 +2299,14 @@ def home():
             "budget_used_percent": budget_used_percent,
             "client_name": project["client_name"],
             "client_company": project["client_company"],
+            "project_manager_name": project["project_manager_name"],
+            "project_manager_role": project["project_manager_role"],
+            "sponsor_name": project["sponsor_name"],
+            "sponsor_role": project["sponsor_role"],
+            "project_type": project["project_type"],
+            "programme": project["programme"],
+            "portfolio": project["portfolio"],
+            "is_archived": project["is_archived"],
             "risk_score": risk_score,
             "risk_label": risk_label,
             "ai_recommendation": ai_recommendation
@@ -4239,6 +4255,114 @@ def delete_project(project_id):
         )
 
     return redirect("/")
+
+@app.route("/archive-project/<int:project_id>", methods=["POST"])
+def archive_project(project_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE projects
+        SET is_archived = TRUE
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        project_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} archived a project"
+    )
+
+    return redirect("/")
+
+
+@app.route("/restore-project/<int:project_id>", methods=["POST"])
+def restore_project(project_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE projects
+        SET is_archived = FALSE
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        project_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} restored a project"
+    )
+
+    return redirect("/archived-projects")
+
+@app.route("/archived-projects")
+def archived_projects():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            projects.*,
+            clients.name AS client_name,
+            clients.company AS client_company,
+            team_members.name AS project_manager_name,
+            stakeholders.name AS sponsor_name
+        FROM projects
+        LEFT JOIN clients
+        ON projects.client_id = clients.id
+        LEFT JOIN team_members
+        ON projects.project_manager_id = team_members.id
+        LEFT JOIN stakeholders
+        ON projects.sponsor_id = stakeholders.id
+        WHERE projects.user_id = %s
+        AND COALESCE(projects.is_archived, FALSE) = TRUE
+        ORDER BY projects.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "archived_projects.html",
+        projects=projects
+    )
 
 
 @app.route("/register", methods=["GET", "POST"])

@@ -219,7 +219,7 @@
                                 {{ item["project"][2] }}
                             </span>
                         </div>
-                        
+
 
                     </div>
 
@@ -251,6 +251,58 @@
                             {% endif %}
                         </strong>
                     </div>
+
+                    <div class="showcase-info-box">
+    <span>Sponsor</span>
+
+    <strong>
+        {{ item["sponsor_name"] or "Not Assigned" }}
+    </strong>
+
+    {% if item["sponsor_role"] %}
+        <small>{{ item["sponsor_role"] }}</small>
+    {% endif %}
+</div>
+
+
+<div class="showcase-info-box">
+    <span>Project Manager</span>
+
+    <strong>
+        {{ item["project_manager_name"] or "Not Assigned" }}
+    </strong>
+
+    {% if item["project_manager_role"] %}
+        <small>{{ item["project_manager_role"] }}</small>
+    {% endif %}
+</div>
+
+
+<div class="showcase-info-box">
+    <span>Project Type</span>
+
+    <strong>
+        {{ item["project_type"] or "Not Set" }}
+    </strong>
+</div>
+
+
+<div class="showcase-info-box">
+    <span>Programme</span>
+
+    <strong>
+        {{ item["programme"] or "Not Linked" }}
+    </strong>
+</div>
+
+
+<div class="showcase-info-box">
+    <span>Portfolio</span>
+
+    <strong>
+        {{ item["portfolio"] or "Not Linked" }}
+    </strong>
+</div>
 
                     <div class="showcase-info-box">
                         <span>AI Risk</span>
@@ -343,6 +395,17 @@
                                 Delete
                             </button>
                         </form>
+
+                        <form
+    action="/archive-project/{{ item['project'][0] }}"
+    method="POST"
+    class="inline-form"
+    onsubmit="return confirm('Archive this project?');"
+>
+    <button type="submit" class="edit-btn">
+        Archive
+    </button>
+</form>
 
                     </div>
 

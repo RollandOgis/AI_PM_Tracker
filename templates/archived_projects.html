@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archived Projects</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Archived Projects</h1>
+                <p class="dashboard-subtitle">
+                    View and restore archived projects.
+                </p>
+            </div>
+        </div>
+
+        {% if projects %}
+
+            <div class="projects-grid">
+
+                {% for project in projects %}
+
+                    <div class="project-card">
+
+                        <h3>{{ project["name"] }}</h3>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Client</span>
+                                <strong>{{ project["client_name"] or "No Client" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Sponsor</span>
+                                <strong>{{ project["sponsor_name"] or "Not Assigned" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Project Manager</span>
+                                <strong>{{ project["project_manager_name"] or "Not Assigned" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>{{ project["status"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Archived</span>
+                                <strong>Yes</strong>
+                            </div>
+
+                        </div>
+
+                        <form
+                            action="/restore-project/{{ project['id'] }}"
+                            method="POST"
+                            onsubmit="return confirm('Restore this project?');"
+                        >
+                            <button type="submit" class="btn-primary">
+                                Restore Project
+                            </button>
+                        </form>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+                <h3>No Archived Projects</h3>
+                <p>Archived projects will appear here.</p>
+
+                <a href="/" class="btn-primary">
+                    Back to Dashboard
+                </a>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
