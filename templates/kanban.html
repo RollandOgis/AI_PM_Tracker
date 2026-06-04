@@ -22,11 +22,135 @@
                 <h1>Kanban Board</h1>
 
                 <p class="dashboard-subtitle">
-                    Drag tasks between workflow stages and view team ownership.
+                    Drag tasks between workflow stages, monitor WIP limits and view team swimlanes.
                 </p>
             </div>
 
+            <div class="dashboard-actions">
+                <a href="/add-task" class="btn-primary">
+                    + Add Task
+                </a>
+            </div>
+
         </div>
+
+
+        <form method="GET" action="/kanban" class="filter-bar">
+
+            <select name="project_id">
+
+                <option value="">
+                    All Projects
+                </option>
+
+                {% for project in projects %}
+
+                    {% if selected_project == project['id']|string %}
+                        <option value="{{ project['id'] }}" selected>
+                            {{ project['name'] }}
+                        </option>
+                    {% else %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endif %}
+
+                {% endfor %}
+
+            </select>
+
+
+            <select name="team_member">
+
+                <option value="">
+                    All Team Members
+                </option>
+
+                {% for member in all_team_members %}
+
+                    {% if selected_team == member['id']|string %}
+                        <option value="{{ member['id'] }}" selected>
+                            {{ member['name'] }}
+                        </option>
+                    {% else %}
+                        <option value="{{ member['id'] }}">
+                            {{ member['name'] }}
+                        </option>
+                    {% endif %}
+
+                {% endfor %}
+
+            </select>
+
+
+            <select name="priority">
+
+                {% if selected_priority == "" %}
+                    <option value="" selected>All Priorities</option>
+                {% else %}
+                    <option value="">All Priorities</option>
+                {% endif %}
+
+                {% if selected_priority == "Low" %}
+                    <option value="Low" selected>Low</option>
+                {% else %}
+                    <option value="Low">Low</option>
+                {% endif %}
+
+                {% if selected_priority == "Medium" %}
+                    <option value="Medium" selected>Medium</option>
+                {% else %}
+                    <option value="Medium">Medium</option>
+                {% endif %}
+
+                {% if selected_priority == "High" %}
+                    <option value="High" selected>High</option>
+                {% else %}
+                    <option value="High">High</option>
+                {% endif %}
+
+            </select>
+
+
+            <button type="submit" class="btn-primary">
+                Apply Filters
+            </button>
+
+            <a href="/kanban" class="btn-secondary">
+                Reset
+            </a>
+
+        </form>
+
+
+        <div class="smart-dashboard-grid">
+
+            <div class="smart-card">
+                <h3>Workflow Stages</h3>
+
+                <div class="smart-insight">
+                    Pending → In Progress → Blocked → Completed
+                </div>
+            </div>
+
+            <div class="smart-card">
+                <h3>Drag-and-Drop Persistence</h3>
+
+                <div class="smart-insight">
+                    Moving a task updates its status in the database and remains after refresh.
+                </div>
+            </div>
+
+            <div class="smart-card">
+                <h3>Swimlanes</h3>
+
+                <div class="smart-insight">
+                    Tasks display team ownership using assigned team members.
+                </div>
+            </div>
+
+        </div>
+
 
         <div class="kanban-board">
 
@@ -37,6 +161,16 @@
                     <h3>
                         {{ status }}
                         ({{ items|length }})
+
+                        {% if items|length > wip_limits[status] %}
+                            <span class="health-warning">
+                                WIP Exceeded
+                            </span>
+                        {% else %}
+                            <span class="health-good">
+                                WIP {{ items|length }}/{{ wip_limits[status] }}
+                            </span>
+                        {% endif %}
                     </h3>
 
                     <div class="task-list" data-status="{{ status }}">
@@ -48,6 +182,10 @@
                                 draggable="true"
                                 data-task-id="{{ item['task']['id'] }}"
                             >
+
+                                <small class="health-neutral">
+                                    Swimlane: {{ item["swimlane"] }}
+                                </small>
 
                                 <h4>{{ item["task"]["title"] }}</h4>
 
@@ -74,6 +212,8 @@
                                             completed
                                         {% elif item['task']['status'] == 'In Progress' %}
                                             progress
+                                        {% elif item['task']['status'] == 'Blocked' %}
+                                            blocked
                                         {% else %}
                                             pending
                                         {% endif %}
@@ -84,15 +224,15 @@
                                 </div>
 
                                 {% if item["task"]["due_date"] %}
-                                <p class="kanban-date">
-                                    Due: {{ item["task"]["due_date"] }}
-                                </p>
+                                    <p class="kanban-date">
+                                        Due: {{ item["task"]["due_date"] }}
+                                    </p>
                                 {% endif %}
 
                                 {% if item["task"]["description"] %}
-                                <p class="kanban-description">
-                                    {{ item["task"]["description"] }}
-                                </p>
+                                    <p class="kanban-description">
+                                        {{ item["task"]["description"] }}
+                                    </p>
                                 {% endif %}
 
                                 {% if item["team_members"] %}
@@ -121,6 +261,12 @@
                                     </div>
 
                                 {% endif %}
+
+                                <div class="project-actions">
+                                    <a href="/edit-task/{{ item['task']['id'] }}">
+                                        Edit
+                                    </a>
+                                </div>
 
                             </div>
 
@@ -187,12 +333,16 @@ document.querySelectorAll(".task-list").forEach(column => {
 
             if (!data.success) {
                 alert("Could not update task status.");
+                window.location.reload();
+            } else {
+                draggedTask.querySelector(".status-badge").innerText = newStatus;
             }
 
         } catch (error) {
 
             console.log(error);
             alert("An error occurred.");
+            window.location.reload();
 
         }
 

@@ -2940,7 +2940,6 @@ def home():
         notifications=notifications,
         current_date=str(date.today())
     )
-
 @app.route("/kanban")
 def kanban():
 
@@ -2950,13 +2949,17 @@ def kanban():
     if not has_permission("Tasks", "view"):
         return "Access denied"
 
+    selected_project = request.args.get("project_id", "")
+    selected_team = request.args.get("team_member", "")
+    selected_priority = request.args.get("priority", "")
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-    cursor.execute("""
+    query = """
         SELECT
             tasks.*,
             projects.name AS project_name
@@ -2964,12 +2967,45 @@ def kanban():
         JOIN projects
         ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
-        ORDER BY tasks.id DESC
+    """
+
+    params = [session["user_id"]]
+
+    if selected_project:
+        query += " AND tasks.project_id = %s"
+        params.append(selected_project)
+
+    if selected_priority:
+        query += " AND tasks.priority = %s"
+        params.append(selected_priority)
+
+    query += " ORDER BY tasks.id DESC"
+
+    cursor.execute(query, params)
+
+    tasks = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT id,name
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
 
-    tasks = cursor.fetchall()
+    projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT id,name
+        FROM team_members
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    all_team_members = cursor.fetchall()
 
     grouped_tasks = {
         "Pending": [],
@@ -2978,10 +3014,18 @@ def kanban():
         "Blocked": []
     }
 
+    wip_limits = {
+        "Pending": 20,
+        "In Progress": 10,
+        "Completed": 999,
+        "Blocked": 5
+    }
+
     for task in tasks:
 
         cursor.execute("""
             SELECT
+                team_members.id,
                 team_members.name,
                 team_members.role
             FROM task_team_members
@@ -2996,7 +3040,11 @@ def kanban():
 
         team_members = []
 
+        member_ids = []
+
         for member in members:
+
+            member_ids.append(str(member["id"]))
 
             if member["role"]:
                 team_members.append(
@@ -3007,9 +3055,20 @@ def kanban():
                     member["name"]
                 )
 
+        if selected_team:
+
+            if selected_team not in member_ids:
+                continue
+
+        swimlane = "Unassigned"
+
+        if team_members:
+            swimlane = team_members[0]
+
         task_data = {
             "task": task,
-            "team_members": team_members
+            "team_members": team_members,
+            "swimlane": swimlane
         }
 
         status = task["status"]
@@ -3021,7 +3080,13 @@ def kanban():
 
     return render_template(
         "kanban.html",
-        grouped_tasks=grouped_tasks
+        grouped_tasks=grouped_tasks,
+        projects=projects,
+        all_team_members=all_team_members,
+        selected_project=selected_project,
+        selected_team=selected_team,
+        selected_priority=selected_priority,
+        wip_limits=wip_limits
     )
 
 
