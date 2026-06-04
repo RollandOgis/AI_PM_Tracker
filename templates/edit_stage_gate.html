@@ -17,127 +17,108 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-
                 <h1>Edit Stage Gate</h1>
-
                 <p class="dashboard-subtitle">
-                    Update governance review information.
+                    Update stage progression, evidence, approval and governance details.
                 </p>
-
             </div>
-
         </div>
 
         <div class="form-container">
 
             <form method="POST">
 
+                <label>Project</label>
+                <select name="project_id" required>
+                    <option value="{{ gate['project_id'] }}" selected>
+                        Current Project
+                    </option>
+
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
                 <label>Stage Name</label>
+                <select name="stage_name">
+                    <option value="{{ gate['stage_name'] }}" selected>{{ gate['stage_name'] }}</option>
+                    <option value="Initiation">Initiation</option>
+                    <option value="Planning">Planning</option>
+                    <option value="Execution">Execution</option>
+                    <option value="Testing">Testing</option>
+                    <option value="Deployment">Deployment</option>
+                    <option value="Closure">Closure</option>
+                </select>
 
-                <select name="stage_name" required>
-
-                    <option
-                        value="Initiation Gate"
-                        {% if gate["stage_name"] == "Initiation Gate" %}selected{% endif %}
-                    >
-                        Initiation Gate
-                    </option>
-
-                    <option
-                        value="Planning Gate"
-                        {% if gate["stage_name"] == "Planning Gate" %}selected{% endif %}
-                    >
-                        Planning Gate
-                    </option>
-
-                    <option
-                        value="Execution Gate"
-                        {% if gate["stage_name"] == "Execution Gate" %}selected{% endif %}
-                    >
-                        Execution Gate
-                    </option>
-
-                    <option
-                        value="Testing Gate"
-                        {% if gate["stage_name"] == "Testing Gate" %}selected{% endif %}
-                    >
-                        Testing Gate
-                    </option>
-
-                    <option
-                        value="Closure Gate"
-                        {% if gate["stage_name"] == "Closure Gate" %}selected{% endif %}
-                    >
-                        Closure Gate
-                    </option>
-
+                <label>Gate Template</label>
+                <select name="gate_template">
+                    <option value="{{ gate['gate_template'] }}" selected>{{ gate['gate_template'] }}</option>
+                    <option value="Standard Gate">Standard Gate</option>
+                    <option value="Executive Review">Executive Review</option>
+                    <option value="PMO Review">PMO Review</option>
+                    <option value="Risk Review">Risk Review</option>
+                    <option value="Financial Review">Financial Review</option>
                 </select>
 
                 <label>Status</label>
-
                 <select name="status">
-
-                    <option
-                        value="Pending"
-                        {% if gate["status"] == "Pending" %}selected{% endif %}
-                    >
-                        Pending
-                    </option>
-
-                    <option
-                        value="Approved"
-                        {% if gate["status"] == "Approved" %}selected{% endif %}
-                    >
-                        Approved
-                    </option>
-
-                    <option
-                        value="Rejected"
-                        {% if gate["status"] == "Rejected" %}selected{% endif %}
-                    >
-                        Rejected
-                    </option>
-
-                    <option
-                        value="Deferred"
-                        {% if gate["status"] == "Deferred" %}selected{% endif %}
-                    >
-                        Deferred
-                    </option>
-
+                    <option value="{{ gate['status'] }}" selected>{{ gate['status'] }}</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Deferred">Deferred</option>
                 </select>
 
                 <label>Reviewer</label>
-
-                <input
-                    type="text"
-                    name="reviewer"
-                    value="{{ gate['reviewer'] or '' }}"
-                >
+                <input type="text" name="reviewer" value="{{ gate['reviewer'] }}">
 
                 <label>Review Date</label>
+                <input type="date" name="review_date" value="{{ gate['review_date'] }}">
 
-                <input
-                    type="date"
-                    name="review_date"
-                    value="{{ gate['review_date'] or '' }}"
-                >
+                <label>Progression Status</label>
+                <select name="progression_status">
+                    <option value="{{ gate['progression_status'] }}" selected>{{ gate['progression_status'] }}</option>
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Ready for Next Stage">Ready for Next Stage</option>
+                    <option value="Complete">Complete</option>
+                </select>
+
+                <label>Evidence Required</label>
+                <select name="evidence_required">
+                    <option value="{{ gate['evidence_required'] }}" selected>{{ gate['evidence_required'] }}</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+
+                <label>Evidence Status</label>
+                <select name="evidence_status">
+                    <option value="{{ gate['evidence_status'] }}" selected>{{ gate['evidence_status'] }}</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+
+                <label>Evidence Notes</label>
+                <textarea name="evidence_notes" rows="4">{{ gate['evidence_notes'] }}</textarea>
+
+                <label>Approval Reference</label>
+                <input type="text" name="approval_reference" value="{{ gate['approval_reference'] }}">
 
                 <label>Comments</label>
+                <textarea name="comments" rows="5">{{ gate['comments'] }}</textarea>
 
-                <textarea
-                    name="comments"
-                    rows="6"
-                >{{ gate['comments'] or '' }}</textarea>
-
-                <button
-                    type="submit"
-                    class="btn-primary"
-                >
+                <button type="submit" class="btn-primary">
                     Update Stage Gate
                 </button>
+
+                <a href="/stage-gates" class="btn-secondary">
+                    Cancel
+                </a>
 
             </form>
 

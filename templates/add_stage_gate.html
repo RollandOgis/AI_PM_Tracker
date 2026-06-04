@@ -19,8 +19,9 @@
         <div class="dashboard-header">
             <div>
                 <h1>Add Stage Gate</h1>
+
                 <p class="dashboard-subtitle">
-                    Add a formal project governance review gate.
+                    Add a governance review gate with progression, evidence and approval tracking.
                 </p>
             </div>
         </div>
@@ -31,40 +32,165 @@
 
                 <label>Project</label>
                 <select name="project_id" required>
+
                     {% for project in projects %}
-                        <option value="{{ project['id'] }}">
-                            {{ project['name'] }}
-                        </option>
+
+                    <option value="{{ project['id'] }}">
+                        {{ project['name'] }}
+                    </option>
+
                     {% endfor %}
+
                 </select>
 
                 <label>Stage Name</label>
-                <select name="stage_name" required>
-                    <option value="Initiation Gate">Initiation Gate</option>
-                    <option value="Planning Gate">Planning Gate</option>
-                    <option value="Execution Gate">Execution Gate</option>
-                    <option value="Testing Gate">Testing Gate</option>
-                    <option value="Closure Gate">Closure Gate</option>
+                <select name="stage_name">
+
+                    <option value="Initiation">Initiation</option>
+                    <option value="Planning">Planning</option>
+                    <option value="Execution">Execution</option>
+                    <option value="Testing">Testing</option>
+                    <option value="Deployment">Deployment</option>
+                    <option value="Closure">Closure</option>
+
+                </select>
+
+                <label>Gate Template</label>
+                <select name="gate_template">
+
+                    <option value="Standard Gate">
+                        Standard Gate
+                    </option>
+
+                    <option value="Executive Review">
+                        Executive Review
+                    </option>
+
+                    <option value="PMO Review">
+                        PMO Review
+                    </option>
+
+                    <option value="Risk Review">
+                        Risk Review
+                    </option>
+
+                    <option value="Financial Review">
+                        Financial Review
+                    </option>
+
                 </select>
 
                 <label>Status</label>
                 <select name="status">
-                    <option value="Pending">Pending</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Deferred">Deferred</option>
+
+                    <option value="Pending">
+                        Pending
+                    </option>
+
+                    <option value="Approved">
+                        Approved
+                    </option>
+
+                    <option value="Rejected">
+                        Rejected
+                    </option>
+
+                    <option value="Deferred">
+                        Deferred
+                    </option>
+
                 </select>
 
                 <label>Reviewer</label>
-                <input type="text" name="reviewer">
+                <input
+                    type="text"
+                    name="reviewer"
+                >
 
                 <label>Review Date</label>
-                <input type="date" name="review_date">
+                <input
+                    type="date"
+                    name="review_date"
+                >
+
+                <label>Progression Status</label>
+                <select name="progression_status">
+
+                    <option value="Not Started">
+                        Not Started
+                    </option>
+
+                    <option value="In Progress">
+                        In Progress
+                    </option>
+
+                    <option value="Ready for Next Stage">
+                        Ready for Next Stage
+                    </option>
+
+                    <option value="Complete">
+                        Complete
+                    </option>
+
+                </select>
+
+                <label>Evidence Required</label>
+                <select name="evidence_required">
+
+                    <option value="Yes">
+                        Yes
+                    </option>
+
+                    <option value="No">
+                        No
+                    </option>
+
+                </select>
+
+                <label>Evidence Status</label>
+                <select name="evidence_status">
+
+                    <option value="Pending">
+                        Pending
+                    </option>
+
+                    <option value="Submitted">
+                        Submitted
+                    </option>
+
+                    <option value="Approved">
+                        Approved
+                    </option>
+
+                    <option value="Rejected">
+                        Rejected
+                    </option>
+
+                </select>
+
+                <label>Evidence Notes</label>
+                <textarea
+                    name="evidence_notes"
+                    rows="4"
+                ></textarea>
+
+                <label>Approval Reference</label>
+                <input
+                    type="text"
+                    name="approval_reference"
+                    placeholder="Approval ID or reference"
+                >
 
                 <label>Comments</label>
-                <textarea name="comments" rows="5"></textarea>
+                <textarea
+                    name="comments"
+                    rows="5"
+                ></textarea>
 
-                <button type="submit" class="btn-primary">
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Save Stage Gate
                 </button>
 

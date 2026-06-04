@@ -1470,6 +1470,77 @@ def init_db():
 
                    """)
 
+    # Stage Gates v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS stage_name TEXT DEFAULT 'Initiation'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS gate_template TEXT DEFAULT 'Standard Gate'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS evidence_required TEXT DEFAULT 'Yes'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS evidence_status TEXT DEFAULT 'Pending'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS evidence_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS progression_status TEXT DEFAULT 'Not Started'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS approval_reference TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS decision_created TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stage_gates
+                       ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS stage_gate_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       gate_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       old_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       change_note
+                       TEXT,
+                       changed_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Approvals Table
 
     cursor.execute("""
@@ -11842,18 +11913,68 @@ def stage_gates():
         LEFT JOIN projects
         ON stage_gates.project_id = projects.id
         WHERE stage_gates.user_id = %s
-        ORDER BY stage_gates.created_at DESC
+        ORDER BY
+            CASE
+                WHEN stage_gates.status = 'Rejected' THEN 1
+                WHEN stage_gates.status = 'Pending' THEN 2
+                WHEN stage_gates.evidence_status = 'Pending' THEN 3
+                WHEN stage_gates.progression_status = 'In Progress' THEN 4
+                WHEN stage_gates.status = 'Approved' THEN 5
+                ELSE 6
+            END,
+            stage_gates.review_date ASC
     """, (
         session["user_id"],
     ))
 
     stage_gates = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) AS total_gates,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Approved'
+            ) AS approved_gates,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Pending'
+            ) AS pending_gates,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Rejected'
+            ) AS rejected_gates,
+
+            COUNT(*) FILTER (
+                WHERE evidence_status = 'Pending'
+            ) AS pending_evidence,
+
+            COUNT(*) FILTER (
+                WHERE progression_status = 'In Progress'
+            ) AS in_progress_gates,
+
+            COUNT(*) FILTER (
+                WHERE progression_status = 'Ready for Next Stage'
+            ) AS ready_for_next_stage,
+
+            COUNT(*) FILTER (
+                WHERE decision_created = 'Yes'
+            ) AS decisions_created
+
+        FROM stage_gates
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    stats = cursor.fetchone()
+
     conn.close()
 
     return render_template(
         "stage_gates.html",
-        stage_gates=stage_gates
+        stage_gates=stage_gates,
+        stats=stats
     )
 
 
@@ -11885,6 +12006,9 @@ def add_stage_gate():
 
     if request.method == "POST":
 
+        status = request.form.get("status")
+        decision_created = "Yes" if status in ["Approved", "Rejected"] else "No"
+
         cursor.execute("""
             INSERT INTO stage_gates
             (
@@ -11895,18 +12019,31 @@ def add_stage_gate():
                 reviewer,
                 comments,
                 review_date,
+                gate_template,
+                evidence_required,
+                evidence_status,
+                evidence_notes,
+                progression_status,
+                approval_reference,
+                decision_created,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
         """, (
             session["user_id"],
-            request.form["project_id"],
-            request.form["stage_name"],
-            request.form["status"],
-            request.form["reviewer"],
-            request.form["comments"],
-            request.form["review_date"],
-            str(date.today())
+            request.form.get("project_id"),
+            request.form.get("stage_name"),
+            status,
+            request.form.get("reviewer"),
+            request.form.get("comments"),
+            request.form.get("review_date") or None,
+            request.form.get("gate_template"),
+            request.form.get("evidence_required"),
+            request.form.get("evidence_status"),
+            request.form.get("evidence_notes"),
+            request.form.get("progression_status"),
+            request.form.get("approval_reference"),
+            decision_created
         ))
 
         conn.commit()
@@ -11953,27 +12090,80 @@ def edit_stage_gate(gate_id):
         conn.close()
         return redirect("/stage-gates")
 
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
     if request.method == "POST":
+
+        old_status = gate["status"]
+        new_status = request.form.get("status")
+        decision_created = gate["decision_created"] or "No"
+
+        if new_status in ["Approved", "Rejected"]:
+            decision_created = "Yes"
 
         cursor.execute("""
             UPDATE stage_gates
             SET
+                project_id = %s,
                 stage_name = %s,
                 status = %s,
                 reviewer = %s,
                 comments = %s,
-                review_date = %s
+                review_date = %s,
+                gate_template = %s,
+                evidence_required = %s,
+                evidence_status = %s,
+                evidence_notes = %s,
+                progression_status = %s,
+                approval_reference = %s,
+                decision_created = %s
             WHERE id = %s
             AND user_id = %s
         """, (
+            request.form.get("project_id"),
             request.form.get("stage_name"),
-            request.form.get("status"),
+            new_status,
             request.form.get("reviewer"),
             request.form.get("comments"),
-            request.form.get("review_date"),
+            request.form.get("review_date") or None,
+            request.form.get("gate_template"),
+            request.form.get("evidence_required"),
+            request.form.get("evidence_status"),
+            request.form.get("evidence_notes"),
+            request.form.get("progression_status"),
+            request.form.get("approval_reference"),
+            decision_created,
             gate_id,
             session["user_id"]
         ))
+
+        if old_status != new_status:
+            cursor.execute("""
+                INSERT INTO stage_gate_history
+                (
+                    gate_id,
+                    user_id,
+                    old_status,
+                    new_status,
+                    change_note
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                gate_id,
+                session["user_id"],
+                old_status,
+                new_status,
+                "Stage gate status changed"
+            ))
 
         conn.commit()
         conn.close()
@@ -11984,7 +12174,8 @@ def edit_stage_gate(gate_id):
 
     return render_template(
         "edit_stage_gate.html",
-        gate=gate
+        gate=gate,
+        projects=projects
     )
 
 
@@ -12002,6 +12193,15 @@ def delete_stage_gate(gate_id):
     cursor = conn.cursor()
 
     cursor.execute("""
+        DELETE FROM stage_gate_history
+        WHERE gate_id = %s
+        AND user_id = %s
+    """, (
+        gate_id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
         DELETE FROM stage_gates
         WHERE id = %s
         AND user_id = %s
@@ -12014,6 +12214,59 @@ def delete_stage_gate(gate_id):
     conn.close()
 
     return redirect("/stage-gates")
+
+
+@app.route("/stage-gate-history/<int:gate_id>")
+def stage_gate_history(gate_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Stage Gates", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM stage_gates
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        gate_id,
+        session["user_id"]
+    ))
+
+    gate = cursor.fetchone()
+
+    if not gate:
+        conn.close()
+        return redirect("/stage-gates")
+
+    cursor.execute("""
+        SELECT *
+        FROM stage_gate_history
+        WHERE gate_id = %s
+        AND user_id = %s
+        ORDER BY changed_at DESC
+    """, (
+        gate_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "stage_gate_history.html",
+        gate=gate,
+        history=history
+    )
 
 @app.route("/approvals")
 def approvals():

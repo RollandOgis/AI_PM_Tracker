@@ -22,7 +22,7 @@
                 <h1>Stage Gates</h1>
 
                 <p class="dashboard-subtitle">
-                    Track project stage reviews, approvals and governance decisions.
+                    Track stage progression, evidence, approvals and governance decisions.
                 </p>
             </div>
 
@@ -38,22 +38,42 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Gates</h3>
-                <p>{{ stage_gates|length }}</p>
+                <p>{{ stats["total_gates"] or 0 }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Approved</h3>
-                <p>{{ stage_gates | selectattr("status", "equalto", "Approved") | list | length }}</p>
+                <p>{{ stats["approved_gates"] or 0 }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Pending</h3>
-                <p>{{ stage_gates | selectattr("status", "equalto", "Pending") | list | length }}</p>
+                <p>{{ stats["pending_gates"] or 0 }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Rejected</h3>
-                <p>{{ stage_gates | selectattr("status", "equalto", "Rejected") | list | length }}</p>
+                <p>{{ stats["rejected_gates"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Evidence Pending</h3>
+                <p>{{ stats["pending_evidence"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>In Progress</h3>
+                <p>{{ stats["in_progress_gates"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Ready Next Stage</h3>
+                <p>{{ stats["ready_for_next_stage"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Decisions Created</h3>
+                <p>{{ stats["decisions_created"] or 0 }}</p>
             </div>
 
         </div>
@@ -73,23 +93,23 @@
                         <h3>{{ gate["stage_name"] }}</h3>
 
                         {% if gate["status"] == "Approved" %}
-
-                            <span class="badge badge-green">
-                                Approved
-                            </span>
-
+                            <span class="badge badge-green">Approved</span>
                         {% elif gate["status"] == "Pending" %}
-
-                            <span class="badge badge-yellow">
-                                Pending
-                            </span>
-
+                            <span class="badge badge-yellow">Pending</span>
                         {% else %}
+                            <span class="badge badge-red">{{ gate["status"] }}</span>
+                        {% endif %}
 
-                            <span class="badge badge-red">
-                                {{ gate["status"] }}
-                            </span>
+                        {% if gate["evidence_status"] == "Pending" %}
+                            <span class="badge badge-yellow">Evidence Pending</span>
+                        {% endif %}
 
+                        {% if gate["progression_status"] == "Ready for Next Stage" %}
+                            <span class="badge badge-green">Ready for Next Stage</span>
+                        {% endif %}
+
+                        {% if gate["decision_created"] == "Yes" %}
+                            <span class="badge badge-green">Decision Created</span>
                         {% endif %}
 
                     </div>
@@ -100,30 +120,52 @@
 
                     <div class="budget-row">
                         <span>Project</span>
-                        <strong>
-                            {{ gate["project_name"] or "No Project" }}
-                        </strong>
+                        <strong>{{ gate["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Gate Template</span>
+                        <strong>{{ gate["gate_template"] or "Standard Gate" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Reviewer</span>
-                        <strong>
-                            {{ gate["reviewer"] or "Not assigned" }}
-                        </strong>
+                        <strong>{{ gate["reviewer"] or "Not assigned" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Review Date</span>
-                        <strong>
-                            {{ gate["review_date"] or "No date" }}
-                        </strong>
+                        <strong>{{ gate["review_date"] or "No date" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Status</span>
-                        <strong>
-                            {{ gate["status"] }}
-                        </strong>
+                        <strong>{{ gate["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Progression</span>
+                        <strong>{{ gate["progression_status"] or "Not Started" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Evidence Required</span>
+                        <strong>{{ gate["evidence_required"] or "Yes" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Evidence Status</span>
+                        <strong>{{ gate["evidence_status"] or "Pending" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Approval Reference</span>
+                        <strong>{{ gate["approval_reference"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Decision Created</span>
+                        <strong>{{ gate["decision_created"] or "No" }}</strong>
                     </div>
 
                 </div>
@@ -131,10 +173,14 @@
                 <div class="smart-insight">
 
                     <strong>Comments:</strong>
+                    <br><br>
+                    {{ gate["comments"] or "No comments added." }}
 
                     <br><br>
 
-                    {{ gate["comments"] or "No comments added." }}
+                    <strong>Evidence Notes:</strong>
+                    <br><br>
+                    {{ gate["evidence_notes"] or "No evidence notes added." }}
 
                 </div>
 
@@ -142,6 +188,10 @@
 
                     <a href="/edit-stage-gate/{{ gate['id'] }}">
                         Edit Gate
+                    </a>
+
+                    <a href="/stage-gate-history/{{ gate['id'] }}">
+                        History
                     </a>
 
                     <a

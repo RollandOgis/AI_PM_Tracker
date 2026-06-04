@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stage Gate History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Stage Gate History</h1>
+                <p class="dashboard-subtitle">
+                    View recorded changes for this stage gate.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/stage-gates" class="btn-secondary">
+                    Back to Stage Gates
+                </a>
+            </div>
+        </div>
+
+        <div class="smart-card">
+            <h3>{{ gate["stage_name"] }}</h3>
+
+            <p><strong>Status:</strong> {{ gate["status"] }}</p>
+            <p><strong>Reviewer:</strong> {{ gate["reviewer"] or "Not assigned" }}</p>
+            <p><strong>Review Date:</strong> {{ gate["review_date"] or "No date" }}</p>
+            <p><strong>Progression:</strong> {{ gate["progression_status"] or "Not Started" }}</p>
+            <p><strong>Evidence:</strong> {{ gate["evidence_status"] or "Pending" }}</p>
+        </div>
+
+        {% if history %}
+
+        <div class="projects-grid">
+
+            {% for item in history %}
+
+            <div class="project-card">
+
+                <h3>{{ item["change_note"] }}</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Old Status</span>
+                        <strong>{{ item["old_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>New Status</span>
+                        <strong>{{ item["new_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Changed At</span>
+                        <strong>{{ item["changed_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No History Yet</h3>
+            <p>No stage gate changes have been recorded yet.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
