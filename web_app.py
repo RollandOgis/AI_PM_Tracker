@@ -10271,42 +10271,22 @@ def actions():
     )
 
     cursor.execute("""
-        UPDATE actions
-        SET due_date = NULL
-        WHERE due_date = ''
-        AND user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
-    cursor.execute("""
-        UPDATE actions
-        SET reminder_date = NULL
-        WHERE reminder_date = ''
-        AND user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
-    conn.commit()
-
-    cursor.execute("""
         SELECT
             actions.*,
             projects.name AS project_name,
 
             CASE
                 WHEN actions.status != 'Completed'
-                AND NULLIF(actions.due_date, '') IS NOT NULL
-                AND TO_DATE(NULLIF(actions.due_date, ''), 'YYYY-MM-DD') < CURRENT_DATE
+                AND actions.due_date IS NOT NULL
+                AND actions.due_date < CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS is_overdue,
 
             CASE
                 WHEN actions.status != 'Completed'
-                AND NULLIF(actions.reminder_date, '') IS NOT NULL
-                AND TO_DATE(NULLIF(actions.reminder_date, ''), 'YYYY-MM-DD') <= CURRENT_DATE
+                AND actions.reminder_date IS NOT NULL
+                AND actions.reminder_date <= CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS reminder_due
@@ -10320,15 +10300,15 @@ def actions():
         ORDER BY
             CASE
                 WHEN actions.status = 'Completed' THEN 6
-                WHEN NULLIF(actions.due_date, '') IS NOT NULL
-                AND TO_DATE(NULLIF(actions.due_date, ''), 'YYYY-MM-DD') < CURRENT_DATE THEN 1
+                WHEN actions.due_date IS NOT NULL
+                AND actions.due_date < CURRENT_DATE THEN 1
                 WHEN actions.escalation_level = 'High' THEN 2
                 WHEN actions.status = 'Blocked' THEN 3
                 WHEN actions.priority = 'High' THEN 4
                 WHEN actions.status = 'In Progress' THEN 5
                 ELSE 7
             END,
-            NULLIF(actions.due_date, '') ASC
+            actions.due_date ASC
     """, (
         session["user_id"],
     ))
@@ -10384,8 +10364,8 @@ def actions():
 
             COUNT(*) FILTER (
                 WHERE status != 'Completed'
-                AND NULLIF(due_date, '') IS NOT NULL
-                AND TO_DATE(NULLIF(due_date, ''), 'YYYY-MM-DD') < CURRENT_DATE
+                AND due_date IS NOT NULL
+                AND due_date < CURRENT_DATE
             ) AS overdue_actions,
 
             COUNT(*) FILTER (
@@ -10398,8 +10378,8 @@ def actions():
 
             COUNT(*) FILTER (
                 WHERE status != 'Completed'
-                AND NULLIF(reminder_date, '') IS NOT NULL
-                AND TO_DATE(NULLIF(reminder_date, ''), 'YYYY-MM-DD') <= CURRENT_DATE
+                AND reminder_date IS NOT NULL
+                AND reminder_date <= CURRENT_DATE
             ) AS reminders_due,
 
             COUNT(*) FILTER (
