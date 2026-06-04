@@ -284,31 +284,28 @@
 >{{ task['checklist'] or '' }}</textarea>
 
 
-<div style="margin-top:15px;">
-    <label style="display:flex; gap:10px; align-items:center;">
+<div class="checkbox-row">
 
-        {% if task['is_recurring'] %}
+    {% if task['is_recurring'] %}
 
-            <input
-                type="checkbox"
-                name="is_recurring"
-                checked
-            >
+        <input
+            type="checkbox"
+            name="is_recurring"
+            checked
+        >
 
-        {% else %}
+    {% else %}
 
-            <input
-                type="checkbox"
-                name="is_recurring"
-            >
+        <input
+            type="checkbox"
+            name="is_recurring"
+        >
 
-        {% endif %}
+    {% endif %}
 
-        <span>Recurring Task</span>
+    <span>Recurring Task</span>
 
-    </label>
 </div>
-
 
 <label>Recurring Frequency</label>
 

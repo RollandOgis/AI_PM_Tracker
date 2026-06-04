@@ -2949,3 +2949,23 @@ td {
         grid-template-columns: 1fr;
     }
 }
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.checkbox-row input {
+    width: auto;
+    margin: 0;
+}
+
+.checkbox-row span {
+    display: inline-block;
+    width: auto;
+}
