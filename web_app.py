@@ -1,20 +1,22 @@
 from flask import Flask, render_template, request, redirect, session, Response, jsonify, send_file, make_response
-import sqlite3
+
 import csv
-from io import StringIO, BytesIO
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from datetime import date, datetime, timedelta
-from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import uuid
-from openai import OpenAI
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.pagesizes import letter
-import os
+from io import StringIO, BytesIO
+from datetime import date, datetime, timedelta
+
 import psycopg2
 import psycopg2.extras
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
+from openai import OpenAI
+
+from reportlab.lib.pagesizes import A4, letter
+from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 app = Flask(__name__)
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -10269,24 +10271,42 @@ def actions():
     )
 
     cursor.execute("""
+        UPDATE actions
+        SET due_date = NULL
+        WHERE due_date = ''
+        AND user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    cursor.execute("""
+        UPDATE actions
+        SET reminder_date = NULL
+        WHERE reminder_date = ''
+        AND user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    conn.commit()
+
+    cursor.execute("""
         SELECT
             actions.*,
             projects.name AS project_name,
 
             CASE
                 WHEN actions.status != 'Completed'
-                AND actions.due_date IS NOT NULL
-                AND actions.due_date != ''
-                AND TO_DATE(actions.due_date, 'YYYY-MM-DD') < CURRENT_DATE
+                AND NULLIF(actions.due_date, '') IS NOT NULL
+                AND TO_DATE(NULLIF(actions.due_date, ''), 'YYYY-MM-DD') < CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS is_overdue,
 
             CASE
                 WHEN actions.status != 'Completed'
-                AND actions.reminder_date IS NOT NULL
-                AND actions.reminder_date != ''
-                AND TO_DATE(actions.reminder_date, 'YYYY-MM-DD') <= CURRENT_DATE
+                AND NULLIF(actions.reminder_date, '') IS NOT NULL
+                AND TO_DATE(NULLIF(actions.reminder_date, ''), 'YYYY-MM-DD') <= CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS reminder_due
@@ -10300,16 +10320,15 @@ def actions():
         ORDER BY
             CASE
                 WHEN actions.status = 'Completed' THEN 6
-                WHEN actions.due_date IS NOT NULL
-                AND actions.due_date != ''
-                AND TO_DATE(actions.due_date, 'YYYY-MM-DD') < CURRENT_DATE THEN 1
+                WHEN NULLIF(actions.due_date, '') IS NOT NULL
+                AND TO_DATE(NULLIF(actions.due_date, ''), 'YYYY-MM-DD') < CURRENT_DATE THEN 1
                 WHEN actions.escalation_level = 'High' THEN 2
                 WHEN actions.status = 'Blocked' THEN 3
                 WHEN actions.priority = 'High' THEN 4
                 WHEN actions.status = 'In Progress' THEN 5
                 ELSE 7
             END,
-            actions.due_date ASC
+            NULLIF(actions.due_date, '') ASC
     """, (
         session["user_id"],
     ))
@@ -10365,9 +10384,8 @@ def actions():
 
             COUNT(*) FILTER (
                 WHERE status != 'Completed'
-                AND due_date IS NOT NULL
-                AND due_date != ''
-                AND TO_DATE(due_date, 'YYYY-MM-DD') < CURRENT_DATE
+                AND NULLIF(due_date, '') IS NOT NULL
+                AND TO_DATE(NULLIF(due_date, ''), 'YYYY-MM-DD') < CURRENT_DATE
             ) AS overdue_actions,
 
             COUNT(*) FILTER (
@@ -10379,10 +10397,9 @@ def actions():
             ) AS high_priority_actions,
 
             COUNT(*) FILTER (
-                WHERE reminder_date IS NOT NULL
-                AND reminder_date != ''
-                AND TO_DATE(reminder_date, 'YYYY-MM-DD') <= CURRENT_DATE
-                AND status != 'Completed'
+                WHERE status != 'Completed'
+                AND NULLIF(reminder_date, '') IS NOT NULL
+                AND TO_DATE(NULLIF(reminder_date, ''), 'YYYY-MM-DD') <= CURRENT_DATE
             ) AS reminders_due,
 
             COUNT(*) FILTER (
