@@ -7720,36 +7720,6 @@ def delete_change(change_id):
 
     return redirect("/changes")
 
-@app.route("/delete-change/<int:change_id>")
-def delete_change(change_id):
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Changes", "delete"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        DELETE FROM changes
-        WHERE id = %s
-        AND user_id = %s
-    """, (
-        change_id,
-        session["user_id"]
-    ))
-
-    conn.commit()
-    conn.close()
-
-    create_activity(
-        f"{session['username']} deleted a change request"
-    )
-
-    return redirect("/changes")
 
 @app.route("/benefits")
 def benefits():
