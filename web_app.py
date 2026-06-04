@@ -1365,10 +1365,6 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS completed_date DATE
                    """)
 
-    cursor.execute("""
-                   ALTER TABLE actions
-                       ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                   """)
 
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS action_history
@@ -10255,6 +10251,7 @@ def add_decision():
         projects=projects
     )
 
+
 @app.route("/actions")
 def actions():
 
@@ -10278,7 +10275,8 @@ def actions():
             CASE
                 WHEN actions.status != 'Completed'
                 AND actions.due_date IS NOT NULL
-                AND actions.due_date < CURRENT_DATE
+                AND actions.due_date != ''
+                AND TO_DATE(actions.due_date, 'YYYY-MM-DD') < CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS is_overdue,
@@ -10301,7 +10299,8 @@ def actions():
             CASE
                 WHEN actions.status = 'Completed' THEN 6
                 WHEN actions.due_date IS NOT NULL
-                AND actions.due_date < CURRENT_DATE THEN 1
+                AND actions.due_date != ''
+                AND TO_DATE(actions.due_date, 'YYYY-MM-DD') < CURRENT_DATE THEN 1
                 WHEN actions.escalation_level = 'High' THEN 2
                 WHEN actions.status = 'Blocked' THEN 3
                 WHEN actions.priority = 'High' THEN 4
@@ -10315,45 +10314,6 @@ def actions():
 
     actions = cursor.fetchall()
 
-    for action in actions:
-
-        if (
-            action["status"] != "Completed"
-            and action["due_date"]
-            and action["is_overdue"] == "Yes"
-            and action["escalation_level"] == "None"
-        ):
-
-            cursor.execute("""
-                UPDATE actions
-                SET escalation_level = 'Medium'
-                WHERE id = %s
-                AND user_id = %s
-            """, (
-                action["id"],
-                session["user_id"]
-            ))
-
-            cursor.execute("""
-                INSERT INTO action_history
-                (
-                    action_id,
-                    user_id,
-                    change_note,
-                    old_status,
-                    new_status
-                )
-                VALUES (%s,%s,%s,%s,%s)
-            """, (
-                action["id"],
-                session["user_id"],
-                "Action automatically escalated because it is overdue",
-                action["status"],
-                action["status"]
-            ))
-
-    conn.commit()
-
     cursor.execute("""
         SELECT
             COUNT(*) AS total_actions,
@@ -10365,7 +10325,8 @@ def actions():
             COUNT(*) FILTER (
                 WHERE status != 'Completed'
                 AND due_date IS NOT NULL
-                AND due_date < CURRENT_DATE
+                AND due_date != ''
+                AND TO_DATE(due_date, 'YYYY-MM-DD') < CURRENT_DATE
             ) AS overdue_actions,
 
             COUNT(*) FILTER (
@@ -10401,6 +10362,7 @@ def actions():
         actions=actions,
         stats=stats
     )
+
 
 
 @app.route("/add-action", methods=["GET", "POST"])
