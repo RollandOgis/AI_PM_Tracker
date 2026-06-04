@@ -1358,6 +1358,72 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS category TEXT
                    """)
 
+    # Lessons Learned v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS root_cause TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS actions_taken TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS implementation_status TEXT DEFAULT 'Not Started'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS reusable TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS knowledge_area TEXT DEFAULT 'General'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS effectiveness_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS effectiveness_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE lessons
+                       ADD COLUMN IF NOT EXISTS review_date DATE
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS lesson_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       lesson_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       old_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       change_note
+                       TEXT,
+                       changed_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Actions table
 
     cursor.execute("""
@@ -11073,7 +11139,6 @@ def action_history(action_id):
         history=history
     )
 
-
 @app.route("/lessons")
 def lessons():
 
@@ -11084,10 +11149,7 @@ def lessons():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -11104,11 +11166,46 @@ def lessons():
 
     lessons = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) AS total_lessons,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Open'
+            ) AS open_lessons,
+
+            COUNT(*) FILTER (
+                WHERE status = 'In Progress'
+            ) AS in_progress_lessons,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Completed'
+            ) AS completed_lessons,
+
+            COUNT(*) FILTER (
+                WHERE implementation_status = 'Implemented'
+            ) AS implemented_lessons,
+
+            COUNT(*) FILTER (
+                WHERE reusable = 'Yes'
+            ) AS reusable_lessons,
+
+            ROUND(AVG(effectiveness_score), 1) AS avg_effectiveness_score
+
+        FROM lessons
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    stats = cursor.fetchone()
+
     conn.close()
 
     return render_template(
         "lessons.html",
-        lessons=lessons
+        lessons=lessons,
+        stats=stats
     )
 
 
@@ -11122,10 +11219,7 @@ def add_lesson():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -11153,9 +11247,17 @@ def add_lesson():
                 recommendation,
                 owner,
                 status,
+                root_cause,
+                actions_taken,
+                implementation_status,
+                reusable,
+                knowledge_area,
+                effectiveness_score,
+                effectiveness_notes,
+                review_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -11167,7 +11269,14 @@ def add_lesson():
             request.form.get("recommendation"),
             request.form.get("owner"),
             request.form.get("status"),
-            str(date.today())
+            request.form.get("root_cause"),
+            request.form.get("actions_taken"),
+            request.form.get("implementation_status"),
+            request.form.get("reusable"),
+            request.form.get("knowledge_area"),
+            request.form.get("effectiveness_score") or 0,
+            request.form.get("effectiveness_notes"),
+            request.form.get("review_date") or None
         ))
 
         conn.commit()
@@ -11186,6 +11295,7 @@ def add_lesson():
         projects=projects
     )
 
+
 @app.route("/edit-lesson/<int:lesson_id>", methods=["GET", "POST"])
 def edit_lesson(lesson_id):
 
@@ -11196,10 +11306,7 @@ def edit_lesson(lesson_id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -11230,6 +11337,9 @@ def edit_lesson(lesson_id):
 
     if request.method == "POST":
 
+        old_status = lesson["status"]
+        new_status = request.form.get("status")
+
         cursor.execute("""
             UPDATE lessons
             SET
@@ -11241,22 +11351,57 @@ def edit_lesson(lesson_id):
                 what_went_wrong = %s,
                 recommendation = %s,
                 owner = %s,
-                status = %s
+                status = %s,
+                root_cause = %s,
+                actions_taken = %s,
+                implementation_status = %s,
+                reusable = %s,
+                knowledge_area = %s,
+                effectiveness_score = %s,
+                effectiveness_notes = %s,
+                review_date = %s
             WHERE id = %s
             AND user_id = %s
         """, (
             request.form.get("project_id"),
-            request.form.get("title", ""),
-            request.form.get("category", ""),
-            request.form.get("what_happened", ""),
-            request.form.get("what_went_well", ""),
-            request.form.get("what_went_wrong", ""),
-            request.form.get("recommendation", ""),
-            request.form.get("owner", ""),
-            request.form.get("status", "Open"),
+            request.form.get("title"),
+            request.form.get("category"),
+            request.form.get("what_happened"),
+            request.form.get("what_went_well"),
+            request.form.get("what_went_wrong"),
+            request.form.get("recommendation"),
+            request.form.get("owner"),
+            new_status,
+            request.form.get("root_cause"),
+            request.form.get("actions_taken"),
+            request.form.get("implementation_status"),
+            request.form.get("reusable"),
+            request.form.get("knowledge_area"),
+            request.form.get("effectiveness_score") or 0,
+            request.form.get("effectiveness_notes"),
+            request.form.get("review_date") or None,
             lesson_id,
             session["user_id"]
         ))
+
+        if old_status != new_status:
+            cursor.execute("""
+                INSERT INTO lesson_history
+                (
+                    lesson_id,
+                    user_id,
+                    old_status,
+                    new_status,
+                    change_note
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                lesson_id,
+                session["user_id"],
+                old_status,
+                new_status,
+                "Lesson status changed"
+            ))
 
         conn.commit()
         conn.close()
@@ -11276,6 +11421,56 @@ def edit_lesson(lesson_id):
     )
 
 
+@app.route("/lesson-history/<int:lesson_id>")
+def lesson_history(lesson_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Lessons", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM lessons
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        lesson_id,
+        session["user_id"]
+    ))
+
+    lesson = cursor.fetchone()
+
+    if not lesson:
+        conn.close()
+        return redirect("/lessons")
+
+    cursor.execute("""
+        SELECT *
+        FROM lesson_history
+        WHERE lesson_id = %s
+        AND user_id = %s
+        ORDER BY changed_at DESC
+    """, (
+        lesson_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "lesson_history.html",
+        lesson=lesson,
+        history=history
+    )
+
+
 @app.route("/delete-lesson/<int:lesson_id>")
 def delete_lesson(lesson_id):
 
@@ -11286,8 +11481,16 @@ def delete_lesson(lesson_id):
         return "Access denied"
 
     conn = get_db_connection()
-
     cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM lesson_history
+        WHERE lesson_id = %s
+        AND user_id = %s
+    """, (
+        lesson_id,
+        session["user_id"]
+    ))
 
     cursor.execute("""
         DELETE FROM lessons

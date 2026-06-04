@@ -17,12 +17,21 @@
     <div class="main-content">
 
         <div class="dashboard-header">
+
             <div>
                 <h1>Add Lesson Learned</h1>
+
                 <p class="dashboard-subtitle">
-                    Capture project lessons and continuous improvement opportunities.
+                    Capture reusable lessons, implementation actions and effectiveness reviews.
                 </p>
             </div>
+
+            <div class="dashboard-actions">
+                <a href="/lessons" class="btn-primary">
+                    Back to Lessons
+                </a>
+            </div>
+
         </div>
 
         <div class="form-container">
@@ -30,11 +39,12 @@
             <form method="POST">
 
                 <label>Project</label>
+
                 <select name="project_id" required>
                     {% for project in projects %}
-                        <option value="{{ project['id'] }}">
-                            {{ project['name'] }}
-                        </option>
+                    <option value="{{ project['id'] }}">
+                        {{ project['name'] }}
+                    </option>
                     {% endfor %}
                 </select>
 
@@ -42,8 +52,8 @@
                 <input type="text" name="title" required>
 
                 <label>Category</label>
+
                 <select name="category" required>
-                    <option value="">Select Category</option>
                     <option value="Process">Process</option>
                     <option value="Governance">Governance</option>
                     <option value="Risk">Risk</option>
@@ -55,14 +65,33 @@
                     <option value="Quality">Quality</option>
                 </select>
 
+                <label>Knowledge Area</label>
+
+                <select name="knowledge_area">
+                    <option value="General">General</option>
+                    <option value="Project Management">Project Management</option>
+                    <option value="Governance">Governance</option>
+                    <option value="Risk Management">Risk Management</option>
+                    <option value="Resource Management">Resource Management</option>
+                    <option value="Financial Management">Financial Management</option>
+                    <option value="Portfolio Management">Portfolio Management</option>
+                    <option value="Technical Delivery">Technical Delivery</option>
+                </select>
+
                 <label>What Happened</label>
                 <textarea name="what_happened" rows="4"></textarea>
+
+                <label>Root Cause Analysis</label>
+                <textarea name="root_cause" rows="4"></textarea>
 
                 <label>What Went Well</label>
                 <textarea name="what_went_well" rows="4"></textarea>
 
                 <label>What Went Wrong</label>
                 <textarea name="what_went_wrong" rows="4"></textarea>
+
+                <label>Actions Taken</label>
+                <textarea name="actions_taken" rows="4"></textarea>
 
                 <label>Recommendation</label>
                 <textarea name="recommendation" rows="4"></textarea>
@@ -73,9 +102,43 @@
                 <label>Status</label>
                 <select name="status">
                     <option value="Open">Open</option>
-                    <option value="Implemented">Implemented</option>
-                    <option value="Archived">Archived</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
                 </select>
+
+                <label>Implementation Status</label>
+                <select name="implementation_status">
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Implemented">Implemented</option>
+                </select>
+
+                <label>Reusable Lesson</label>
+                <select name="reusable">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+
+                <label>Effectiveness Score (0-100)</label>
+                <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    name="effectiveness_score"
+                    value="0"
+                >
+
+                <label>Effectiveness Notes</label>
+                <textarea
+                    name="effectiveness_notes"
+                    rows="4"
+                ></textarea>
+
+                <label>Review Date</label>
+                <input
+                    type="date"
+                    name="review_date"
+                >
 
                 <button type="submit" class="btn-primary">
                     Save Lesson

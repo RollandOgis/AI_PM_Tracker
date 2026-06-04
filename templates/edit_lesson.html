@@ -17,17 +17,18 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-
                 <h1>Edit Lesson Learned</h1>
-
                 <p class="dashboard-subtitle">
-                    Update lessons learned and continuous improvement actions.
+                    Update lessons learned, root cause, implementation and effectiveness.
                 </p>
-
             </div>
 
+            <div class="dashboard-actions">
+                <a href="/lessons" class="btn-primary">
+                    Back to Lessons
+                </a>
+            </div>
         </div>
 
         <div class="form-container">
@@ -35,147 +36,114 @@
             <form method="POST">
 
                 <label>Project</label>
-
                 <select name="project_id" required>
+                    <option value="{{ lesson['project_id'] }}" selected>
+                        Current Project
+                    </option>
 
                     {% for project in projects %}
-
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if project['id'] == lesson['project_id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ project['name'] }}
-                        </option>
-
+                    <option value="{{ project['id'] }}">
+                        {{ project['name'] }}
+                    </option>
                     {% endfor %}
-
                 </select>
 
                 <label>Lesson Title</label>
-
-                <input
-                    type="text"
-                    name="title"
-                    value="{{ lesson['title'] }}"
-                    required
-                >
+                <input type="text" name="title" value="{{ lesson['title'] }}" required>
 
                 <label>Category</label>
+                <select name="category">
+                    <option value="{{ lesson['category'] }}" selected>{{ lesson['category'] }}</option>
+                    <option value="Process">Process</option>
+                    <option value="Governance">Governance</option>
+                    <option value="Risk">Risk</option>
+                    <option value="Schedule">Schedule</option>
+                    <option value="Budget">Budget</option>
+                    <option value="Stakeholder">Stakeholder</option>
+                    <option value="Resource">Resource</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Quality">Quality</option>
+                </select>
 
-                <select name="category" required>
-
-                    <option value="Process"
-                        {% if lesson['category'] == 'Process' %}selected{% endif %}>
-                        Process
-                    </option>
-
-                    <option value="Governance"
-                        {% if lesson['category'] == 'Governance' %}selected{% endif %}>
-                        Governance
-                    </option>
-
-                    <option value="Risk"
-                        {% if lesson['category'] == 'Risk' %}selected{% endif %}>
-                        Risk
-                    </option>
-
-                    <option value="Schedule"
-                        {% if lesson['category'] == 'Schedule' %}selected{% endif %}>
-                        Schedule
-                    </option>
-
-                    <option value="Budget"
-                        {% if lesson['category'] == 'Budget' %}selected{% endif %}>
-                        Budget
-                    </option>
-
-                    <option value="Stakeholder"
-                        {% if lesson['category'] == 'Stakeholder' %}selected{% endif %}>
-                        Stakeholder
-                    </option>
-
-                    <option value="Resource"
-                        {% if lesson['category'] == 'Resource' %}selected{% endif %}>
-                        Resource
-                    </option>
-
-                    <option value="Technical"
-                        {% if lesson['category'] == 'Technical' %}selected{% endif %}>
-                        Technical
-                    </option>
-
-                    <option value="Quality"
-                        {% if lesson['category'] == 'Quality' %}selected{% endif %}>
-                        Quality
-                    </option>
-
+                <label>Knowledge Area</label>
+                <select name="knowledge_area">
+                    <option value="{{ lesson['knowledge_area'] }}" selected>{{ lesson['knowledge_area'] }}</option>
+                    <option value="General">General</option>
+                    <option value="Project Management">Project Management</option>
+                    <option value="Governance">Governance</option>
+                    <option value="Risk Management">Risk Management</option>
+                    <option value="Resource Management">Resource Management</option>
+                    <option value="Financial Management">Financial Management</option>
+                    <option value="Portfolio Management">Portfolio Management</option>
+                    <option value="Technical Delivery">Technical Delivery</option>
                 </select>
 
                 <label>What Happened</label>
+                <textarea name="what_happened" rows="4">{{ lesson['what_happened'] }}</textarea>
 
-                <textarea
-                    name="what_happened"
-                    rows="4"
-                >{{ lesson['what_happened'] }}</textarea>
+                <label>Root Cause Analysis</label>
+                <textarea name="root_cause" rows="4">{{ lesson['root_cause'] }}</textarea>
 
                 <label>What Went Well</label>
-
-                <textarea
-                    name="what_went_well"
-                    rows="4"
-                >{{ lesson['what_went_well'] }}</textarea>
+                <textarea name="what_went_well" rows="4">{{ lesson['what_went_well'] }}</textarea>
 
                 <label>What Went Wrong</label>
+                <textarea name="what_went_wrong" rows="4">{{ lesson['what_went_wrong'] }}</textarea>
 
-                <textarea
-                    name="what_went_wrong"
-                    rows="4"
-                >{{ lesson['what_went_wrong'] }}</textarea>
+                <label>Actions Taken</label>
+                <textarea name="actions_taken" rows="4">{{ lesson['actions_taken'] }}</textarea>
 
                 <label>Recommendation</label>
-
-                <textarea
-                    name="recommendation"
-                    rows="4"
-                >{{ lesson['recommendation'] }}</textarea>
+                <textarea name="recommendation" rows="4">{{ lesson['recommendation'] }}</textarea>
 
                 <label>Owner</label>
-
-                <input
-                    type="text"
-                    name="owner"
-                    value="{{ lesson['owner'] }}"
-                >
+                <input type="text" name="owner" value="{{ lesson['owner'] }}">
 
                 <label>Status</label>
-
                 <select name="status">
-
-                    <option value="Open"
-                        {% if lesson['status'] == 'Open' %}selected{% endif %}>
-                        Open
-                    </option>
-
-                    <option value="Implemented"
-                        {% if lesson['status'] == 'Implemented' %}selected{% endif %}>
-                        Implemented
-                    </option>
-
-                    <option value="Archived"
-                        {% if lesson['status'] == 'Archived' %}selected{% endif %}>
-                        Archived
-                    </option>
-
+                    <option value="{{ lesson['status'] }}" selected>{{ lesson['status'] }}</option>
+                    <option value="Open">Open</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
                 </select>
 
-                <button
-                    type="submit"
-                    class="btn-primary"
+                <label>Implementation Status</label>
+                <select name="implementation_status">
+                    <option value="{{ lesson['implementation_status'] }}" selected>{{ lesson['implementation_status'] }}</option>
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Implemented">Implemented</option>
+                </select>
+
+                <label>Reusable Lesson</label>
+                <select name="reusable">
+                    <option value="{{ lesson['reusable'] }}" selected>{{ lesson['reusable'] }}</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+
+                <label>Effectiveness Score (0-100)</label>
+                <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    name="effectiveness_score"
+                    value="{{ lesson['effectiveness_score'] }}"
                 >
+
+                <label>Effectiveness Notes</label>
+                <textarea name="effectiveness_notes" rows="4">{{ lesson['effectiveness_notes'] }}</textarea>
+
+                <label>Review Date</label>
+                <input type="date" name="review_date" value="{{ lesson['review_date'] }}">
+
+                <button type="submit" class="btn-primary">
                     Update Lesson
                 </button>
+
+                <a href="/lessons" class="btn-secondary">
+                    Cancel
+                </a>
 
             </form>
 

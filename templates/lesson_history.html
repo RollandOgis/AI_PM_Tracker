@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Lesson History</h1>
+                <p class="dashboard-subtitle">
+                    View lesson status changes and audit history.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/lessons" class="btn-primary">
+                    Back to Lessons
+                </a>
+            </div>
+        </div>
+
+        <div class="smart-card">
+            <h3>{{ lesson["title"] }}</h3>
+
+            <p><strong>Status:</strong> {{ lesson["status"] }}</p>
+            <p><strong>Implementation:</strong> {{ lesson["implementation_status"] or "Not Started" }}</p>
+            <p><strong>Reusable:</strong> {{ lesson["reusable"] or "No" }}</p>
+            <p><strong>Effectiveness:</strong> {{ lesson["effectiveness_score"] or 0 }}/100</p>
+        </div>
+
+        {% if history %}
+
+        <div class="projects-grid">
+
+            {% for item in history %}
+
+            <div class="project-card">
+
+                <h3>{{ item["change_note"] }}</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Old Status</span>
+                        <strong>{{ item["old_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>New Status</span>
+                        <strong>{{ item["new_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Changed At</span>
+                        <strong>{{ item["changed_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Lesson History</h3>
+            <p>No status changes have been recorded for this lesson yet.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

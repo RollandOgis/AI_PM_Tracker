@@ -22,7 +22,7 @@
                 <h1>Lessons Learned Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Capture knowledge and improve future project delivery.
+                    Capture reusable knowledge, implementation actions and effectiveness reviews.
                 </p>
             </div>
 
@@ -38,176 +38,234 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Lessons</h3>
-                <p>{{ lessons|length }}</p>
-            </div>
-
-            <div class="stat-card green-card">
-                <h3>Implemented</h3>
-                <p>{{ lessons | selectattr("status", "equalto", "Implemented") | list | length }}</p>
+                <p>{{ stats["total_lessons"] or 0 }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Open</h3>
-                <p>{{ lessons | selectattr("status", "equalto", "Open") | list | length }}</p>
+                <p>{{ stats["open_lessons"] or 0 }}</p>
             </div>
 
-            <div class="stat-card red-card">
-                <h3>Archived</h3>
-                <p>{{ lessons | selectattr("status", "equalto", "Archived") | list | length }}</p>
+            <div class="stat-card blue-card">
+                <h3>In Progress</h3>
+                <p>{{ stats["in_progress_lessons"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completed</h3>
+                <p>{{ stats["completed_lessons"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Implemented</h3>
+                <p>{{ stats["implemented_lessons"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Reusable</h3>
+                <p>{{ stats["reusable_lessons"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Avg Effectiveness</h3>
+                <p>{{ stats["avg_effectiveness_score"] or 0 }}</p>
             </div>
 
         </div>
 
         {% if lessons %}
 
-            {% set latest_lesson = lessons[0] %}
+        {% set latest_lesson = lessons[0] %}
 
-            <div class="smart-card">
+        <div class="smart-card">
 
-                <h3>Latest Lesson</h3>
+            <h3>Latest Lesson</h3>
+
+            <div class="smart-insight">
+
+                <strong>{{ latest_lesson["title"] }}</strong>
+
+                <p>Category: {{ latest_lesson["category"] or "Not Set" }}</p>
+                <p>Knowledge Area: {{ latest_lesson["knowledge_area"] or "General" }}</p>
+                <p>Owner: {{ latest_lesson["owner"] or "Not assigned" }}</p>
+                <p>Status: {{ latest_lesson["status"] }}</p>
+                <p>Implementation: {{ latest_lesson["implementation_status"] or "Not Started" }}</p>
+                <p>Reusable: {{ latest_lesson["reusable"] or "No" }}</p>
+
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for lesson in lessons %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ lesson["title"] }}</h3>
+
+                        {% if lesson["status"] == "Completed" %}
+                            <span class="badge badge-green">Completed</span>
+                        {% elif lesson["status"] == "In Progress" %}
+                            <span class="badge badge-blue">In Progress</span>
+                        {% elif lesson["status"] == "Open" %}
+                            <span class="badge badge-yellow">Open</span>
+                        {% else %}
+                            <span class="badge badge-red">{{ lesson["status"] }}</span>
+                        {% endif %}
+
+                        {% if lesson["implementation_status"] == "Implemented" %}
+                            <span class="badge badge-green">Implemented</span>
+                        {% endif %}
+
+                        {% if lesson["reusable"] == "Yes" %}
+                            <span class="badge badge-blue">Reusable</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ lesson["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ lesson["category"] or "Not Set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Knowledge Area</span>
+                        <strong>{{ lesson["knowledge_area"] or "General" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ lesson["owner"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ lesson["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Implementation</span>
+                        <strong>{{ lesson["implementation_status"] or "Not Started" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Reusable</span>
+                        <strong>{{ lesson["reusable"] or "No" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Effectiveness</span>
+                        <strong>{{ lesson["effectiveness_score"] or 0 }}/100</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Review Date</span>
+                        <strong>{{ lesson["review_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Date Captured</span>
+                        <strong>{{ lesson["created_at"] }}</strong>
+                    </div>
+
+                </div>
 
                 <div class="smart-insight">
+                    <strong>What Happened:</strong>
+                    <br><br>
+                    {{ lesson["what_happened"] or "No details recorded." }}
+                </div>
 
-                    <strong>{{ latest_lesson["title"] }}</strong>
+                <div class="smart-insight">
+                    <strong>Root Cause:</strong>
+                    <br><br>
+                    {{ lesson["root_cause"] or "No root cause recorded." }}
+                </div>
 
-                    <p>
-                        Category:
-                        {{ latest_lesson["category"] or "Not Set" }}
-                    </p>
+                <div class="smart-insight">
+                    <strong>What Went Well:</strong>
+                    <br><br>
+                    {{ lesson["what_went_well"] or "No details recorded." }}
+                </div>
 
-                    <p>
-                        Owner:
-                        {{ latest_lesson["owner"] }}
-                    </p>
+                <div class="smart-insight">
+                    <strong>What Went Wrong:</strong>
+                    <br><br>
+                    {{ lesson["what_went_wrong"] or "No details recorded." }}
+                </div>
 
-                    <p>
-                        Status:
-                        {{ latest_lesson["status"] }}
-                    </p>
+                <div class="smart-insight">
+                    <strong>Actions Taken:</strong>
+                    <br><br>
+                    {{ lesson["actions_taken"] or "No actions recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Recommendation:</strong>
+                    <br><br>
+                    {{ lesson["recommendation"] or "No recommendation recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Effectiveness Notes:</strong>
+                    <br><br>
+                    {{ lesson["effectiveness_notes"] or "No effectiveness review recorded." }}
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-lesson/{{ lesson['id'] }}">
+                        Edit
+                    </a>
+
+                    <a href="/lesson-history/{{ lesson['id'] }}">
+                        History
+                    </a>
+
+                    <a
+                        href="/delete-lesson/{{ lesson['id'] }}"
+                        onclick="return confirm('Delete this lesson?')"
+                    >
+                        Delete
+                    </a>
 
                 </div>
 
             </div>
 
-            <div class="projects-grid">
+            {% endfor %}
 
-                {% for lesson in lessons %}
-
-                    <div class="project-card">
-
-                        <div class="project-top">
-
-                            <div>
-
-                                <h3>{{ lesson["title"] }}</h3>
-
-                                {% if lesson["status"] == "Implemented" %}
-                                    <span class="badge badge-green">
-                                        Implemented
-                                    </span>
-                                {% elif lesson["status"] == "Open" %}
-                                    <span class="badge badge-yellow">
-                                        Open
-                                    </span>
-                                {% else %}
-                                    <span class="badge badge-red">
-                                        Archived
-                                    </span>
-                                {% endif %}
-
-                            </div>
-
-                        </div>
-
-                        <div class="budget-section">
-
-                            <div class="budget-row">
-                                <span>Project</span>
-                                <strong>{{ lesson["project_name"] or "No Project" }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Category</span>
-                                <strong>{{ lesson["category"] or "Not Set" }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Owner</span>
-                                <strong>{{ lesson["owner"] }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Status</span>
-                                <strong>{{ lesson["status"] }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Date Captured</span>
-                                <strong>{{ lesson["created_at"] }}</strong>
-                            </div>
-
-                        </div>
-
-                        <div class="smart-insight">
-                            <strong>What Happened:</strong>
-                            <br><br>
-                            {{ lesson["what_happened"] }}
-                        </div>
-
-                        <div class="smart-insight">
-                            <strong>What Went Well:</strong>
-                            <br><br>
-                            {{ lesson["what_went_well"] }}
-                        </div>
-
-                        <div class="smart-insight">
-                            <strong>What Went Wrong:</strong>
-                            <br><br>
-                            {{ lesson["what_went_wrong"] }}
-                        </div>
-
-                        <div class="project-actions">
-
-                            <a href="/edit-lesson/{{ lesson['id'] }}">
-                                Edit
-                            </a>
-
-                            <a
-                                href="/delete-lesson/{{ lesson['id'] }}"
-                                onclick="return confirm('Delete this lesson?')"
-                            >
-                                Delete
-                            </a>
-
-                        </div>
-
-                        <div class="smart-insight">
-                            <strong>Recommendation:</strong>
-                            <br><br>
-                            {{ lesson["recommendation"] }}
-                        </div>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
+        </div>
 
         {% else %}
 
-            <div class="empty-box">
+        <div class="empty-box">
 
-                <h3>No Lessons Recorded</h3>
+            <h3>No Lessons Recorded</h3>
 
-                <p>
-                    Add lessons learned to improve future projects.
-                </p>
+            <p>
+                Add lessons learned to improve future projects.
+            </p>
 
-                <a href="/add-lesson" class="btn-primary">
-                    Add First Lesson
-                </a>
+            <a href="/add-lesson" class="btn-primary">
+                Add First Lesson
+            </a>
 
-            </div>
+        </div>
 
         {% endif %}
 
