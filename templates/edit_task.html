@@ -257,64 +257,60 @@
                 >
 
 
-                <label>Attachment URL</label>
+               <label>Attachment URL</label>
 
-                <input
-                    type="text"
-                    name="attachment_url"
-                    value="{{ task['attachment_url'] or '' }}"
-                    placeholder="https://..."
-                >
-
-
-                <label>Acceptance Criteria</label>
-
-                <textarea
-                    name="acceptance_criteria"
-                    rows="4"
-                >{{ task['acceptance_criteria'] or '' }}</textarea>
+<input
+    type="text"
+    name="attachment_url"
+    value="{{ task['attachment_url'] or '' }}"
+    placeholder="https://..."
+>
 
 
-                <label>Checklist</label>
+<label>Acceptance Criteria</label>
 
-                <textarea
-                    name="checklist"
-                    rows="4"
-                    placeholder="Example:
-- Build API
-- Complete Testing
-- Obtain Approval"
-                >{{ task['checklist'] or '' }}</textarea>
+<textarea
+    name="acceptance_criteria"
+    rows="4"
+>{{ task['acceptance_criteria'] or '' }}</textarea>
 
 
-                <label style="display:flex; gap:10px; align-items:center; margin-top:15px;">
+<label>Checklist</label>
 
-                    {% if task['is_recurring'] %}
-
-                        <input
-                            type="checkbox"
-                            name="is_recurring"
-                            checked
-                        >
-
-                    {% else %}
-
-                        <input
-                            type="checkbox"
-                            name="is_recurring"
-                        >
-
-                    {% endif %}
-
-                    Recurring Task
-
-                </label>
+<textarea
+    name="checklist"
+    rows="4"
+    placeholder="Build API, complete testing, obtain approval"
+>{{ task['checklist'] or '' }}</textarea>
 
 
-                <br>
+<div style="margin-top:15px;">
+    <label style="display:flex; gap:10px; align-items:center;">
+
+        {% if task['is_recurring'] %}
+
+            <input
+                type="checkbox"
+                name="is_recurring"
+                checked
+            >
+
+        {% else %}
+
+            <input
+                type="checkbox"
+                name="is_recurring"
+            >
+
+        {% endif %}
+
+        <span>Recurring Task</span>
+
+    </label>
+</div>
 
 
-                <label>Recurring Frequency</label>
+<label>Recurring Frequency</label>
 
                 <select name="recurring_frequency">
 
