@@ -2969,3 +2969,25 @@ td {
     display: inline-block;
     width: auto;
 }
+
+.form-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.form-container label {
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.form-container input,
+.form-container select,
+.form-container textarea {
+    width: 100%;
+}
+
+.form-container button {
+    width: fit-content;
+    margin-top: 15px;
+}
