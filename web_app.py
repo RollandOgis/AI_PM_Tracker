@@ -3944,17 +3944,16 @@ def edit_task(task_id):
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
-        SELECT
-            tasks.*
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        WHERE tasks.id = %s
-        AND projects.user_id = %s
-    """, (
-        task_id,
-        session["user_id"]
-    ))
+                   SELECT tasks.*
+                   FROM tasks
+                            JOIN projects
+                                 ON tasks.project_id = projects.id
+                   WHERE tasks.id = %s
+                     AND projects.user_id = %s
+                   """, (
+                       task_id,
+                       session["user_id"]
+                   ))
 
     task = cursor.fetchone()
 
@@ -3982,19 +3981,20 @@ def edit_task(task_id):
     team_members = cursor.fetchall()
 
     cursor.execute("""
-        SELECT
-            tasks.*,
-            projects.name AS project_name
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        WHERE projects.user_id = %s
-        AND tasks.id != %s
-        ORDER BY tasks.title ASC
-    """, (
-        session["user_id"],
-        task_id
-    ))
+                   SELECT tasks.*,
+                          projects.name AS project_name
+                   FROM tasks
+                            JOIN projects
+                                 ON tasks.project_id = projects.id
+                   WHERE projects.user_id = %s
+                     AND tasks.project_id = %s
+                     AND tasks.id != %s
+                   ORDER BY tasks.title ASC
+                   """, (
+                       session["user_id"],
+                       task["project_id"],
+                       task_id
+                   ))
 
     existing_tasks = cursor.fetchall()
 

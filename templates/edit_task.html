@@ -28,18 +28,24 @@
 
                     {% for project in projects %}
 
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if task['project_id'] == project['id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ project['name'] }}
-                        </option>
+                        {% if task['project_id'] == project['id'] %}
+
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+
+                        {% else %}
+
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+
+                        {% endif %}
 
                     {% endfor %}
 
                 </select>
+
 
                 <label>Task Title</label>
 
@@ -50,12 +56,14 @@
                     required
                 >
 
+
                 <label>Description</label>
 
                 <textarea
                     name="description"
                     rows="5"
                 >{{ task['description'] }}</textarea>
+
 
                 <label>Assigned To</label>
 
@@ -65,24 +73,38 @@
                     value="{{ task['assigned_to'] }}"
                 >
 
+
                 <label>Team Members</label>
 
                 <select name="team_member_ids" multiple>
 
                     {% for member in team_members %}
 
-                        <option
-                            value="{{ member['id'] }}"
-                            {% if member['id'] in selected_member_ids %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ member['name'] }}
+                        {% if member['id'] in selected_member_ids %}
 
-                            {% if member['role'] %}
-                                - {{ member['role'] }}
-                            {% endif %}
-                        </option>
+                            <option value="{{ member['id'] }}" selected>
+
+                                {{ member['name'] }}
+
+                                {% if member['role'] %}
+                                    - {{ member['role'] }}
+                                {% endif %}
+
+                            </option>
+
+                        {% else %}
+
+                            <option value="{{ member['id'] }}">
+
+                                {{ member['name'] }}
+
+                                {% if member['role'] %}
+                                    - {{ member['role'] }}
+                                {% endif %}
+
+                            </option>
+
+                        {% endif %}
 
                     {% endfor %}
 
@@ -92,21 +114,31 @@
                     Hold Ctrl on Windows or Command on Mac to select multiple team members.
                 </small>
 
+
+                <br><br>
+
+
                 <label>Task Dependencies</label>
 
                 <select name="depends_on_task_ids" multiple>
 
                     {% for existing_task in existing_tasks %}
 
-                        <option
-                            value="{{ existing_task['id'] }}"
-                            {% if existing_task['id'] in selected_dependency_ids %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ existing_task['title'] }}
-                            ({{ existing_task['project_name'] }})
-                        </option>
+                        {% if existing_task['id'] in selected_dependency_ids %}
+
+                            <option value="{{ existing_task['id'] }}" selected>
+                                {{ existing_task['title'] }}
+                                ({{ existing_task['project_name'] }})
+                            </option>
+
+                        {% else %}
+
+                            <option value="{{ existing_task['id'] }}">
+                                {{ existing_task['title'] }}
+                                ({{ existing_task['project_name'] }})
+                            </option>
+
+                        {% endif %}
 
                     {% endfor %}
 
@@ -116,53 +148,65 @@
                     Select tasks that must be completed before this task.
                 </small>
 
+
+                <br><br>
+
+
                 <label>Priority</label>
 
                 <select name="priority">
 
-                    <option value="Low"
-                        {% if task['priority'] == 'Low' %}selected{% endif %}
-                    >
-                        Low
-                    </option>
+                    {% if task['priority'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
 
-                    <option value="Medium"
-                        {% if task['priority'] == 'Medium' %}selected{% endif %}
-                    >
-                        Medium
-                    </option>
+                    {% if task['priority'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
 
-                    <option value="High"
-                        {% if task['priority'] == 'High' %}selected{% endif %}
-                    >
-                        High
-                    </option>
+                    {% if task['priority'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
 
                 </select>
+
 
                 <label>Status</label>
 
                 <select name="status">
 
-                    <option value="Pending"
-                        {% if task['status'] == 'Pending' %}selected{% endif %}
-                    >
-                        Pending
-                    </option>
+                    {% if task['status'] == 'Pending' %}
+                        <option value="Pending" selected>Pending</option>
+                    {% else %}
+                        <option value="Pending">Pending</option>
+                    {% endif %}
 
-                    <option value="In Progress"
-                        {% if task['status'] == 'In Progress' %}selected{% endif %}
-                    >
-                        In Progress
-                    </option>
+                    {% if task['status'] == 'In Progress' %}
+                        <option value="In Progress" selected>In Progress</option>
+                    {% else %}
+                        <option value="In Progress">In Progress</option>
+                    {% endif %}
 
-                    <option value="Completed"
-                        {% if task['status'] == 'Completed' %}selected{% endif %}
-                    >
-                        Completed
-                    </option>
+                    {% if task['status'] == 'Completed' %}
+                        <option value="Completed" selected>Completed</option>
+                    {% else %}
+                        <option value="Completed">Completed</option>
+                    {% endif %}
+
+                    {% if task['status'] == 'Blocked' %}
+                        <option value="Blocked" selected>Blocked</option>
+                    {% else %}
+                        <option value="Blocked">Blocked</option>
+                    {% endif %}
 
                 </select>
+
 
                 <label>Due Date</label>
 
@@ -171,6 +215,7 @@
                     name="due_date"
                     value="{{ task['due_date'] }}"
                 >
+
 
                 <label>Estimated Hours</label>
 
@@ -181,6 +226,7 @@
                     value="{{ task['estimated_hours'] }}"
                 >
 
+
                 <label>Actual Hours</label>
 
                 <input
@@ -189,6 +235,7 @@
                     name="actual_hours"
                     value="{{ task['actual_hours'] }}"
                 >
+
 
                 <label>Hourly Rate (£)</label>
 
@@ -199,6 +246,7 @@
                     value="{{ task['hourly_rate'] }}"
                 >
 
+
                 <label>Attachment Name</label>
 
                 <input
@@ -207,6 +255,7 @@
                     value="{{ task['attachment_name'] or '' }}"
                     placeholder="Requirements Document"
                 >
+
 
                 <label>Attachment URL</label>
 
@@ -217,12 +266,14 @@
                     placeholder="https://..."
                 >
 
+
                 <label>Acceptance Criteria</label>
 
                 <textarea
                     name="acceptance_criteria"
                     rows="4"
                 >{{ task['acceptance_criteria'] or '' }}</textarea>
+
 
                 <label>Checklist</label>
 
@@ -235,55 +286,70 @@
 - Obtain Approval"
                 >{{ task['checklist'] or '' }}</textarea>
 
-                <label>
 
-                    <input
-                        type="checkbox"
-                        name="is_recurring"
-                        {% if task['is_recurring'] %}
+                <label style="display:flex; gap:10px; align-items:center; margin-top:15px;">
+
+                    {% if task['is_recurring'] %}
+
+                        <input
+                            type="checkbox"
+                            name="is_recurring"
                             checked
-                        {% endif %}
-                    >
+                        >
+
+                    {% else %}
+
+                        <input
+                            type="checkbox"
+                            name="is_recurring"
+                        >
+
+                    {% endif %}
 
                     Recurring Task
 
                 </label>
 
+
+                <br>
+
+
                 <label>Recurring Frequency</label>
 
                 <select name="recurring_frequency">
 
-                    <option value=""
-                        {% if not task['recurring_frequency'] %}selected{% endif %}
-                    >
-                        Not Recurring
-                    </option>
+                    {% if not task['recurring_frequency'] %}
+                        <option value="" selected>Not Recurring</option>
+                    {% else %}
+                        <option value="">Not Recurring</option>
+                    {% endif %}
 
-                    <option value="Daily"
-                        {% if task['recurring_frequency'] == 'Daily' %}selected{% endif %}
-                    >
-                        Daily
-                    </option>
+                    {% if task['recurring_frequency'] == 'Daily' %}
+                        <option value="Daily" selected>Daily</option>
+                    {% else %}
+                        <option value="Daily">Daily</option>
+                    {% endif %}
 
-                    <option value="Weekly"
-                        {% if task['recurring_frequency'] == 'Weekly' %}selected{% endif %}
-                    >
-                        Weekly
-                    </option>
+                    {% if task['recurring_frequency'] == 'Weekly' %}
+                        <option value="Weekly" selected>Weekly</option>
+                    {% else %}
+                        <option value="Weekly">Weekly</option>
+                    {% endif %}
 
-                    <option value="Monthly"
-                        {% if task['recurring_frequency'] == 'Monthly' %}selected{% endif %}
-                    >
-                        Monthly
-                    </option>
+                    {% if task['recurring_frequency'] == 'Monthly' %}
+                        <option value="Monthly" selected>Monthly</option>
+                    {% else %}
+                        <option value="Monthly">Monthly</option>
+                    {% endif %}
 
-                    <option value="Quarterly"
-                        {% if task['recurring_frequency'] == 'Quarterly' %}selected{% endif %}
-                    >
-                        Quarterly
-                    </option>
+                    {% if task['recurring_frequency'] == 'Quarterly' %}
+                        <option value="Quarterly" selected>Quarterly</option>
+                    {% else %}
+                        <option value="Quarterly">Quarterly</option>
+                    {% endif %}
 
                 </select>
+
 
                 <button type="submit" class="btn-primary">
                     Update Task

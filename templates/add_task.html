@@ -80,10 +80,12 @@
                 </select>
 
                 <small>
-                    Hold Ctrl on Windows or Command on Mac to select multiple team members.
-                </small>
+    Hold Ctrl on Windows or Command on Mac to select multiple team members.
+</small>
 
-                <label>Task Dependencies</label>
+<br><br>
+
+<label>Task Dependencies</label>
 
                 <select name="depends_on_task_ids" multiple>
 
@@ -210,18 +212,17 @@
 - Obtain Approval"
                 ></textarea>
 
-                <label>
+                <label style="display:flex; gap:10px; align-items:center;">
+    <input
+        type="checkbox"
+        name="is_recurring"
+    >
+    Recurring Task
+</label>
 
-                    <input
-                        type="checkbox"
-                        name="is_recurring"
-                    >
+<br>
 
-                    Recurring Task
-
-                </label>
-
-                <label>Recurring Frequency</label>
+<label>Recurring Frequency</label>
 
                 <select name="recurring_frequency">
 
