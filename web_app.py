@@ -5790,7 +5790,7 @@ def export_gantt():
 
     conn.close()
 
-    output = io.StringIO()
+    output = StringIO()
     writer = csv.writer(output)
 
     writer.writerow([
