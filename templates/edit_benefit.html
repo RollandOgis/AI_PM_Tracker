@@ -28,14 +28,15 @@
 
                     {% for project in projects %}
 
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if project['id'] == benefit['project_id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ project['name'] }}
-                        </option>
+                        {% if project['id'] == benefit['project_id'] %}
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+                        {% endif %}
 
                     {% endfor %}
 
@@ -60,42 +61,107 @@
 
                 <label>Benefit Type</label>
 
-                <select name="benefit_type" required>
+                <select name="benefit_type">
 
-                    <option value="Financial"
-                        {% if benefit['benefit_type'] == 'Financial' %}selected{% endif %}>
-                        Financial
-                    </option>
+                    {% if benefit['benefit_type'] == 'Financial' %}
+                        <option value="Financial" selected>Financial</option>
+                    {% else %}
+                        <option value="Financial">Financial</option>
+                    {% endif %}
 
-                    <option value="Operational"
-                        {% if benefit['benefit_type'] == 'Operational' %}selected{% endif %}>
-                        Operational
-                    </option>
+                    {% if benefit['benefit_type'] == 'Operational' %}
+                        <option value="Operational" selected>Operational</option>
+                    {% else %}
+                        <option value="Operational">Operational</option>
+                    {% endif %}
 
-                    <option value="Customer"
-                        {% if benefit['benefit_type'] == 'Customer' %}selected{% endif %}>
-                        Customer
-                    </option>
+                    {% if benefit['benefit_type'] == 'Customer' %}
+                        <option value="Customer" selected>Customer</option>
+                    {% else %}
+                        <option value="Customer">Customer</option>
+                    {% endif %}
 
-                    <option value="Compliance"
-                        {% if benefit['benefit_type'] == 'Compliance' %}selected{% endif %}>
-                        Compliance
-                    </option>
+                    {% if benefit['benefit_type'] == 'Compliance' %}
+                        <option value="Compliance" selected>Compliance</option>
+                    {% else %}
+                        <option value="Compliance">Compliance</option>
+                    {% endif %}
 
-                    <option value="Strategic"
-                        {% if benefit['benefit_type'] == 'Strategic' %}selected{% endif %}>
-                        Strategic
-                    </option>
+                    {% if benefit['benefit_type'] == 'Strategic' %}
+                        <option value="Strategic" selected>Strategic</option>
+                    {% else %}
+                        <option value="Strategic">Strategic</option>
+                    {% endif %}
 
                 </select>
 
-                <label>Expected Value</label>
+                <label>Benefit Category</label>
+
+                <select name="benefit_category">
+
+                    {% if benefit['benefit_category'] == 'Revenue Growth' %}
+                        <option value="Revenue Growth" selected>Revenue Growth</option>
+                    {% else %}
+                        <option value="Revenue Growth">Revenue Growth</option>
+                    {% endif %}
+
+                    {% if benefit['benefit_category'] == 'Cost Reduction' %}
+                        <option value="Cost Reduction" selected>Cost Reduction</option>
+                    {% else %}
+                        <option value="Cost Reduction">Cost Reduction</option>
+                    {% endif %}
+
+                    {% if benefit['benefit_category'] == 'Efficiency' %}
+                        <option value="Efficiency" selected>Efficiency</option>
+                    {% else %}
+                        <option value="Efficiency">Efficiency</option>
+                    {% endif %}
+
+                    {% if benefit['benefit_category'] == 'Customer Satisfaction' %}
+                        <option value="Customer Satisfaction" selected>Customer Satisfaction</option>
+                    {% else %}
+                        <option value="Customer Satisfaction">Customer Satisfaction</option>
+                    {% endif %}
+
+                    {% if benefit['benefit_category'] == 'Compliance' %}
+                        <option value="Compliance" selected>Compliance</option>
+                    {% else %}
+                        <option value="Compliance">Compliance</option>
+                    {% endif %}
+
+                    {% if benefit['benefit_category'] == 'Strategic Value' %}
+                        <option value="Strategic Value" selected>Strategic Value</option>
+                    {% else %}
+                        <option value="Strategic Value">Strategic Value</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Expected Value (£)</label>
 
                 <input
-                    type="text"
+                    type="number"
+                    step="0.01"
                     name="expected_value"
-                    value="{{ benefit['expected_value'] }}"
-                    required
+                    value="{{ benefit['expected_value'] or 0 }}"
+                >
+
+                <label>Actual Value (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="actual_value"
+                    value="{{ benefit['actual_value'] or 0 }}"
+                >
+
+                <label>Forecast Value (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="forecast_value"
+                    value="{{ benefit['forecast_value'] or 0 }}"
                 >
 
                 <label>Measurement Method</label>
@@ -103,49 +169,43 @@
                 <textarea
                     name="measurement_method"
                     rows="4"
-                    required
-                >{{ benefit['measurement_method'] }}</textarea>
+                >{{ benefit['measurement_method'] or '' }}</textarea>
 
                 <label>Benefit Owner</label>
 
                 <input
                     type="text"
                     name="owner"
-                    value="{{ benefit['owner'] }}"
-                    required
+                    value="{{ benefit['owner'] or '' }}"
                 >
 
                 <label>Status</label>
 
-                <select name="status" required>
+                <select name="status">
 
-                    <option
-                        value="Planned"
-                        {% if benefit['status'] == 'Planned' %}selected{% endif %}
-                    >
-                        Planned
-                    </option>
+                    {% if benefit['status'] == 'Planned' %}
+                        <option value="Planned" selected>Planned</option>
+                    {% else %}
+                        <option value="Planned">Planned</option>
+                    {% endif %}
 
-                    <option
-                        value="In Progress"
-                        {% if benefit['status'] == 'In Progress' %}selected{% endif %}
-                    >
-                        In Progress
-                    </option>
+                    {% if benefit['status'] == 'In Progress' %}
+                        <option value="In Progress" selected>In Progress</option>
+                    {% else %}
+                        <option value="In Progress">In Progress</option>
+                    {% endif %}
 
-                    <option
-                        value="Realised"
-                        {% if benefit['status'] == 'Realised' %}selected{% endif %}
-                    >
-                        Realised
-                    </option>
+                    {% if benefit['status'] == 'Realised' %}
+                        <option value="Realised" selected>Realised</option>
+                    {% else %}
+                        <option value="Realised">Realised</option>
+                    {% endif %}
 
-                    <option
-                        value="At Risk"
-                        {% if benefit['status'] == 'At Risk' %}selected{% endif %}
-                    >
-                        At Risk
-                    </option>
+                    {% if benefit['status'] == 'At Risk' %}
+                        <option value="At Risk" selected>At Risk</option>
+                    {% else %}
+                        <option value="At Risk">At Risk</option>
+                    {% endif %}
 
                 </select>
 
@@ -154,7 +214,7 @@
                 <input
                     type="date"
                     name="target_date"
-                    value="{{ benefit['target_date'] }}"
+                    value="{{ benefit['target_date'] or '' }}"
                 >
 
                 <label>Realised Date</label>
@@ -162,7 +222,15 @@
                 <input
                     type="date"
                     name="realised_date"
-                    value="{{ benefit['realised_date'] }}"
+                    value="{{ benefit['realised_date'] or '' }}"
+                >
+
+                <label>Review Date</label>
+
+                <input
+                    type="date"
+                    name="review_date"
+                    value="{{ benefit['review_date'] or '' }}"
                 >
 
                 <button type="submit" class="btn-primary">
@@ -172,6 +240,41 @@
             </form>
 
         </div>
+
+        {% if benefit_history %}
+
+            <div class="smart-card">
+
+                <h2>Benefit History</h2>
+
+                {% for history in benefit_history %}
+
+                    <div class="smart-insight">
+
+                        <strong>{{ history['action'] }}</strong>
+
+                        <br>
+
+                        Previous Status:
+                        {{ history['previous_status'] }}
+
+                        →
+
+                        New Status:
+                        {{ history['new_status'] }}
+
+                        <br>
+
+                        Date:
+                        {{ history['created_at'] }}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
 
     </div>
 

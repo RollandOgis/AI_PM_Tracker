@@ -36,6 +36,7 @@
 
                 </select>
 
+
                 <label>Benefit Title</label>
 
                 <input
@@ -43,6 +44,7 @@
                     name="title"
                     required
                 >
+
 
                 <label>Description</label>
 
@@ -52,11 +54,10 @@
                     required
                 ></textarea>
 
+
                 <label>Benefit Type</label>
 
                 <select name="benefit_type" required>
-
-                    <option value="">Select Type</option>
 
                     <option value="Financial">
                         Financial
@@ -80,14 +81,67 @@
 
                 </select>
 
-                <label>Expected Value</label>
+
+                <label>Benefit Category</label>
+
+                <select name="benefit_category">
+
+                    <option value="Revenue Growth">
+                        Revenue Growth
+                    </option>
+
+                    <option value="Cost Reduction">
+                        Cost Reduction
+                    </option>
+
+                    <option value="Efficiency">
+                        Efficiency
+                    </option>
+
+                    <option value="Customer Satisfaction">
+                        Customer Satisfaction
+                    </option>
+
+                    <option value="Compliance">
+                        Compliance
+                    </option>
+
+                    <option value="Strategic Value">
+                        Strategic Value
+                    </option>
+
+                </select>
+
+
+                <label>Expected Value (£)</label>
 
                 <input
-                    type="text"
+                    type="number"
+                    step="0.01"
                     name="expected_value"
-                    placeholder="Example: £10,000 saving, 20% faster delivery"
-                    required
+                    value="0"
                 >
+
+
+                <label>Actual Value (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="actual_value"
+                    value="0"
+                >
+
+
+                <label>Forecast Value (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="forecast_value"
+                    value="0"
+                >
+
 
                 <label>Measurement Method</label>
 
@@ -95,20 +149,20 @@
                     name="measurement_method"
                     rows="4"
                     placeholder="How will this benefit be measured?"
-                    required
                 ></textarea>
+
 
                 <label>Benefit Owner</label>
 
                 <input
                     type="text"
                     name="owner"
-                    required
                 >
+
 
                 <label>Status</label>
 
-                <select name="status" required>
+                <select name="status">
 
                     <option value="Planned">
                         Planned
@@ -128,6 +182,7 @@
 
                 </select>
 
+
                 <label>Target Date</label>
 
                 <input
@@ -135,12 +190,22 @@
                     name="target_date"
                 >
 
+
                 <label>Realised Date</label>
 
                 <input
                     type="date"
                     name="realised_date"
                 >
+
+
+                <label>Review Date</label>
+
+                <input
+                    type="date"
+                    name="review_date"
+                >
+
 
                 <button
                     type="submit"

@@ -22,7 +22,7 @@
                 <h1>Benefits Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Track expected benefits, owners, measurement methods and value realisation.
+                    Track expected, forecast and realised business value across projects.
                 </p>
             </div>
 
@@ -34,6 +34,7 @@
 
         </div>
 
+
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
@@ -41,24 +42,37 @@
                 <p>{{ benefits|length }}</p>
             </div>
 
+            <div class="stat-card blue-card">
+                <h3>Expected Value</h3>
+                <p>£{{ "{:,.0f}".format(total_expected_value) }}</p>
+            </div>
+
             <div class="stat-card green-card">
-                <h3>Realised</h3>
-                <p>{{ benefits | selectattr("status", "equalto", "Realised") | list | length }}</p>
+                <h3>Actual Value</h3>
+                <p>£{{ "{:,.0f}".format(total_actual_value) }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>In Progress</h3>
-                <p>{{ benefits | selectattr("status", "equalto", "In Progress") | list | length }}</p>
+                <h3>Forecast Value</h3>
+                <p>£{{ "{:,.0f}".format(total_forecast_value) }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Portfolio Realisation</h3>
+                <p>{{ portfolio_realization }}%</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>At Risk</h3>
-                <p>{{ benefits | selectattr("status", "equalto", "At Risk") | list | length }}</p>
+                <h3>Overdue Reviews</h3>
+                <p>{{ overdue_reviews }}</p>
             </div>
 
         </div>
 
+
         {% if top_benefit %}
+
+            {% set top = top_benefit["benefit"] %}
 
             <div class="smart-card">
 
@@ -66,31 +80,46 @@
 
                 <div class="smart-insight">
 
-                    <strong>{{ top_benefit["title"] }}</strong>
+                    <strong>{{ top["title"] }}</strong>
 
                     <p>
                         Project:
-                        {{ top_benefit["project_name"] or "No Project" }}
+                        {{ top["project_name"] or "No Project" }}
                     </p>
 
                     <p>
                         Benefit Type:
-                        {{ top_benefit["benefit_type"] or "Not set" }}
+                        {{ top["benefit_type"] or "Not set" }}
+                    </p>
+
+                    <p>
+                        Category:
+                        {{ top["benefit_category"] or "Not Categorised" }}
                     </p>
 
                     <p>
                         Expected Value:
-                        {{ top_benefit["expected_value"] }}
+                        £{{ "{:,.0f}".format(top_benefit["expected_value_clean"]) }}
+                    </p>
+
+                    <p>
+                        Actual Value:
+                        £{{ "{:,.0f}".format(top_benefit["actual_value_clean"]) }}
+                    </p>
+
+                    <p>
+                        Realisation:
+                        {{ top_benefit["realization_percentage"] }}%
                     </p>
 
                     <p>
                         Owner:
-                        {{ top_benefit["owner"] }}
+                        {{ top["owner"] }}
                     </p>
 
                     <p>
                         Status:
-                        {{ top_benefit["status"] }}
+                        {{ top["status"] }}
                     </p>
 
                 </div>
@@ -99,11 +128,14 @@
 
         {% endif %}
 
+
         {% if benefits %}
 
             <div class="projects-grid">
 
-                {% for benefit in benefits %}
+                {% for item in benefits %}
+
+                    {% set benefit = item["benefit"] %}
 
                     <div class="project-card">
 
@@ -131,9 +163,11 @@
 
                         </div>
 
+
                         <div class="smart-insight">
                             {{ benefit["description"] }}
                         </div>
+
 
                         <div class="budget-section">
 
@@ -148,8 +182,28 @@
                             </div>
 
                             <div class="budget-row">
+                                <span>Category</span>
+                                <strong>{{ benefit["benefit_category"] or "Not Categorised" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
                                 <span>Expected Value</span>
-                                <strong>{{ benefit["expected_value"] }}</strong>
+                                <strong>£{{ "{:,.0f}".format(item["expected_value_clean"]) }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Actual Value</span>
+                                <strong>£{{ "{:,.0f}".format(item["actual_value_clean"]) }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Forecast Value</span>
+                                <strong>£{{ "{:,.0f}".format(item["forecast_value_clean"]) }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Realisation</span>
+                                <strong>{{ item["realization_percentage"] }}%</strong>
                             </div>
 
                             <div class="budget-row">
@@ -168,11 +222,33 @@
                             </div>
 
                             <div class="budget-row">
+                                <span>Review Date</span>
+                                <strong>{{ benefit["review_date"] or "No review date" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Review Status</span>
+                                <strong>{{ item["review_status"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
                                 <span>Status</span>
                                 <strong>{{ benefit["status"] }}</strong>
                             </div>
 
                         </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Measurement Method:</strong>
+
+                            <br><br>
+
+                            {{ benefit["measurement_method"] or "Measurement method not yet added." }}
+
+                        </div>
+
 
                         <div class="project-actions">
 
@@ -186,16 +262,6 @@
                             >
                                 Delete
                             </a>
-
-                        </div>
-
-                        <div class="smart-insight">
-
-                            <strong>Measurement Method:</strong>
-
-                            <br><br>
-
-                            {{ benefit["measurement_method"] or "Measurement method not yet added." }}
 
                         </div>
 

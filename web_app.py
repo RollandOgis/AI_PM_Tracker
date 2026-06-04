@@ -58,6 +58,36 @@ class PostgresConnectionWrapper:
         return self.conn.cursor(*args, **kwargs)
 
 
+
+# =====================================
+
+# BENEFITS HELPER
+
+# =====================================
+
+def clean_money_value(value):
+
+    if not value:
+
+        return 0
+
+    value = str(value)
+
+    value = value.replace("£", "")
+
+    value = value.replace(",", "")
+
+    value = value.strip()
+
+    try:
+
+        return float(value)
+
+    except Exception:
+
+        return 0
+
+
 def get_db_connection():
 
     database_url = os.environ.get("DATABASE_URL")
@@ -737,6 +767,58 @@ def init_db():
     cursor.execute("""
                    ALTER TABLE benefits
                        ADD COLUMN IF NOT EXISTS realised_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS benefit_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS actual_value NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS forecast_value NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS realization_percentage INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS review_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE benefits
+                       ADD COLUMN IF NOT EXISTS review_status TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS benefit_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       benefit_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
                    """)
 
 
@@ -7835,10 +7917,7 @@ def benefits():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -7855,34 +7934,98 @@ def benefits():
 
     benefits = cursor.fetchall()
 
-    conn.close()
+    today = date.today()
 
-    def clean_value(value):
-        if not value:
-            return 0
+    enriched_benefits = []
 
-        value = str(value)
-        value = value.replace("£", "")
-        value = value.replace(",", "")
-        value = value.strip()
+    for benefit in benefits:
+
+        expected_value = clean_money_value(benefit["expected_value"])
+        actual_value = clean_money_value(benefit["actual_value"])
+        forecast_value = clean_money_value(benefit["forecast_value"])
+
+        realization_percentage = 0
+
+        if expected_value > 0:
+            realization_percentage = round(
+                (actual_value / expected_value) * 100
+            )
+
+        review_status = "No Review Date"
 
         try:
-            return float(value)
-        except:
-            return 0
+            if benefit["review_date"]:
+
+                review_date = datetime.strptime(
+                    benefit["review_date"],
+                    "%Y-%m-%d"
+                ).date()
+
+                if review_date < today:
+                    review_status = "Review Overdue"
+                elif review_date == today:
+                    review_status = "Review Due Today"
+                else:
+                    review_status = "Review Scheduled"
+
+        except Exception:
+            review_status = "No Review Date"
+
+        enriched_benefits.append({
+            "benefit": benefit,
+            "expected_value_clean": expected_value,
+            "actual_value_clean": actual_value,
+            "forecast_value_clean": forecast_value,
+            "realization_percentage": realization_percentage,
+            "review_status": review_status
+        })
 
     if benefits:
         top_benefit = max(
-            benefits,
-            key=lambda benefit: clean_value(benefit["expected_value"])
+            enriched_benefits,
+            key=lambda item: item["expected_value_clean"]
         )
     else:
         top_benefit = None
 
+    total_expected_value = sum([
+        item["expected_value_clean"]
+        for item in enriched_benefits
+    ])
+
+    total_actual_value = sum([
+        item["actual_value_clean"]
+        for item in enriched_benefits
+    ])
+
+    total_forecast_value = sum([
+        item["forecast_value_clean"]
+        for item in enriched_benefits
+    ])
+
+    if total_expected_value > 0:
+        portfolio_realization = round(
+            (total_actual_value / total_expected_value) * 100
+        )
+    else:
+        portfolio_realization = 0
+
+    overdue_reviews = len([
+        item for item in enriched_benefits
+        if item["review_status"] == "Review Overdue"
+    ])
+
+    conn.close()
+
     return render_template(
         "benefits.html",
-        benefits=benefits,
-        top_benefit=top_benefit
+        benefits=enriched_benefits,
+        top_benefit=top_benefit,
+        total_expected_value=total_expected_value,
+        total_actual_value=total_actual_value,
+        total_forecast_value=total_forecast_value,
+        portfolio_realization=portfolio_realization,
+        overdue_reviews=overdue_reviews
     )
 
 
@@ -7896,15 +8039,13 @@ def add_benefit():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -7914,6 +8055,27 @@ def add_benefit():
 
     if request.method == "POST":
 
+        expected_value = clean_money_value(
+            request.form.get("expected_value", 0)
+        )
+
+        actual_value = clean_money_value(
+            request.form.get("actual_value", 0)
+        )
+
+        forecast_value = clean_money_value(
+            request.form.get("forecast_value", 0)
+        )
+
+        realization_percentage = 0
+
+        if expected_value > 0:
+            realization_percentage = round(
+                (actual_value / expected_value) * 100
+            )
+
+        status = request.form.get("status", "Planned")
+
         cursor.execute("""
             INSERT INTO benefits
             (
@@ -7922,27 +8084,62 @@ def add_benefit():
                 title,
                 description,
                 benefit_type,
+                benefit_category,
                 expected_value,
+                actual_value,
+                forecast_value,
+                realization_percentage,
                 measurement_method,
                 owner,
                 status,
                 target_date,
                 realised_date,
+                review_date,
+                review_status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
             request.form.get("project_id"),
             request.form.get("title", ""),
             request.form.get("description", ""),
             request.form.get("benefit_type", ""),
-            request.form.get("expected_value", ""),
+            request.form.get("benefit_category", "Financial"),
+            expected_value,
+            actual_value,
+            forecast_value,
+            realization_percentage,
             request.form.get("measurement_method", ""),
             request.form.get("owner", ""),
-            request.form.get("status", "Planned"),
+            status,
             request.form.get("target_date", ""),
             request.form.get("realised_date", ""),
+            request.form.get("review_date", ""),
+            "Scheduled",
+            str(date.today())
+        ))
+
+        benefit_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO benefit_history
+            (
+                benefit_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            benefit_id,
+            session["user_id"],
+            "Benefit created",
+            "",
+            status,
             str(date.today())
         ))
 
@@ -7973,10 +8170,7 @@ def edit_benefit(benefit_id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -7998,6 +8192,7 @@ def edit_benefit(benefit_id):
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -8007,6 +8202,29 @@ def edit_benefit(benefit_id):
 
     if request.method == "POST":
 
+        previous_status = benefit["status"]
+
+        expected_value = clean_money_value(
+            request.form.get("expected_value", 0)
+        )
+
+        actual_value = clean_money_value(
+            request.form.get("actual_value", 0)
+        )
+
+        forecast_value = clean_money_value(
+            request.form.get("forecast_value", 0)
+        )
+
+        realization_percentage = 0
+
+        if expected_value > 0:
+            realization_percentage = round(
+                (actual_value / expected_value) * 100
+            )
+
+        status = request.form.get("status", "Planned")
+
         cursor.execute("""
             UPDATE benefits
             SET
@@ -8014,12 +8232,18 @@ def edit_benefit(benefit_id):
                 title = %s,
                 description = %s,
                 benefit_type = %s,
+                benefit_category = %s,
                 expected_value = %s,
+                actual_value = %s,
+                forecast_value = %s,
+                realization_percentage = %s,
                 measurement_method = %s,
                 owner = %s,
                 status = %s,
                 target_date = %s,
-                realised_date = %s
+                realised_date = %s,
+                review_date = %s,
+                review_status = %s
             WHERE id = %s
             AND user_id = %s
         """, (
@@ -8027,14 +8251,40 @@ def edit_benefit(benefit_id):
             request.form.get("title", ""),
             request.form.get("description", ""),
             request.form.get("benefit_type", ""),
-            request.form.get("expected_value", ""),
+            request.form.get("benefit_category", "Financial"),
+            expected_value,
+            actual_value,
+            forecast_value,
+            realization_percentage,
             request.form.get("measurement_method", ""),
             request.form.get("owner", ""),
-            request.form.get("status", "Planned"),
+            status,
             request.form.get("target_date", ""),
             request.form.get("realised_date", ""),
+            request.form.get("review_date", ""),
+            "Scheduled",
             benefit_id,
             session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO benefit_history
+            (
+                benefit_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            benefit_id,
+            session["user_id"],
+            "Benefit updated",
+            previous_status,
+            status,
+            str(date.today())
         ))
 
         conn.commit()
@@ -8046,12 +8296,24 @@ def edit_benefit(benefit_id):
 
         return redirect("/benefits")
 
+    cursor.execute("""
+        SELECT *
+        FROM benefit_history
+        WHERE benefit_id = %s
+        ORDER BY id DESC
+    """, (
+        benefit_id,
+    ))
+
+    benefit_history = cursor.fetchall()
+
     conn.close()
 
     return render_template(
         "edit_benefit.html",
         benefit=benefit,
-        projects=projects
+        projects=projects,
+        benefit_history=benefit_history
     )
 
 
@@ -8065,8 +8327,14 @@ def delete_benefit(benefit_id):
         return "Access denied"
 
     conn = get_db_connection()
-
     cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM benefit_history
+        WHERE benefit_id = %s
+    """, (
+        benefit_id,
+    ))
 
     cursor.execute("""
         DELETE FROM benefits
