@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Stakeholder</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Stakeholder</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+                <select name="project_id">
+                    {% for project in projects %}
+                        {% if project['id'] == stakeholder['project_id'] %}
+                            <option value="{{ project['id'] }}" selected>{{ project['name'] }}</option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">{{ project['name'] }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+
+                <label>Stakeholder Name</label>
+                <input type="text" name="name" value="{{ stakeholder['name'] }}" required>
+
+                <label>Role</label>
+                <input type="text" name="role" value="{{ stakeholder['role'] or '' }}">
+
+                <label>Stakeholder Category</label>
+                <select name="stakeholder_category">
+                    <option value="Internal" {% if stakeholder['stakeholder_category'] == 'Internal' %}selected{% endif %}>Internal</option>
+                    <option value="External" {% if stakeholder['stakeholder_category'] == 'External' %}selected{% endif %}>External</option>
+                    <option value="Executive" {% if stakeholder['stakeholder_category'] == 'Executive' %}selected{% endif %}>Executive</option>
+                    <option value="Supplier" {% if stakeholder['stakeholder_category'] == 'Supplier' %}selected{% endif %}>Supplier</option>
+                    <option value="Customer" {% if stakeholder['stakeholder_category'] == 'Customer' %}selected{% endif %}>Customer</option>
+                    <option value="Regulator" {% if stakeholder['stakeholder_category'] == 'Regulator' %}selected{% endif %}>Regulator</option>
+                </select>
+
+                <label>Stakeholder Group</label>
+                <select name="stakeholder_group">
+                    <option value="Delivery" {% if stakeholder['stakeholder_group'] == 'Delivery' %}selected{% endif %}>Delivery</option>
+                    <option value="Leadership" {% if stakeholder['stakeholder_group'] == 'Leadership' %}selected{% endif %}>Leadership</option>
+                    <option value="Operations" {% if stakeholder['stakeholder_group'] == 'Operations' %}selected{% endif %}>Operations</option>
+                    <option value="Finance" {% if stakeholder['stakeholder_group'] == 'Finance' %}selected{% endif %}>Finance</option>
+                    <option value="Technology" {% if stakeholder['stakeholder_group'] == 'Technology' %}selected{% endif %}>Technology</option>
+                    <option value="Compliance" {% if stakeholder['stakeholder_group'] == 'Compliance' %}selected{% endif %}>Compliance</option>
+                </select>
+
+                <label>Influence</label>
+                <select name="influence">
+                    <option value="High" {% if stakeholder['influence'] == 'High' %}selected{% endif %}>High</option>
+                    <option value="Medium" {% if stakeholder['influence'] == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Low" {% if stakeholder['influence'] == 'Low' %}selected{% endif %}>Low</option>
+                </select>
+
+                <label>Interest</label>
+                <select name="interest">
+                    <option value="High" {% if stakeholder['interest'] == 'High' %}selected{% endif %}>High</option>
+                    <option value="Medium" {% if stakeholder['interest'] == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Low" {% if stakeholder['interest'] == 'Low' %}selected{% endif %}>Low</option>
+                </select>
+
+                <label>Engagement Level</label>
+                <select name="engagement_level">
+                    <option value="Supportive" {% if stakeholder['engagement_level'] == 'Supportive' %}selected{% endif %}>Supportive</option>
+                    <option value="Neutral" {% if stakeholder['engagement_level'] == 'Neutral' %}selected{% endif %}>Neutral</option>
+                    <option value="Resistant" {% if stakeholder['engagement_level'] == 'Resistant' %}selected{% endif %}>Resistant</option>
+                </select>
+
+                <label>Sentiment</label>
+                <select name="sentiment">
+                    <option value="Positive" {% if stakeholder['sentiment'] == 'Positive' %}selected{% endif %}>Positive</option>
+                    <option value="Neutral" {% if stakeholder['sentiment'] == 'Neutral' %}selected{% endif %}>Neutral</option>
+                    <option value="Negative" {% if stakeholder['sentiment'] == 'Negative' %}selected{% endif %}>Negative</option>
+                </select>
+
+                <label>Communication Plan</label>
+                <textarea name="communication_plan" rows="5">{{ stakeholder['communication_plan'] or '' }}</textarea>
+
+                <label>Owner</label>
+                <input type="text" name="owner" value="{{ stakeholder['owner'] or '' }}">
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Active" {% if stakeholder['status'] == 'Active' %}selected{% endif %}>Active</option>
+                    <option value="Monitor" {% if stakeholder['status'] == 'Monitor' %}selected{% endif %}>Monitor</option>
+                    <option value="Inactive" {% if stakeholder['status'] == 'Inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+
+                <button type="submit" class="btn-primary">
+                    Update Stakeholder
+                </button>
+
+            </form>
+
+        </div>
+
+        {% if stakeholder_history %}
+
+            <div class="smart-card">
+
+                <h2>Stakeholder History</h2>
+
+                {% for history in stakeholder_history %}
+
+                    <div class="smart-insight">
+                        <strong>{{ history['action'] }}</strong>
+                        <br>
+                        Previous Status: {{ history['previous_status'] }}
+                        →
+                        New Status: {{ history['new_status'] }}
+                        <br>
+                        Date: {{ history['created_at'] }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

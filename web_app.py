@@ -1153,6 +1153,53 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   ALTER TABLE stakeholders
+                       ADD COLUMN IF NOT EXISTS stakeholder_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stakeholders
+                       ADD COLUMN IF NOT EXISTS stakeholder_group TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stakeholders
+                       ADD COLUMN IF NOT EXISTS engagement_level TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stakeholders
+                       ADD COLUMN IF NOT EXISTS sentiment TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE stakeholders
+                       ADD COLUMN IF NOT EXISTS engagement_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS stakeholder_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       stakeholder_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
     # Decisions table
 
     cursor.execute("""
@@ -9597,10 +9644,7 @@ def stakeholders():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -9617,11 +9661,29 @@ def stakeholders():
 
     stakeholders = cursor.fetchall()
 
+    total_stakeholders = len(stakeholders)
+    high_influence = len([
+        stakeholder for stakeholder in stakeholders
+        if stakeholder["influence"] == "High"
+    ])
+    high_interest = len([
+        stakeholder for stakeholder in stakeholders
+        if stakeholder["interest"] == "High"
+    ])
+    negative_sentiment = len([
+        stakeholder for stakeholder in stakeholders
+        if stakeholder["sentiment"] == "Negative"
+    ])
+
     conn.close()
 
     return render_template(
         "stakeholders.html",
-        stakeholders=stakeholders
+        stakeholders=stakeholders,
+        total_stakeholders=total_stakeholders,
+        high_influence=high_influence,
+        high_interest=high_interest,
+        negative_sentiment=negative_sentiment
     )
 
 
@@ -9635,15 +9697,13 @@ def add_stakeholder():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -9652,6 +9712,35 @@ def add_stakeholder():
     projects = cursor.fetchall()
 
     if request.method == "POST":
+
+        influence = request.form.get("influence", "Medium")
+        interest = request.form.get("interest", "Medium")
+        engagement_level = request.form.get("engagement_level", "Neutral")
+
+        score = 0
+
+        if influence == "High":
+            score += 30
+        elif influence == "Medium":
+            score += 20
+        else:
+            score += 10
+
+        if interest == "High":
+            score += 30
+        elif interest == "Medium":
+            score += 20
+        else:
+            score += 10
+
+        if engagement_level == "Supportive":
+            score += 30
+        elif engagement_level == "Neutral":
+            score += 20
+        else:
+            score += 10
+
+        status = request.form.get("status", "Active")
 
         cursor.execute("""
             INSERT INTO stakeholders
@@ -9665,24 +9754,61 @@ def add_stakeholder():
                 communication_plan,
                 owner,
                 status,
+                stakeholder_category,
+                stakeholder_group,
+                engagement_level,
+                sentiment,
+                engagement_score,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
             request.form.get("project_id"),
             request.form.get("name"),
             request.form.get("role"),
-            request.form.get("influence"),
-            request.form.get("interest"),
+            influence,
+            interest,
             request.form.get("communication_plan"),
             request.form.get("owner"),
-            request.form.get("status"),
+            status,
+            request.form.get("stakeholder_category", "Internal"),
+            request.form.get("stakeholder_group", "Delivery"),
+            engagement_level,
+            request.form.get("sentiment", "Neutral"),
+            score,
+            str(date.today())
+        ))
+
+        stakeholder_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO stakeholder_history
+            (
+                stakeholder_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            stakeholder_id,
+            session["user_id"],
+            "Stakeholder created",
+            "",
+            status,
             str(date.today())
         ))
 
         conn.commit()
         conn.close()
+
+        create_activity(
+            f"{session['username']} added a stakeholder"
+        )
 
         return redirect("/stakeholders")
 
@@ -9692,6 +9818,203 @@ def add_stakeholder():
         "add_stakeholder.html",
         projects=projects
     )
+
+
+@app.route("/edit-stakeholder/<int:stakeholder_id>", methods=["GET", "POST"])
+def edit_stakeholder(stakeholder_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Stakeholders", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM stakeholders
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        stakeholder_id,
+        session["user_id"]
+    ))
+
+    stakeholder = cursor.fetchone()
+
+    if not stakeholder:
+        conn.close()
+        return redirect("/stakeholders")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        previous_status = stakeholder["status"]
+
+        influence = request.form.get("influence", "Medium")
+        interest = request.form.get("interest", "Medium")
+        engagement_level = request.form.get("engagement_level", "Neutral")
+
+        score = 0
+
+        if influence == "High":
+            score += 30
+        elif influence == "Medium":
+            score += 20
+        else:
+            score += 10
+
+        if interest == "High":
+            score += 30
+        elif interest == "Medium":
+            score += 20
+        else:
+            score += 10
+
+        if engagement_level == "Supportive":
+            score += 30
+        elif engagement_level == "Neutral":
+            score += 20
+        else:
+            score += 10
+
+        status = request.form.get("status", "Active")
+
+        cursor.execute("""
+            UPDATE stakeholders
+            SET
+                project_id = %s,
+                name = %s,
+                role = %s,
+                influence = %s,
+                interest = %s,
+                communication_plan = %s,
+                owner = %s,
+                status = %s,
+                stakeholder_category = %s,
+                stakeholder_group = %s,
+                engagement_level = %s,
+                sentiment = %s,
+                engagement_score = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            request.form.get("name"),
+            request.form.get("role"),
+            influence,
+            interest,
+            request.form.get("communication_plan"),
+            request.form.get("owner"),
+            status,
+            request.form.get("stakeholder_category", "Internal"),
+            request.form.get("stakeholder_group", "Delivery"),
+            engagement_level,
+            request.form.get("sentiment", "Neutral"),
+            score,
+            stakeholder_id,
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO stakeholder_history
+            (
+                stakeholder_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            stakeholder_id,
+            session["user_id"],
+            "Stakeholder updated",
+            previous_status,
+            status,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a stakeholder"
+        )
+
+        return redirect("/stakeholders")
+
+    cursor.execute("""
+        SELECT *
+        FROM stakeholder_history
+        WHERE stakeholder_id = %s
+        ORDER BY id DESC
+    """, (
+        stakeholder_id,
+    ))
+
+    stakeholder_history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "edit_stakeholder.html",
+        stakeholder=stakeholder,
+        projects=projects,
+        stakeholder_history=stakeholder_history
+    )
+
+
+@app.route("/delete-stakeholder/<int:stakeholder_id>")
+def delete_stakeholder(stakeholder_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Stakeholders", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM stakeholder_history
+        WHERE stakeholder_id = %s
+    """, (
+        stakeholder_id,
+    ))
+
+    cursor.execute("""
+        DELETE FROM stakeholders
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        stakeholder_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a stakeholder"
+    )
+
+    return redirect("/stakeholders")
 
 
 @app.route("/decisions")

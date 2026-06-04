@@ -20,7 +20,7 @@
             <div>
                 <h1>Add Stakeholder</h1>
                 <p class="dashboard-subtitle">
-                    Record key stakeholders and engagement plans.
+                    Record key stakeholders, engagement plans, sentiment and influence.
                 </p>
             </div>
         </div>
@@ -30,12 +30,9 @@
             <form method="POST">
 
                 <label>Project</label>
-
-                <select name="project_id" required>
+                <select name="project_id">
                     {% for project in projects %}
-                        <option value="{{ project['id'] }}">
-                            {{ project['name'] }}
-                        </option>
+                        <option value="{{ project['id'] }}">{{ project['name'] }}</option>
                     {% endfor %}
                 </select>
 
@@ -45,18 +42,52 @@
                 <label>Role</label>
                 <input type="text" name="role">
 
+                <label>Stakeholder Category</label>
+                <select name="stakeholder_category">
+                    <option value="Internal">Internal</option>
+                    <option value="External">External</option>
+                    <option value="Executive">Executive</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Customer">Customer</option>
+                    <option value="Regulator">Regulator</option>
+                </select>
+
+                <label>Stakeholder Group</label>
+                <select name="stakeholder_group">
+                    <option value="Delivery">Delivery</option>
+                    <option value="Leadership">Leadership</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Compliance">Compliance</option>
+                </select>
+
                 <label>Influence</label>
                 <select name="influence">
                     <option value="High">High</option>
-                    <option value="Medium">Medium</option>
+                    <option value="Medium" selected>Medium</option>
                     <option value="Low">Low</option>
                 </select>
 
                 <label>Interest</label>
                 <select name="interest">
                     <option value="High">High</option>
-                    <option value="Medium">Medium</option>
+                    <option value="Medium" selected>Medium</option>
                     <option value="Low">Low</option>
+                </select>
+
+                <label>Engagement Level</label>
+                <select name="engagement_level">
+                    <option value="Supportive">Supportive</option>
+                    <option value="Neutral" selected>Neutral</option>
+                    <option value="Resistant">Resistant</option>
+                </select>
+
+                <label>Sentiment</label>
+                <select name="sentiment">
+                    <option value="Positive">Positive</option>
+                    <option value="Neutral" selected>Neutral</option>
+                    <option value="Negative">Negative</option>
                 </select>
 
                 <label>Communication Plan</label>

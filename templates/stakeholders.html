@@ -42,28 +42,22 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Stakeholders</h3>
-                <p>{{ stakeholders|length }}</p>
+                <p>{{ total_stakeholders }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>High Influence</h3>
-                <p>
-                    {{ stakeholders | selectattr("influence", "equalto", "High") | list | length }}
-                </p>
+                <p>{{ high_influence }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Monitor</h3>
-                <p>
-                    {{ stakeholders | selectattr("status", "equalto", "Monitor") | list | length }}
-                </p>
+                <h3>High Interest</h3>
+                <p>{{ high_interest }}</p>
             </div>
 
-            <div class="stat-card green-card">
-                <h3>Active</h3>
-                <p>
-                    {{ stakeholders | selectattr("status", "equalto", "Active") | list | length }}
-                </p>
+            <div class="stat-card red-card">
+                <h3>Negative Sentiment</h3>
+                <p>{{ negative_sentiment }}</p>
             </div>
 
         </div>
@@ -86,7 +80,11 @@
 
                 <p>Interest: {{ top_stakeholder["interest"] }}</p>
 
-                <p>Status: {{ top_stakeholder["status"] }}</p>
+                <p>Engagement: {{ top_stakeholder["engagement_level"] }}</p>
+
+                <p>Sentiment: {{ top_stakeholder["sentiment"] }}</p>
+
+                <p>Score: {{ top_stakeholder["engagement_score"] }}</p>
 
             </div>
 
@@ -105,11 +103,17 @@
                         <h3>{{ stakeholder["name"] }}</h3>
 
                         {% if stakeholder["influence"] == "High" %}
-                            <span class="badge badge-red">High Influence</span>
+                            <span class="badge badge-red">
+                                High Influence
+                            </span>
                         {% elif stakeholder["influence"] == "Medium" %}
-                            <span class="badge badge-yellow">Medium Influence</span>
+                            <span class="badge badge-yellow">
+                                Medium Influence
+                            </span>
                         {% else %}
-                            <span class="badge badge-green">Low Influence</span>
+                            <span class="badge badge-green">
+                                Low Influence
+                            </span>
                         {% endif %}
 
                     </div>
@@ -129,6 +133,16 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ stakeholder["stakeholder_category"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Group</span>
+                        <strong>{{ stakeholder["stakeholder_group"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Influence</span>
                         <strong>{{ stakeholder["influence"] }}</strong>
                     </div>
@@ -136,6 +150,21 @@
                     <div class="budget-row">
                         <span>Interest</span>
                         <strong>{{ stakeholder["interest"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Engagement</span>
+                        <strong>{{ stakeholder["engagement_level"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Sentiment</span>
+                        <strong>{{ stakeholder["sentiment"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Score</span>
+                        <strong>{{ stakeholder["engagement_score"] }}</strong>
                     </div>
 
                     <div class="budget-row">
@@ -147,6 +176,37 @@
                         <span>Status</span>
                         <strong>{{ stakeholder["status"] }}</strong>
                     </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Stakeholder Matrix</strong>
+
+                    <br><br>
+
+                    Influence:
+                    {{ stakeholder["influence"] }}
+
+                    |
+
+                    Interest:
+                    {{ stakeholder["interest"] }}
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-stakeholder/{{ stakeholder['id'] }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-stakeholder/{{ stakeholder['id'] }}"
+                        onclick="return confirm('Delete stakeholder?')"
+                    >
+                        Delete
+                    </a>
 
                 </div>
 
