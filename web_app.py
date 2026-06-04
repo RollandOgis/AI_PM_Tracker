@@ -1580,6 +1580,67 @@ def init_db():
     except:
         pass
 
+    # Approval Workflows v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS approval_category TEXT DEFAULT 'General'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS approval_stage TEXT DEFAULT 'Stage 1'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS delegated_to TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS reminder_date DATE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS sla_due_date DATE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS decision_created TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE approvals
+                       ADD COLUMN IF NOT EXISTS approval_reference TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS approval_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       approval_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       old_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       change_note
+                       TEXT,
+                       changed_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Governance Reviews Table
 
     cursor.execute("""
@@ -12256,23 +12317,96 @@ def approvals():
     cursor.execute("""
         SELECT
             approvals.*,
-            projects.name AS project_name
+            projects.name AS project_name,
+
+            CASE
+                WHEN approvals.status = 'Pending'
+                AND approvals.sla_due_date IS NOT NULL
+                AND approvals.sla_due_date < CURRENT_DATE
+                THEN 'Yes'
+                ELSE 'No'
+            END AS sla_overdue,
+
+            CASE
+                WHEN approvals.status = 'Pending'
+                AND approvals.reminder_date IS NOT NULL
+                AND approvals.reminder_date <= CURRENT_DATE
+                THEN 'Yes'
+                ELSE 'No'
+            END AS reminder_due
+
         FROM approvals
         LEFT JOIN projects
         ON approvals.project_id = projects.id
         WHERE approvals.user_id = %s
-        ORDER BY approvals.id DESC
+        ORDER BY
+            CASE
+                WHEN approvals.status = 'Pending'
+                AND approvals.sla_due_date IS NOT NULL
+                AND approvals.sla_due_date < CURRENT_DATE THEN 1
+                WHEN approvals.status = 'Pending' THEN 2
+                WHEN approvals.status = 'Rejected' THEN 3
+                WHEN approvals.status = 'Approved' THEN 4
+                ELSE 5
+            END,
+            approvals.id DESC
     """, (
         session["user_id"],
     ))
 
     approvals = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) AS total_approvals,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Pending'
+            ) AS pending_approvals,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Approved'
+            ) AS approved_approvals,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Rejected'
+            ) AS rejected_approvals,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Pending'
+                AND sla_due_date IS NOT NULL
+                AND sla_due_date < CURRENT_DATE
+            ) AS sla_overdue,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Pending'
+                AND reminder_date IS NOT NULL
+                AND reminder_date <= CURRENT_DATE
+            ) AS reminders_due,
+
+            COUNT(*) FILTER (
+                WHERE delegated_to IS NOT NULL
+                AND delegated_to != ''
+            ) AS delegated_approvals,
+
+            COUNT(*) FILTER (
+                WHERE decision_created = 'Yes'
+            ) AS decisions_created
+
+        FROM approvals
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    stats = cursor.fetchone()
+
     conn.close()
 
     return render_template(
         "approvals.html",
-        approvals=approvals
+        approvals=approvals,
+        stats=stats
     )
 
 
@@ -12304,6 +12438,9 @@ def add_approval():
 
     if request.method == "POST":
 
+        status = request.form.get("status")
+        decision_created = "Yes" if status in ["Approved", "Rejected"] else "No"
+
         cursor.execute("""
             INSERT INTO approvals
             (
@@ -12315,18 +12452,32 @@ def add_approval():
                 approver,
                 status,
                 submitted_date,
-                comments
+                comments,
+                approval_category,
+                approval_stage,
+                delegated_to,
+                reminder_date,
+                sla_due_date,
+                approval_reference,
+                decision_created
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,CURRENT_DATE,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,CURRENT_DATE,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["project_id"],
-            request.form["item_type"],
-            request.form["item_id"],
-            request.form["submitted_by"],
-            request.form["approver"],
-            request.form["status"],
-            request.form["comments"]
+            request.form.get("project_id"),
+            request.form.get("item_type"),
+            request.form.get("item_id"),
+            request.form.get("submitted_by"),
+            request.form.get("approver"),
+            status,
+            request.form.get("comments"),
+            request.form.get("approval_category"),
+            request.form.get("approval_stage"),
+            request.form.get("delegated_to"),
+            request.form.get("reminder_date") or None,
+            request.form.get("sla_due_date") or None,
+            request.form.get("approval_reference"),
+            decision_created
         ))
 
         conn.commit()
@@ -12386,6 +12537,13 @@ def edit_approval(id):
 
     if request.method == "POST":
 
+        old_status = approval["status"]
+        new_status = request.form.get("status")
+        decision_created = approval["decision_created"] or "No"
+
+        if new_status in ["Approved", "Rejected"]:
+            decision_created = "Yes"
+
         cursor.execute("""
             UPDATE approvals
             SET
@@ -12395,20 +12553,58 @@ def edit_approval(id):
                 submitted_by = %s,
                 approver = %s,
                 status = %s,
-                comments = %s
+                comments = %s,
+                approval_category = %s,
+                approval_stage = %s,
+                delegated_to = %s,
+                reminder_date = %s,
+                sla_due_date = %s,
+                approval_reference = %s,
+                decision_created = %s,
+                decision_date = CASE
+                    WHEN %s IN ('Approved', 'Rejected') THEN CURRENT_DATE
+                    ELSE decision_date
+                END
             WHERE id = %s
             AND user_id = %s
         """, (
-            request.form["project_id"],
-            request.form["item_type"],
-            request.form["item_id"],
-            request.form["submitted_by"],
-            request.form["approver"],
-            request.form["status"],
-            request.form["comments"],
+            request.form.get("project_id"),
+            request.form.get("item_type"),
+            request.form.get("item_id"),
+            request.form.get("submitted_by"),
+            request.form.get("approver"),
+            new_status,
+            request.form.get("comments"),
+            request.form.get("approval_category"),
+            request.form.get("approval_stage"),
+            request.form.get("delegated_to"),
+            request.form.get("reminder_date") or None,
+            request.form.get("sla_due_date") or None,
+            request.form.get("approval_reference"),
+            decision_created,
+            new_status,
             id,
             session["user_id"]
         ))
+
+        if old_status != new_status:
+            cursor.execute("""
+                INSERT INTO approval_history
+                (
+                    approval_id,
+                    user_id,
+                    old_status,
+                    new_status,
+                    change_note
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                id,
+                session["user_id"],
+                old_status,
+                new_status,
+                "Approval status changed"
+            ))
 
         conn.commit()
         conn.close()
@@ -12434,18 +12630,52 @@ def approve_approval(id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
-        UPDATE approvals
-        SET status = 'Approved',
-            decision_date = CURRENT_DATE
+        SELECT *
+        FROM approvals
         WHERE id = %s
         AND user_id = %s
     """, (
         id,
         session["user_id"]
+    ))
+
+    approval = cursor.fetchone()
+
+    if not approval:
+        conn.close()
+        return redirect("/approvals")
+
+    cursor.execute("""
+        UPDATE approvals
+        SET status = 'Approved',
+            decision_date = CURRENT_DATE,
+            decision_created = 'Yes'
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
+        INSERT INTO approval_history
+        (
+            approval_id,
+            user_id,
+            old_status,
+            new_status,
+            change_note
+        )
+        VALUES (%s,%s,%s,%s,%s)
+    """, (
+        id,
+        session["user_id"],
+        approval["status"],
+        "Approved",
+        "Approval approved"
     ))
 
     conn.commit()
@@ -12464,13 +12694,11 @@ def reject_approval(id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
-        UPDATE approvals
-        SET status = 'Rejected',
-            decision_date = CURRENT_DATE
+        SELECT *
+        FROM approvals
         WHERE id = %s
         AND user_id = %s
     """, (
@@ -12478,10 +12706,99 @@ def reject_approval(id):
         session["user_id"]
     ))
 
+    approval = cursor.fetchone()
+
+    if not approval:
+        conn.close()
+        return redirect("/approvals")
+
+    cursor.execute("""
+        UPDATE approvals
+        SET status = 'Rejected',
+            decision_date = CURRENT_DATE,
+            decision_created = 'Yes'
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
+        INSERT INTO approval_history
+        (
+            approval_id,
+            user_id,
+            old_status,
+            new_status,
+            change_note
+        )
+        VALUES (%s,%s,%s,%s,%s)
+    """, (
+        id,
+        session["user_id"],
+        approval["status"],
+        "Rejected",
+        "Approval rejected"
+    ))
+
     conn.commit()
     conn.close()
 
     return redirect("/approvals")
+
+
+@app.route("/approval-history/<int:id>")
+def approval_history(id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Approvals", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM approvals
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
+
+    approval = cursor.fetchone()
+
+    if not approval:
+        conn.close()
+        return redirect("/approvals")
+
+    cursor.execute("""
+        SELECT *
+        FROM approval_history
+        WHERE approval_id = %s
+        AND user_id = %s
+        ORDER BY changed_at DESC
+    """, (
+        id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "approval_history.html",
+        approval=approval,
+        history=history
+    )
 
 
 @app.route("/delete-approval/<int:id>")
@@ -12498,6 +12815,15 @@ def delete_approval(id):
     cursor = conn.cursor()
 
     cursor.execute("""
+        DELETE FROM approval_history
+        WHERE approval_id = %s
+        AND user_id = %s
+    """, (
+        id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
         DELETE FROM approvals
         WHERE id = %s
         AND user_id = %s
@@ -12510,6 +12836,8 @@ def delete_approval(id):
     conn.close()
 
     return redirect("/approvals")
+
+
 
 @app.route("/governance-reviews")
 def governance_reviews():

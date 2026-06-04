@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Approval</title>
+    <title>Edit Approval</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -17,12 +17,10 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-                <h1>Create Approval</h1>
-
+                <h1>Edit Approval</h1>
                 <p class="dashboard-subtitle">
-                    Submit governance items for approval, delegation, SLA tracking and decision creation.
+                    Update approval status, delegation, SLA tracking and decision details.
                 </p>
             </div>
 
@@ -31,7 +29,6 @@
                     Back to Approvals
                 </a>
             </div>
-
         </div>
 
         <div class="smart-card">
@@ -39,134 +36,126 @@
             <form method="POST">
 
                 <label>Project</label>
-
                 <select name="project_id" required>
+                    <option value="{{ approval['project_id'] }}" selected>
+                        Current Project
+                    </option>
 
                     {% for project in projects %}
-
                     <option value="{{ project['id'] }}">
                         {{ project['name'] }}
                     </option>
-
                     {% endfor %}
-
                 </select>
 
                 <label>Approval Category</label>
-
                 <select name="approval_category">
-
+                    <option value="{{ approval['approval_category'] }}" selected>
+                        {{ approval['approval_category'] }}
+                    </option>
                     <option value="General">General</option>
                     <option value="Risk">Risk</option>
                     <option value="Change">Change</option>
                     <option value="Budget">Budget</option>
                     <option value="Governance">Governance</option>
                     <option value="Stage Gate">Stage Gate</option>
-
                 </select>
 
                 <label>Approval Stage</label>
-
                 <select name="approval_stage">
-
+                    <option value="{{ approval['approval_stage'] }}" selected>
+                        {{ approval['approval_stage'] }}
+                    </option>
                     <option value="Stage 1">Stage 1</option>
                     <option value="Stage 2">Stage 2</option>
                     <option value="Stage 3">Stage 3</option>
                     <option value="Final Approval">Final Approval</option>
-
                 </select>
 
                 <label>Item Type</label>
-
                 <input
                     type="text"
                     name="item_type"
-                    placeholder="Risk, Change, Budget, Stage Gate"
+                    value="{{ approval['item_type'] }}"
                     required
                 >
 
                 <label>Item ID</label>
-
                 <input
                     type="number"
                     name="item_id"
+                    value="{{ approval['item_id'] }}"
                     required
                 >
 
                 <label>Submitted By</label>
-
                 <input
                     type="text"
                     name="submitted_by"
+                    value="{{ approval['submitted_by'] }}"
                     required
                 >
 
                 <label>Approver</label>
-
                 <input
                     type="text"
                     name="approver"
+                    value="{{ approval['approver'] }}"
                     required
                 >
 
                 <label>Delegated To</label>
-
                 <input
                     type="text"
                     name="delegated_to"
-                    placeholder="Optional delegated approver"
+                    value="{{ approval['delegated_to'] }}"
                 >
 
                 <label>Status</label>
-
                 <select name="status">
-
+                    <option value="{{ approval['status'] }}" selected>
+                        {{ approval['status'] }}
+                    </option>
                     <option value="Draft">Draft</option>
                     <option value="Submitted">Submitted</option>
                     <option value="Pending">Pending</option>
                     <option value="Approved">Approved</option>
                     <option value="Rejected">Rejected</option>
-
                 </select>
 
                 <label>Reminder Date</label>
-
                 <input
                     type="date"
                     name="reminder_date"
+                    value="{{ approval['reminder_date'] }}"
                 >
 
                 <label>SLA Due Date</label>
-
                 <input
                     type="date"
                     name="sla_due_date"
+                    value="{{ approval['sla_due_date'] }}"
                 >
 
                 <label>Approval Reference</label>
-
                 <input
                     type="text"
                     name="approval_reference"
-                    placeholder="Approval reference number"
+                    value="{{ approval['approval_reference'] }}"
                 >
 
                 <label>Comments</label>
-
-                <textarea
-                    name="comments"
-                    rows="5"
-                    placeholder="Approval notes, governance comments or decision rationale"
-                ></textarea>
+                <textarea name="comments" rows="5">{{ approval['comments'] }}</textarea>
 
                 <br><br>
 
-                <button
-                    type="submit"
-                    class="btn-primary"
-                >
-                    Save Approval
+                <button type="submit" class="btn-primary">
+                    Update Approval
                 </button>
+
+                <a href="/approvals" class="btn-secondary">
+                    Cancel
+                </a>
 
             </form>
 

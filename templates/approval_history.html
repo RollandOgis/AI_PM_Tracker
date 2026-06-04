@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Approval History</h1>
+
+                <p class="dashboard-subtitle">
+                    Track approval status changes and audit history.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/approvals" class="btn-primary">
+                    Back to Approvals
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>
+                {{ approval["item_type"] }}
+                #{{ approval["item_id"] }}
+            </h3>
+
+            <div class="smart-insight">
+
+                <p>
+                    <strong>Project:</strong>
+                    {{ approval["project_id"] }}
+                </p>
+
+                <p>
+                    <strong>Status:</strong>
+                    {{ approval["status"] }}
+                </p>
+
+                <p>
+                    <strong>Approver:</strong>
+                    {{ approval["approver"] }}
+                </p>
+
+                <p>
+                    <strong>Approval Category:</strong>
+                    {{ approval["approval_category"] or "General" }}
+                </p>
+
+                <p>
+                    <strong>Approval Stage:</strong>
+                    {{ approval["approval_stage"] or "Stage 1" }}
+                </p>
+
+            </div>
+
+        </div>
+
+        {% if history %}
+
+        <div class="projects-grid">
+
+            {% for item in history %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>
+                            {{ item["change_note"] }}
+                        </h3>
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Old Status</span>
+                        <strong>
+                            {{ item["old_status"] }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>New Status</span>
+                        <strong>
+                            {{ item["new_status"] }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Changed At</span>
+                        <strong>
+                            {{ item["changed_at"] }}
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Approval History</h3>
+
+            <p>
+                No approval audit records exist yet.
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
