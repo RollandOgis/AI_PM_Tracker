@@ -22,7 +22,7 @@
                 <h1>Gantt Timeline</h1>
 
                 <p class="dashboard-subtitle">
-                    View project schedules, timelines and delivery progress.
+                    View project schedules, milestones, dependencies, critical paths and delivery progress.
                 </p>
             </div>
 
@@ -30,9 +30,156 @@
                 <a href="/add-project" class="btn-primary">
                     + Add Project
                 </a>
+
+                <a href="/export-gantt" class="btn-secondary">
+                    Export Gantt
+                </a>
             </div>
 
         </div>
+
+
+        <form method="GET" action="/gantt" class="filter-bar">
+
+            <select name="project_id">
+
+                <option value="">
+                    All Projects
+                </option>
+
+                {% for project in filter_projects %}
+
+                    {% if selected_project == project['id']|string %}
+                        <option value="{{ project['id'] }}" selected>
+                            {{ project['name'] }}
+                        </option>
+                    {% else %}
+                        <option value="{{ project['id'] }}">
+                            {{ project['name'] }}
+                        </option>
+                    {% endif %}
+
+                {% endfor %}
+
+            </select>
+
+
+            <select name="status">
+
+                {% if selected_status == "" %}
+                    <option value="" selected>All Statuses</option>
+                {% else %}
+                    <option value="">All Statuses</option>
+                {% endif %}
+
+                {% if selected_status == "Planning" %}
+                    <option value="Planning" selected>Planning</option>
+                {% else %}
+                    <option value="Planning">Planning</option>
+                {% endif %}
+
+                {% if selected_status == "In Progress" %}
+                    <option value="In Progress" selected>In Progress</option>
+                {% else %}
+                    <option value="In Progress">In Progress</option>
+                {% endif %}
+
+                {% if selected_status == "Completed" %}
+                    <option value="Completed" selected>Completed</option>
+                {% else %}
+                    <option value="Completed">Completed</option>
+                {% endif %}
+
+                {% if selected_status == "On Hold" %}
+                    <option value="On Hold" selected>On Hold</option>
+                {% else %}
+                    <option value="On Hold">On Hold</option>
+                {% endif %}
+
+            </select>
+
+
+            <select name="client">
+
+                {% if selected_client == "" %}
+                    <option value="" selected>All Clients</option>
+                {% else %}
+                    <option value="">All Clients</option>
+                {% endif %}
+
+                {% for client in filter_clients %}
+
+                    {% if selected_client == client['name'] %}
+                        <option value="{{ client['name'] }}" selected>
+                            {{ client['name'] }}
+                        </option>
+                    {% else %}
+                        <option value="{{ client['name'] }}">
+                            {{ client['name'] }}
+                        </option>
+                    {% endif %}
+
+                {% endfor %}
+
+            </select>
+
+
+            <select name="zoom">
+
+                {% if zoom == "Daily" %}
+                    <option value="Daily" selected>Daily View</option>
+                {% else %}
+                    <option value="Daily">Daily View</option>
+                {% endif %}
+
+                {% if zoom == "Weekly" %}
+                    <option value="Weekly" selected>Weekly View</option>
+                {% else %}
+                    <option value="Weekly">Weekly View</option>
+                {% endif %}
+
+                {% if zoom == "Monthly" %}
+                    <option value="Monthly" selected>Monthly View</option>
+                {% else %}
+                    <option value="Monthly">Monthly View</option>
+                {% endif %}
+
+                {% if zoom == "Quarterly" %}
+                    <option value="Quarterly" selected>Quarterly View</option>
+                {% else %}
+                    <option value="Quarterly">Quarterly View</option>
+                {% endif %}
+
+            </select>
+
+
+            <button type="submit" class="btn-primary">
+                Apply Filters
+            </button>
+
+            <a href="/gantt" class="btn-secondary">
+                Reset
+            </a>
+
+        </form>
+
+
+        <div class="dashboard-summary">
+
+            <div class="summary-card blue-card">
+                <h3>Zoom Level</h3>
+                <p>{{ zoom }}</p>
+                <small>Current timeline view</small>
+            </div>
+
+            <div class="summary-card green-card">
+                <h3>Total Timeline Projects</h3>
+                <p>{{ projects|length }}</p>
+                <small>Visible after filters</small>
+            </div>
+
+        </div>
+
 
         {% if projects %}
 
@@ -57,6 +204,37 @@
                                 →
                                 {{ project["end_date"] or "No end date" }}
                             </small>
+
+                            <div class="budget-section">
+
+                                <div class="budget-row">
+                                    <span>Baseline</span>
+                                    <strong>
+                                        {{ project["baseline_start"] or "N/A" }}
+                                        →
+                                        {{ project["baseline_end"] or "N/A" }}
+                                    </strong>
+                                </div>
+
+                                <div class="budget-row">
+                                    <span>Schedule Variance</span>
+
+                                    {% if project["schedule_variance"] == "Behind Schedule" %}
+                                        <strong class="health-warning">
+                                            {{ project["schedule_variance"] }}
+                                        </strong>
+                                    {% elif project["schedule_variance"] == "Completed" %}
+                                        <strong class="health-good">
+                                            {{ project["schedule_variance"] }}
+                                        </strong>
+                                    {% else %}
+                                        <strong class="health-neutral">
+                                            {{ project["schedule_variance"] }}
+                                        </strong>
+                                    {% endif %}
+                                </div>
+
+                            </div>
 
                         </div>
 
@@ -92,6 +270,87 @@
 
                             </div>
 
+
+                            <div class="smart-dashboard-grid">
+
+                                <div class="smart-card">
+                                    <h3>Milestone Markers</h3>
+
+                                    {% if project["milestones"] %}
+
+                                        {% for milestone in project["milestones"] %}
+
+                                            <div class="smart-insight">
+                                                <strong>{{ milestone["name"] }}</strong>
+                                                <p>{{ milestone["date"] or "No date" }}</p>
+                                            </div>
+
+                                        {% endfor %}
+
+                                    {% else %}
+
+                                        <div class="smart-insight">
+                                            No milestones available.
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <div class="smart-card">
+                                    <h3>Dependency Lines</h3>
+
+                                    {% if project["dependency_lines"] %}
+
+                                        {% for dependency in project["dependency_lines"] %}
+
+                                            <div class="smart-insight">
+                                                {{ dependency["from"] }}
+                                                →
+                                                {{ dependency["to"] }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    {% else %}
+
+                                        <div class="smart-insight">
+                                            No dependency links found.
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <div class="smart-card">
+                                    <h3>Critical Path</h3>
+
+                                    {% if project["critical_path"] %}
+
+                                        <ul class="ai-list">
+
+                                            {% for task in project["critical_path"] %}
+
+                                                <li>{{ task }}</li>
+
+                                            {% endfor %}
+
+                                        </ul>
+
+                                    {% else %}
+
+                                        <div class="smart-insight">
+                                            No critical path items detected.
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
                         </div>
 
                     </div>
@@ -104,14 +363,14 @@
 
             <div class="empty-box">
 
-                <h3>No Projects Yet</h3>
+                <h3>No Projects Found</h3>
 
                 <p>
-                    Create projects with start and end dates to see them on the timeline.
+                    No projects match the selected Gantt filters.
                 </p>
 
-                <a href="/add-project" class="btn-primary">
-                    Create Project
+                <a href="/gantt" class="btn-primary">
+                    Reset Filters
                 </a>
 
             </div>

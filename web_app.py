@@ -5546,13 +5546,18 @@ def gantt():
     if not has_permission("Projects", "view"):
         return "Access denied"
 
+    selected_project = request.args.get("project_id", "")
+    selected_status = request.args.get("status", "")
+    selected_client = request.args.get("client", "")
+    zoom = request.args.get("zoom", "Monthly")
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-    cursor.execute("""
+    query = """
         SELECT
             projects.*,
             clients.name AS client_name
@@ -5560,47 +5565,167 @@ def gantt():
         LEFT JOIN clients
         ON projects.client_id = clients.id
         WHERE projects.user_id = %s
+        AND COALESCE(projects.is_archived, FALSE) = FALSE
+    """
+
+    params = [session["user_id"]]
+
+    if selected_project:
+        query += " AND projects.id = %s"
+        params.append(selected_project)
+
+    if selected_status:
+        query += " AND projects.status = %s"
+        params.append(selected_status)
+
+    if selected_client:
+        query += " AND clients.name = %s"
+        params.append(selected_client)
+
+    query += """
         ORDER BY
             CASE
                 WHEN projects.start_date IS NULL OR projects.start_date = ''
                 THEN '9999-12-31'
                 ELSE projects.start_date
             END ASC
+    """
+
+    cursor.execute(query, params)
+
+    projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT id, name
+        FROM projects
+        WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
 
-    projects = cursor.fetchall()
+    filter_projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT DISTINCT clients.name
+        FROM clients
+        JOIN projects
+        ON projects.client_id = clients.id
+        WHERE projects.user_id = %s
+        AND clients.name IS NOT NULL
+        ORDER BY clients.name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    filter_clients = cursor.fetchall()
 
     gantt_projects = []
 
     for project in projects:
 
         cursor.execute("""
-            SELECT COUNT(*) AS total_tasks
+            SELECT *
             FROM tasks
             WHERE project_id = %s
+            ORDER BY
+                CASE
+                    WHEN due_date IS NULL OR due_date = ''
+                    THEN '9999-12-31'
+                    ELSE due_date
+                END ASC
         """, (
             project["id"],
         ))
 
-        total_tasks = cursor.fetchone()["total_tasks"]
+        tasks = cursor.fetchall()
 
-        cursor.execute("""
-            SELECT COUNT(*) AS completed_tasks
-            FROM tasks
-            WHERE project_id = %s
-            AND status = 'Completed'
-        """, (
-            project["id"],
-        ))
+        total_tasks = len(tasks)
 
-        completed_tasks = cursor.fetchone()["completed_tasks"]
+        completed_tasks = len([
+            task for task in tasks
+            if task["status"] == "Completed"
+        ])
 
         if total_tasks > 0:
             progress = round((completed_tasks / total_tasks) * 100)
         else:
             progress = 0
+
+        if project["status"] == "Completed":
+            progress = 100
+
+        milestones = []
+
+        if project["start_date"]:
+            milestones.append({
+                "name": "Kickoff",
+                "date": project["start_date"]
+            })
+
+        if project["end_date"]:
+            milestones.append({
+                "name": "Target Finish",
+                "date": project["end_date"]
+            })
+
+        for task in tasks:
+            if task["status"] == "Completed":
+                milestones.append({
+                    "name": f"Completed: {task['title']}",
+                    "date": task["due_date"]
+                })
+
+        dependency_lines = []
+
+        for task in tasks:
+
+            cursor.execute("""
+                SELECT
+                    task_dependencies.task_id,
+                    task_dependencies.depends_on_task_id,
+                    dependency_task.title AS dependency_title,
+                    current_task.title AS current_title
+                FROM task_dependencies
+                JOIN tasks AS dependency_task
+                ON task_dependencies.depends_on_task_id = dependency_task.id
+                JOIN tasks AS current_task
+                ON task_dependencies.task_id = current_task.id
+                WHERE task_dependencies.task_id = %s
+            """, (
+                task["id"],
+            ))
+
+            dependencies = cursor.fetchall()
+
+            for dependency in dependencies:
+                dependency_lines.append({
+                    "from": dependency["dependency_title"],
+                    "to": dependency["current_title"]
+                })
+
+        critical_path = []
+
+        for task in tasks:
+            if (
+                task["priority"] == "High"
+                or task["status"] == "Blocked"
+                or is_overdue(task["due_date"], task["status"])
+            ):
+                critical_path.append(task["title"])
+
+        baseline_start = project["start_date"]
+        baseline_end = project["end_date"]
+
+        schedule_variance = "On Track"
+
+        if project["end_date"] and project["status"] != "Completed":
+            if project["end_date"] < str(date.today()):
+                schedule_variance = "Behind Schedule"
+
+        if progress == 100:
+            schedule_variance = "Completed"
 
         gantt_projects.append({
             "id": project["id"],
@@ -5609,7 +5734,13 @@ def gantt():
             "client_name": project["client_name"],
             "start_date": project["start_date"],
             "end_date": project["end_date"],
-            "progress": progress
+            "baseline_start": baseline_start,
+            "baseline_end": baseline_end,
+            "progress": progress,
+            "milestones": milestones,
+            "dependency_lines": dependency_lines,
+            "critical_path": critical_path,
+            "schedule_variance": schedule_variance
         })
 
     conn.close()
@@ -5617,9 +5748,77 @@ def gantt():
     return render_template(
         "gantt.html",
         projects=gantt_projects,
+        filter_projects=filter_projects,
+        filter_clients=filter_clients,
+        selected_project=selected_project,
+        selected_status=selected_status,
+        selected_client=selected_client,
+        zoom=zoom,
         current_date=str(date.today())
     )
 
+@app.route("/export-gantt")
+def export_gantt():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT
+            projects.name,
+            projects.status,
+            projects.start_date,
+            projects.end_date,
+            clients.name AS client_name
+        FROM projects
+        LEFT JOIN clients
+        ON projects.client_id = clients.id
+        WHERE projects.user_id = %s
+        AND COALESCE(projects.is_archived, FALSE) = FALSE
+        ORDER BY projects.start_date ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    conn.close()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Project",
+        "Client",
+        "Status",
+        "Start Date",
+        "End Date"
+    ])
+
+    for project in projects:
+        writer.writerow([
+            project["name"],
+            project["client_name"] or "",
+            project["status"],
+            project["start_date"],
+            project["end_date"]
+        ])
+
+    output.seek(0)
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=gantt_timeline.csv"
+        }
+    )
 
 @app.route("/analytics")
 def analytics():
