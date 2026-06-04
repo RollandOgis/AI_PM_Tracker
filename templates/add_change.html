@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Change</title>
+    <title>Add Change Request</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -23,14 +24,12 @@
 
                 <label>Project</label>
 
-                <select name="project_id" required>
+                <select name="project_id">
 
                     {% for project in projects %}
-
                         <option value="{{ project['id'] }}">
                             {{ project['name'] }}
                         </option>
-
                     {% endfor %}
 
                 </select>
@@ -56,12 +55,10 @@
 
                 <label>Impact</label>
 
-                <select name="impact" required>
+                <select name="impact">
 
                     <option value="Low">Low</option>
-
-                    <option value="Medium">Medium</option>
-
+                    <option value="Medium" selected>Medium</option>
                     <option value="High">High</option>
 
                 </select>
@@ -78,15 +75,119 @@
 
                 <label>Approval Status</label>
 
-                <select name="approval_status" required>
+                <select name="approval_status">
 
                     <option value="Pending">Pending</option>
-
                     <option value="Approved">Approved</option>
-
                     <option value="Rejected">Rejected</option>
 
                 </select>
+
+
+                <label>Cost Impact (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="cost_impact"
+                    value="0"
+                >
+
+
+                <label>Schedule Impact (Days)</label>
+
+                <input
+                    type="number"
+                    name="schedule_impact_days"
+                    value="0"
+                >
+
+
+                <label>Resource Impact</label>
+
+                <textarea
+                    name="resource_impact"
+                    rows="3"
+                ></textarea>
+
+
+                <label>Benefit Impact</label>
+
+                <textarea
+                    name="benefit_impact"
+                    rows="3"
+                ></textarea>
+
+
+                <label>CAB Required</label>
+
+                <select name="cab_required">
+
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+
+                </select>
+
+
+                <label>CAB Decision</label>
+
+                <select name="cab_decision">
+
+                    <option value="">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+
+                </select>
+
+
+                <label>Linked Approval</label>
+
+                <select name="linked_approval_id">
+
+                    <option value="">
+                        No Linked Approval
+                    </option>
+
+                    {% for approval in approvals %}
+
+                        <option value="{{ approval['id'] }}">
+                            Approval #{{ approval['id'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Implementation Status</label>
+
+                <select name="implementation_status">
+
+                    <option value="Not Started">
+                        Not Started
+                    </option>
+
+                    <option value="In Progress">
+                        In Progress
+                    </option>
+
+                    <option value="Completed">
+                        Completed
+                    </option>
+
+                    <option value="Rolled Back">
+                        Rolled Back
+                    </option>
+
+                </select>
+
+
+                <label>Implementation Date</label>
+
+                <input
+                    type="date"
+                    name="implementation_date"
+                >
 
 
                 <label>Implementation Plan</label>
@@ -95,6 +196,14 @@
                     name="implementation_plan"
                     rows="4"
                     required
+                ></textarea>
+
+
+                <label>Rollback Plan</label>
+
+                <textarea
+                    name="rollback_plan"
+                    rows="4"
                 ></textarea>
 
 

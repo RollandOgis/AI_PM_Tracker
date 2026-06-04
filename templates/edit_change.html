@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -23,18 +24,19 @@
 
                 <label>Project</label>
 
-                <select name="project_id" required>
+                <select name="project_id">
 
                     {% for project in projects %}
 
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if project['id'] == change['project_id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ project['name'] }}
-                        </option>
+                        {% if project['id'] == change['project_id'] %}
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+                        {% endif %}
 
                     {% endfor %}
 
@@ -62,27 +64,21 @@
 
                 <label>Impact</label>
 
-                <select name="impact" required>
+                <select name="impact">
 
-                    <option
-                        value="Low"
-                        {% if change['impact'] == 'Low' %}selected{% endif %}
-                    >
-                        Low
+                    <option value="Low"
+                    {% if change['impact'] == 'Low' %}selected{% endif %}>
+                    Low
                     </option>
 
-                    <option
-                        value="Medium"
-                        {% if change['impact'] == 'Medium' %}selected{% endif %}
-                    >
-                        Medium
+                    <option value="Medium"
+                    {% if change['impact'] == 'Medium' %}selected{% endif %}>
+                    Medium
                     </option>
 
-                    <option
-                        value="High"
-                        {% if change['impact'] == 'High' %}selected{% endif %}
-                    >
-                        High
+                    <option value="High"
+                    {% if change['impact'] == 'High' %}selected{% endif %}>
+                    High
                     </option>
 
                 </select>
@@ -100,30 +96,158 @@
 
                 <label>Approval Status</label>
 
-                <select name="approval_status" required>
+                <select name="approval_status">
 
-                    <option
-                        value="Pending"
-                        {% if change['approval_status'] == 'Pending' %}selected{% endif %}
-                    >
-                        Pending
+                    <option value="Pending"
+                    {% if change['approval_status'] == 'Pending' %}selected{% endif %}>
+                    Pending
                     </option>
 
-                    <option
-                        value="Approved"
-                        {% if change['approval_status'] == 'Approved' %}selected{% endif %}
-                    >
-                        Approved
+                    <option value="Approved"
+                    {% if change['approval_status'] == 'Approved' %}selected{% endif %}>
+                    Approved
                     </option>
 
-                    <option
-                        value="Rejected"
-                        {% if change['approval_status'] == 'Rejected' %}selected{% endif %}
-                    >
-                        Rejected
+                    <option value="Rejected"
+                    {% if change['approval_status'] == 'Rejected' %}selected{% endif %}>
+                    Rejected
                     </option>
 
                 </select>
+
+
+                <label>Cost Impact (£)</label>
+
+                <input
+                    type="number"
+                    step="0.01"
+                    name="cost_impact"
+                    value="{{ change['cost_impact'] or 0 }}"
+                >
+
+
+                <label>Schedule Impact (Days)</label>
+
+                <input
+                    type="number"
+                    name="schedule_impact_days"
+                    value="{{ change['schedule_impact_days'] or 0 }}"
+                >
+
+
+                <label>Resource Impact</label>
+
+                <textarea
+                    name="resource_impact"
+                    rows="3"
+                >{{ change['resource_impact'] or '' }}</textarea>
+
+
+                <label>Benefit Impact</label>
+
+                <textarea
+                    name="benefit_impact"
+                    rows="3"
+                >{{ change['benefit_impact'] or '' }}</textarea>
+
+
+                <label>CAB Required</label>
+
+                <select name="cab_required">
+
+                    <option value="No"
+                    {% if change['cab_required'] == 'No' %}selected{% endif %}>
+                    No
+                    </option>
+
+                    <option value="Yes"
+                    {% if change['cab_required'] == 'Yes' %}selected{% endif %}>
+                    Yes
+                    </option>
+
+                </select>
+
+
+                <label>CAB Decision</label>
+
+                <select name="cab_decision">
+
+                    <option value=""
+                    {% if not change['cab_decision'] %}selected{% endif %}>
+                    Pending
+                    </option>
+
+                    <option value="Approved"
+                    {% if change['cab_decision'] == 'Approved' %}selected{% endif %}>
+                    Approved
+                    </option>
+
+                    <option value="Rejected"
+                    {% if change['cab_decision'] == 'Rejected' %}selected{% endif %}>
+                    Rejected
+                    </option>
+
+                </select>
+
+
+                <label>Linked Approval</label>
+
+                <select name="linked_approval_id">
+
+                    <option value="">
+                        No Linked Approval
+                    </option>
+
+                    {% for approval in approvals %}
+
+                        <option
+                            value="{{ approval['id'] }}"
+                            {% if approval['id'] == change['linked_approval_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            Approval #{{ approval['id'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Implementation Status</label>
+
+                <select name="implementation_status">
+
+                    <option value="Not Started"
+                    {% if change['implementation_status'] == 'Not Started' %}selected{% endif %}>
+                    Not Started
+                    </option>
+
+                    <option value="In Progress"
+                    {% if change['implementation_status'] == 'In Progress' %}selected{% endif %}>
+                    In Progress
+                    </option>
+
+                    <option value="Completed"
+                    {% if change['implementation_status'] == 'Completed' %}selected{% endif %}>
+                    Completed
+                    </option>
+
+                    <option value="Rolled Back"
+                    {% if change['implementation_status'] == 'Rolled Back' %}selected{% endif %}>
+                    Rolled Back
+                    </option>
+
+                </select>
+
+
+                <label>Implementation Date</label>
+
+                <input
+                    type="date"
+                    name="implementation_date"
+                    value="{{ change['implementation_date'] or '' }}"
+                >
 
 
                 <label>Implementation Plan</label>
@@ -135,6 +259,14 @@
                 >{{ change['implementation_plan'] }}</textarea>
 
 
+                <label>Rollback Plan</label>
+
+                <textarea
+                    name="rollback_plan"
+                    rows="4"
+                >{{ change['rollback_plan'] or '' }}</textarea>
+
+
                 <button type="submit" class="btn-primary">
                     Update Change Request
                 </button>
@@ -142,6 +274,44 @@
             </form>
 
         </div>
+
+
+        {% if change_history %}
+
+        <div class="smart-card">
+
+            <h2>Change History</h2>
+
+            {% for history in change_history %}
+
+                <div class="smart-insight">
+
+                    <strong>
+                        {{ history['action'] }}
+                    </strong>
+
+                    <br>
+
+                    Previous Status:
+                    {{ history['previous_status'] }}
+
+                    →
+
+                    New Status:
+                    {{ history['new_status'] }}
+
+                    <br>
+
+                    Date:
+                    {{ history['created_at'] }}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
 
     </div>
 

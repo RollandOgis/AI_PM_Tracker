@@ -627,6 +627,78 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS cost_impact NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS schedule_impact_days INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS resource_impact TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS benefit_impact TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS cab_required TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS cab_decision TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS implementation_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS implementation_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS rollback_plan TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE changes
+                       ADD COLUMN IF NOT EXISTS linked_approval_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS change_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       change_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     # BENEFITS
     cursor.execute("""
@@ -7238,10 +7310,7 @@ def changes():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -7265,11 +7334,34 @@ def changes():
 
     changes = cursor.fetchall()
 
+    total_changes = len(changes)
+    pending_changes = len([
+        change for change in changes
+        if change["approval_status"] == "Pending"
+    ])
+    approved_changes = len([
+        change for change in changes
+        if change["approval_status"] == "Approved"
+    ])
+    rejected_changes = len([
+        change for change in changes
+        if change["approval_status"] == "Rejected"
+    ])
+    cab_required_count = len([
+        change for change in changes
+        if change["cab_required"] == "Yes"
+    ])
+
     conn.close()
 
     return render_template(
         "changes.html",
-        changes=changes
+        changes=changes,
+        total_changes=total_changes,
+        pending_changes=pending_changes,
+        approved_changes=approved_changes,
+        rejected_changes=rejected_changes,
+        cab_required_count=cab_required_count
     )
 
 
@@ -7283,30 +7375,54 @@ def add_change():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
 
     projects = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT *
+        FROM approvals
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    approvals = cursor.fetchall()
+
     if request.method == "POST":
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        impact = request.form["impact"]
-        requested_by = request.form["requested_by"]
-        approval_status = request.form["approval_status"]
-        implementation_plan = request.form["implementation_plan"]
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        impact = request.form.get("impact", "Medium")
+        requested_by = request.form.get("requested_by", "")
+        approval_status = request.form.get("approval_status", "Pending")
+        implementation_plan = request.form.get("implementation_plan", "")
+
+        cost_impact = float(request.form.get("cost_impact", 0) or 0)
+        schedule_impact_days = int(request.form.get("schedule_impact_days", 0) or 0)
+        resource_impact = request.form.get("resource_impact", "")
+        benefit_impact = request.form.get("benefit_impact", "")
+
+        cab_required = request.form.get("cab_required", "No")
+        cab_decision = request.form.get("cab_decision", "")
+
+        implementation_status = request.form.get("implementation_status", "Not Started")
+        implementation_date = request.form.get("implementation_date", "")
+        rollback_plan = request.form.get("rollback_plan", "")
+
+        linked_approval_id = request.form.get("linked_approval_id")
 
         cursor.execute("""
             INSERT INTO changes
@@ -7319,18 +7435,61 @@ def add_change():
                 requested_by,
                 approval_status,
                 implementation_plan,
+                cost_impact,
+                schedule_impact_days,
+                resource_impact,
+                benefit_impact,
+                cab_required,
+                cab_decision,
+                implementation_status,
+                implementation_date,
+                rollback_plan,
+                linked_approval_id,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
-            project_id,
+            project_id if project_id else None,
             title,
             description,
             impact,
             requested_by,
             approval_status,
             implementation_plan,
+            cost_impact,
+            schedule_impact_days,
+            resource_impact,
+            benefit_impact,
+            cab_required,
+            cab_decision,
+            implementation_status,
+            implementation_date,
+            rollback_plan,
+            linked_approval_id if linked_approval_id else None,
+            str(date.today())
+        ))
+
+        change_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO change_history
+            (
+                change_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            change_id,
+            session["user_id"],
+            "Change request created",
+            "",
+            approval_status,
             str(date.today())
         ))
 
@@ -7347,8 +7506,10 @@ def add_change():
 
     return render_template(
         "add_change.html",
-        projects=projects
+        projects=projects,
+        approvals=approvals
     )
+
 
 @app.route("/edit-change/<int:change_id>", methods=["GET", "POST"])
 def edit_change(change_id):
@@ -7360,10 +7521,7 @@ def edit_change(change_id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -7385,6 +7543,7 @@ def edit_change(change_id):
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -7392,7 +7551,42 @@ def edit_change(change_id):
 
     projects = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT *
+        FROM approvals
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    approvals = cursor.fetchall()
+
     if request.method == "POST":
+
+        previous_status = change["approval_status"]
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        impact = request.form.get("impact", "Medium")
+        requested_by = request.form.get("requested_by", "")
+        approval_status = request.form.get("approval_status", "Pending")
+        implementation_plan = request.form.get("implementation_plan", "")
+
+        cost_impact = float(request.form.get("cost_impact", 0) or 0)
+        schedule_impact_days = int(request.form.get("schedule_impact_days", 0) or 0)
+        resource_impact = request.form.get("resource_impact", "")
+        benefit_impact = request.form.get("benefit_impact", "")
+
+        cab_required = request.form.get("cab_required", "No")
+        cab_decision = request.form.get("cab_decision", "")
+
+        implementation_status = request.form.get("implementation_status", "Not Started")
+        implementation_date = request.form.get("implementation_date", "")
+        rollback_plan = request.form.get("rollback_plan", "")
+
+        linked_approval_id = request.form.get("linked_approval_id")
 
         cursor.execute("""
             UPDATE changes
@@ -7403,19 +7597,59 @@ def edit_change(change_id):
                 impact = %s,
                 requested_by = %s,
                 approval_status = %s,
-                implementation_plan = %s
+                implementation_plan = %s,
+                cost_impact = %s,
+                schedule_impact_days = %s,
+                resource_impact = %s,
+                benefit_impact = %s,
+                cab_required = %s,
+                cab_decision = %s,
+                implementation_status = %s,
+                implementation_date = %s,
+                rollback_plan = %s,
+                linked_approval_id = %s
             WHERE id = %s
             AND user_id = %s
         """, (
-            request.form.get("project_id"),
-            request.form.get("title", ""),
-            request.form.get("description", ""),
-            request.form.get("impact", "Medium"),
-            request.form.get("requested_by", ""),
-            request.form.get("approval_status", "Pending"),
-            request.form.get("implementation_plan", ""),
+            project_id if project_id else None,
+            title,
+            description,
+            impact,
+            requested_by,
+            approval_status,
+            implementation_plan,
+            cost_impact,
+            schedule_impact_days,
+            resource_impact,
+            benefit_impact,
+            cab_required,
+            cab_decision,
+            implementation_status,
+            implementation_date,
+            rollback_plan,
+            linked_approval_id if linked_approval_id else None,
             change_id,
             session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO change_history
+            (
+                change_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            change_id,
+            session["user_id"],
+            "Change request updated",
+            previous_status,
+            approval_status,
+            str(date.today())
         ))
 
         conn.commit()
@@ -7427,14 +7661,64 @@ def edit_change(change_id):
 
         return redirect("/changes")
 
+    cursor.execute("""
+        SELECT *
+        FROM change_history
+        WHERE change_id = %s
+        ORDER BY id DESC
+    """, (
+        change_id,
+    ))
+
+    change_history = cursor.fetchall()
+
     conn.close()
 
     return render_template(
         "edit_change.html",
         change=change,
-        projects=projects
+        projects=projects,
+        approvals=approvals,
+        change_history=change_history
     )
 
+
+@app.route("/delete-change/<int:change_id>")
+def delete_change(change_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Changes", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM change_history
+        WHERE change_id = %s
+    """, (
+        change_id,
+    ))
+
+    cursor.execute("""
+        DELETE FROM changes
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        change_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a change request"
+    )
+
+    return redirect("/changes")
 
 @app.route("/delete-change/<int:change_id>")
 def delete_change(change_id):

@@ -19,48 +19,51 @@
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Change Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Track approved, pending and rejected project changes.
+                    Track change impact, CAB decisions, implementation progress, rollback planning and linked approvals.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-change" class="btn-primary">
                     + Add Change
                 </a>
-
             </div>
 
         </div>
+
 
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
                 <h3>Total Changes</h3>
-                <p>{{ changes|length }}</p>
+                <p>{{ total_changes }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Pending</h3>
-                <p>{{ changes | selectattr("approval_status","equalto","Pending") | list | length }}</p>
+                <p>{{ pending_changes }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Approved</h3>
-                <p>{{ changes | selectattr("approval_status","equalto","Approved") | list | length }}</p>
+                <p>{{ approved_changes }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Rejected</h3>
-                <p>{{ changes | selectattr("approval_status","equalto","Rejected") | list | length }}</p>
+                <p>{{ rejected_changes }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>CAB Required</h3>
+                <p>{{ cab_required_count }}</p>
             </div>
 
         </div>
+
 
         {% if changes %}
 
@@ -94,9 +97,25 @@
                         {{ latest_change["impact"] }}
                     </p>
 
+                    <p>
+                        Cost Impact:
+                        £{{ "{:,.0f}".format(latest_change["cost_impact"] or 0) }}
+                    </p>
+
+                    <p>
+                        Schedule Impact:
+                        {{ latest_change["schedule_impact_days"] or 0 }} day(s)
+                    </p>
+
+                    <p>
+                        CAB Required:
+                        {{ latest_change["cab_required"] or "No" }}
+                    </p>
+
                 </div>
 
             </div>
+
 
             <div class="projects-grid">
 
@@ -113,34 +132,28 @@
                                 </h3>
 
                                 {% if change["approval_status"] == "Approved" %}
-
                                     <span class="badge badge-green">
                                         Approved
                                     </span>
-
                                 {% elif change["approval_status"] == "Pending" %}
-
                                     <span class="badge badge-yellow">
                                         Pending
                                     </span>
-
                                 {% else %}
-
                                     <span class="badge badge-red">
                                         Rejected
                                     </span>
-
                                 {% endif %}
 
                             </div>
 
                         </div>
 
+
                         <div class="smart-insight">
-
                             {{ change["description"] }}
-
                         </div>
+
 
                         <div class="budget-section">
 
@@ -160,8 +173,59 @@
                             </div>
 
                             <div class="budget-row">
-                                <span>Status</span>
+                                <span>Approval Status</span>
                                 <strong>{{ change["approval_status"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Cost Impact</span>
+                                <strong>£{{ "{:,.0f}".format(change["cost_impact"] or 0) }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Schedule Impact</span>
+                                <strong>{{ change["schedule_impact_days"] or 0 }} day(s)</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Resource Impact</span>
+                                <strong>{{ change["resource_impact"] or "Not recorded" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Benefit Impact</span>
+                                <strong>{{ change["benefit_impact"] or "Not recorded" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>CAB Required</span>
+                                <strong>{{ change["cab_required"] or "No" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>CAB Decision</span>
+                                <strong>{{ change["cab_decision"] or "Pending / N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Implementation Status</span>
+                                <strong>{{ change["implementation_status"] or "Not Started" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Implementation Date</span>
+                                <strong>{{ change["implementation_date"] or "Not Set" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Linked Approval</span>
+                                <strong>
+                                    {% if change["linked_approval_id"] %}
+                                        Approval #{{ change["linked_approval_id"] }}
+                                    {% else %}
+                                        Not linked
+                                    {% endif %}
+                                </strong>
                             </div>
 
                             <div class="budget-row">
@@ -170,6 +234,29 @@
                             </div>
 
                         </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Implementation Plan:</strong>
+
+                            <br><br>
+
+                            {{ change["implementation_plan"] or "No implementation plan provided." }}
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Rollback Plan:</strong>
+
+                            <br><br>
+
+                            {{ change["rollback_plan"] or "No rollback plan provided." }}
+
+                        </div>
+
 
                         <div class="project-actions">
 
@@ -183,16 +270,6 @@
                             >
                                 Delete
                             </a>
-
-                        </div>
-
-                        <div class="smart-insight">
-
-                            <strong>Implementation Plan:</strong>
-
-                            <br><br>
-
-                            {{ change["implementation_plan"] or "No implementation plan provided." }}
 
                         </div>
 
