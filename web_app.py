@@ -3063,7 +3063,12 @@ def kanban():
         swimlane = "Unassigned"
 
         if team_members:
+
             swimlane = team_members[0]
+
+        elif task["assigned_to"]:
+
+            swimlane = task["assigned_to"]
 
         task_data = {
             "task": task,
