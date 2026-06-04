@@ -22,7 +22,7 @@
                 <h1>Issue Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Track active project issues and operational blockers.
+                    Track active project issues, SLA breaches, escalations, root causes and closure validation.
                 </p>
             </div>
 
@@ -34,29 +34,31 @@
 
         </div>
 
+
         <div class="stats-grid">
 
             <div class="stat-card red-card">
                 <h3>Total Issues</h3>
-                <p>{{ issues|length }}</p>
+                <p>{{ total_issues }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Open Issues</h3>
-                <p>{{ issues | rejectattr("status", "equalto", "Closed") | list | length }}</p>
-            </div>
-
-            <div class="stat-card green-card">
-                <h3>Closed Issues</h3>
-                <p>{{ issues | selectattr("status", "equalto", "Closed") | list | length }}</p>
+                <p>{{ open_issues }}</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>High Priority</h3>
-                <p>{{ issues | selectattr("priority", "equalto", "High") | list | length }}</p>
+                <h3>SLA Breached</h3>
+                <p>{{ breached_sla }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Escalated</h3>
+                <p>{{ escalated_issues }}</p>
             </div>
 
         </div>
+
 
         {% if issues %}
 
@@ -64,7 +66,8 @@
 
                 <h3>Highest Priority Issue</h3>
 
-                {% set top_issue = issues[0] %}
+                {% set top_item = issues[0] %}
+                {% set top_issue = top_item["issue"] %}
 
                 <div class="smart-insight">
 
@@ -73,6 +76,11 @@
                     <p>
                         Priority:
                         {{ top_issue["priority"] }}
+                    </p>
+
+                    <p>
+                        Category:
+                        {{ top_issue["issue_category"] or "Not Categorised" }}
                     </p>
 
                     <p>
@@ -86,6 +94,21 @@
                     </p>
 
                     <p>
+                        SLA:
+                        {{ top_item["sla_status"] }}
+                    </p>
+
+                    <p>
+                        Age:
+                        {{ top_item["issue_age"] }} day(s)
+                    </p>
+
+                    <p>
+                        Trend:
+                        {{ top_item["issue_trend"] }}
+                    </p>
+
+                    <p>
                         Project:
                         {{ top_issue["project_name"] or "No Project" }}
                     </p>
@@ -96,11 +119,14 @@
 
         {% endif %}
 
+
         {% if issues %}
 
             <div class="projects-grid">
 
-                {% for issue in issues %}
+                {% for item in issues %}
+
+                    {% set issue = item["issue"] %}
 
                     <div class="project-card">
 
@@ -128,15 +154,22 @@
 
                         </div>
 
+
                         <div class="smart-insight">
                             {{ issue["description"] }}
                         </div>
+
 
                         <div class="budget-section">
 
                             <div class="budget-row">
                                 <span>Project</span>
                                 <strong>{{ issue["project_name"] or "No Project" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Category</span>
+                                <strong>{{ issue["issue_category"] or "Not Categorised" }}</strong>
                             </div>
 
                             <div class="budget-row">
@@ -155,11 +188,98 @@
                             </div>
 
                             <div class="budget-row">
+                                <span>Issue Age</span>
+                                <strong>{{ item["issue_age"] }} day(s)</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>SLA Target</span>
+                                <strong>{{ issue["sla_target_date"] or "No SLA" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>SLA Status</span>
+
+                                {% if item["sla_status"] == "Breached" %}
+                                    <strong class="health-warning">
+                                        {{ item["sla_status"] }}
+                                    </strong>
+                                {% elif item["sla_status"] == "On Track" %}
+                                    <strong class="health-good">
+                                        {{ item["sla_status"] }}
+                                    </strong>
+                                {% else %}
+                                    <strong>
+                                        {{ item["sla_status"] }}
+                                    </strong>
+                                {% endif %}
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Issue Trend</span>
+                                <strong>{{ item["issue_trend"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Escalation</span>
+                                <strong>{{ issue["escalation_status"] or "Not Escalated" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Escalation Owner</span>
+                                <strong>{{ issue["escalation_owner"] or "N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Escalation Date</span>
+                                <strong>{{ issue["escalation_date"] or "N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
                                 <span>Created</span>
                                 <strong>{{ issue["created_at"] }}</strong>
                             </div>
 
+                            <div class="budget-row">
+                                <span>Resolved Date</span>
+                                <strong>{{ issue["resolved_date"] or "Not Resolved" }}</strong>
+                            </div>
+
                         </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Root Cause:</strong>
+
+                            <br><br>
+
+                            {{ issue["root_cause"] or "Not recorded." }}
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Resolution:</strong>
+
+                            <br><br>
+
+                            {{ issue["resolution"] or "No resolution recorded." }}
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Closure Validation:</strong>
+
+                            <br><br>
+
+                            {{ issue["closure_validation"] or "Not validated." }}
+
+                        </div>
+
 
                         <div class="project-actions">
 
@@ -173,16 +293,6 @@
                             >
                                 Delete
                             </a>
-
-                        </div>
-
-                        <div class="smart-insight">
-
-                            <strong>Resolution:</strong>
-
-                            <br><br>
-
-                            {{ issue["resolution"] }}
 
                         </div>
 

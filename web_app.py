@@ -537,6 +537,68 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS issue_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS sla_target_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS escalation_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS escalation_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS escalation_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS root_cause TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS closure_validation TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE issues
+                       ADD COLUMN IF NOT EXISTS resolved_date TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS issue_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       issue_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     # CHANGES
     cursor.execute("""
@@ -6711,10 +6773,7 @@ def issues():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -6741,11 +6800,98 @@ def issues():
 
     issues = cursor.fetchall()
 
+    enriched_issues = []
+
+    today = date.today()
+
+    for issue in issues:
+
+        issue_age = 0
+
+        try:
+            if issue["created_at"]:
+                created_date = datetime.strptime(
+                    issue["created_at"],
+                    "%Y-%m-%d"
+                ).date()
+
+                issue_age = (today - created_date).days
+        except Exception:
+            issue_age = 0
+
+        sla_status = "No SLA"
+
+        try:
+            if issue["sla_target_date"]:
+
+                sla_date = datetime.strptime(
+                    issue["sla_target_date"],
+                    "%Y-%m-%d"
+                ).date()
+
+                if issue["status"] in ["Resolved", "Closed"]:
+                    sla_status = "Met / Closed"
+                elif sla_date < today:
+                    sla_status = "Breached"
+                else:
+                    sla_status = "On Track"
+        except Exception:
+            sla_status = "No SLA"
+
+        cursor.execute("""
+            SELECT status, created_at
+            FROM issue_history
+            WHERE issue_id = %s
+            ORDER BY id DESC
+            LIMIT 2
+        """, (
+            issue["id"],
+        ))
+
+        history = cursor.fetchall()
+
+        issue_trend = "Stable"
+
+        if len(history) >= 2:
+
+            latest = history[0]["status"]
+            previous = history[1]["status"]
+
+            if latest in ["Resolved", "Closed"] and previous not in ["Resolved", "Closed"]:
+                issue_trend = "Improving"
+            elif latest == "Escalated":
+                issue_trend = "Escalating"
+
+        enriched_issues.append({
+            "issue": issue,
+            "issue_age": issue_age,
+            "sla_status": sla_status,
+            "issue_trend": issue_trend
+        })
+
+    total_issues = len(issues)
+    open_issues = len([
+        issue for issue in issues
+        if issue["status"] not in ["Resolved", "Closed"]
+    ])
+    breached_sla = len([
+        item for item in enriched_issues
+        if item["sla_status"] == "Breached"
+    ])
+    escalated_issues = len([
+        issue for issue in issues
+        if issue["escalation_status"] == "Escalated"
+    ])
+
     conn.close()
 
     return render_template(
         "issues.html",
-        issues=issues
+        issues=enriched_issues,
+        total_issues=total_issues,
+        open_issues=open_issues,
+        breached_sla=breached_sla,
+        escalated_issues=escalated_issues
     )
 
 
@@ -6759,15 +6905,14 @@ def add_issue():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -6776,13 +6921,26 @@ def add_issue():
 
     if request.method == "POST":
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        priority = request.form["priority"]
-        owner = request.form["owner"]
-        status = request.form["status"]
-        resolution = request.form["resolution"]
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        priority = request.form.get("priority", "Medium")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+        resolution = request.form.get("resolution", "")
+
+        issue_category = request.form.get("issue_category", "Delivery")
+        sla_target_date = request.form.get("sla_target_date", "")
+        escalation_status = request.form.get("escalation_status", "Not Escalated")
+        escalation_owner = request.form.get("escalation_owner", "")
+        escalation_date = request.form.get("escalation_date", "")
+        root_cause = request.form.get("root_cause", "")
+        closure_validation = request.form.get("closure_validation", "")
+
+        resolved_date = ""
+
+        if status in ["Resolved", "Closed"]:
+            resolved_date = str(date.today())
 
         cursor.execute("""
             INSERT INTO issues
@@ -6795,18 +6953,57 @@ def add_issue():
                 owner,
                 status,
                 resolution,
+                issue_category,
+                sla_target_date,
+                escalation_status,
+                escalation_owner,
+                escalation_date,
+                root_cause,
+                closure_validation,
+                resolved_date,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
-            project_id,
+            project_id if project_id else None,
             title,
             description,
             priority,
             owner,
             status,
             resolution,
+            issue_category,
+            sla_target_date,
+            escalation_status,
+            escalation_owner,
+            escalation_date,
+            root_cause,
+            closure_validation,
+            resolved_date,
+            str(date.today())
+        ))
+
+        issue_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO issue_history
+            (
+                issue_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            issue_id,
+            session["user_id"],
+            "Issue created",
+            "",
+            status,
             str(date.today())
         ))
 
@@ -6826,6 +7023,7 @@ def add_issue():
         projects=projects
     )
 
+
 @app.route("/edit-issue/<int:issue_id>", methods=["GET", "POST"])
 def edit_issue(issue_id):
 
@@ -6836,10 +7034,7 @@ def edit_issue(issue_id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -6861,6 +7056,7 @@ def edit_issue(issue_id):
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -6870,6 +7066,8 @@ def edit_issue(issue_id):
 
     if request.method == "POST":
 
+        previous_status = issue["status"]
+
         project_id = request.form.get("project_id")
         title = request.form.get("title", "")
         description = request.form.get("description", "")
@@ -6877,6 +7075,19 @@ def edit_issue(issue_id):
         owner = request.form.get("owner", "")
         status = request.form.get("status", "Open")
         resolution = request.form.get("resolution", "")
+
+        issue_category = request.form.get("issue_category", "Delivery")
+        sla_target_date = request.form.get("sla_target_date", "")
+        escalation_status = request.form.get("escalation_status", "Not Escalated")
+        escalation_owner = request.form.get("escalation_owner", "")
+        escalation_date = request.form.get("escalation_date", "")
+        root_cause = request.form.get("root_cause", "")
+        closure_validation = request.form.get("closure_validation", "")
+
+        resolved_date = issue["resolved_date"]
+
+        if status in ["Resolved", "Closed"] and not resolved_date:
+            resolved_date = str(date.today())
 
         cursor.execute("""
             UPDATE issues
@@ -6887,19 +7098,55 @@ def edit_issue(issue_id):
                 priority = %s,
                 owner = %s,
                 status = %s,
-                resolution = %s
+                resolution = %s,
+                issue_category = %s,
+                sla_target_date = %s,
+                escalation_status = %s,
+                escalation_owner = %s,
+                escalation_date = %s,
+                root_cause = %s,
+                closure_validation = %s,
+                resolved_date = %s
             WHERE id = %s
             AND user_id = %s
         """, (
-            project_id,
+            project_id if project_id else None,
             title,
             description,
             priority,
             owner,
             status,
             resolution,
+            issue_category,
+            sla_target_date,
+            escalation_status,
+            escalation_owner,
+            escalation_date,
+            root_cause,
+            closure_validation,
+            resolved_date,
             issue_id,
             session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO issue_history
+            (
+                issue_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            issue_id,
+            session["user_id"],
+            "Issue updated",
+            previous_status,
+            status,
+            str(date.today())
         ))
 
         conn.commit()
@@ -6911,12 +7158,24 @@ def edit_issue(issue_id):
 
         return redirect("/issues")
 
+    cursor.execute("""
+        SELECT *
+        FROM issue_history
+        WHERE issue_id = %s
+        ORDER BY id DESC
+    """, (
+        issue_id,
+    ))
+
+    issue_history = cursor.fetchall()
+
     conn.close()
 
     return render_template(
         "edit_issue.html",
         issue=issue,
-        projects=projects
+        projects=projects,
+        issue_history=issue_history
     )
 
 

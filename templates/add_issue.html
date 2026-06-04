@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -23,7 +24,7 @@
 
                 <label>Project</label>
 
-                <select name="project_id" required>
+                <select name="project_id">
 
                     {% for project in projects %}
 
@@ -54,14 +55,26 @@
                 ></textarea>
 
 
+                <label>Issue Category</label>
+
+                <select name="issue_category">
+
+                    <option value="Delivery">Delivery</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Financial">Financial</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Resource">Resource</option>
+                    <option value="Compliance">Compliance</option>
+
+                </select>
+
+
                 <label>Priority</label>
 
-                <select name="priority" required>
+                <select name="priority">
 
                     <option value="Low">Low</option>
-
-                    <option value="Medium">Medium</option>
-
+                    <option value="Medium" selected>Medium</option>
                     <option value="High">High</option>
 
                 </select>
@@ -76,19 +89,63 @@
                 >
 
 
+                <label>SLA Target Date</label>
+
+                <input
+                    type="date"
+                    name="sla_target_date"
+                >
+
+
+                <label>Escalation Status</label>
+
+                <select name="escalation_status">
+
+                    <option value="Not Escalated">
+                        Not Escalated
+                    </option>
+
+                    <option value="Escalated">
+                        Escalated
+                    </option>
+
+                </select>
+
+
+                <label>Escalation Owner</label>
+
+                <input
+                    type="text"
+                    name="escalation_owner"
+                >
+
+
+                <label>Escalation Date</label>
+
+                <input
+                    type="date"
+                    name="escalation_date"
+                >
+
+
                 <label>Status</label>
 
-                <select name="status" required>
+                <select name="status">
 
                     <option value="Open">Open</option>
-
                     <option value="Investigating">Investigating</option>
-
                     <option value="Resolved">Resolved</option>
-
                     <option value="Closed">Closed</option>
 
                 </select>
+
+
+                <label>Root Cause Analysis</label>
+
+                <textarea
+                    name="root_cause"
+                    rows="4"
+                ></textarea>
 
 
                 <label>Resolution Plan</label>
@@ -97,6 +154,14 @@
                     name="resolution"
                     rows="4"
                     required
+                ></textarea>
+
+
+                <label>Closure Validation</label>
+
+                <textarea
+                    name="closure_validation"
+                    rows="4"
                 ></textarea>
 
 

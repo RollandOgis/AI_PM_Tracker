@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -23,18 +24,19 @@
 
                 <label>Project</label>
 
-                <select name="project_id" required>
+                <select name="project_id">
 
                     {% for project in projects %}
 
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if project['id'] == issue['project_id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ project['name'] }}
-                        </option>
+                        {% if project['id'] == issue['project_id'] %}
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+                        {% endif %}
 
                     {% endfor %}
 
@@ -60,29 +62,60 @@
                 >{{ issue['description'] }}</textarea>
 
 
+                <label>Issue Category</label>
+
+                <select name="issue_category">
+
+                    <option value="Delivery"
+                    {% if issue['issue_category'] == 'Delivery' %}selected{% endif %}>
+                    Delivery
+                    </option>
+
+                    <option value="Technical"
+                    {% if issue['issue_category'] == 'Technical' %}selected{% endif %}>
+                    Technical
+                    </option>
+
+                    <option value="Financial"
+                    {% if issue['issue_category'] == 'Financial' %}selected{% endif %}>
+                    Financial
+                    </option>
+
+                    <option value="Supplier"
+                    {% if issue['issue_category'] == 'Supplier' %}selected{% endif %}>
+                    Supplier
+                    </option>
+
+                    <option value="Resource"
+                    {% if issue['issue_category'] == 'Resource' %}selected{% endif %}>
+                    Resource
+                    </option>
+
+                    <option value="Compliance"
+                    {% if issue['issue_category'] == 'Compliance' %}selected{% endif %}>
+                    Compliance
+                    </option>
+
+                </select>
+
+
                 <label>Priority</label>
 
-                <select name="priority" required>
+                <select name="priority">
 
-                    <option
-                        value="Low"
-                        {% if issue['priority'] == 'Low' %}selected{% endif %}
-                    >
-                        Low
+                    <option value="Low"
+                    {% if issue['priority'] == 'Low' %}selected{% endif %}>
+                    Low
                     </option>
 
-                    <option
-                        value="Medium"
-                        {% if issue['priority'] == 'Medium' %}selected{% endif %}
-                    >
-                        Medium
+                    <option value="Medium"
+                    {% if issue['priority'] == 'Medium' %}selected{% endif %}>
+                    Medium
                     </option>
 
-                    <option
-                        value="High"
-                        {% if issue['priority'] == 'High' %}selected{% endif %}
-                    >
-                        High
+                    <option value="High"
+                    {% if issue['priority'] == 'High' %}selected{% endif %}>
+                    High
                     </option>
 
                 </select>
@@ -98,39 +131,83 @@
                 >
 
 
-                <label>Status</label>
+                <label>SLA Target Date</label>
 
-                <select name="status" required>
+                <input
+                    type="date"
+                    name="sla_target_date"
+                    value="{{ issue['sla_target_date'] or '' }}"
+                >
 
-                    <option
-                        value="Open"
-                        {% if issue['status'] == 'Open' %}selected{% endif %}
-                    >
-                        Open
+
+                <label>Escalation Status</label>
+
+                <select name="escalation_status">
+
+                    <option value="Not Escalated"
+                    {% if issue['escalation_status'] == 'Not Escalated' %}selected{% endif %}>
+                    Not Escalated
                     </option>
 
-                    <option
-                        value="Investigating"
-                        {% if issue['status'] == 'Investigating' %}selected{% endif %}
-                    >
-                        Investigating
-                    </option>
-
-                    <option
-                        value="Resolved"
-                        {% if issue['status'] == 'Resolved' %}selected{% endif %}
-                    >
-                        Resolved
-                    </option>
-
-                    <option
-                        value="Closed"
-                        {% if issue['status'] == 'Closed' %}selected{% endif %}
-                    >
-                        Closed
+                    <option value="Escalated"
+                    {% if issue['escalation_status'] == 'Escalated' %}selected{% endif %}>
+                    Escalated
                     </option>
 
                 </select>
+
+
+                <label>Escalation Owner</label>
+
+                <input
+                    type="text"
+                    name="escalation_owner"
+                    value="{{ issue['escalation_owner'] or '' }}"
+                >
+
+
+                <label>Escalation Date</label>
+
+                <input
+                    type="date"
+                    name="escalation_date"
+                    value="{{ issue['escalation_date'] or '' }}"
+                >
+
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option value="Open"
+                    {% if issue['status'] == 'Open' %}selected{% endif %}>
+                    Open
+                    </option>
+
+                    <option value="Investigating"
+                    {% if issue['status'] == 'Investigating' %}selected{% endif %}>
+                    Investigating
+                    </option>
+
+                    <option value="Resolved"
+                    {% if issue['status'] == 'Resolved' %}selected{% endif %}>
+                    Resolved
+                    </option>
+
+                    <option value="Closed"
+                    {% if issue['status'] == 'Closed' %}selected{% endif %}>
+                    Closed
+                    </option>
+
+                </select>
+
+
+                <label>Root Cause Analysis</label>
+
+                <textarea
+                    name="root_cause"
+                    rows="4"
+                >{{ issue['root_cause'] or '' }}</textarea>
 
 
                 <label>Resolution Plan</label>
@@ -142,6 +219,14 @@
                 >{{ issue['resolution'] }}</textarea>
 
 
+                <label>Closure Validation</label>
+
+                <textarea
+                    name="closure_validation"
+                    rows="4"
+                >{{ issue['closure_validation'] or '' }}</textarea>
+
+
                 <button type="submit" class="btn-primary">
                     Update Issue
                 </button>
@@ -149,6 +234,44 @@
             </form>
 
         </div>
+
+
+        {% if issue_history %}
+
+        <div class="smart-card">
+
+            <h2>Issue History</h2>
+
+            {% for history in issue_history %}
+
+                <div class="smart-insight">
+
+                    <strong>
+                        {{ history['action'] }}
+                    </strong>
+
+                    <br>
+
+                    Previous Status:
+                    {{ history['previous_status'] }}
+
+                    →
+
+                    New Status:
+                    {{ history['new_status'] }}
+
+                    <br>
+
+                    Date:
+                    {{ history['created_at'] }}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
 
     </div>
 
