@@ -10275,7 +10275,9 @@ def actions():
 
             CASE
                 WHEN actions.status != 'Completed'
-                AND actions.due_date < CURRENT_DATE
+                AND actions.due_date IS NOT NULL
+                AND actions.due_date != ''
+                AND TO_DATE(actions.due_date, 'YYYY-MM-DD') < CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS is_overdue,
@@ -10283,7 +10285,8 @@ def actions():
             CASE
                 WHEN actions.status != 'Completed'
                 AND actions.reminder_date IS NOT NULL
-                AND actions.reminder_date <= CURRENT_DATE
+                AND actions.reminder_date != ''
+                AND TO_DATE(actions.reminder_date, 'YYYY-MM-DD') <= CURRENT_DATE
                 THEN 'Yes'
                 ELSE 'No'
             END AS reminder_due
@@ -10297,7 +10300,9 @@ def actions():
         ORDER BY
             CASE
                 WHEN actions.status = 'Completed' THEN 6
-                WHEN actions.due_date < CURRENT_DATE THEN 1
+                WHEN actions.due_date IS NOT NULL
+                AND actions.due_date != ''
+                AND TO_DATE(actions.due_date, 'YYYY-MM-DD') < CURRENT_DATE THEN 1
                 WHEN actions.escalation_level = 'High' THEN 2
                 WHEN actions.status = 'Blocked' THEN 3
                 WHEN actions.priority = 'High' THEN 4
@@ -10314,36 +10319,39 @@ def actions():
     for action in actions:
 
         if (
-                action["status"] != "Completed"
-                and action["due_date"]
-                and action["is_overdue"] == "Yes"
-                and action["escalation_level"] == "None"
+            action["status"] != "Completed"
+            and action["due_date"]
+            and action["is_overdue"] == "Yes"
+            and action["escalation_level"] == "None"
         ):
-            cursor.execute("""
-                           UPDATE actions
-                           SET escalation_level = 'Medium'
-                           WHERE id = %s
-                             AND user_id = %s
-                           """, (
-                               action["id"],
-                               session["user_id"]
-                           ))
 
             cursor.execute("""
-                           INSERT INTO action_history
-                           (action_id,
-                            user_id,
-                            change_note,
-                            old_status,
-                            new_status)
-                           VALUES (%s, %s, %s, %s, %s)
-                           """, (
-                               action["id"],
-                               session["user_id"],
-                               "Action automatically escalated because it is overdue",
-                               action["status"],
-                               action["status"]
-                           ))
+                UPDATE actions
+                SET escalation_level = 'Medium'
+                WHERE id = %s
+                AND user_id = %s
+            """, (
+                action["id"],
+                session["user_id"]
+            ))
+
+            cursor.execute("""
+                INSERT INTO action_history
+                (
+                    action_id,
+                    user_id,
+                    change_note,
+                    old_status,
+                    new_status
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                action["id"],
+                session["user_id"],
+                "Action automatically escalated because it is overdue",
+                action["status"],
+                action["status"]
+            ))
 
     conn.commit()
 
@@ -10357,7 +10365,9 @@ def actions():
 
             COUNT(*) FILTER (
                 WHERE status != 'Completed'
-                AND due_date < CURRENT_DATE
+                AND due_date IS NOT NULL
+                AND due_date != ''
+                AND TO_DATE(due_date, 'YYYY-MM-DD') < CURRENT_DATE
             ) AS overdue_actions,
 
             COUNT(*) FILTER (
@@ -10370,7 +10380,8 @@ def actions():
 
             COUNT(*) FILTER (
                 WHERE reminder_date IS NOT NULL
-                AND reminder_date <= CURRENT_DATE
+                AND reminder_date != ''
+                AND TO_DATE(reminder_date, 'YYYY-MM-DD') <= CURRENT_DATE
                 AND status != 'Completed'
             ) AS reminders_due,
 
