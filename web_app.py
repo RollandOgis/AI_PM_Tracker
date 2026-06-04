@@ -1195,6 +1195,16 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   ALTER TABLE project_health_history
+                       ADD COLUMN IF NOT EXISTS overdue_tasks INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_health_history
+                       ADD COLUMN IF NOT EXISTS blocked_tasks INTEGER DEFAULT 0
+                   """)
+
 
 
     # Audit Logs Table
@@ -2370,13 +2380,17 @@ def home():
                         health_score,
                         risk_score,
                         budget_usage_percent,
+                        overdue_tasks,
+                        blocked_tasks,
                         created_at)
-                       VALUES (%s, %s, %s, %s, %s)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)
                        """, (
                            project["id"],
                            project_health_score,
                            risk_score,
                            budget_used_percent,
+                           project_overdue_tasks,
+                           project_blocked_tasks,
                            str(date.today())
                        ))
 
@@ -2455,6 +2469,54 @@ def home():
             predictive_health_label = "Likely At Risk"
         else:
             predictive_health_label = "Likely Critical"
+
+        risk_trend = "Stable"
+        budget_trend = "Stable"
+        schedule_trend = "Stable"
+
+        cursor.execute("""
+                       SELECT risk_score,
+                              budget_usage_percent,
+                              overdue_tasks,
+                              blocked_tasks
+                       FROM project_health_history
+                       WHERE project_id = %s
+                       ORDER BY id DESC LIMIT 2
+                       """, (
+                           project["id"],
+                       ))
+
+        trend_history = cursor.fetchall()
+
+        if len(trend_history) >= 2:
+
+            latest = trend_history[0]
+            previous = trend_history[1]
+
+            if latest["risk_score"] > previous["risk_score"]:
+                risk_trend = "Increasing Risk"
+            elif latest["risk_score"] < previous["risk_score"]:
+                risk_trend = "Reducing Risk"
+
+            if latest["budget_usage_percent"] > previous["budget_usage_percent"]:
+                budget_trend = "Increasing Spend"
+            elif latest["budget_usage_percent"] < previous["budget_usage_percent"]:
+                budget_trend = "Reducing Spend"
+
+            latest_schedule_pressure = (
+                    (latest["overdue_tasks"] or 0)
+                    + (latest["blocked_tasks"] or 0)
+            )
+
+            previous_schedule_pressure = (
+                    (previous["overdue_tasks"] or 0)
+                    + (previous["blocked_tasks"] or 0)
+            )
+
+            if latest_schedule_pressure > previous_schedule_pressure:
+                schedule_trend = "Deteriorating"
+            elif latest_schedule_pressure < previous_schedule_pressure:
+                schedule_trend = "Improving"
 
         ai_recommendation = []
 
@@ -2545,6 +2607,9 @@ def home():
             "recovery_plan": recovery_plan,
             "predictive_health_score": predictive_health_score,
             "predictive_health_label": predictive_health_label,
+            "risk_trend": risk_trend,
+            "budget_trend": budget_trend,
+            "schedule_trend": schedule_trend,
             "ai_recommendation": ai_recommendation
         })
 
@@ -2805,6 +2870,25 @@ def home():
     else:
         health_status = "Critical"
 
+    portfolio_heatmap = []
+
+    for item in all_projects:
+
+        score = item["project_health_score"]
+
+        if score >= 80:
+            heatmap_status = "Green"
+        elif score >= 50:
+            heatmap_status = "Amber"
+        else:
+            heatmap_status = "Red"
+
+        portfolio_heatmap.append({
+            "project_name": item["project"][1],
+            "score": score,
+            "status": heatmap_status
+        })
+
     conn.close()
 
     return render_template(
@@ -2841,6 +2925,7 @@ def home():
         total_clients=total_clients,
         total_client_value=total_client_value,
         active_clients_count=len(active_clients),
+        portfolio_heatmap=portfolio_heatmap,
         chart_status_data=[
             completed_tasks,
             pending_tasks,

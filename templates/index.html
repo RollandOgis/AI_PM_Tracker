@@ -198,6 +198,34 @@
 
     <h2>Portfolio Delivery Overview</h2>
 
+            <div class="smart-card">
+
+    <h3>Portfolio Heatmap</h3>
+
+    <div class="stats-grid">
+
+        {% for heatmap in portfolio_heatmap %}
+
+            <div class="stat-card
+                {% if heatmap['status'] == 'Green' %}
+                    green-card
+                {% elif heatmap['status'] == 'Amber' %}
+                    amber-card
+                {% else %}
+                    red-card
+                {% endif %}
+            ">
+                <h3>{{ heatmap["project_name"] }}</h3>
+                <p>{{ heatmap["score"] }}%</p>
+                <small>{{ heatmap["status"] }}</small>
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
     {% if projects %}
 
         <div class="projects-grid showcase-projects-grid">
@@ -380,6 +408,21 @@
         </strong>
 
     {% endif %}
+</div>
+
+                    <div class="showcase-info-box">
+    <span>Risk Trend</span>
+    <strong>{{ item["risk_trend"] }}</strong>
+</div>
+
+<div class="showcase-info-box">
+    <span>Budget Trend</span>
+    <strong>{{ item["budget_trend"] }}</strong>
+</div>
+
+<div class="showcase-info-box">
+    <span>Schedule Trend</span>
+    <strong>{{ item["schedule_trend"] }}</strong>
 </div>
 
                     <div class="showcase-recommendation">
