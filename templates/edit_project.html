@@ -44,25 +44,19 @@
                         {% if project['client_id'] == client['id'] %}
 
                             <option value="{{ client['id'] }}" selected>
-
                                 {{ client['name'] }}
-
                                 {% if client['company'] %}
                                     - {{ client['company'] }}
                                 {% endif %}
-
                             </option>
 
                         {% else %}
 
                             <option value="{{ client['id'] }}">
-
                                 {{ client['name'] }}
-
                                 {% if client['company'] %}
                                     - {{ client['company'] }}
                                 {% endif %}
-
                             </option>
 
                         {% endif %}
@@ -82,20 +76,25 @@
 
                     {% for stakeholder in stakeholders %}
 
-                        <option
-                            value="{{ stakeholder['id'] }}"
-                            {% if project['sponsor_id'] == stakeholder['id'] %}
-                                selected
-                            {% endif %}
-                        >
+                        {% if project['sponsor_id'] == stakeholder['id'] %}
 
-                            {{ stakeholder['name'] }}
+                            <option value="{{ stakeholder['id'] }}" selected>
+                                {{ stakeholder['name'] }}
+                                {% if stakeholder['role'] %}
+                                    - {{ stakeholder['role'] }}
+                                {% endif %}
+                            </option>
 
-                            {% if stakeholder['role'] %}
-                                - {{ stakeholder['role'] }}
-                            {% endif %}
+                        {% else %}
 
-                        </option>
+                            <option value="{{ stakeholder['id'] }}">
+                                {{ stakeholder['name'] }}
+                                {% if stakeholder['role'] %}
+                                    - {{ stakeholder['role'] }}
+                                {% endif %}
+                            </option>
+
+                        {% endif %}
 
                     {% endfor %}
 
@@ -112,20 +111,25 @@
 
                     {% for member in team_members %}
 
-                        <option
-                            value="{{ member['id'] }}"
-                            {% if project['project_manager_id'] == member['id'] %}
-                                selected
-                            {% endif %}
-                        >
+                        {% if project['project_manager_id'] == member['id'] %}
 
-                            {{ member['name'] }}
+                            <option value="{{ member['id'] }}" selected>
+                                {{ member['name'] }}
+                                {% if member['role'] %}
+                                    - {{ member['role'] }}
+                                {% endif %}
+                            </option>
 
-                            {% if member['role'] %}
-                                - {{ member['role'] }}
-                            {% endif %}
+                        {% else %}
 
-                        </option>
+                            <option value="{{ member['id'] }}">
+                                {{ member['name'] }}
+                                {% if member['role'] %}
+                                    - {{ member['role'] }}
+                                {% endif %}
+                            </option>
+
+                        {% endif %}
 
                     {% endfor %}
 
@@ -136,35 +140,134 @@
 
                 <select name="project_type">
 
-                    <option value="Software"
-                        {% if project['project_type'] == 'Software' %}selected{% endif %}
-                    >
-                        Software
-                    </option>
+                    {% if project['project_type'] == 'Software' %}
+                        <option value="Software" selected>Software</option>
+                    {% else %}
+                        <option value="Software">Software</option>
+                    {% endif %}
 
-                    <option value="Infrastructure"
-                        {% if project['project_type'] == 'Infrastructure' %}selected{% endif %}
-                    >
-                        Infrastructure
-                    </option>
+                    {% if project['project_type'] == 'Infrastructure' %}
+                        <option value="Infrastructure" selected>Infrastructure</option>
+                    {% else %}
+                        <option value="Infrastructure">Infrastructure</option>
+                    {% endif %}
 
-                    <option value="Business Change"
-                        {% if project['project_type'] == 'Business Change' %}selected{% endif %}
-                    >
-                        Business Change
-                    </option>
+                    {% if project['project_type'] == 'Business Change' %}
+                        <option value="Business Change" selected>Business Change</option>
+                    {% else %}
+                        <option value="Business Change">Business Change</option>
+                    {% endif %}
 
-                    <option value="Transformation"
-                        {% if project['project_type'] == 'Transformation' %}selected{% endif %}
-                    >
-                        Transformation
-                    </option>
+                    {% if project['project_type'] == 'Transformation' %}
+                        <option value="Transformation" selected>Transformation</option>
+                    {% else %}
+                        <option value="Transformation">Transformation</option>
+                    {% endif %}
 
-                    <option value="Compliance"
-                        {% if project['project_type'] == 'Compliance' %}selected{% endif %}
-                    >
-                        Compliance
-                    </option>
+                    {% if project['project_type'] == 'Compliance' %}
+                        <option value="Compliance" selected>Compliance</option>
+                    {% else %}
+                        <option value="Compliance">Compliance</option>
+                    {% endif %}
+
+                </select>
+
+
+                <label>Project Priority</label>
+
+                <select name="project_priority">
+
+                    {% if project['project_priority'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if project['project_priority'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if project['project_priority'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if project['project_priority'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
+
+
+                <label>Risk Rating</label>
+
+                <select name="risk_rating">
+
+                    {% if project['risk_rating'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if project['risk_rating'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if project['risk_rating'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if project['risk_rating'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
+
+
+                <label>Governance Category</label>
+
+                <select name="governance_category">
+
+                    {% if project['governance_category'] == 'Standard' %}
+                        <option value="Standard" selected>Standard</option>
+                    {% else %}
+                        <option value="Standard">Standard</option>
+                    {% endif %}
+
+                    {% if project['governance_category'] == 'High Governance' %}
+                        <option value="High Governance" selected>High Governance</option>
+                    {% else %}
+                        <option value="High Governance">High Governance</option>
+                    {% endif %}
+
+                    {% if project['governance_category'] == 'Regulatory' %}
+                        <option value="Regulatory" selected>Regulatory</option>
+                    {% else %}
+                        <option value="Regulatory">Regulatory</option>
+                    {% endif %}
+
+                    {% if project['governance_category'] == 'Strategic' %}
+                        <option value="Strategic" selected>Strategic</option>
+                    {% else %}
+                        <option value="Strategic">Strategic</option>
+                    {% endif %}
+
+                    {% if project['governance_category'] == 'Transformation' %}
+                        <option value="Transformation" selected>Transformation</option>
+                    {% else %}
+                        <option value="Transformation">Transformation</option>
+                    {% endif %}
 
                 </select>
 
@@ -185,6 +288,14 @@
                     name="portfolio"
                     value="{{ project['portfolio'] or '' }}"
                 >
+
+
+                <label>Business Case</label>
+
+                <textarea
+                    name="business_case"
+                    rows="5"
+                >{{ project['business_case'] or '' }}</textarea>
 
 
                 <label>Description</label>

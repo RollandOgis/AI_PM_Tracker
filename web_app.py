@@ -143,6 +143,26 @@ def init_db():
     except Exception:
         pass
 
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS business_case TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS project_priority TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS risk_rating TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS governance_category TEXT
+                   """)
+
 
     # TASKS
     cursor.execute("""
@@ -4444,48 +4464,59 @@ def add_project():
         programme = request.form.get("programme", "")
         portfolio = request.form.get("portfolio", "")
 
+        business_case = request.form.get("business_case", "")
+        project_priority = request.form.get("project_priority", "Medium")
+        risk_rating = request.form.get("risk_rating", "Medium")
+        governance_category = request.form.get("governance_category", "Standard")
+
         estimated_budget = float(request.form.get("estimated_budget", 0) or 0)
         actual_cost = float(request.form.get("actual_cost", 0) or 0)
 
         cursor.execute("""
-            INSERT INTO projects
-            (
-                user_id,
-                client_id,
-                project_manager_id,
-                sponsor_id,
-                name,
-                description,
-                start_date,
-                end_date,
-                status,
-                project_type,
-                programme,
-                portfolio,
-                estimated_budget,
-                actual_cost,
-                is_archived,
-                created_at
-            )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            session["user_id"],
-            client_id if client_id else None,
-            project_manager_id if project_manager_id else None,
-            sponsor_id if sponsor_id else None,
-            name,
-            description,
-            start_date,
-            end_date,
-            status,
-            project_type,
-            programme,
-            portfolio,
-            estimated_budget,
-            actual_cost,
-            False,
-            str(date.today())
-        ))
+                       INSERT INTO projects
+                       (user_id,
+                        client_id,
+                        project_manager_id,
+                        sponsor_id,
+                        name,
+                        description,
+                        start_date,
+                        end_date,
+                        status,
+                        project_type,
+                        programme,
+                        portfolio,
+                        business_case,
+                        project_priority,
+                        risk_rating,
+                        governance_category,
+                        estimated_budget,
+                        actual_cost,
+                        is_archived,
+                        created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                       """, (
+                           session["user_id"],
+                           client_id if client_id else None,
+                           project_manager_id if project_manager_id else None,
+                           sponsor_id if sponsor_id else None,
+                           name,
+                           description,
+                           start_date,
+                           end_date,
+                           status,
+                           project_type,
+                           programme,
+                           portfolio,
+                           business_case,
+                           project_priority,
+                           risk_rating,
+                           governance_category,
+                           estimated_budget,
+                           actual_cost,
+                           False,
+                           str(date.today())
+                       ))
 
         conn.commit()
         conn.close()
@@ -4576,44 +4607,56 @@ def edit_project(project_id):
         programme = request.form.get("programme", "")
         portfolio = request.form.get("portfolio", "")
 
+        business_case = request.form.get("business_case", "")
+        project_priority = request.form.get("project_priority", "Medium")
+        risk_rating = request.form.get("risk_rating", "Medium")
+        governance_category = request.form.get("governance_category", "Standard")
+
         estimated_budget = float(request.form.get("estimated_budget", 0) or 0)
         actual_cost = float(request.form.get("actual_cost", 0) or 0)
 
         cursor.execute("""
-            UPDATE projects
-            SET
-                client_id = %s,
-                project_manager_id = %s,
-                sponsor_id = %s,
-                name = %s,
-                description = %s,
-                start_date = %s,
-                end_date = %s,
-                status = %s,
-                project_type = %s,
-                programme = %s,
-                portfolio = %s,
-                estimated_budget = %s,
-                actual_cost = %s
-            WHERE id = %s
-            AND user_id = %s
-        """, (
-            client_id if client_id else None,
-            project_manager_id if project_manager_id else None,
-            sponsor_id if sponsor_id else None,
-            name,
-            description,
-            start_date,
-            end_date,
-            status,
-            project_type,
-            programme,
-            portfolio,
-            estimated_budget,
-            actual_cost,
-            project_id,
-            session["user_id"]
-        ))
+                       UPDATE projects
+                       SET client_id           = %s,
+                           project_manager_id  = %s,
+                           sponsor_id          = %s,
+                           name                = %s,
+                           description         = %s,
+                           start_date          = %s,
+                           end_date            = %s,
+                           status              = %s,
+                           project_type        = %s,
+                           programme           = %s,
+                           portfolio           = %s,
+                           business_case       = %s,
+                           project_priority    = %s,
+                           risk_rating         = %s,
+                           governance_category = %s,
+                           estimated_budget    = %s,
+                           actual_cost         = %s
+                       WHERE id = %s
+                         AND user_id = %s
+                       """, (
+                           client_id if client_id else None,
+                           project_manager_id if project_manager_id else None,
+                           sponsor_id if sponsor_id else None,
+                           name,
+                           description,
+                           start_date,
+                           end_date,
+                           status,
+                           project_type,
+                           programme,
+                           portfolio,
+                           business_case,
+                           project_priority,
+                           risk_rating,
+                           governance_category,
+                           estimated_budget,
+                           actual_cost,
+                           project_id,
+                           session["user_id"]
+                       ))
 
         conn.commit()
         conn.close()
