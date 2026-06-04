@@ -358,6 +358,30 @@
     </strong>
 </div>
 
+<div class="showcase-info-box">
+    <span>Predictive Health</span>
+
+    {% if item["predictive_health_score"] >= 80 %}
+        <strong class="health-good">
+            {{ item["predictive_health_label"] }}
+            ({{ item["predictive_health_score"] }}%)
+        </strong>
+
+    {% elif item["predictive_health_score"] >= 60 %}
+        <strong class="health-neutral">
+            {{ item["predictive_health_label"] }}
+            ({{ item["predictive_health_score"] }}%)
+        </strong>
+
+    {% else %}
+        <strong class="health-warning">
+            {{ item["predictive_health_label"] }}
+            ({{ item["predictive_health_score"] }}%)
+        </strong>
+
+    {% endif %}
+</div>
+
                     <div class="showcase-recommendation">
                         <span>AI Recommendation</span>
 

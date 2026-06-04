@@ -2431,6 +2431,31 @@ def home():
                 "No recovery actions required"
             )
 
+        predictive_health_score = project_health_score
+
+        if project_overdue_tasks > 0:
+            predictive_health_score -= min(project_overdue_tasks * 5, 15)
+
+        if project_blocked_tasks > 0:
+            predictive_health_score -= min(project_blocked_tasks * 5, 15)
+
+        if budget_used_percent > 90:
+            predictive_health_score -= 10
+
+        if completion < 50 and project["status"] == "In Progress":
+            predictive_health_score -= 10
+
+        predictive_health_score = max(0, min(100, predictive_health_score))
+
+        if predictive_health_score >= 80:
+            predictive_health_label = "Likely Healthy"
+        elif predictive_health_score >= 60:
+            predictive_health_label = "Likely Stable"
+        elif predictive_health_score >= 40:
+            predictive_health_label = "Likely At Risk"
+        else:
+            predictive_health_label = "Likely Critical"
+
         ai_recommendation = []
 
         if project_overdue_tasks >= 3:
@@ -2518,6 +2543,8 @@ def home():
             "project_health_score": project_health_score,
             "trend": trend,
             "recovery_plan": recovery_plan,
+            "predictive_health_score": predictive_health_score,
+            "predictive_health_label": predictive_health_label,
             "ai_recommendation": ai_recommendation
         })
 
