@@ -1689,6 +1689,62 @@ def init_db():
                    )
                    """)
 
+    # Governance Reviews v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE governance_reviews
+                       ADD COLUMN IF NOT EXISTS review_frequency TEXT DEFAULT 'Monthly'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE governance_reviews
+                       ADD COLUMN IF NOT EXISTS governance_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE governance_reviews
+                       ADD COLUMN IF NOT EXISTS maturity_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE governance_reviews
+                       ADD COLUMN IF NOT EXISTS risk_trend TEXT DEFAULT 'Stable'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE governance_reviews
+                       ADD COLUMN IF NOT EXISTS executive_summary TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE governance_reviews
+                       ADD COLUMN IF NOT EXISTS auto_schedule_next TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS governance_review_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       review_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       old_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       change_note
+                       TEXT,
+                       changed_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Project Prioritisation Table
 
     cursor.execute("""
@@ -12849,10 +12905,7 @@ def governance_reviews():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -12869,11 +12922,29 @@ def governance_reviews():
 
     reviews = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) AS total_reviews,
+            COUNT(*) FILTER (WHERE status = 'Completed') AS completed_reviews,
+            COUNT(*) FILTER (WHERE status = 'Open') AS open_reviews,
+            COUNT(*) FILTER (WHERE status = 'In Progress') AS in_progress_reviews,
+            COUNT(*) FILTER (WHERE next_review_date < CURRENT_DATE AND status != 'Completed') AS overdue_reviews,
+            ROUND(AVG(governance_score), 1) AS avg_governance_score,
+            ROUND(AVG(maturity_score), 1) AS avg_maturity_score
+        FROM governance_reviews
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    stats = cursor.fetchone()
+
     conn.close()
 
     return render_template(
         "governance_reviews.html",
-        reviews=reviews
+        reviews=reviews,
+        stats=stats
     )
 
 
@@ -12887,10 +12958,7 @@ def add_governance_review():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -12919,22 +12987,33 @@ def add_governance_review():
                 owner,
                 next_review_date,
                 status,
+                review_frequency,
+                governance_score,
+                maturity_score,
+                risk_trend,
+                executive_summary,
+                auto_schedule_next,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
         """, (
             session["user_id"],
-            request.form["project_id"],
-            request.form["review_name"],
-            request.form["review_type"],
-            request.form["review_date"],
-            request.form["outcome"],
-            request.form["decision"],
-            request.form["actions"],
-            request.form["owner"],
-            request.form["next_review_date"],
-            request.form["status"],
-            str(date.today())
+            request.form.get("project_id"),
+            request.form.get("review_name"),
+            request.form.get("review_type"),
+            request.form.get("review_date") or None,
+            request.form.get("outcome"),
+            request.form.get("decision"),
+            request.form.get("actions"),
+            request.form.get("owner"),
+            request.form.get("next_review_date") or None,
+            request.form.get("status"),
+            request.form.get("review_frequency"),
+            request.form.get("governance_score") or 0,
+            request.form.get("maturity_score") or 0,
+            request.form.get("risk_trend"),
+            request.form.get("executive_summary"),
+            request.form.get("auto_schedule_next")
         ))
 
         conn.commit()
@@ -12948,6 +13027,211 @@ def add_governance_review():
         "add_governance_review.html",
         projects=projects
     )
+
+
+@app.route("/edit-governance-review/<int:review_id>", methods=["GET", "POST"])
+def edit_governance_review(review_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Governance Reviews", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM governance_reviews
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        review_id,
+        session["user_id"]
+    ))
+
+    review = cursor.fetchone()
+
+    if not review:
+        conn.close()
+        return redirect("/governance-reviews")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        old_status = review["status"]
+        new_status = request.form.get("status")
+
+        cursor.execute("""
+            UPDATE governance_reviews
+            SET
+                project_id = %s,
+                review_name = %s,
+                review_type = %s,
+                review_date = %s,
+                outcome = %s,
+                decision = %s,
+                actions = %s,
+                owner = %s,
+                next_review_date = %s,
+                status = %s,
+                review_frequency = %s,
+                governance_score = %s,
+                maturity_score = %s,
+                risk_trend = %s,
+                executive_summary = %s,
+                auto_schedule_next = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            request.form.get("review_name"),
+            request.form.get("review_type"),
+            request.form.get("review_date") or None,
+            request.form.get("outcome"),
+            request.form.get("decision"),
+            request.form.get("actions"),
+            request.form.get("owner"),
+            request.form.get("next_review_date") or None,
+            new_status,
+            request.form.get("review_frequency"),
+            request.form.get("governance_score") or 0,
+            request.form.get("maturity_score") or 0,
+            request.form.get("risk_trend"),
+            request.form.get("executive_summary"),
+            request.form.get("auto_schedule_next"),
+            review_id,
+            session["user_id"]
+        ))
+
+        if old_status != new_status:
+            cursor.execute("""
+                INSERT INTO governance_review_history
+                (
+                    review_id,
+                    user_id,
+                    old_status,
+                    new_status,
+                    change_note
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                review_id,
+                session["user_id"],
+                old_status,
+                new_status,
+                "Governance review status changed"
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/governance-reviews")
+
+    conn.close()
+
+    return render_template(
+        "edit_governance_review.html",
+        review=review,
+        projects=projects
+    )
+
+
+@app.route("/governance-review-history/<int:review_id>")
+def governance_review_history(review_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Governance Reviews", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM governance_reviews
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        review_id,
+        session["user_id"]
+    ))
+
+    review = cursor.fetchone()
+
+    if not review:
+        conn.close()
+        return redirect("/governance-reviews")
+
+    cursor.execute("""
+        SELECT *
+        FROM governance_review_history
+        WHERE review_id = %s
+        AND user_id = %s
+        ORDER BY changed_at DESC
+    """, (
+        review_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "governance_review_history.html",
+        review=review,
+        history=history
+    )
+
+
+@app.route("/delete-governance-review/<int:review_id>")
+def delete_governance_review(review_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Governance Reviews", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM governance_review_history
+        WHERE review_id = %s
+        AND user_id = %s
+    """, (
+        review_id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
+        DELETE FROM governance_reviews
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        review_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/governance-reviews")
 
 
 @app.route("/project-prioritisation")

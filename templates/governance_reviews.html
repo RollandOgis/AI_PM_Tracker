@@ -22,7 +22,7 @@
                 <h1>Governance Reviews</h1>
 
                 <p class="dashboard-subtitle">
-                    Track governance reviews, outcomes, actions and decisions.
+                    Track governance scorecards, review outcomes, maturity, trends and actions.
                 </p>
             </div>
 
@@ -38,27 +38,70 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Reviews</h3>
-                <p>{{ reviews|length }}</p>
+                <p>{{ stats["total_reviews"] or 0 }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Completed</h3>
-                <p>{{ reviews | selectattr("status", "equalto", "Completed") | list | length }}</p>
+                <p>{{ stats["completed_reviews"] or 0 }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Scheduled</h3>
-                <p>{{ reviews | selectattr("status", "equalto", "Scheduled") | list | length }}</p>
+                <h3>Open</h3>
+                <p>{{ stats["open_reviews"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>In Progress</h3>
+                <p>{{ stats["in_progress_reviews"] or 0 }}</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>Escalated</h3>
-                <p>{{ reviews | selectattr("status", "equalto", "Escalated") | list | length }}</p>
+                <h3>Overdue Reviews</h3>
+                <p>{{ stats["overdue_reviews"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Avg Governance Score</h3>
+                <p>{{ stats["avg_governance_score"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Avg Maturity Score</h3>
+                <p>{{ stats["avg_maturity_score"] or 0 }}</p>
             </div>
 
         </div>
 
         {% if reviews %}
+
+        <div class="smart-card">
+
+            <h3>Executive Governance Summary</h3>
+
+            <div class="smart-insight">
+                <p>
+                    Total governance reviews:
+                    <strong>{{ stats["total_reviews"] or 0 }}</strong>
+                </p>
+
+                <p>
+                    Average governance score:
+                    <strong>{{ stats["avg_governance_score"] or 0 }}</strong>
+                </p>
+
+                <p>
+                    Average maturity score:
+                    <strong>{{ stats["avg_maturity_score"] or 0 }}</strong>
+                </p>
+
+                <p>
+                    Overdue reviews:
+                    <strong>{{ stats["overdue_reviews"] or 0 }}</strong>
+                </p>
+            </div>
+
+        </div>
 
         <div class="projects-grid">
 
@@ -73,29 +116,23 @@
                         <h3>{{ review["review_name"] }}</h3>
 
                         {% if review["status"] == "Completed" %}
-
-                            <span class="badge badge-green">
-                                Completed
-                            </span>
-
-                        {% elif review["status"] == "Scheduled" %}
-
-                            <span class="badge badge-yellow">
-                                Scheduled
-                            </span>
-
+                            <span class="badge badge-green">Completed</span>
+                        {% elif review["status"] == "Open" %}
+                            <span class="badge badge-yellow">Open</span>
+                        {% elif review["status"] == "In Progress" %}
+                            <span class="badge badge-blue">In Progress</span>
                         {% elif review["status"] == "Escalated" %}
-
-                            <span class="badge badge-red">
-                                Escalated
-                            </span>
-
+                            <span class="badge badge-red">Escalated</span>
                         {% else %}
+                            <span class="badge badge-blue">{{ review["status"] }}</span>
+                        {% endif %}
 
-                            <span class="badge badge-blue">
-                                {{ review["status"] }}
-                            </span>
-
+                        {% if review["risk_trend"] == "Worsening" %}
+                            <span class="badge badge-red">Risk Worsening</span>
+                        {% elif review["risk_trend"] == "Improving" %}
+                            <span class="badge badge-green">Risk Improving</span>
+                        {% else %}
+                            <span class="badge badge-blue">Risk Stable</span>
                         {% endif %}
 
                     </div>
@@ -112,6 +149,11 @@
                     <div class="budget-row">
                         <span>Review Type</span>
                         <strong>{{ review["review_type"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Review Frequency</span>
+                        <strong>{{ review["review_frequency"] or "Monthly" }}</strong>
                     </div>
 
                     <div class="budget-row">
@@ -134,35 +176,68 @@
                         <strong>{{ review["status"] }}</strong>
                     </div>
 
+                    <div class="budget-row">
+                        <span>Governance Score</span>
+                        <strong>{{ review["governance_score"] or 0 }}/100</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Maturity Score</span>
+                        <strong>{{ review["maturity_score"] or 0 }}/100</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Trend</span>
+                        <strong>{{ review["risk_trend"] or "Stable" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Auto Schedule Next</span>
+                        <strong>{{ review["auto_schedule_next"] or "No" }}</strong>
+                    </div>
+
                 </div>
 
                 <div class="smart-insight">
+                    <strong>Executive Summary:</strong>
+                    <br><br>
+                    {{ review["executive_summary"] or "No executive summary recorded." }}
+                </div>
 
+                <div class="smart-insight">
                     <strong>Outcome:</strong>
-
                     <br><br>
-
                     {{ review["outcome"] or "No outcome recorded." }}
-
                 </div>
 
                 <div class="smart-insight">
-
                     <strong>Decision:</strong>
-
                     <br><br>
-
                     {{ review["decision"] or "No decision recorded." }}
-
                 </div>
 
                 <div class="smart-insight">
-
                     <strong>Actions:</strong>
-
                     <br><br>
-
                     {{ review["actions"] or "No actions recorded." }}
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-governance-review/{{ review['id'] }}">
+                        Edit
+                    </a>
+
+                    <a href="/governance-review-history/{{ review['id'] }}">
+                        History
+                    </a>
+
+                    <a
+                        href="/delete-governance-review/{{ review['id'] }}"
+                        onclick="return confirm('Delete this governance review?')"
+                    >
+                        Delete
+                    </a>
 
                 </div>
 

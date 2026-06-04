@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Governance Review History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Governance Review History</h1>
+                <p class="dashboard-subtitle">
+                    View governance review audit trail and status changes.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/governance-reviews" class="btn-primary">
+                    Back to Reviews
+                </a>
+            </div>
+        </div>
+
+        <div class="smart-card">
+            <h3>{{ review["review_name"] }}</h3>
+
+            <p><strong>Status:</strong> {{ review["status"] }}</p>
+            <p><strong>Owner:</strong> {{ review["owner"] or "Not assigned" }}</p>
+            <p><strong>Governance Score:</strong> {{ review["governance_score"] or 0 }}/100</p>
+            <p><strong>Maturity Score:</strong> {{ review["maturity_score"] or 0 }}/100</p>
+            <p><strong>Risk Trend:</strong> {{ review["risk_trend"] or "Stable" }}</p>
+        </div>
+
+        {% if history %}
+
+        <div class="projects-grid">
+
+            {% for item in history %}
+
+            <div class="project-card">
+
+                <h3>{{ item["change_note"] }}</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Old Status</span>
+                        <strong>{{ item["old_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>New Status</span>
+                        <strong>{{ item["new_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Changed At</span>
+                        <strong>{{ item["changed_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No History Yet</h3>
+            <p>No governance review status changes have been recorded yet.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

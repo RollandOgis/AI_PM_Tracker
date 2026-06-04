@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Governance Review</title>
+    <title>Edit Governance Review</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -17,12 +17,10 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
-                <h1>Add Governance Review</h1>
-
+                <h1>Edit Governance Review</h1>
                 <p class="dashboard-subtitle">
-                    Record governance reviews, maturity scoring, trends and executive summaries.
+                    Update review outcomes, maturity scores, trends and executive summary.
                 </p>
             </div>
 
@@ -31,7 +29,6 @@
                     Back to Reviews
                 </a>
             </div>
-
         </div>
 
         <div class="smart-card">
@@ -40,158 +37,100 @@
 
                 <label>Project</label>
                 <select name="project_id" required>
+                    <option value="{{ review['project_id'] }}" selected>
+                        Current Project
+                    </option>
 
                     {% for project in projects %}
-
                     <option value="{{ project['id'] }}">
                         {{ project['name'] }}
                     </option>
-
                     {% endfor %}
-
                 </select>
 
                 <label>Review Name</label>
-
-                <input
-                    type="text"
-                    name="review_name"
-                    placeholder="Monthly Governance Review"
-                    required
-                >
+                <input type="text" name="review_name" value="{{ review['review_name'] }}" required>
 
                 <label>Review Type</label>
-
                 <select name="review_type">
-
+                    <option value="{{ review['review_type'] }}" selected>{{ review['review_type'] }}</option>
                     <option value="Monthly Review">Monthly Review</option>
                     <option value="Stage Gate Review">Stage Gate Review</option>
                     <option value="Portfolio Review">Portfolio Review</option>
                     <option value="Exception Review">Exception Review</option>
                     <option value="Closure Review">Closure Review</option>
-
                 </select>
 
                 <label>Review Frequency</label>
-
                 <select name="review_frequency">
-
+                    <option value="{{ review['review_frequency'] }}" selected>{{ review['review_frequency'] }}</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
                     <option value="Bi-Annual">Bi-Annual</option>
                     <option value="Annual">Annual</option>
-
                 </select>
 
                 <label>Review Date</label>
-
-                <input
-                    type="date"
-                    name="review_date"
-                    required
-                >
+                <input type="date" name="review_date" value="{{ review['review_date'] }}" required>
 
                 <label>Outcome</label>
-
-                <textarea
-                    name="outcome"
-                    rows="4"
-                ></textarea>
+                <textarea name="outcome" rows="4">{{ review['outcome'] }}</textarea>
 
                 <label>Decision</label>
-
-                <textarea
-                    name="decision"
-                    rows="4"
-                ></textarea>
+                <textarea name="decision" rows="4">{{ review['decision'] }}</textarea>
 
                 <label>Actions</label>
-
-                <textarea
-                    name="actions"
-                    rows="4"
-                ></textarea>
+                <textarea name="actions" rows="4">{{ review['actions'] }}</textarea>
 
                 <label>Owner</label>
-
-                <input
-                    type="text"
-                    name="owner"
-                >
+                <input type="text" name="owner" value="{{ review['owner'] }}">
 
                 <label>Governance Score (0-100)</label>
-
-                <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    name="governance_score"
-                    value="75"
-                >
+                <input type="number" min="0" max="100" name="governance_score" value="{{ review['governance_score'] }}">
 
                 <label>Maturity Score (0-100)</label>
-
-                <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    name="maturity_score"
-                    value="75"
-                >
+                <input type="number" min="0" max="100" name="maturity_score" value="{{ review['maturity_score'] }}">
 
                 <label>Risk Trend</label>
-
                 <select name="risk_trend">
-
+                    <option value="{{ review['risk_trend'] }}" selected>{{ review['risk_trend'] }}</option>
                     <option value="Improving">Improving</option>
                     <option value="Stable">Stable</option>
                     <option value="Worsening">Worsening</option>
-
                 </select>
 
                 <label>Executive Summary</label>
-
-                <textarea
-                    name="executive_summary"
-                    rows="5"
-                ></textarea>
+                <textarea name="executive_summary" rows="5">{{ review['executive_summary'] }}</textarea>
 
                 <label>Next Review Date</label>
-
-                <input
-                    type="date"
-                    name="next_review_date"
-                >
+                <input type="date" name="next_review_date" value="{{ review['next_review_date'] }}">
 
                 <label>Auto Schedule Next Review</label>
-
                 <select name="auto_schedule_next">
-
+                    <option value="{{ review['auto_schedule_next'] }}" selected>{{ review['auto_schedule_next'] }}</option>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
-
                 </select>
 
                 <label>Status</label>
-
                 <select name="status">
-
+                    <option value="{{ review['status'] }}" selected>{{ review['status'] }}</option>
                     <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                     <option value="Escalated">Escalated</option>
-
                 </select>
 
                 <br><br>
 
-                <button
-                    type="submit"
-                    class="btn-primary"
-                >
-                    Save Review
+                <button type="submit" class="btn-primary">
+                    Update Review
                 </button>
+
+                <a href="/governance-reviews" class="btn-secondary">
+                    Cancel
+                </a>
 
             </form>
 
