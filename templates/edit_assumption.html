@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Assumption</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Assumption</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id">
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == assumption['project_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Assumption Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    value="{{ assumption['title'] }}"
+                    required
+                >
+
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="5"
+                    required
+                >{{ assumption['description'] }}</textarea>
+
+
+                <label>Assumption Category</label>
+
+                <select name="assumption_category">
+
+                    {% for category in [
+                        'Delivery',
+                        'Schedule',
+                        'Financial',
+                        'Resource',
+                        'Technical',
+                        'Supplier',
+                        'Compliance'
+                    ] %}
+
+                        <option
+                            value="{{ category }}"
+                            {% if assumption['assumption_category'] == category %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ category }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+
+                <label>Owner</label>
+
+                <input
+                    type="text"
+                    name="owner"
+                    value="{{ assumption['owner'] or '' }}"
+                >
+
+
+                <label>Review Date</label>
+
+                <input
+                    type="date"
+                    name="review_date"
+                    value="{{ assumption['review_date'] or '' }}"
+                >
+
+
+                <label>Validation Status</label>
+
+                <select name="validation_status">
+
+                    <option value="Unvalidated"
+                    {% if assumption['validation_status'] == 'Unvalidated' %}
+                    selected
+                    {% endif %}>
+                    Unvalidated
+                    </option>
+
+                    <option value="Validated"
+                    {% if assumption['validation_status'] == 'Validated' %}
+                    selected
+                    {% endif %}>
+                    Validated
+                    </option>
+
+                    <option value="Invalid"
+                    {% if assumption['validation_status'] == 'Invalid' %}
+                    selected
+                    {% endif %}>
+                    Invalid
+                    </option>
+
+                    <option value="Needs Review"
+                    {% if assumption['validation_status'] == 'Needs Review' %}
+                    selected
+                    {% endif %}>
+                    Needs Review
+                    </option>
+
+                </select>
+
+
+                <label>Validation Notes</label>
+
+                <textarea
+                    name="validation_notes"
+                    rows="4"
+                >{{ assumption['validation_notes'] or '' }}</textarea>
+
+
+                <label>Converted To Risk?</label>
+
+                <select name="converted_to_risk">
+
+                    <option value="No"
+                    {% if assumption['converted_to_risk'] == 'No' %}
+                    selected
+                    {% endif %}>
+                    No
+                    </option>
+
+                    <option value="Yes"
+                    {% if assumption['converted_to_risk'] == 'Yes' %}
+                    selected
+                    {% endif %}>
+                    Yes
+                    </option>
+
+                </select>
+
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option value="Open"
+                    {% if assumption['status'] == 'Open' %}
+                    selected
+                    {% endif %}>
+                    Open
+                    </option>
+
+                    <option value="Validated"
+                    {% if assumption['status'] == 'Validated' %}
+                    selected
+                    {% endif %}>
+                    Validated
+                    </option>
+
+                    <option value="Closed"
+                    {% if assumption['status'] == 'Closed' %}
+                    selected
+                    {% endif %}>
+                    Closed
+                    </option>
+
+                    <option value="Invalid"
+                    {% if assumption['status'] == 'Invalid' %}
+                    selected
+                    {% endif %}>
+                    Invalid
+                    </option>
+
+                </select>
+
+
+                <button type="submit" class="btn-primary">
+                    Update Assumption
+                </button>
+
+            </form>
+
+        </div>
+
+
+        {% if assumption_history %}
+
+        <div class="smart-card">
+
+            <h2>Assumption History</h2>
+
+            {% for history in assumption_history %}
+
+                <div class="smart-insight">
+
+                    <strong>
+                        {{ history['action'] }}
+                    </strong>
+
+                    <br>
+
+                    Previous Status:
+                    {{ history['previous_status'] }}
+
+                    →
+
+                    New Status:
+                    {{ history['new_status'] }}
+
+                    <br>
+
+                    Date:
+                    {{ history['created_at'] }}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -20,7 +20,7 @@
             <div>
                 <h1>Add Dependency</h1>
                 <p class="dashboard-subtitle">
-                    Record project dependencies that may affect delivery timelines or milestones.
+                    Record dependency ownership, criticality, timelines and resolution plans.
                 </p>
             </div>
         </div>
@@ -30,11 +30,9 @@
             <form method="POST">
 
                 <label>Project</label>
-                <select name="project_id" required>
+                <select name="project_id">
                     {% for project in projects %}
-                        <option value="{{ project['id'] }}">
-                            {{ project['name'] }}
-                        </option>
+                        <option value="{{ project['id'] }}">{{ project['name'] }}</option>
                     {% endfor %}
                 </select>
 
@@ -44,19 +42,76 @@
                 <label>Description</label>
                 <textarea name="description" rows="5" required></textarea>
 
+                <label>Dependency Category</label>
+                <select name="dependency_category">
+                    <option value="Delivery">Delivery</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Resource">Resource</option>
+                    <option value="Financial">Financial</option>
+                    <option value="Approval">Approval</option>
+                    <option value="External">External</option>
+                </select>
+
+                <label>Criticality</label>
+                <select name="criticality">
+                    <option value="Low">Low</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                </select>
+
+                <label>Dependency Type</label>
+                <select name="dependency_type">
+                    <option value="Internal">Internal</option>
+                    <option value="External">External</option>
+                    <option value="Cross-Project">Cross-Project</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Approval">Approval</option>
+                </select>
+
+                <label>Source Project</label>
+                <select name="source_project_id">
+                    <option value="">No Source Project</option>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">{{ project['name'] }}</option>
+                    {% endfor %}
+                </select>
+
+                <label>Dependent Project</label>
+                <select name="dependent_project_id">
+                    <option value="">No Dependent Project</option>
+                    {% for project in projects %}
+                        <option value="{{ project['id'] }}">{{ project['name'] }}</option>
+                    {% endfor %}
+                </select>
+
                 <label>Owner</label>
                 <input type="text" name="owner">
 
                 <label>Target Date</label>
                 <input type="date" name="target_date">
 
+                <label>Alert Status</label>
+                <select name="alert_status">
+                    <option value="No Alert">No Alert</option>
+                    <option value="Watch">Watch</option>
+                    <option value="Escalate">Escalate</option>
+                    <option value="Critical Alert">Critical Alert</option>
+                </select>
+
                 <label>Status</label>
                 <select name="status">
                     <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Resolved">Resolved</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Closed">Closed</option>
                     <option value="Blocked">Blocked</option>
                 </select>
+
+                <label>Resolution Plan</label>
+                <textarea name="resolution_plan" rows="4"></textarea>
 
                 <button type="submit" class="btn-primary">
                     Save Dependency

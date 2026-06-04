@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Dependency</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="form-container">
+
+            <h1>Edit Dependency</h1>
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id">
+
+                    {% for project in projects %}
+
+                        {% if project['id'] == dependency['project_id'] %}
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+                        {% endif %}
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Dependency Title</label>
+
+                <input
+                    type="text"
+                    name="title"
+                    value="{{ dependency['title'] }}"
+                    required
+                >
+
+                <label>Description</label>
+
+                <textarea
+                    name="description"
+                    rows="5"
+                    required
+                >{{ dependency['description'] }}</textarea>
+
+                <label>Dependency Category</label>
+
+                <select name="dependency_category">
+
+                    {% if dependency['dependency_category'] == 'Delivery' %}
+                        <option value="Delivery" selected>Delivery</option>
+                    {% else %}
+                        <option value="Delivery">Delivery</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_category'] == 'Technical' %}
+                        <option value="Technical" selected>Technical</option>
+                    {% else %}
+                        <option value="Technical">Technical</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_category'] == 'Supplier' %}
+                        <option value="Supplier" selected>Supplier</option>
+                    {% else %}
+                        <option value="Supplier">Supplier</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_category'] == 'Resource' %}
+                        <option value="Resource" selected>Resource</option>
+                    {% else %}
+                        <option value="Resource">Resource</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_category'] == 'Financial' %}
+                        <option value="Financial" selected>Financial</option>
+                    {% else %}
+                        <option value="Financial">Financial</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_category'] == 'Approval' %}
+                        <option value="Approval" selected>Approval</option>
+                    {% else %}
+                        <option value="Approval">Approval</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_category'] == 'External' %}
+                        <option value="External" selected>External</option>
+                    {% else %}
+                        <option value="External">External</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Criticality</label>
+
+                <select name="criticality">
+
+                    {% if dependency['criticality'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if dependency['criticality'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if dependency['criticality'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if dependency['criticality'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Dependency Type</label>
+
+                <select name="dependency_type">
+
+                    {% if dependency['dependency_type'] == 'Internal' %}
+                        <option value="Internal" selected>Internal</option>
+                    {% else %}
+                        <option value="Internal">Internal</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_type'] == 'External' %}
+                        <option value="External" selected>External</option>
+                    {% else %}
+                        <option value="External">External</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_type'] == 'Cross-Project' %}
+                        <option value="Cross-Project" selected>Cross-Project</option>
+                    {% else %}
+                        <option value="Cross-Project">Cross-Project</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_type'] == 'Supplier' %}
+                        <option value="Supplier" selected>Supplier</option>
+                    {% else %}
+                        <option value="Supplier">Supplier</option>
+                    {% endif %}
+
+                    {% if dependency['dependency_type'] == 'Approval' %}
+                        <option value="Approval" selected>Approval</option>
+                    {% else %}
+                        <option value="Approval">Approval</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Source Project</label>
+
+                <select name="source_project_id">
+
+                    <option value="">No Source Project</option>
+
+                    {% for project in projects %}
+
+                        {% if project['id'] == dependency['source_project_id'] %}
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+                        {% endif %}
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Dependent Project</label>
+
+                <select name="dependent_project_id">
+
+                    <option value="">No Dependent Project</option>
+
+                    {% for project in projects %}
+
+                        {% if project['id'] == dependency['dependent_project_id'] %}
+                            <option value="{{ project['id'] }}" selected>
+                                {{ project['name'] }}
+                            </option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">
+                                {{ project['name'] }}
+                            </option>
+                        {% endif %}
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Owner</label>
+
+                <input
+                    type="text"
+                    name="owner"
+                    value="{{ dependency['owner'] or '' }}"
+                >
+
+                <label>Target Date</label>
+
+                <input
+                    type="date"
+                    name="target_date"
+                    value="{{ dependency['target_date'] or '' }}"
+                >
+
+                <label>Alert Status</label>
+
+                <select name="alert_status">
+
+                    {% if dependency['alert_status'] == 'No Alert' %}
+                        <option value="No Alert" selected>No Alert</option>
+                    {% else %}
+                        <option value="No Alert">No Alert</option>
+                    {% endif %}
+
+                    {% if dependency['alert_status'] == 'Watch' %}
+                        <option value="Watch" selected>Watch</option>
+                    {% else %}
+                        <option value="Watch">Watch</option>
+                    {% endif %}
+
+                    {% if dependency['alert_status'] == 'Escalate' %}
+                        <option value="Escalate" selected>Escalate</option>
+                    {% else %}
+                        <option value="Escalate">Escalate</option>
+                    {% endif %}
+
+                    {% if dependency['alert_status'] == 'Critical Alert' %}
+                        <option value="Critical Alert" selected>Critical Alert</option>
+                    {% else %}
+                        <option value="Critical Alert">Critical Alert</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    {% if dependency['status'] == 'Open' %}
+                        <option value="Open" selected>Open</option>
+                    {% else %}
+                        <option value="Open">Open</option>
+                    {% endif %}
+
+                    {% if dependency['status'] == 'In Progress' %}
+                        <option value="In Progress" selected>In Progress</option>
+                    {% else %}
+                        <option value="In Progress">In Progress</option>
+                    {% endif %}
+
+                    {% if dependency['status'] == 'Resolved' %}
+                        <option value="Resolved" selected>Resolved</option>
+                    {% else %}
+                        <option value="Resolved">Resolved</option>
+                    {% endif %}
+
+                    {% if dependency['status'] == 'Completed' %}
+                        <option value="Completed" selected>Completed</option>
+                    {% else %}
+                        <option value="Completed">Completed</option>
+                    {% endif %}
+
+                    {% if dependency['status'] == 'Closed' %}
+                        <option value="Closed" selected>Closed</option>
+                    {% else %}
+                        <option value="Closed">Closed</option>
+                    {% endif %}
+
+                    {% if dependency['status'] == 'Blocked' %}
+                        <option value="Blocked" selected>Blocked</option>
+                    {% else %}
+                        <option value="Blocked">Blocked</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Resolution Plan</label>
+
+                <textarea
+                    name="resolution_plan"
+                    rows="4"
+                >{{ dependency['resolution_plan'] or '' }}</textarea>
+
+                <button type="submit" class="btn-primary">
+                    Update Dependency
+                </button>
+
+            </form>
+
+        </div>
+
+        {% if dependency_history %}
+
+            <div class="smart-card">
+
+                <h2>Dependency History</h2>
+
+                {% for history in dependency_history %}
+
+                    <div class="smart-insight">
+
+                        <strong>{{ history['action'] }}</strong>
+
+                        <br>
+
+                        Previous Status:
+                        {{ history['previous_status'] }}
+
+                        →
+
+                        New Status:
+                        {{ history['new_status'] }}
+
+                        <br>
+
+                        Date:
+                        {{ history['created_at'] }}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

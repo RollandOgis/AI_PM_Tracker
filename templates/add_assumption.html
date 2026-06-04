@@ -20,7 +20,7 @@
             <div>
                 <h1>Add Assumption</h1>
                 <p class="dashboard-subtitle">
-                    Record assumptions that may affect project planning, delivery or governance.
+                    Record, review and validate project assumptions.
                 </p>
             </div>
         </div>
@@ -30,7 +30,8 @@
             <form method="POST">
 
                 <label>Project</label>
-                <select name="project_id" required>
+
+                <select name="project_id">
                     {% for project in projects %}
                         <option value="{{ project['id'] }}">
                             {{ project['name'] }}
@@ -44,10 +45,45 @@
                 <label>Description</label>
                 <textarea name="description" rows="5" required></textarea>
 
+                <label>Assumption Category</label>
+
+                <select name="assumption_category">
+                    <option value="Delivery">Delivery</option>
+                    <option value="Schedule">Schedule</option>
+                    <option value="Financial">Financial</option>
+                    <option value="Resource">Resource</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Compliance">Compliance</option>
+                </select>
+
                 <label>Owner</label>
                 <input type="text" name="owner">
 
+                <label>Review Date</label>
+                <input type="date" name="review_date">
+
+                <label>Validation Status</label>
+
+                <select name="validation_status">
+                    <option value="Unvalidated">Unvalidated</option>
+                    <option value="Validated">Validated</option>
+                    <option value="Invalid">Invalid</option>
+                    <option value="Needs Review">Needs Review</option>
+                </select>
+
+                <label>Validation Notes</label>
+                <textarea name="validation_notes" rows="4"></textarea>
+
+                <label>Converted To Risk?</label>
+
+                <select name="converted_to_risk">
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                </select>
+
                 <label>Status</label>
+
                 <select name="status">
                     <option value="Open">Open</option>
                     <option value="Validated">Validated</option>

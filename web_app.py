@@ -885,6 +885,53 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   ALTER TABLE assumptions
+                       ADD COLUMN IF NOT EXISTS assumption_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE assumptions
+                       ADD COLUMN IF NOT EXISTS review_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE assumptions
+                       ADD COLUMN IF NOT EXISTS validation_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE assumptions
+                       ADD COLUMN IF NOT EXISTS validation_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE assumptions
+                       ADD COLUMN IF NOT EXISTS converted_to_risk TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS assumption_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       assumption_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
     # DEPENDENCIES
 
     cursor.execute("""
@@ -920,6 +967,63 @@ def init_db():
                        created_at
                        TEXT
 
+                   )
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS dependency_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS criticality TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS dependency_type TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS source_project_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS dependent_project_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS alert_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE dependencies
+                       ADD COLUMN IF NOT EXISTS resolution_plan TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS dependency_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       dependency_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       created_at
+                       TEXT
                    )
                    """)
 
@@ -7982,6 +8086,8 @@ def delete_benefit(benefit_id):
 
     return redirect("/benefits")
 
+
+
 @app.route("/team")
 def team():
 
@@ -8336,25 +8442,125 @@ def raid():
         dependencies=dependencies
     )
 
-@app.route("/add-assumption", methods=["GET", "POST"])
-def add_assumption():
+@app.route("/assumptions")
+def assumptions():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    if not has_permission("RAID", "create"):
+    if not has_permission("RAID", "view"):
         return "Access denied"
 
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
+    cursor.execute("""
+        SELECT
+            assumptions.*,
+            projects.name AS project_name
+        FROM assumptions
+        LEFT JOIN projects
+        ON assumptions.project_id = projects.id
+        WHERE assumptions.user_id = %s
+        ORDER BY assumptions.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    assumptions = cursor.fetchall()
+
+    today = date.today()
+
+    enriched_assumptions = []
+
+    for assumption in assumptions:
+
+        review_status = "No Review Date"
+
+        try:
+            if assumption["review_date"]:
+
+                review_date = datetime.strptime(
+                    assumption["review_date"],
+                    "%Y-%m-%d"
+                ).date()
+
+                if review_date < today:
+                    review_status = "Review Overdue"
+                elif review_date == today:
+                    review_status = "Review Due Today"
+                else:
+                    review_status = "Review Scheduled"
+
+        except Exception:
+            review_status = "No Review Date"
+
+        enriched_assumptions.append({
+            "assumption": assumption,
+            "review_status": review_status
+        })
+
+    total_assumptions = len(assumptions)
+    validated_assumptions = len([
+        assumption for assumption in assumptions
+        if assumption["validation_status"] == "Validated"
+    ])
+    overdue_reviews = len([
+        item for item in enriched_assumptions
+        if item["review_status"] == "Review Overdue"
+    ])
+    converted_to_risk = len([
+        assumption for assumption in assumptions
+        if assumption["converted_to_risk"] == "Yes"
+    ])
+
+    conn.close()
+
+    return render_template(
+        "assumptions.html",
+        assumptions=enriched_assumptions,
+        total_assumptions=total_assumptions,
+        validated_assumptions=validated_assumptions,
+        overdue_reviews=overdue_reviews,
+        converted_to_risk=converted_to_risk
     )
+
+
+
+
+@app.route("/edit-assumption/<int:assumption_id>", methods=["GET", "POST"])
+def edit_assumption(assumption_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("RAID", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM assumptions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        assumption_id,
+        session["user_id"]
+    ))
+
+    assumption = cursor.fetchone()
+
+    if not assumption:
+        conn.close()
+        return redirect("/assumptions")
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -8364,39 +8570,223 @@ def add_assumption():
 
     if request.method == "POST":
 
+        previous_status = assumption["status"]
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+
+        assumption_category = request.form.get("assumption_category", "Delivery")
+        review_date = request.form.get("review_date", "")
+        validation_status = request.form.get("validation_status", "Unvalidated")
+        validation_notes = request.form.get("validation_notes", "")
+        converted_to_risk = request.form.get("converted_to_risk", "No")
+
         cursor.execute("""
-            INSERT INTO assumptions
+            UPDATE assumptions
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                owner = %s,
+                status = %s,
+                assumption_category = %s,
+                review_date = %s,
+                validation_status = %s,
+                validation_notes = %s,
+                converted_to_risk = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            project_id if project_id else None,
+            title,
+            description,
+            owner,
+            status,
+            assumption_category,
+            review_date,
+            validation_status,
+            validation_notes,
+            converted_to_risk,
+            assumption_id,
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO assumption_history
             (
+                assumption_id,
                 user_id,
-                project_id,
-                title,
-                description,
-                owner,
-                status,
+                action,
+                previous_status,
+                new_status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s)
         """, (
+            assumption_id,
             session["user_id"],
-            request.form.get("project_id"),
-            request.form.get("title"),
-            request.form.get("description"),
-            request.form.get("owner"),
-            request.form.get("status"),
+            "Assumption updated",
+            previous_status,
+            status,
             str(date.today())
         ))
 
         conn.commit()
         conn.close()
 
-        return redirect("/raid")
+        create_activity(
+            f"{session['username']} updated an assumption"
+        )
+
+        return redirect("/assumptions")
+
+    cursor.execute("""
+        SELECT *
+        FROM assumption_history
+        WHERE assumption_id = %s
+        ORDER BY id DESC
+    """, (
+        assumption_id,
+    ))
+
+    assumption_history = cursor.fetchall()
 
     conn.close()
 
     return render_template(
-        "add_assumption.html",
-        projects=projects
+        "edit_assumption.html",
+        assumption=assumption,
+        projects=projects,
+        assumption_history=assumption_history
     )
+
+
+@app.route("/delete-assumption/<int:assumption_id>")
+def delete_assumption(assumption_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("RAID", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM assumption_history
+        WHERE assumption_id = %s
+    """, (
+        assumption_id,
+    ))
+
+    cursor.execute("""
+        DELETE FROM assumptions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        assumption_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted an assumption"
+    )
+
+    return redirect("/assumptions")
+
+
+@app.route("/dependencies")
+def dependencies():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("RAID", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT
+            dependencies.*,
+            projects.name AS project_name
+        FROM dependencies
+        LEFT JOIN projects
+        ON dependencies.project_id = projects.id
+        WHERE dependencies.user_id = %s
+        ORDER BY dependencies.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    dependencies = cursor.fetchall()
+
+    today = date.today()
+    enriched_dependencies = []
+
+    for dependency in dependencies:
+
+        timeline_status = "No Target Date"
+
+        try:
+            if dependency["target_date"]:
+
+                target_date = datetime.strptime(
+                    dependency["target_date"],
+                    "%Y-%m-%d"
+                ).date()
+
+                if dependency["status"] in ["Completed", "Closed"]:
+                    timeline_status = "Completed"
+                elif target_date < today:
+                    timeline_status = "Overdue"
+                elif target_date == today:
+                    timeline_status = "Due Today"
+                else:
+                    timeline_status = "On Track"
+
+        except Exception:
+            timeline_status = "No Target Date"
+
+        enriched_dependencies.append({
+            "dependency": dependency,
+            "timeline_status": timeline_status
+        })
+
+    total_dependencies = len(dependencies)
+    critical_dependencies = len([
+        dependency for dependency in dependencies
+        if dependency["criticality"] == "Critical"
+    ])
+    overdue_dependencies = len([
+        item for item in enriched_dependencies
+        if item["timeline_status"] == "Overdue"
+    ])
+    blocked_dependencies = len([
+        dependency for dependency in dependencies
+        if dependency["status"] == "Blocked"
+    ])
+
+    conn.close()
+
+    return render_template(
+        "dependencies.html",
+        dependencies=enriched_dependencies,
+        total_dependencies=total_dependencies,
+        critical_dependencies=critical_dependencies,
+        overdue_dependencies=overdue_dependencies,
+        blocked_dependencies=blocked_dependencies
+    )
+
+
 @app.route("/add-dependency", methods=["GET", "POST"])
 def add_dependency():
 
@@ -8407,15 +8797,13 @@ def add_dependency():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
         ORDER BY name ASC
     """, (
         session["user_id"],
@@ -8424,6 +8812,21 @@ def add_dependency():
     projects = cursor.fetchall()
 
     if request.method == "POST":
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+        target_date = request.form.get("target_date", "")
+
+        dependency_category = request.form.get("dependency_category", "Delivery")
+        criticality = request.form.get("criticality", "Medium")
+        dependency_type = request.form.get("dependency_type", "Internal")
+        source_project_id = request.form.get("source_project_id")
+        dependent_project_id = request.form.get("dependent_project_id")
+        alert_status = request.form.get("alert_status", "No Alert")
+        resolution_plan = request.form.get("resolution_plan", "")
 
         cursor.execute("""
             INSERT INTO dependencies
@@ -8435,24 +8838,65 @@ def add_dependency():
                 owner,
                 status,
                 target_date,
+                dependency_category,
+                criticality,
+                dependency_type,
+                source_project_id,
+                dependent_project_id,
+                alert_status,
+                resolution_plan,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
-            request.form.get("project_id"),
-            request.form.get("title"),
-            request.form.get("description"),
-            request.form.get("owner"),
-            request.form.get("status"),
-            request.form.get("target_date"),
+            project_id if project_id else None,
+            title,
+            description,
+            owner,
+            status,
+            target_date,
+            dependency_category,
+            criticality,
+            dependency_type,
+            source_project_id if source_project_id else None,
+            dependent_project_id if dependent_project_id else None,
+            alert_status,
+            resolution_plan,
+            str(date.today())
+        ))
+
+        dependency_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO dependency_history
+            (
+                dependency_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            dependency_id,
+            session["user_id"],
+            "Dependency created",
+            "",
+            status,
             str(date.today())
         ))
 
         conn.commit()
         conn.close()
 
-        return redirect("/raid")
+        create_activity(
+            f"{session['username']} added a dependency"
+        )
+
+        return redirect("/dependencies")
 
     conn.close()
 
@@ -8460,6 +8904,189 @@ def add_dependency():
         "add_dependency.html",
         projects=projects
     )
+
+
+@app.route("/edit-dependency/<int:dependency_id>", methods=["GET", "POST"])
+def edit_dependency(dependency_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("RAID", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM dependencies
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        dependency_id,
+        session["user_id"]
+    ))
+
+    dependency = cursor.fetchone()
+
+    if not dependency:
+        conn.close()
+        return redirect("/dependencies")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        previous_status = dependency["status"]
+
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+        target_date = request.form.get("target_date", "")
+
+        dependency_category = request.form.get("dependency_category", "Delivery")
+        criticality = request.form.get("criticality", "Medium")
+        dependency_type = request.form.get("dependency_type", "Internal")
+        source_project_id = request.form.get("source_project_id")
+        dependent_project_id = request.form.get("dependent_project_id")
+        alert_status = request.form.get("alert_status", "No Alert")
+        resolution_plan = request.form.get("resolution_plan", "")
+
+        cursor.execute("""
+            UPDATE dependencies
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                owner = %s,
+                status = %s,
+                target_date = %s,
+                dependency_category = %s,
+                criticality = %s,
+                dependency_type = %s,
+                source_project_id = %s,
+                dependent_project_id = %s,
+                alert_status = %s,
+                resolution_plan = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            project_id if project_id else None,
+            title,
+            description,
+            owner,
+            status,
+            target_date,
+            dependency_category,
+            criticality,
+            dependency_type,
+            source_project_id if source_project_id else None,
+            dependent_project_id if dependent_project_id else None,
+            alert_status,
+            resolution_plan,
+            dependency_id,
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO dependency_history
+            (
+                dependency_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            dependency_id,
+            session["user_id"],
+            "Dependency updated",
+            previous_status,
+            status,
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        create_activity(
+            f"{session['username']} updated a dependency"
+        )
+
+        return redirect("/dependencies")
+
+    cursor.execute("""
+        SELECT *
+        FROM dependency_history
+        WHERE dependency_id = %s
+        ORDER BY id DESC
+    """, (
+        dependency_id,
+    ))
+
+    dependency_history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "edit_dependency.html",
+        dependency=dependency,
+        projects=projects,
+        dependency_history=dependency_history
+    )
+
+
+@app.route("/delete-dependency/<int:dependency_id>")
+def delete_dependency(dependency_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("RAID", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM dependency_history
+        WHERE dependency_id = %s
+    """, (
+        dependency_id,
+    ))
+
+    cursor.execute("""
+        DELETE FROM dependencies
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        dependency_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    create_activity(
+        f"{session['username']} deleted a dependency"
+    )
+
+    return redirect("/dependencies")
 
 @app.route("/team-utilisation")
 def team_utilisation():

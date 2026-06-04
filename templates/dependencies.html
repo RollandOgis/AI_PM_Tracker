@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Register</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Dependency Register</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage delivery dependencies, critical paths and cross-project impacts.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-dependency" class="btn-primary">
+                    + Add Dependency
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Dependencies</h3>
+                <p>{{ total_dependencies }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Critical</h3>
+                <p>{{ critical_dependencies }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Overdue</h3>
+                <p>{{ overdue_dependencies }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Blocked</h3>
+                <p>{{ blocked_dependencies }}</p>
+            </div>
+
+        </div>
+
+
+        {% if dependencies %}
+
+            <div class="projects-grid">
+
+                {% for item in dependencies %}
+
+                    {% set dependency = item["dependency"] %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+
+                                <h3>
+                                    {{ dependency["title"] }}
+                                </h3>
+
+                                {% if dependency["criticality"] == "Critical" %}
+
+                                    <span class="badge badge-red">
+                                        Critical
+                                    </span>
+
+                                {% elif dependency["criticality"] == "High" %}
+
+                                    <span class="badge badge-yellow">
+                                        High
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-green">
+                                        {{ dependency["criticality"] or "Medium" }}
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="smart-insight">
+                            {{ dependency["description"] }}
+                        </div>
+
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Project</span>
+                                <strong>
+                                    {{ dependency["project_name"] or "No Project" }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Category</span>
+                                <strong>
+                                    {{ dependency["dependency_category"] or "Delivery" }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Type</span>
+                                <strong>
+                                    {{ dependency["dependency_type"] or "Internal" }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Owner</span>
+                                <strong>
+                                    {{ dependency["owner"] or "Unassigned" }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>
+                                    {{ dependency["status"] }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Timeline</span>
+                                <strong>
+                                    {{ item["timeline_status"] }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Target Date</span>
+                                <strong>
+                                    {{ dependency["target_date"] or "Not Set" }}
+                                </strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Alert Status</span>
+                                <strong>
+                                    {{ dependency["alert_status"] or "No Alert" }}
+                                </strong>
+                            </div>
+
+                        </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Resolution Plan</strong>
+
+                            <br><br>
+
+                            {{ dependency["resolution_plan"] or "No resolution plan recorded." }}
+
+                        </div>
+
+
+                        <div class="project-actions">
+
+                            <a href="/edit-dependency/{{ dependency['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-dependency/{{ dependency['id'] }}"
+                                onclick="return confirm('Delete this dependency?')"
+                            >
+                                Delete
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+
+                <h3>No Dependencies Added</h3>
+
+                <p>
+                    Add dependencies to begin dependency management.
+                </p>
+
+                <a href="/add-dependency" class="btn-primary">
+                    Add First Dependency
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

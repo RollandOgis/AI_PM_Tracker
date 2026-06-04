@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assumption Register</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Assumption Register</h1>
+                <p class="dashboard-subtitle">
+                    Track planning assumptions, review dates and validation status.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/add-assumption" class="btn-primary">
+                    + Add Assumption
+                </a>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Assumptions</h3>
+                <p>{{ total_assumptions }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Validated</h3>
+                <p>{{ validated_assumptions }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Overdue Reviews</h3>
+                <p>{{ overdue_reviews }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Converted To Risk</h3>
+                <p>{{ converted_to_risk }}</p>
+            </div>
+
+        </div>
+
+        {% if assumptions %}
+
+            <div class="projects-grid">
+
+                {% for item in assumptions %}
+
+                    {% set assumption = item["assumption"] %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+                            <div>
+                                <h3>{{ assumption["title"] }}</h3>
+
+                                {% if item["review_status"] == "Review Overdue" %}
+                                    <span class="badge badge-red">Review Overdue</span>
+                                {% elif assumption["validation_status"] == "Validated" %}
+                                    <span class="badge badge-green">Validated</span>
+                                {% else %}
+                                    <span class="badge badge-yellow">
+                                        {{ assumption["validation_status"] or "Unvalidated" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="smart-insight">
+                            {{ assumption["description"] }}
+                        </div>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Project</span>
+                                <strong>{{ assumption["project_name"] or "No Project" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Category</span>
+                                <strong>{{ assumption["assumption_category"] or "Not Categorised" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Owner</span>
+                                <strong>{{ assumption["owner"] or "Unassigned" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Status</span>
+                                <strong>{{ assumption["status"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Review Date</span>
+                                <strong>{{ assumption["review_date"] or "No Review Date" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Review Status</span>
+                                <strong>{{ item["review_status"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Validation Status</span>
+                                <strong>{{ assumption["validation_status"] or "Unvalidated" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Converted To Risk</span>
+                                <strong>{{ assumption["converted_to_risk"] or "No" }}</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="smart-insight">
+                            <strong>Validation Notes:</strong>
+                            <br><br>
+                            {{ assumption["validation_notes"] or "No validation notes recorded." }}
+                        </div>
+
+                        <div class="project-actions">
+                            <a href="/edit-assumption/{{ assumption['id'] }}">
+                                Edit
+                            </a>
+
+                            <a
+                                href="/delete-assumption/{{ assumption['id'] }}"
+                                onclick="return confirm('Delete this assumption?')"
+                            >
+                                Delete
+                            </a>
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+                <h3>No Assumptions Added</h3>
+                <p>Add assumptions to begin RAID governance tracking.</p>
+
+                <a href="/add-assumption" class="btn-primary">
+                    Add First Assumption
+                </a>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
