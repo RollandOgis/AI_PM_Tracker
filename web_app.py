@@ -7059,13 +7059,33 @@ def risks():
             "risk_trend": risk_trend
         })
 
+    total_risks = len(risks)
+
+    open_risks = len([
+        risk for risk in risks
+        if risk["status"] not in ["Closed", "Resolved"]
+    ])
+
+    critical_risks = len([
+        risk for risk in risks
+        if (risk["severity_score"] or 0) >= 12
+    ])
+
+    escalated_risks = len([
+        risk for risk in risks
+        if risk["escalation_status"] == "Escalated"
+    ])
+
     conn.close()
 
     return render_template(
         "risks.html",
-        risks=enriched_risks
+        risks=enriched_risks,
+        total_risks=total_risks,
+        open_risks=open_risks,
+        critical_risks=critical_risks,
+        escalated_risks=escalated_risks
     )
-
 
 @app.route("/add-risk", methods=["GET", "POST"])
 def add_risk():
