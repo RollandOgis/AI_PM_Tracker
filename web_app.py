@@ -1331,6 +1331,67 @@ def init_db():
                    )
                    """)
 
+    # Action Log v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'General'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS reminder_date DATE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS escalation_level TEXT DEFAULT 'None'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS recurring TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS governance_review_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS completed_date DATE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE actions
+                       ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS action_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       action_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       change_note
+                       TEXT,
+                       old_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       changed_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Budgets table
     cursor.execute("""
                    CREATE TABLE IF NOT EXISTS budgets
@@ -10121,7 +10182,6 @@ def add_decision():
         projects=projects
     )
 
-
 @app.route("/actions")
 def actions():
 
@@ -10140,18 +10200,38 @@ def actions():
     cursor.execute("""
         SELECT
             actions.*,
-            projects.name AS project_name
+            projects.name AS project_name,
+
+            CASE
+                WHEN actions.status != 'Completed'
+                AND actions.due_date < CURRENT_DATE
+                THEN 'Yes'
+                ELSE 'No'
+            END AS is_overdue,
+
+            CASE
+                WHEN actions.status != 'Completed'
+                AND actions.reminder_date IS NOT NULL
+                AND actions.reminder_date <= CURRENT_DATE
+                THEN 'Yes'
+                ELSE 'No'
+            END AS reminder_due
+
         FROM actions
         LEFT JOIN projects
         ON actions.project_id = projects.id
+
         WHERE actions.user_id = %s
+
         ORDER BY
             CASE
-                WHEN actions.status = 'Completed' THEN 4
-                WHEN actions.status = 'Blocked' THEN 1
-                WHEN actions.priority = 'High' THEN 2
-                WHEN actions.status = 'In Progress' THEN 3
-                ELSE 5
+                WHEN actions.status = 'Completed' THEN 6
+                WHEN actions.due_date < CURRENT_DATE THEN 1
+                WHEN actions.escalation_level = 'High' THEN 2
+                WHEN actions.status = 'Blocked' THEN 3
+                WHEN actions.priority = 'High' THEN 4
+                WHEN actions.status = 'In Progress' THEN 5
+                ELSE 7
             END,
             actions.due_date ASC
     """, (
@@ -10160,11 +10240,87 @@ def actions():
 
     actions = cursor.fetchall()
 
+    for action in actions:
+
+        if (
+                action["status"] != "Completed"
+                and action["due_date"]
+                and action["is_overdue"] == "Yes"
+                and action["escalation_level"] == "None"
+        ):
+            cursor.execute("""
+                           UPDATE actions
+                           SET escalation_level = 'Medium'
+                           WHERE id = %s
+                             AND user_id = %s
+                           """, (
+                               action["id"],
+                               session["user_id"]
+                           ))
+
+            cursor.execute("""
+                           INSERT INTO action_history
+                           (action_id,
+                            user_id,
+                            change_note,
+                            old_status,
+                            new_status)
+                           VALUES (%s, %s, %s, %s, %s)
+                           """, (
+                               action["id"],
+                               session["user_id"],
+                               "Action automatically escalated because it is overdue",
+                               action["status"],
+                               action["status"]
+                           ))
+
+    conn.commit()
+
+    cursor.execute("""
+        SELECT
+            COUNT(*) AS total_actions,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Completed'
+            ) AS completed_actions,
+
+            COUNT(*) FILTER (
+                WHERE status != 'Completed'
+                AND due_date < CURRENT_DATE
+            ) AS overdue_actions,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Blocked'
+            ) AS blocked_actions,
+
+            COUNT(*) FILTER (
+                WHERE priority = 'High'
+            ) AS high_priority_actions,
+
+            COUNT(*) FILTER (
+                WHERE reminder_date IS NOT NULL
+                AND reminder_date <= CURRENT_DATE
+                AND status != 'Completed'
+            ) AS reminders_due,
+
+            COUNT(*) FILTER (
+                WHERE escalation_level != 'None'
+            ) AS escalated_actions
+
+        FROM actions
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    stats = cursor.fetchone()
+
     conn.close()
 
     return render_template(
         "actions.html",
-        actions=actions
+        actions=actions,
+        stats=stats
     )
 
 
@@ -10207,9 +10363,13 @@ def add_action():
                 priority,
                 status,
                 due_date,
+                category,
+                reminder_date,
+                escalation_level,
+                recurring,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -10219,7 +10379,10 @@ def add_action():
             request.form.get("priority"),
             request.form.get("status"),
             request.form.get("due_date"),
-            str(date.today())
+            request.form.get("category"),
+            request.form.get("reminder_date") or None,
+            request.form.get("escalation_level"),
+            request.form.get("recurring")
         ))
 
         conn.commit()
@@ -10232,6 +10395,211 @@ def add_action():
     return render_template(
         "add_action.html",
         projects=projects
+    )
+
+@app.route("/edit-action/<int:action_id>", methods=["GET", "POST"])
+def edit_action(action_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Actions", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM actions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        action_id,
+        session["user_id"]
+    ))
+
+    action = cursor.fetchone()
+
+    if not action:
+        conn.close()
+        return "Action not found"
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        old_status = action["status"]
+        new_status = request.form.get("status")
+
+        cursor.execute("""
+            UPDATE actions
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                owner = %s,
+                priority = %s,
+                status = %s,
+                due_date = %s,
+                category = %s,
+                reminder_date = %s,
+                escalation_level = %s,
+                recurring = %s,
+                completed_date = CASE
+                    WHEN %s = 'Completed' THEN CURRENT_DATE
+                    ELSE completed_date
+                END
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("description"),
+            request.form.get("owner"),
+            request.form.get("priority"),
+            new_status,
+            request.form.get("due_date"),
+            request.form.get("category"),
+            request.form.get("reminder_date") or None,
+            request.form.get("escalation_level"),
+            request.form.get("recurring"),
+            new_status,
+            action_id,
+            session["user_id"]
+        ))
+
+        if old_status != new_status:
+            cursor.execute("""
+                INSERT INTO action_history
+                (
+                    action_id,
+                    user_id,
+                    change_note,
+                    old_status,
+                    new_status
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                action_id,
+                session["user_id"],
+                "Action status changed",
+                old_status,
+                new_status
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/actions")
+
+    conn.close()
+
+    return render_template(
+        "edit_action.html",
+        action=action,
+        projects=projects
+    )
+
+
+@app.route("/delete-action/<int:action_id>")
+def delete_action(action_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Actions", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM action_history
+        WHERE action_id = %s
+        AND user_id = %s
+    """, (
+        action_id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
+        DELETE FROM actions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        action_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/actions")
+
+@app.route("/action-history/<int:action_id>")
+def action_history(action_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Actions", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM actions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        action_id,
+        session["user_id"]
+    ))
+
+    action = cursor.fetchone()
+
+    if not action:
+        conn.close()
+        return "Action not found"
+
+    cursor.execute("""
+        SELECT *
+        FROM action_history
+        WHERE action_id = %s
+        AND user_id = %s
+        ORDER BY changed_at DESC
+    """, (
+        action_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "action_history.html",
+        action=action,
+        history=history
     )
 
 

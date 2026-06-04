@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Action</title>
+    <title>Edit Action</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -18,9 +18,9 @@
 
         <div class="dashboard-header">
             <div>
-                <h1>Add Action</h1>
+                <h1>Edit Action</h1>
                 <p class="dashboard-subtitle">
-                    Track project actions, owners, reminders, escalation and recurring actions.
+                    Update action details, ownership, priority, reminders and escalation.
                 </p>
             </div>
         </div>
@@ -31,6 +31,10 @@
 
                 <label>Project</label>
                 <select name="project_id" required>
+                    <option value="{{ action['project_id'] }}" selected>
+                        Current Project
+                    </option>
+
                     {% for project in projects %}
                         <option value="{{ project['id'] }}">
                             {{ project['name'] }}
@@ -39,16 +43,17 @@
                 </select>
 
                 <label>Action Title</label>
-                <input type="text" name="title" required>
+                <input type="text" name="title" value="{{ action['title'] }}" required>
 
                 <label>Description</label>
-                <textarea name="description" rows="5"></textarea>
+                <textarea name="description" rows="5">{{ action['description'] }}</textarea>
 
                 <label>Owner</label>
-                <input type="text" name="owner">
+                <input type="text" name="owner" value="{{ action['owner'] }}">
 
                 <label>Category</label>
                 <select name="category">
+                    <option value="{{ action['category'] }}" selected>{{ action['category'] }}</option>
                     <option value="General">General</option>
                     <option value="Governance">Governance</option>
                     <option value="Risk">Risk</option>
@@ -64,44 +69,52 @@
 
                 <label>Priority</label>
                 <select name="priority">
+                    <option value="{{ action['priority'] }}" selected>{{ action['priority'] }}</option>
                     <option value="High">High</option>
-                    <option value="Medium" selected>Medium</option>
+                    <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                 </select>
 
                 <label>Status</label>
                 <select name="status">
-                    <option value="Open" selected>Open</option>
+                    <option value="{{ action['status'] }}" selected>{{ action['status'] }}</option>
+                    <option value="Open">Open</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                     <option value="Blocked">Blocked</option>
                 </select>
 
                 <label>Due Date</label>
-                <input type="date" name="due_date">
+                <input type="date" name="due_date" value="{{ action['due_date'] }}">
 
                 <label>Reminder Date</label>
-                <input type="date" name="reminder_date">
+                <input type="date" name="reminder_date" value="{{ action['reminder_date'] }}">
 
                 <label>Escalation Level</label>
                 <select name="escalation_level">
-                    <option value="None" selected>None</option>
-                    <option value="Low">Low Escalation</option>
-                    <option value="Medium">Medium Escalation</option>
-                    <option value="High">High Escalation</option>
+                    <option value="{{ action['escalation_level'] }}" selected>{{ action['escalation_level'] }}</option>
+                    <option value="None">None</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
                 </select>
 
                 <label>Recurring Action</label>
                 <select name="recurring">
-                    <option value="No" selected>No</option>
+                    <option value="{{ action['recurring'] }}" selected>{{ action['recurring'] }}</option>
+                    <option value="No">No</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
                 </select>
 
                 <button type="submit" class="btn-primary">
-                    Save Action
+                    Update Action
                 </button>
+
+                <a href="/actions" class="btn-secondary">
+                    Cancel
+                </a>
 
             </form>
 

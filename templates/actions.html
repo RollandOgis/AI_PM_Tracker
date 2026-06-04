@@ -19,21 +19,17 @@
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Action Log</h1>
 
                 <p class="dashboard-subtitle">
-                    Track project actions, ownership and completion status.
+                    Track project actions, ownership, reminders, escalation and overdue status.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-action" class="btn-primary">
                     + Add Action
                 </a>
-
             </div>
 
         </div>
@@ -42,28 +38,32 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Actions</h3>
-                <p>{{ actions|length }}</p>
+                <p>{{ stats["total_actions"] or 0 }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Completed</h3>
-                <p>
-                    {{ actions | selectattr("status", "equalto", "Completed") | list | length }}
-                </p>
-            </div>
-
-            <div class="stat-card amber-card">
-                <h3>In Progress</h3>
-                <p>
-                    {{ actions | selectattr("status", "equalto", "In Progress") | list | length }}
-                </p>
+                <p>{{ stats["completed_actions"] or 0 }}</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>Open</h3>
-                <p>
-                    {{ actions | selectattr("status", "equalto", "Open") | list | length }}
-                </p>
+                <h3>Overdue</h3>
+                <p>{{ stats["overdue_actions"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Reminders Due</h3>
+                <p>{{ stats["reminders_due"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Escalated</h3>
+                <p>{{ stats["escalated_actions"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Blocked</h3>
+                <p>{{ stats["blocked_actions"] or 0 }}</p>
             </div>
 
         </div>
@@ -81,12 +81,17 @@
                 <strong>{{ top_action["title"] }}</strong>
 
                 <p>Owner: {{ top_action["owner"] }}</p>
-
                 <p>Priority: {{ top_action["priority"] }}</p>
-
                 <p>Due Date: {{ top_action["due_date"] }}</p>
-
                 <p>Status: {{ top_action["status"] }}</p>
+
+                {% if top_action["is_overdue"] == "Yes" %}
+                    <p><strong>Alert:</strong> This action is overdue.</p>
+                {% endif %}
+
+                {% if top_action["reminder_due"] == "Yes" %}
+                    <p><strong>Reminder:</strong> Follow-up is due.</p>
+                {% endif %}
 
             </div>
 
@@ -104,12 +109,24 @@
 
                         <h3>{{ action["title"] }}</h3>
 
+                        {% if action["is_overdue"] == "Yes" %}
+                            <span class="badge badge-red">Overdue</span>
+                        {% endif %}
+
                         {% if action["priority"] == "High" %}
                             <span class="badge badge-red">High Priority</span>
                         {% elif action["priority"] == "Medium" %}
                             <span class="badge badge-yellow">Medium Priority</span>
                         {% else %}
                             <span class="badge badge-green">Low Priority</span>
+                        {% endif %}
+
+                        {% if action["reminder_due"] == "Yes" %}
+                            <span class="badge badge-yellow">Reminder Due</span>
+                        {% endif %}
+
+                        {% if action["escalation_level"] != "None" %}
+                            <span class="badge badge-red">Escalated</span>
                         {% endif %}
 
                     </div>
@@ -129,6 +146,11 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ action["category"] or "General" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Priority</span>
                         <strong>{{ action["priority"] }}</strong>
                     </div>
@@ -143,16 +165,50 @@
                         <strong>{{ action["due_date"] }}</strong>
                     </div>
 
+                    <div class="budget-row">
+                        <span>Reminder Date</span>
+                        <strong>{{ action["reminder_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Escalation</span>
+                        <strong>{{ action["escalation_level"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Recurring</span>
+                        <strong>{{ action["recurring"] or "No" }}</strong>
+                    </div>
+
+                    {% if action["completed_date"] %}
+                    <div class="budget-row">
+                        <span>Completed Date</span>
+                        <strong>{{ action["completed_date"] }}</strong>
+                    </div>
+                    {% endif %}
+
                 </div>
 
                 <div class="smart-insight">
-
                     <strong>Description:</strong>
-
                     <br><br>
-
                     {{ action["description"] }}
+                </div>
 
+                <br>
+
+                <div class="dashboard-actions">
+                    <a href="/edit-action/{{ action['id'] }}" class="btn-secondary">
+                        Edit
+                    </a>
+
+                    <a href="/action-history/{{ action['id'] }}" class="btn-secondary">
+                        History
+                    </a>
+
+                    <a href="/delete-action/{{ action['id'] }}" class="btn-danger">
+                        Delete
+                    </a>
                 </div>
 
             </div>

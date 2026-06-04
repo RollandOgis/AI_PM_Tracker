@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Action History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Action History</h1>
+                <p class="dashboard-subtitle">
+                    Track changes made to this action.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/actions" class="btn-secondary">
+                    Back to Actions
+                </a>
+            </div>
+        </div>
+
+        <div class="smart-card">
+            <h3>{{ action["title"] }}</h3>
+
+            <p><strong>Owner:</strong> {{ action["owner"] }}</p>
+            <p><strong>Status:</strong> {{ action["status"] }}</p>
+            <p><strong>Priority:</strong> {{ action["priority"] }}</p>
+            <p><strong>Due Date:</strong> {{ action["due_date"] }}</p>
+        </div>
+
+        {% if history %}
+
+            <div class="projects-grid">
+
+                {% for item in history %}
+
+                <div class="project-card">
+
+                    <h3>{{ item["change_note"] }}</h3>
+
+                    <div class="budget-section">
+
+                        <div class="budget-row">
+                            <span>Old Status</span>
+                            <strong>{{ item["old_status"] }}</strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>New Status</span>
+                            <strong>{{ item["new_status"] }}</strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Changed At</span>
+                            <strong>{{ item["changed_at"] }}</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-box">
+                <h3>No History Yet</h3>
+                <p>This action does not have any recorded status changes yet.</p>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
