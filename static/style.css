@@ -1929,7 +1929,7 @@ body.dark-ready {
 /* FINAL KANBAN OVERRIDE */
 .kanban-board {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(280px, 1fr)) !important;
+    grid-template-columns: repeat(4, minmax(280px, 1fr)) !important;
     gap: 24px !important;
     width: 100% !important;
     align-items: start !important;
