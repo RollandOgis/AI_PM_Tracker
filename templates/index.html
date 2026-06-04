@@ -325,6 +325,39 @@
 {% endif %}
                     </div>
 
+                    <div class="showcase-info-box">
+    <span>Health Score</span>
+
+    {% if item["project_health_score"] >= 80 %}
+        <strong class="health-good">
+            {{ item["project_health_score"] }}%
+        </strong>
+    {% elif item["project_health_score"] >= 50 %}
+        <strong class="health-neutral">
+            {{ item["project_health_score"] }}%
+        </strong>
+    {% else %}
+        <strong class="health-warning">
+            {{ item["project_health_score"] }}%
+        </strong>
+    {% endif %}
+</div>
+
+
+<div class="showcase-info-box">
+    <span>Trend</span>
+
+    <strong>
+        {% if item["trend"] == "Improving" %}
+            ▲ Improving
+        {% elif item["trend"] == "Declining" %}
+            ▼ Declining
+        {% else %}
+            ► Stable
+        {% endif %}
+    </strong>
+</div>
+
                     <div class="showcase-recommendation">
                         <span>AI Recommendation</span>
 
@@ -334,6 +367,16 @@
                             {% endfor %}
                         </ul>
                     </div>
+
+                    <div class="showcase-recommendation">
+    <span>Recovery Plan</span>
+
+    <ul>
+        {% for action in item["recovery_plan"] %}
+            <li>{{ action }}</li>
+        {% endfor %}
+    </ul>
+</div>
 
                     <div class="showcase-budget-grid">
 

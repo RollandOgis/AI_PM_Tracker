@@ -1175,6 +1175,28 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS project_health_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       project_id
+                       INTEGER,
+                       health_score
+                       INTEGER,
+                       risk_score
+                       INTEGER,
+                       budget_usage_percent
+                       INTEGER,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+
+
     # Audit Logs Table
 
     cursor.execute("""
@@ -2327,6 +2349,88 @@ def home():
         else:
             risk_label = "Low Risk"
 
+        project_health_score = 100
+
+        project_health_score -= min(project_overdue_tasks * 15, 30)
+        project_health_score -= min(project_blocked_tasks * 15, 30)
+
+        if budget_used_percent > 100:
+            project_health_score -= 25
+        elif budget_used_percent > 80:
+            project_health_score -= 10
+
+        if completion < 30 and project["status"] != "Planning":
+            project_health_score -= 20
+
+        project_health_score = max(0, min(100, project_health_score))
+
+        cursor.execute("""
+                       INSERT INTO project_health_history
+                       (project_id,
+                        health_score,
+                        risk_score,
+                        budget_usage_percent,
+                        created_at)
+                       VALUES (%s, %s, %s, %s, %s)
+                       """, (
+                           project["id"],
+                           project_health_score,
+                           risk_score,
+                           budget_used_percent,
+                           str(date.today())
+                       ))
+
+        cursor.execute("""
+                       SELECT health_score
+                       FROM project_health_history
+                       WHERE project_id = %s
+                       ORDER BY id DESC LIMIT 2
+                       """, (
+                           project["id"],
+                       ))
+
+        health_history = cursor.fetchall()
+
+        trend = "Stable"
+
+        if len(health_history) >= 2:
+
+            latest_score = health_history[0]["health_score"]
+            previous_score = health_history[1]["health_score"]
+
+            if latest_score > previous_score:
+                trend = "Improving"
+
+            elif latest_score < previous_score:
+                trend = "Declining"
+
+        recovery_plan = []
+
+        if project_overdue_tasks > 0:
+            recovery_plan.append(
+                f"Resolve {project_overdue_tasks} overdue task(s)"
+            )
+
+        if project_blocked_tasks > 0:
+            recovery_plan.append(
+                f"Unblock {project_blocked_tasks} blocked task(s)"
+            )
+
+        if budget_used_percent > 100:
+            recovery_plan.append(
+                "Reduce project spending"
+            )
+
+        if completion < 50:
+            recovery_plan.append(
+                "Increase delivery velocity"
+            )
+
+        if len(recovery_plan) == 0:
+            recovery_plan.append(
+                "No recovery actions required"
+            )
+
         ai_recommendation = []
 
         if project_overdue_tasks >= 3:
@@ -2411,6 +2515,9 @@ def home():
             "is_archived": project["is_archived"],
             "risk_score": risk_score,
             "risk_label": risk_label,
+            "project_health_score": project_health_score,
+            "trend": trend,
+            "recovery_plan": recovery_plan,
             "ai_recommendation": ai_recommendation
         })
 
