@@ -433,6 +433,82 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS risk_appetite TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS residual_probability TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS residual_impact TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS residual_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS target_probability TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS target_impact TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS target_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS escalation_level TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE risks
+                       ADD COLUMN IF NOT EXISTS escalation_required BOOLEAN DEFAULT FALSE
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS risk_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       risk_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       severity_score
+                       INTEGER,
+                       residual_score
+                       INTEGER,
+                       target_score
+                       INTEGER,
+                       status
+                       TEXT,
+                       action
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     # ISSUES
     cursor.execute("""
@@ -6172,7 +6248,6 @@ Give practical project management advice.
         response_message=response_message
     )
 
-
 @app.route("/risks")
 def risks():
 
@@ -6183,10 +6258,7 @@ def risks():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -6196,19 +6268,58 @@ def risks():
         LEFT JOIN projects
         ON risks.project_id = projects.id
         WHERE risks.user_id = %s
-        ORDER BY severity_score DESC
+        ORDER BY risks.severity_score DESC
     """, (
         session["user_id"],
     ))
 
     risks = cursor.fetchall()
 
+    enriched_risks = []
+
+    for risk in risks:
+
+        cursor.execute("""
+            SELECT
+                severity_score,
+                residual_score,
+                target_score,
+                status,
+                created_at
+            FROM risk_history
+            WHERE risk_id = %s
+            ORDER BY id DESC
+            LIMIT 2
+        """, (
+            risk["id"],
+        ))
+
+        history = cursor.fetchall()
+
+        risk_trend = "Stable"
+
+        if len(history) >= 2:
+
+            latest = history[0]["severity_score"] or 0
+            previous = history[1]["severity_score"] or 0
+
+            if latest > previous:
+                risk_trend = "Increasing"
+            elif latest < previous:
+                risk_trend = "Reducing"
+
+        enriched_risks.append({
+            "risk": risk,
+            "risk_trend": risk_trend
+        })
+
     conn.close()
 
     return render_template(
         "risks.html",
-        risks=risks
+        risks=enriched_risks
     )
+
 
 @app.route("/add-risk", methods=["GET", "POST"])
 def add_risk():
@@ -6220,15 +6331,14 @@ def add_risk():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
     """, (
         session["user_id"],
     ))
@@ -6237,14 +6347,25 @@ def add_risk():
 
     if request.method == "POST":
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        probability = request.form["probability"]
-        impact = request.form["impact"]
-        mitigation = request.form["mitigation"]
-        owner = request.form["owner"]
-        status = request.form["status"]
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        probability = request.form.get("probability", "Medium")
+        impact = request.form.get("impact", "Medium")
+        mitigation = request.form.get("mitigation", "")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+
+        category = request.form.get("category", "Delivery")
+        risk_appetite = request.form.get("risk_appetite", "Medium")
+
+        residual_probability = request.form.get("residual_probability", probability)
+        residual_impact = request.form.get("residual_impact", impact)
+
+        target_probability = request.form.get("target_probability", "Low")
+        target_impact = request.form.get("target_impact", "Low")
+
+        escalation_level = request.form.get("escalation_level", "None")
 
         probability_map = {
             "Low": 1,
@@ -6258,11 +6379,22 @@ def add_risk():
             "High": 3
         }
 
-        severity_score = (
-            probability_map[probability]
-            *
-            impact_map[impact]
-        )
+        appetite_map = {
+            "Low": 3,
+            "Medium": 6,
+            "High": 9
+        }
+
+        severity_score = probability_map[probability] * impact_map[impact]
+        residual_score = probability_map[residual_probability] * impact_map[residual_impact]
+        target_score = probability_map[target_probability] * impact_map[target_impact]
+
+        appetite_threshold = appetite_map.get(risk_appetite, 6)
+
+        escalation_required = False
+
+        if severity_score > appetite_threshold or residual_score > appetite_threshold:
+            escalation_required = True
 
         cursor.execute("""
             INSERT INTO risks
@@ -6277,12 +6409,23 @@ def add_risk():
                 mitigation,
                 owner,
                 status,
+                category,
+                risk_appetite,
+                residual_probability,
+                residual_impact,
+                residual_score,
+                target_probability,
+                target_impact,
+                target_score,
+                escalation_level,
+                escalation_required,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
-            project_id,
+            project_id if project_id else None,
             title,
             description,
             probability,
@@ -6291,6 +6434,42 @@ def add_risk():
             mitigation,
             owner,
             status,
+            category,
+            risk_appetite,
+            residual_probability,
+            residual_impact,
+            residual_score,
+            target_probability,
+            target_impact,
+            target_score,
+            escalation_level,
+            escalation_required,
+            str(date.today())
+        ))
+
+        risk_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO risk_history
+            (
+                risk_id,
+                user_id,
+                severity_score,
+                residual_score,
+                target_score,
+                status,
+                action,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            risk_id,
+            session["user_id"],
+            severity_score,
+            residual_score,
+            target_score,
+            status,
+            "Risk created",
             str(date.today())
         ))
 
@@ -6310,6 +6489,7 @@ def add_risk():
         projects=projects
     )
 
+
 @app.route("/edit-risk/<int:risk_id>", methods=["GET", "POST"])
 def edit_risk(risk_id):
 
@@ -6320,35 +6500,57 @@ def edit_risk(risk_id):
         return "Access denied"
 
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    risk = conn.execute("""
-    SELECT *
-    FROM risks
-    WHERE id = ?
-    AND user_id = ?
+    cursor.execute("""
+        SELECT *
+        FROM risks
+        WHERE id = %s
+        AND user_id = %s
     """, (
         risk_id,
         session["user_id"],
-    )).fetchone()
+    ))
 
-    projects = conn.execute("""
-    SELECT *
-    FROM projects
-    WHERE user_id = ?
+    risk = cursor.fetchone()
+
+    if not risk:
+        conn.close()
+        return redirect("/risks")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        AND COALESCE(is_archived, FALSE) = FALSE
+        ORDER BY name ASC
     """, (
         session["user_id"],
-    )).fetchall()
+    ))
+
+    projects = cursor.fetchall()
 
     if request.method == "POST":
 
-        project_id = request.form["project_id"]
-        title = request.form["title"]
-        description = request.form["description"]
-        probability = request.form["probability"]
-        impact = request.form["impact"]
-        mitigation = request.form["mitigation"]
-        owner = request.form["owner"]
-        status = request.form["status"]
+        project_id = request.form.get("project_id")
+        title = request.form.get("title", "")
+        description = request.form.get("description", "")
+        probability = request.form.get("probability", "Medium")
+        impact = request.form.get("impact", "Medium")
+        mitigation = request.form.get("mitigation", "")
+        owner = request.form.get("owner", "")
+        status = request.form.get("status", "Open")
+
+        category = request.form.get("category", "Delivery")
+        risk_appetite = request.form.get("risk_appetite", "Medium")
+
+        residual_probability = request.form.get("residual_probability", probability)
+        residual_impact = request.form.get("residual_impact", impact)
+
+        target_probability = request.form.get("target_probability", "Low")
+        target_impact = request.form.get("target_impact", "Low")
+
+        escalation_level = request.form.get("escalation_level", "None")
 
         probability_map = {
             "Low": 1,
@@ -6362,28 +6564,49 @@ def edit_risk(risk_id):
             "High": 3
         }
 
-        severity_score = (
-            probability_map[probability]
-            *
-            impact_map[impact]
-        )
+        appetite_map = {
+            "Low": 3,
+            "Medium": 6,
+            "High": 9
+        }
 
-        conn.execute("""
-        UPDATE risks
-        SET
-            project_id = ?,
-            title = ?,
-            description = ?,
-            probability = ?,
-            impact = ?,
-            severity_score = ?,
-            mitigation = ?,
-            owner = ?,
-            status = ?
-        WHERE id = ?
-        AND user_id = ?
+        severity_score = probability_map[probability] * impact_map[impact]
+        residual_score = probability_map[residual_probability] * impact_map[residual_impact]
+        target_score = probability_map[target_probability] * impact_map[target_impact]
+
+        appetite_threshold = appetite_map.get(risk_appetite, 6)
+
+        escalation_required = False
+
+        if severity_score > appetite_threshold or residual_score > appetite_threshold:
+            escalation_required = True
+
+        cursor.execute("""
+            UPDATE risks
+            SET
+                project_id = %s,
+                title = %s,
+                description = %s,
+                probability = %s,
+                impact = %s,
+                severity_score = %s,
+                mitigation = %s,
+                owner = %s,
+                status = %s,
+                category = %s,
+                risk_appetite = %s,
+                residual_probability = %s,
+                residual_impact = %s,
+                residual_score = %s,
+                target_probability = %s,
+                target_impact = %s,
+                target_score = %s,
+                escalation_level = %s,
+                escalation_required = %s
+            WHERE id = %s
+            AND user_id = %s
         """, (
-            project_id,
+            project_id if project_id else None,
             title,
             description,
             probability,
@@ -6392,8 +6615,42 @@ def edit_risk(risk_id):
             mitigation,
             owner,
             status,
+            category,
+            risk_appetite,
+            residual_probability,
+            residual_impact,
+            residual_score,
+            target_probability,
+            target_impact,
+            target_score,
+            escalation_level,
+            escalation_required,
             risk_id,
             session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO risk_history
+            (
+                risk_id,
+                user_id,
+                severity_score,
+                residual_score,
+                target_score,
+                status,
+                action,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            risk_id,
+            session["user_id"],
+            severity_score,
+            residual_score,
+            target_score,
+            status,
+            "Risk updated",
+            str(date.today())
         ))
 
         conn.commit()

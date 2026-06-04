@@ -19,119 +19,106 @@
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Risk Register</h1>
 
                 <p class="dashboard-subtitle">
-                    Monitor delivery, operational and project risks.
+                    Monitor delivery, operational and project risks with scoring, appetite, escalation and trend tracking.
                 </p>
-
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-risk" class="btn-primary">
                     + Add Risk
                 </a>
-
             </div>
 
         </div>
+
 
         <div class="stats-grid">
 
             <div class="stat-card red-card">
                 <h3>Total Risks</h3>
-                <p>{{ risks|length }}</p>
-            </div>
-
-            <div class="stat-card red-card">
-                <h3>High Risks</h3>
-                <p>
-                    {{ risks | selectattr("severity_score", "ge", 6) | list | length }}
-                </p>
+                <p>{{ total_risks }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Medium Risks</h3>
-                <p>
-                    {{ risks | selectattr("severity_score", "ge", 3)
-                             | rejectattr("severity_score", "ge", 6)
-                             | list | length }}
-                </p>
-            </div>
-
-            <div class="stat-card green-card">
-                <h3>Low Risks</h3>
-                <p>
-                    {{ risks | rejectattr("severity_score", "ge", 3) | list | length }}
-                </p>
-            </div>
-
-        </div>
-
-        <div class="stats-grid">
-
-            <div class="stat-card red-card">
                 <h3>Open Risks</h3>
-                <p>
-                    {{ risks | rejectattr("status", "equalto", "Closed") | list | length }}
-                </p>
+                <p>{{ open_risks }}</p>
             </div>
 
-            <div class="stat-card green-card">
-                <h3>Closed Risks</h3>
-                <p>
-                    {{ risks | selectattr("status", "equalto", "Closed") | list | length }}
-                </p>
+            <div class="stat-card red-card">
+                <h3>Critical Risks</h3>
+                <p>{{ critical_risks }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Mitigated Risks</h3>
-                <p>
-                    {{ risks | selectattr("status", "equalto", "Mitigated") | list | length }}
-                </p>
+                <h3>Escalated Risks</h3>
+                <p>{{ escalated_risks }}</p>
             </div>
 
         </div>
+
 
         {% if risks %}
 
-        <div class="smart-card">
+            <div class="smart-card">
 
-            <h3>Highest Risk</h3>
+                <h3>Highest Risk</h3>
 
-            {% set top_risk = risks[0] %}
+                {% set top_item = risks[0] %}
+                {% set top_risk = top_item["risk"] %}
 
-            <div class="smart-insight">
+                <div class="smart-insight">
 
-                <strong>{{ top_risk["title"] }}</strong>
+                    <strong>{{ top_risk["title"] }}</strong>
 
-                <p>
-                    Severity Score:
-                    {{ top_risk["severity_score"] }}
-                </p>
+                    <p>
+                        Project:
+                        {{ top_risk["project_name"] or "No Project" }}
+                    </p>
 
-                <p>
-                    Owner:
-                    {{ top_risk["owner"] }}
-                </p>
+                    <p>
+                        Category:
+                        {{ top_risk["risk_category"] or "Not Categorised" }}
+                    </p>
 
-                <p>
-                    Status:
-                    {{ top_risk["status"] }}
-                </p>
+                    <p>
+                        Severity Score:
+                        {{ top_risk["severity_score"] }}
+                    </p>
 
-                <p>
-                    Project:
-                    {{ top_risk["project_name"] or "No Project" }}
-                </p>
+                    <p>
+                        Residual Score:
+                        {{ top_risk["residual_score"] or 0 }}
+                    </p>
+
+                    <p>
+                        Target Score:
+                        {{ top_risk["target_score"] or 0 }}
+                    </p>
+
+                    <p>
+                        Trend:
+                        {{ top_item["risk_trend"] }}
+                    </p>
+
+                    <p>
+                        Owner:
+                        {{ top_risk["owner"] }}
+                    </p>
+
+                    <p>
+                        Status:
+                        {{ top_risk["status"] }}
+                    </p>
+
+                </div>
 
             </div>
 
-        </div>
-
         {% endif %}
+
 
         <div class="smart-card">
 
@@ -148,10 +135,20 @@
                     <th>Low Impact</th>
                     <th>Medium Impact</th>
                     <th>High Impact</th>
+                    <th>Critical Impact</th>
+                </tr>
+
+                <tr>
+                    <th>Critical Probability</th>
+                    <td class="heat-high">High</td>
+                    <td class="heat-critical">Critical</td>
+                    <td class="heat-critical">Critical</td>
+                    <td class="heat-critical">Critical</td>
                 </tr>
 
                 <tr>
                     <th>High Probability</th>
+                    <td class="heat-medium">Medium</td>
                     <td class="heat-high">High</td>
                     <td class="heat-critical">Critical</td>
                     <td class="heat-critical">Critical</td>
@@ -159,6 +156,7 @@
 
                 <tr>
                     <th>Medium Probability</th>
+                    <td class="heat-low">Low</td>
                     <td class="heat-medium">Medium</td>
                     <td class="heat-high">High</td>
                     <td class="heat-critical">Critical</td>
@@ -166,6 +164,7 @@
 
                 <tr>
                     <th>Low Probability</th>
+                    <td class="heat-low">Low</td>
                     <td class="heat-low">Low</td>
                     <td class="heat-medium">Medium</td>
                     <td class="heat-high">High</td>
@@ -175,11 +174,14 @@
 
         </div>
 
+
         {% if risks %}
 
             <div class="projects-grid">
 
-                {% for risk in risks %}
+                {% for item in risks %}
+
+                    {% set risk = item["risk"] %}
 
                     <div class="project-card">
 
@@ -189,41 +191,49 @@
 
                                 <h3>{{ risk["title"] }}</h3>
 
-                                {% if risk["severity_score"] >= 6 %}
-
+                                {% if risk["severity_score"] >= 12 %}
+                                    <span class="badge badge-red">
+                                        Critical Risk
+                                    </span>
+                                {% elif risk["severity_score"] >= 8 %}
                                     <span class="badge badge-red">
                                         High Risk
                                     </span>
-
-                                {% elif risk["severity_score"] >= 3 %}
-
+                                {% elif risk["severity_score"] >= 4 %}
                                     <span class="badge badge-yellow">
                                         Medium Risk
                                     </span>
-
                                 {% else %}
-
                                     <span class="badge badge-green">
                                         Low Risk
                                     </span>
-
                                 {% endif %}
 
                             </div>
 
                         </div>
 
+
                         <div class="smart-insight">
-
                             {{ risk["description"] }}
-
                         </div>
+
 
                         <div class="budget-section">
 
                             <div class="budget-row">
                                 <span>Project</span>
                                 <strong>{{ risk["project_name"] or "No Project" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Category</span>
+                                <strong>{{ risk["risk_category"] or "Not Categorised" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Risk Appetite</span>
+                                <strong>{{ risk["risk_appetite"] or "Not Set" }}</strong>
                             </div>
 
                             <div class="budget-row">
@@ -242,6 +252,36 @@
                             </div>
 
                             <div class="budget-row">
+                                <span>Residual Score</span>
+                                <strong>{{ risk["residual_score"] or 0 }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Target Score</span>
+                                <strong>{{ risk["target_score"] or 0 }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Risk Trend</span>
+                                <strong>{{ item["risk_trend"] }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Escalation</span>
+                                <strong>{{ risk["escalation_status"] or "Not Escalated" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Escalation Owner</span>
+                                <strong>{{ risk["escalation_owner"] or "N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Escalation Date</span>
+                                <strong>{{ risk["escalation_date"] or "N/A" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
                                 <span>Owner</span>
                                 <strong>{{ risk["owner"] }}</strong>
                             </div>
@@ -252,6 +292,18 @@
                             </div>
 
                         </div>
+
+
+                        <div class="smart-insight">
+
+                            <strong>Mitigation:</strong>
+
+                            <br><br>
+
+                            {{ risk["mitigation"] }}
+
+                        </div>
+
 
                         <div class="project-actions">
 
@@ -265,16 +317,6 @@
                             >
                                 Delete
                             </a>
-
-                        </div>
-
-                        <div class="smart-insight">
-
-                            <strong>Mitigation:</strong>
-
-                            <br><br>
-
-                            {{ risk["mitigation"] }}
 
                         </div>
 

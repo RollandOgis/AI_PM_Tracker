@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -54,28 +55,101 @@
                 ></textarea>
 
 
-                <label>Probability</label>
+                <label>Risk Category</label>
 
-                <select name="probability" required>
+                <select name="risk_category">
+
+                    <option value="Delivery">Delivery</option>
+                    <option value="Schedule">Schedule</option>
+                    <option value="Financial">Financial</option>
+                    <option value="Technical">Technical</option>
+                    <option value="Resource">Resource</option>
+                    <option value="Supplier">Supplier</option>
+                    <option value="Compliance">Compliance</option>
+                    <option value="Security">Security</option>
+
+                </select>
+
+
+                <label>Risk Appetite</label>
+
+                <select name="risk_appetite">
 
                     <option value="Low">Low</option>
-
-                    <option value="Medium">Medium</option>
-
+                    <option value="Medium" selected>Medium</option>
                     <option value="High">High</option>
+
+                </select>
+
+
+                <label>Probability</label>
+
+                <select name="probability">
+
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
 
                 </select>
 
 
                 <label>Impact</label>
 
-                <select name="impact" required>
+                <select name="impact">
 
                     <option value="Low">Low</option>
-
                     <option value="Medium">Medium</option>
-
                     <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+
+                </select>
+
+
+                <label>Residual Probability</label>
+
+                <select name="residual_probability">
+
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+
+                </select>
+
+
+                <label>Residual Impact</label>
+
+                <select name="residual_impact">
+
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+
+                </select>
+
+
+                <label>Target Probability</label>
+
+                <select name="target_probability">
+
+                    <option value="Low" selected>Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+
+                </select>
+
+
+                <label>Target Impact</label>
+
+                <select name="target_impact">
+
+                    <option value="Low" selected>Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
 
                 </select>
 
@@ -98,16 +172,44 @@
                 >
 
 
+                <label>Escalation Status</label>
+
+                <select name="escalation_status">
+
+                    <option value="Not Escalated">
+                        Not Escalated
+                    </option>
+
+                    <option value="Escalated">
+                        Escalated
+                    </option>
+
+                </select>
+
+
+                <label>Escalation Owner</label>
+
+                <input
+                    type="text"
+                    name="escalation_owner"
+                >
+
+
+                <label>Escalation Date</label>
+
+                <input
+                    type="date"
+                    name="escalation_date"
+                >
+
+
                 <label>Status</label>
 
-                <select name="status" required>
+                <select name="status">
 
                     <option value="Open">Open</option>
-
                     <option value="Monitoring">Monitoring</option>
-
                     <option value="Mitigated">Mitigated</option>
-
                     <option value="Closed">Closed</option>
 
                 </select>

@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include 'sidebar.html' %}
+
+    {% include 'sidebar.html' %}
 
     <div class="main-content">
 
@@ -23,23 +24,19 @@
 
                 <label>Project</label>
 
-                <select name="project_id" required>
+                <select name="project_id">
 
                     {% for project in projects %}
 
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if project['id'] == risk['project_id'] %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ project['name'] }}
-                        </option>
+                        {% if project['id'] == risk['project_id'] %}
+                            <option value="{{ project['id'] }}" selected>{{ project['name'] }}</option>
+                        {% else %}
+                            <option value="{{ project['id'] }}">{{ project['name'] }}</option>
+                        {% endif %}
 
                     {% endfor %}
 
                 </select>
-
 
                 <label>Risk Title</label>
 
@@ -50,7 +47,6 @@
                     required
                 >
 
-
                 <label>Description</label>
 
                 <textarea
@@ -59,62 +55,263 @@
                     required
                 >{{ risk['description'] }}</textarea>
 
+                <label>Risk Category</label>
+
+                <select name="risk_category">
+
+                    {% if risk['risk_category'] == 'Delivery' %}
+                        <option value="Delivery" selected>Delivery</option>
+                    {% else %}
+                        <option value="Delivery">Delivery</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Schedule' %}
+                        <option value="Schedule" selected>Schedule</option>
+                    {% else %}
+                        <option value="Schedule">Schedule</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Financial' %}
+                        <option value="Financial" selected>Financial</option>
+                    {% else %}
+                        <option value="Financial">Financial</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Technical' %}
+                        <option value="Technical" selected>Technical</option>
+                    {% else %}
+                        <option value="Technical">Technical</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Resource' %}
+                        <option value="Resource" selected>Resource</option>
+                    {% else %}
+                        <option value="Resource">Resource</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Supplier' %}
+                        <option value="Supplier" selected>Supplier</option>
+                    {% else %}
+                        <option value="Supplier">Supplier</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Compliance' %}
+                        <option value="Compliance" selected>Compliance</option>
+                    {% else %}
+                        <option value="Compliance">Compliance</option>
+                    {% endif %}
+
+                    {% if risk['risk_category'] == 'Security' %}
+                        <option value="Security" selected>Security</option>
+                    {% else %}
+                        <option value="Security">Security</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Risk Appetite</label>
+
+                <select name="risk_appetite">
+
+                    {% if risk['risk_appetite'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if risk['risk_appetite'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if risk['risk_appetite'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                </select>
 
                 <label>Probability</label>
 
-                <select name="probability" required>
+                <select name="probability">
 
-                    <option
-                        value="Low"
-                        {% if risk['probability'] == 'Low' %}selected{% endif %}
-                    >
-                        Low
-                    </option>
+                    {% if risk['probability'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
 
-                    <option
-                        value="Medium"
-                        {% if risk['probability'] == 'Medium' %}selected{% endif %}
-                    >
-                        Medium
-                    </option>
+                    {% if risk['probability'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
 
-                    <option
-                        value="High"
-                        {% if risk['probability'] == 'High' %}selected{% endif %}
-                    >
-                        High
-                    </option>
+                    {% if risk['probability'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if risk['probability'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
 
                 </select>
-
 
                 <label>Impact</label>
 
-                <select name="impact" required>
+                <select name="impact">
 
-                    <option
-                        value="Low"
-                        {% if risk['impact'] == 'Low' %}selected{% endif %}
-                    >
-                        Low
-                    </option>
+                    {% if risk['impact'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
 
-                    <option
-                        value="Medium"
-                        {% if risk['impact'] == 'Medium' %}selected{% endif %}
-                    >
-                        Medium
-                    </option>
+                    {% if risk['impact'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
 
-                    <option
-                        value="High"
-                        {% if risk['impact'] == 'High' %}selected{% endif %}
-                    >
-                        High
-                    </option>
+                    {% if risk['impact'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if risk['impact'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
 
                 </select>
 
+                <label>Residual Probability</label>
+
+                <select name="residual_probability">
+
+                    {% if risk['residual_probability'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if risk['residual_probability'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if risk['residual_probability'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if risk['residual_probability'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Residual Impact</label>
+
+                <select name="residual_impact">
+
+                    {% if risk['residual_impact'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if risk['residual_impact'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if risk['residual_impact'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if risk['residual_impact'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Target Probability</label>
+
+                <select name="target_probability">
+
+                    {% if risk['target_probability'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if risk['target_probability'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if risk['target_probability'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if risk['target_probability'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
+
+                <label>Target Impact</label>
+
+                <select name="target_impact">
+
+                    {% if risk['target_impact'] == 'Low' %}
+                        <option value="Low" selected>Low</option>
+                    {% else %}
+                        <option value="Low">Low</option>
+                    {% endif %}
+
+                    {% if risk['target_impact'] == 'Medium' %}
+                        <option value="Medium" selected>Medium</option>
+                    {% else %}
+                        <option value="Medium">Medium</option>
+                    {% endif %}
+
+                    {% if risk['target_impact'] == 'High' %}
+                        <option value="High" selected>High</option>
+                    {% else %}
+                        <option value="High">High</option>
+                    {% endif %}
+
+                    {% if risk['target_impact'] == 'Critical' %}
+                        <option value="Critical" selected>Critical</option>
+                    {% else %}
+                        <option value="Critical">Critical</option>
+                    {% endif %}
+
+                </select>
 
                 <label>Mitigation Plan</label>
 
@@ -123,7 +320,6 @@
                     rows="4"
                     required
                 >{{ risk['mitigation'] }}</textarea>
-
 
                 <label>Risk Owner</label>
 
@@ -134,41 +330,69 @@
                     required
                 >
 
+                <label>Escalation Status</label>
 
-                <label>Status</label>
+                <select name="escalation_status">
 
-                <select name="status" required>
+                    {% if risk['escalation_status'] == 'Not Escalated' %}
+                        <option value="Not Escalated" selected>Not Escalated</option>
+                    {% else %}
+                        <option value="Not Escalated">Not Escalated</option>
+                    {% endif %}
 
-                    <option
-                        value="Open"
-                        {% if risk['status'] == 'Open' %}selected{% endif %}
-                    >
-                        Open
-                    </option>
-
-                    <option
-                        value="Monitoring"
-                        {% if risk['status'] == 'Monitoring' %}selected{% endif %}
-                    >
-                        Monitoring
-                    </option>
-
-                    <option
-                        value="Mitigated"
-                        {% if risk['status'] == 'Mitigated' %}selected{% endif %}
-                    >
-                        Mitigated
-                    </option>
-
-                    <option
-                        value="Closed"
-                        {% if risk['status'] == 'Closed' %}selected{% endif %}
-                    >
-                        Closed
-                    </option>
+                    {% if risk['escalation_status'] == 'Escalated' %}
+                        <option value="Escalated" selected>Escalated</option>
+                    {% else %}
+                        <option value="Escalated">Escalated</option>
+                    {% endif %}
 
                 </select>
 
+                <label>Escalation Owner</label>
+
+                <input
+                    type="text"
+                    name="escalation_owner"
+                    value="{{ risk['escalation_owner'] or '' }}"
+                >
+
+                <label>Escalation Date</label>
+
+                <input
+                    type="date"
+                    name="escalation_date"
+                    value="{{ risk['escalation_date'] or '' }}"
+                >
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    {% if risk['status'] == 'Open' %}
+                        <option value="Open" selected>Open</option>
+                    {% else %}
+                        <option value="Open">Open</option>
+                    {% endif %}
+
+                    {% if risk['status'] == 'Monitoring' %}
+                        <option value="Monitoring" selected>Monitoring</option>
+                    {% else %}
+                        <option value="Monitoring">Monitoring</option>
+                    {% endif %}
+
+                    {% if risk['status'] == 'Mitigated' %}
+                        <option value="Mitigated" selected>Mitigated</option>
+                    {% else %}
+                        <option value="Mitigated">Mitigated</option>
+                    {% endif %}
+
+                    {% if risk['status'] == 'Closed' %}
+                        <option value="Closed" selected>Closed</option>
+                    {% else %}
+                        <option value="Closed">Closed</option>
+                    {% endif %}
+
+                </select>
 
                 <button type="submit" class="btn-primary">
                     Update Risk
@@ -177,6 +401,50 @@
             </form>
 
         </div>
+
+        {% if risk_history %}
+
+            <div class="smart-card">
+
+                <h2>Risk History</h2>
+
+                {% for history in risk_history %}
+
+                    <div class="smart-insight">
+
+                        <strong>{{ history['action'] }}</strong>
+
+                        <br>
+
+                        Previous Status:
+                        {{ history['previous_status'] }}
+
+                        →
+
+                        New Status:
+                        {{ history['new_status'] }}
+
+                        <br>
+
+                        Score:
+                        {{ history['previous_score'] }}
+
+                        →
+
+                        {{ history['new_score'] }}
+
+                        <br>
+
+                        Date:
+                        {{ history['created_at'] }}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
 
     </div>
 
