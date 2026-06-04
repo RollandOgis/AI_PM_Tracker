@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Decision History</h1>
+                <p class="dashboard-subtitle">
+                    View decision audit trail and status changes.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/decisions" class="btn-primary">
+                    Back to Decisions
+                </a>
+            </div>
+        </div>
+
+        <div class="smart-card">
+            <h3>{{ decision["title"] }}</h3>
+
+            <p><strong>Status:</strong> {{ decision["status"] }}</p>
+            <p><strong>Decision Maker:</strong> {{ decision["decision_maker"] or "Not assigned" }}</p>
+            <p><strong>Category:</strong> {{ decision["decision_category"] or "General" }}</p>
+            <p><strong>Source:</strong> {{ decision["decision_source"] or "Manual" }}</p>
+            <p><strong>Effectiveness:</strong> {{ decision["effectiveness_score"] or 0 }}/100</p>
+        </div>
+
+        {% if history %}
+
+        <div class="projects-grid">
+
+            {% for item in history %}
+
+            <div class="project-card">
+
+                <h3>{{ item["change_note"] }}</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Old Status</span>
+                        <strong>{{ item["old_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>New Status</span>
+                        <strong>{{ item["new_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Changed At</span>
+                        <strong>{{ item["changed_at"] }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Decision History</h3>
+            <p>No status changes have been recorded for this decision yet.</p>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -23,7 +23,7 @@
                 <h1>Decision Log</h1>
 
                 <p class="dashboard-subtitle">
-                    Track governance decisions, approvals and project direction.
+                    Track governance decisions, effectiveness, linked reviews and project direction.
                 </p>
 
             </div>
@@ -42,28 +42,37 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Decisions</h3>
-                <p>{{ decisions|length }}</p>
+                <p>{{ stats["total_decisions"] or 0 }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Approved</h3>
-                <p>
-                    {{ decisions | selectattr("status", "equalto", "Approved") | list | length }}
-                </p>
+                <p>{{ stats["approved_decisions"] or 0 }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Pending</h3>
-                <p>
-                    {{ decisions | selectattr("status", "equalto", "Pending") | list | length }}
-                </p>
+                <p>{{ stats["pending_decisions"] or 0 }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Rejected</h3>
-                <p>
-                    {{ decisions | selectattr("status", "equalto", "Rejected") | list | length }}
-                </p>
+                <p>{{ stats["rejected_decisions"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>High Impact</h3>
+                <p>{{ stats["high_impact_decisions"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Avg Effectiveness</h3>
+                <p>{{ stats["avg_effectiveness_score"] or 0 }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Auto Created</h3>
+                <p>{{ stats["auto_created_decisions"] or 0 }}</p>
             </div>
 
         </div>
@@ -81,10 +90,11 @@
                 <strong>{{ top_decision["title"] }}</strong>
 
                 <p>Decision Maker: {{ top_decision["decision_maker"] }}</p>
-
                 <p>Status: {{ top_decision["status"] }}</p>
-
                 <p>Date: {{ top_decision["decision_date"] }}</p>
+                <p>Category: {{ top_decision["decision_category"] or "General" }}</p>
+                <p>Source: {{ top_decision["decision_source"] or "Manual" }}</p>
+                <p>Effectiveness: {{ top_decision["effectiveness_score"] or 0 }}/100</p>
 
             </div>
 
@@ -108,6 +118,10 @@
                             <span class="badge badge-yellow">Pending</span>
                         {% else %}
                             <span class="badge badge-red">Rejected</span>
+                        {% endif %}
+
+                        {% if decision["auto_created"] == "Yes" %}
+                            <span class="badge badge-blue">Auto Created</span>
                         {% endif %}
 
                     </div>
@@ -136,6 +150,36 @@
                         <strong>{{ decision["status"] }}</strong>
                     </div>
 
+                    <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ decision["decision_category"] or "General" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Source</span>
+                        <strong>{{ decision["decision_source"] or "Manual" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Effectiveness</span>
+                        <strong>{{ decision["effectiveness_score"] or 0 }}/100</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Risk</span>
+                        <strong>{{ decision["linked_risk_id"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Change</span>
+                        <strong>{{ decision["linked_change_id"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Review</span>
+                        <strong>{{ decision["linked_governance_review_id"] or "None" }}</strong>
+                    </div>
+
                 </div>
 
                 <div class="smart-insight">
@@ -155,6 +199,35 @@
                     <br><br>
 
                     {{ decision["reason"] }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Effectiveness Notes:</strong>
+
+                    <br><br>
+
+                    {{ decision["effectiveness_notes"] or "No effectiveness review recorded." }}
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-decision/{{ decision['id'] }}">
+                        Edit
+                    </a>
+
+                    <a href="/decision-history/{{ decision['id'] }}">
+                        History
+                    </a>
+
+                    <a
+                        href="/delete-decision/{{ decision['id'] }}"
+                        onclick="return confirm('Delete this decision?')"
+                    >
+                        Delete
+                    </a>
 
                 </div>
 

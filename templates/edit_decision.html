@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Decision</title>
+    <title>Edit Decision</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -18,9 +18,9 @@
 
         <div class="dashboard-header">
             <div>
-                <h1>Add Decision</h1>
+                <h1>Edit Decision</h1>
                 <p class="dashboard-subtitle">
-                    Record governance decisions, sources, effectiveness and linked items.
+                    Update governance decision details, effectiveness and linked items.
                 </p>
             </div>
 
@@ -37,18 +37,23 @@
 
                 <label>Project</label>
                 <select name="project_id" required>
+                    <option value="{{ decision['project_id'] }}" selected>
+                        Current Project
+                    </option>
+
                     {% for project in projects %}
-                        <option value="{{ project['id'] }}">
-                            {{ project['name'] }}
-                        </option>
+                    <option value="{{ project['id'] }}">
+                        {{ project['name'] }}
+                    </option>
                     {% endfor %}
                 </select>
 
                 <label>Decision Title</label>
-                <input type="text" name="title" required>
+                <input type="text" name="title" value="{{ decision['title'] }}" required>
 
                 <label>Decision Category</label>
                 <select name="decision_category">
+                    <option value="{{ decision['decision_category'] }}" selected>{{ decision['decision_category'] }}</option>
                     <option value="General">General</option>
                     <option value="Governance">Governance</option>
                     <option value="Risk">Risk</option>
@@ -61,6 +66,7 @@
 
                 <label>Decision Source</label>
                 <select name="decision_source">
+                    <option value="{{ decision['decision_source'] }}" selected>{{ decision['decision_source'] }}</option>
                     <option value="Manual">Manual</option>
                     <option value="Governance Review">Governance Review</option>
                     <option value="Stage Gate">Stage Gate</option>
@@ -70,52 +76,59 @@
                 </select>
 
                 <label>Decision Maker</label>
-                <input type="text" name="decision_maker">
+                <input type="text" name="decision_maker" value="{{ decision['decision_maker'] }}">
 
                 <label>Impact</label>
                 <select name="impact">
+                    <option value="{{ decision['impact'] }}" selected>{{ decision['impact'] }}</option>
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                 </select>
 
                 <label>Reason</label>
-                <textarea name="reason" rows="5"></textarea>
+                <textarea name="reason" rows="5">{{ decision['reason'] }}</textarea>
 
                 <label>Status</label>
                 <select name="status">
+                    <option value="{{ decision['status'] }}" selected>{{ decision['status'] }}</option>
                     <option value="Approved">Approved</option>
                     <option value="Pending">Pending</option>
                     <option value="Rejected">Rejected</option>
                 </select>
 
                 <label>Decision Date</label>
-                <input type="date" name="decision_date">
+                <input type="date" name="decision_date" value="{{ decision['decision_date'] }}">
 
                 <label>Effectiveness Score (0-100)</label>
-                <input type="number" min="0" max="100" name="effectiveness_score" value="0">
+                <input type="number" min="0" max="100" name="effectiveness_score" value="{{ decision['effectiveness_score'] }}">
 
                 <label>Effectiveness Notes</label>
-                <textarea name="effectiveness_notes" rows="4"></textarea>
+                <textarea name="effectiveness_notes" rows="4">{{ decision['effectiveness_notes'] }}</textarea>
 
                 <label>Linked Risk ID</label>
-                <input type="number" name="linked_risk_id">
+                <input type="number" name="linked_risk_id" value="{{ decision['linked_risk_id'] }}">
 
                 <label>Linked Change ID</label>
-                <input type="number" name="linked_change_id">
+                <input type="number" name="linked_change_id" value="{{ decision['linked_change_id'] }}">
 
                 <label>Linked Governance Review ID</label>
-                <input type="number" name="linked_governance_review_id">
+                <input type="number" name="linked_governance_review_id" value="{{ decision['linked_governance_review_id'] }}">
 
                 <label>Auto Created</label>
                 <select name="auto_created">
+                    <option value="{{ decision['auto_created'] }}" selected>{{ decision['auto_created'] }}</option>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                 </select>
 
                 <button type="submit" class="btn-primary">
-                    Save Decision
+                    Update Decision
                 </button>
+
+                <a href="/decisions" class="btn-secondary">
+                    Cancel
+                </a>
 
             </form>
 

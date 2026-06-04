@@ -1243,6 +1243,72 @@ def init_db():
                    )
                    """)
 
+    # Decision Log v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS decision_category TEXT DEFAULT 'General'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS decision_source TEXT DEFAULT 'Manual'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS effectiveness_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS effectiveness_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS linked_risk_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS linked_change_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS linked_governance_review_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE decisions
+                       ADD COLUMN IF NOT EXISTS auto_created TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS decision_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       decision_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       old_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       change_note
+                       TEXT,
+                       changed_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Lessons Learned table
 
     cursor.execute("""
@@ -10274,10 +10340,7 @@ def decisions():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT
@@ -10294,11 +10357,46 @@ def decisions():
 
     decisions = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) AS total_decisions,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Approved'
+            ) AS approved_decisions,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Pending'
+            ) AS pending_decisions,
+
+            COUNT(*) FILTER (
+                WHERE status = 'Rejected'
+            ) AS rejected_decisions,
+
+            COUNT(*) FILTER (
+                WHERE impact = 'High'
+            ) AS high_impact_decisions,
+
+            COUNT(*) FILTER (
+                WHERE auto_created = 'Yes'
+            ) AS auto_created_decisions,
+
+            ROUND(AVG(effectiveness_score), 1) AS avg_effectiveness_score
+
+        FROM decisions
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    stats = cursor.fetchone()
+
     conn.close()
 
     return render_template(
         "decisions.html",
-        decisions=decisions
+        decisions=decisions,
+        stats=stats
     )
 
 
@@ -10312,10 +10410,7 @@ def add_decision():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -10341,9 +10436,17 @@ def add_decision():
                 reason,
                 status,
                 decision_date,
+                decision_category,
+                decision_source,
+                effectiveness_score,
+                effectiveness_notes,
+                linked_risk_id,
+                linked_change_id,
+                linked_governance_review_id,
+                auto_created,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,CURRENT_TIMESTAMP)
         """, (
             session["user_id"],
             request.form.get("project_id"),
@@ -10352,8 +10455,15 @@ def add_decision():
             request.form.get("impact"),
             request.form.get("reason"),
             request.form.get("status"),
-            request.form.get("decision_date"),
-            str(date.today())
+            request.form.get("decision_date") or None,
+            request.form.get("decision_category"),
+            request.form.get("decision_source"),
+            request.form.get("effectiveness_score") or 0,
+            request.form.get("effectiveness_notes"),
+            request.form.get("linked_risk_id") or None,
+            request.form.get("linked_change_id") or None,
+            request.form.get("linked_governance_review_id") or None,
+            request.form.get("auto_created")
         ))
 
         conn.commit()
@@ -10367,6 +10477,209 @@ def add_decision():
         "add_decision.html",
         projects=projects
     )
+
+
+@app.route("/edit-decision/<int:decision_id>", methods=["GET", "POST"])
+def edit_decision(decision_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Decisions", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM decisions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        decision_id,
+        session["user_id"]
+    ))
+
+    decision = cursor.fetchone()
+
+    if not decision:
+        conn.close()
+        return redirect("/decisions")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        old_status = decision["status"]
+        new_status = request.form.get("status")
+
+        cursor.execute("""
+            UPDATE decisions
+            SET
+                project_id = %s,
+                title = %s,
+                decision_maker = %s,
+                impact = %s,
+                reason = %s,
+                status = %s,
+                decision_date = %s,
+                decision_category = %s,
+                decision_source = %s,
+                effectiveness_score = %s,
+                effectiveness_notes = %s,
+                linked_risk_id = %s,
+                linked_change_id = %s,
+                linked_governance_review_id = %s,
+                auto_created = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            request.form.get("title"),
+            request.form.get("decision_maker"),
+            request.form.get("impact"),
+            request.form.get("reason"),
+            new_status,
+            request.form.get("decision_date") or None,
+            request.form.get("decision_category"),
+            request.form.get("decision_source"),
+            request.form.get("effectiveness_score") or 0,
+            request.form.get("effectiveness_notes"),
+            request.form.get("linked_risk_id") or None,
+            request.form.get("linked_change_id") or None,
+            request.form.get("linked_governance_review_id") or None,
+            request.form.get("auto_created"),
+            decision_id,
+            session["user_id"]
+        ))
+
+        if old_status != new_status:
+            cursor.execute("""
+                INSERT INTO decision_history
+                (
+                    decision_id,
+                    user_id,
+                    old_status,
+                    new_status,
+                    change_note
+                )
+                VALUES (%s,%s,%s,%s,%s)
+            """, (
+                decision_id,
+                session["user_id"],
+                old_status,
+                new_status,
+                "Decision status changed"
+            ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/decisions")
+
+    conn.close()
+
+    return render_template(
+        "edit_decision.html",
+        decision=decision,
+        projects=projects
+    )
+
+
+@app.route("/decision-history/<int:decision_id>")
+def decision_history(decision_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Decisions", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM decisions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        decision_id,
+        session["user_id"]
+    ))
+
+    decision = cursor.fetchone()
+
+    if not decision:
+        conn.close()
+        return redirect("/decisions")
+
+    cursor.execute("""
+        SELECT *
+        FROM decision_history
+        WHERE decision_id = %s
+        AND user_id = %s
+        ORDER BY changed_at DESC
+    """, (
+        decision_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "decision_history.html",
+        decision=decision,
+        history=history
+    )
+
+
+@app.route("/delete-decision/<int:decision_id>")
+def delete_decision(decision_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Decisions", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM decision_history
+        WHERE decision_id = %s
+        AND user_id = %s
+    """, (
+        decision_id,
+        session["user_id"]
+    ))
+
+    cursor.execute("""
+        DELETE FROM decisions
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        decision_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/decisions")
 
 
 @app.route("/actions")
