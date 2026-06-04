@@ -7457,7 +7457,10 @@ def issues():
         return "Access denied"
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         SELECT
@@ -7493,19 +7496,24 @@ def issues():
         issue_age = 0
 
         try:
+
             if issue["created_at"]:
+
                 created_date = datetime.strptime(
                     issue["created_at"],
                     "%Y-%m-%d"
                 ).date()
 
                 issue_age = (today - created_date).days
+
         except Exception:
+
             issue_age = 0
 
         sla_status = "No SLA"
 
         try:
+
             if issue["sla_target_date"]:
 
                 sla_date = datetime.strptime(
@@ -7515,15 +7523,22 @@ def issues():
 
                 if issue["status"] in ["Resolved", "Closed"]:
                     sla_status = "Met / Closed"
+
                 elif sla_date < today:
                     sla_status = "Breached"
+
                 else:
                     sla_status = "On Track"
+
         except Exception:
+
             sla_status = "No SLA"
 
         cursor.execute("""
-            SELECT status, created_at
+            SELECT
+                previous_status,
+                new_status,
+                created_at
             FROM issue_history
             WHERE issue_id = %s
             ORDER BY id DESC
@@ -7538,30 +7553,42 @@ def issues():
 
         if len(history) >= 2:
 
-            latest = history[0]["status"]
-            previous = history[1]["status"]
+            latest = history[0]["new_status"]
+            previous = history[1]["new_status"]
 
-            if latest in ["Resolved", "Closed"] and previous not in ["Resolved", "Closed"]:
+            if (
+                latest in ["Resolved", "Closed"]
+                and previous not in ["Resolved", "Closed"]
+            ):
                 issue_trend = "Improving"
+
             elif latest == "Escalated":
                 issue_trend = "Escalating"
 
         enriched_issues.append({
+
             "issue": issue,
+
             "issue_age": issue_age,
+
             "sla_status": sla_status,
+
             "issue_trend": issue_trend
+
         })
 
     total_issues = len(issues)
+
     open_issues = len([
         issue for issue in issues
         if issue["status"] not in ["Resolved", "Closed"]
     ])
+
     breached_sla = len([
         item for item in enriched_issues
         if item["sla_status"] == "Breached"
     ])
+
     escalated_issues = len([
         issue for issue in issues
         if issue["escalation_status"] == "Escalated"
