@@ -19080,7 +19080,169 @@ def portfolio_roadmap():
         dependency_count=dependency_count
     )
 
+@app.route("/portfolio-kanban")
+def portfolio_kanban():
 
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Projects", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT DISTINCT ON (projects.id)
+            projects.*
+        FROM projects
+        WHERE projects.user_id = %s
+        AND COALESCE(projects.is_archived, FALSE) = FALSE
+        AND COALESCE(projects.portfolio_archived, FALSE) = FALSE
+        ORDER BY projects.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    grouped_projects = {
+        "Planning": [],
+        "In Progress": [],
+        "At Risk": [],
+        "On Hold": [],
+        "Completed": [],
+        "Cancelled": []
+    }
+
+    total_projects = len(projects)
+    planning_count = 0
+    in_progress_count = 0
+    at_risk_count = 0
+    on_hold_count = 0
+    completed_count = 0
+    cancelled_count = 0
+
+    for project in projects:
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_risks
+            FROM risks
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project["id"],
+        ))
+
+        open_risks = cursor.fetchone()["open_risks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            project["id"],
+        ))
+
+        open_issues = cursor.fetchone()["open_issues"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS total_tasks
+            FROM tasks
+            WHERE project_id = %s
+        """, (
+            project["id"],
+        ))
+
+        total_tasks = cursor.fetchone()["total_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS completed_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Completed'
+        """, (
+            project["id"],
+        ))
+
+        completed_tasks = cursor.fetchone()["completed_tasks"]
+
+        if total_tasks > 0:
+            completion_rate = round((completed_tasks / total_tasks) * 100)
+        else:
+            completion_rate = 100 if project["status"] == "Completed" else 0
+
+        project_status = project["status"] or "Planning"
+
+        if open_risks >= 3 or open_issues >= 3:
+            portfolio_stage = "At Risk"
+        elif project_status in grouped_projects:
+            portfolio_stage = project_status
+        else:
+            portfolio_stage = "Planning"
+
+        project_card = {
+            "id": project["id"],
+            "name": project["name"],
+            "status": project_status,
+            "portfolio_stage": portfolio_stage,
+            "programme": project.get("programme"),
+            "portfolio": project.get("portfolio"),
+            "completion_rate": completion_rate,
+            "open_risks": open_risks,
+            "open_issues": open_issues,
+            "portfolio_manager": project.get("portfolio_manager"),
+            "portfolio_sponsor": project.get("portfolio_sponsor"),
+            "strategic_objective": project.get("strategic_objective")
+        }
+
+        grouped_projects[portfolio_stage].append(project_card)
+
+        if portfolio_stage == "Planning":
+            planning_count += 1
+        elif portfolio_stage == "In Progress":
+            in_progress_count += 1
+        elif portfolio_stage == "At Risk":
+            at_risk_count += 1
+        elif portfolio_stage == "On Hold":
+            on_hold_count += 1
+        elif portfolio_stage == "Completed":
+            completed_count += 1
+        elif portfolio_stage == "Cancelled":
+            cancelled_count += 1
+
+    workflow_alerts = []
+
+    if at_risk_count > 0:
+        workflow_alerts.append(f"{at_risk_count} project(s) require portfolio attention.")
+
+    if on_hold_count > 0:
+        workflow_alerts.append(f"{on_hold_count} project(s) are currently on hold.")
+
+    if cancelled_count > 0:
+        workflow_alerts.append(f"{cancelled_count} project(s) are cancelled and should be reviewed.")
+
+    if not workflow_alerts:
+        workflow_alerts.append("Portfolio workflow is currently stable.")
+
+    conn.close()
+
+    return render_template(
+        "portfolio_kanban.html",
+        grouped_projects=grouped_projects,
+        total_projects=total_projects,
+        planning_count=planning_count,
+        in_progress_count=in_progress_count,
+        at_risk_count=at_risk_count,
+        on_hold_count=on_hold_count,
+        completed_count=completed_count,
+        cancelled_count=cancelled_count,
+        workflow_alerts=workflow_alerts
+    )
 
 @app.route("/seed-linkedin-demo")
 def seed_linkedin_demo():

@@ -14,11 +14,63 @@
 
     <main class="main-content">
 
-        <h1>Portfolio Kanban</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Portfolio Kanban</h1>
+                <p class="dashboard-subtitle">
+                    View project flow across portfolio delivery stages, risk status and programme grouping.
+                </p>
+            </div>
+        </div>
 
-        <p class="page-subtitle">
-            View projects by portfolio delivery stage.
-        </p>
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Planning</h3>
+                <p>{{ planning_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>In Progress</h3>
+                <p>{{ in_progress_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>At Risk</h3>
+                <p>{{ at_risk_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>On Hold</h3>
+                <p>{{ on_hold_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completed</h3>
+                <p>{{ completed_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Cancelled</h3>
+                <p>{{ cancelled_count }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+            <h3>Portfolio Workflow Analytics</h3>
+
+            <div class="smart-insight">
+                {% for alert in workflow_alerts %}
+                    <p>{{ alert }}</p>
+                {% endfor %}
+            </div>
+        </div>
 
         <div class="kanban-board">
 
@@ -34,23 +86,63 @@
 
                     <h3>{{ project.name }}</h3>
 
-                    <p>
-                        {{ project.description or "No description added." }}
-                    </p>
+                    {% if project.portfolio_stage == "At Risk" %}
+                        <span class="badge badge-red">At Risk</span>
+                    {% elif project.portfolio_stage == "Completed" %}
+                        <span class="badge badge-green">Completed</span>
+                    {% elif project.portfolio_stage == "On Hold" %}
+                        <span class="badge badge-yellow">On Hold</span>
+                    {% elif project.portfolio_stage == "Cancelled" %}
+                        <span class="badge badge-red">Cancelled</span>
+                    {% else %}
+                        <span class="badge badge-blue">{{ project.portfolio_stage }}</span>
+                    {% endif %}
 
                     <p>
-                        <strong>Start:</strong>
-                        {{ project.start_date or "Not set" }}
-                    </p>
-
-                    <p>
-                        <strong>End:</strong>
-                        {{ project.end_date or "Not set" }}
-                    </p>
-
-                    <span class="badge badge-blue">
+                        <strong>Status:</strong>
                         {{ project.status }}
-                    </span>
+                    </p>
+
+                    <p>
+                        <strong>Programme:</strong>
+                        {{ project.programme or "No Programme" }}
+                    </p>
+
+                    <p>
+                        <strong>Portfolio:</strong>
+                        {{ project.portfolio or "No Portfolio" }}
+                    </p>
+
+                    <p>
+                        <strong>Completion:</strong>
+                        {{ project.completion_rate }}%
+                    </p>
+
+                    <p>
+                        <strong>Open Risks:</strong>
+                        {{ project.open_risks }}
+                    </p>
+
+                    <p>
+                        <strong>Open Issues:</strong>
+                        {{ project.open_issues }}
+                    </p>
+
+                    <p>
+                        <strong>Portfolio Manager:</strong>
+                        {{ project.portfolio_manager or "Not assigned" }}
+                    </p>
+
+                    <p>
+                        <strong>Portfolio Sponsor:</strong>
+                        {{ project.portfolio_sponsor or "Not assigned" }}
+                    </p>
+
+                    <div class="smart-insight">
+                        <strong>Strategic Objective:</strong>
+                        <br><br>
+                        {{ project.strategic_objective or "No strategic objective recorded." }}
+                    </div>
 
                 </div>
 
