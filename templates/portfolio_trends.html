@@ -21,10 +21,10 @@
         <div class="dashboard-header">
 
             <div>
-                <h1>Portfolio Trend Charts</h1>
+                <h1>Portfolio Trends</h1>
 
                 <p class="dashboard-subtitle">
-                    Track portfolio health, risk exposure, financial health and performance over time.
+                    Track health, risk, financial strength and delivery performance trends over time.
                 </p>
             </div>
 
@@ -36,29 +36,58 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Snapshots</h3>
-                <p>{{ trends|length }}</p>
+                <p>{{ total_records }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Latest Health</h3>
-                <p>{{ trends[-1]["health_score"] }}%</p>
+                <p>{{ latest_health }}%</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Latest Risk</h3>
-                <p>{{ trends[-1]["risk_exposure"] }}%</p>
+                <p>{{ latest_risk }}%</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>Latest Financial</h3>
-                <p>{{ trends[-1]["financial_health"] }}%</p>
+                <h3>Financial Health</h3>
+                <p>{{ latest_financial }}%</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Delivery Score</h3>
+                <p>{{ latest_delivery }}%</p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Health Trend</h3>
+                <p>{{ health_trend }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Risk Trend</h3>
+                <p>{{ risk_trend }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Financial Trend</h3>
+                <p>{{ financial_trend }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Delivery Trend</h3>
+                <p>{{ delivery_trend }}</p>
             </div>
 
         </div>
 
         <div class="smart-card">
 
-            <h3>Portfolio Health Trend</h3>
+            <h3>Portfolio Trend Chart</h3>
 
             <canvas id="portfolioTrendChart"></canvas>
 
@@ -66,20 +95,87 @@
 
         <div class="smart-card">
 
-            <h3>Latest Portfolio Commentary</h3>
+            <h3>Executive Trend Summary</h3>
 
             <div class="smart-insight">
 
-                <strong>Trend:</strong>
-                {{ trends[-1]["trend"] }}
+                <p>
+                    <strong>Health Trend:</strong>
+                    {{ health_trend }}
+                </p>
 
-                <br><br>
+                <p>
+                    <strong>Risk Trend:</strong>
+                    {{ risk_trend }}
+                </p>
 
-                <strong>Commentary:</strong>
+                <p>
+                    <strong>Financial Trend:</strong>
+                    {{ financial_trend }}
+                </p>
 
-                <br><br>
+                <p>
+                    <strong>Delivery Trend:</strong>
+                    {{ delivery_trend }}
+                </p>
 
-                {{ trends[-1]["commentary"] or "No commentary added." }}
+                <br>
+
+                {% if health_trend == "Declining" %}
+                    <p>
+                        Portfolio health is declining. Review delivery performance, financial exposure and risk pressure.
+                    </p>
+                {% elif health_trend == "Improving" %}
+                    <p>
+                        Portfolio health is improving. Continue monitoring risk and delivery performance.
+                    </p>
+                {% else %}
+                    <p>
+                        Portfolio health is stable. Maintain current governance controls.
+                    </p>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Trend Records</h3>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Health</th>
+                            <th>Risk</th>
+                            <th>Financial</th>
+                            <th>Delivery</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for trend in trends %}
+
+                        <tr>
+                            <td>{{ trend["created_at"] }}</td>
+                            <td>{{ trend["health_score"] }}%</td>
+                            <td>{{ trend["risk_exposure"] }}%</td>
+                            <td>{{ trend["financial_health"] }}%</td>
+                            <td>{{ trend["performance_score"] }}%</td>
+                            <td>{{ trend["trend"] }}</td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
 
             </div>
 
@@ -95,25 +191,25 @@
 
             const healthScores = [
                 {% for trend in trends %}
-                    {{ trend['health_score'] }},
+                    {{ trend['health_score'] or 0 }},
                 {% endfor %}
             ];
 
             const riskExposure = [
                 {% for trend in trends %}
-                    {{ trend['risk_exposure'] }},
+                    {{ trend['risk_exposure'] or 0 }},
                 {% endfor %}
             ];
 
             const financialHealth = [
                 {% for trend in trends %}
-                    {{ trend['financial_health'] }},
+                    {{ trend['financial_health'] or 0 }},
                 {% endfor %}
             ];
 
             const performanceScores = [
                 {% for trend in trends %}
-                    {{ trend['performance_score'] }},
+                    {{ trend['performance_score'] or 0 }},
                 {% endfor %}
             ];
 
@@ -143,7 +239,7 @@
                             tension: 0.3
                         },
                         {
-                            label: "Performance Score",
+                            label: "Delivery Score",
                             data: performanceScores,
                             borderWidth: 3,
                             tension: 0.3

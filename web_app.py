@@ -15821,21 +15821,108 @@ def portfolio_trends():
         return "Access denied"
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         SELECT *
         FROM portfolio_health
         WHERE user_id = %s
         ORDER BY created_at ASC
-    """, (session["user_id"],))
+    """, (
+        session["user_id"],
+    ))
 
     trends = cursor.fetchall()
+
+    total_records = len(trends)
+
+    latest_health = 0
+    previous_health = 0
+
+    health_trend = "No Data"
+
+    latest_risk = 0
+    previous_risk = 0
+
+    risk_trend = "No Data"
+
+    latest_financial = 0
+    previous_financial = 0
+
+    financial_trend = "No Data"
+
+    latest_delivery = 0
+    previous_delivery = 0
+
+    delivery_trend = "No Data"
+
+    if total_records >= 1:
+
+        latest = trends[-1]
+
+        latest_health = latest["health_score"] or 0
+        latest_risk = latest["risk_exposure"] or 0
+        latest_financial = latest["financial_health"] or 0
+        latest_delivery = latest["performance_score"] or 0
+
+    if total_records >= 2:
+
+        previous = trends[-2]
+
+        previous_health = previous["health_score"] or 0
+        previous_risk = previous["risk_exposure"] or 0
+        previous_financial = previous["financial_health"] or 0
+        previous_delivery = previous["performance_score"] or 0
+
+        if latest_health > previous_health:
+            health_trend = "Improving"
+        elif latest_health < previous_health:
+            health_trend = "Declining"
+        else:
+            health_trend = "Stable"
+
+        if latest_risk < previous_risk:
+            risk_trend = "Improving"
+        elif latest_risk > previous_risk:
+            risk_trend = "Declining"
+        else:
+            risk_trend = "Stable"
+
+        if latest_financial > previous_financial:
+            financial_trend = "Improving"
+        elif latest_financial < previous_financial:
+            financial_trend = "Declining"
+        else:
+            financial_trend = "Stable"
+
+        if latest_delivery > previous_delivery:
+            delivery_trend = "Improving"
+        elif latest_delivery < previous_delivery:
+            delivery_trend = "Declining"
+        else:
+            delivery_trend = "Stable"
+
     conn.close()
 
     return render_template(
         "portfolio_trends.html",
-        trends=trends
+
+        trends=trends,
+
+        total_records=total_records,
+
+        latest_health=latest_health,
+        latest_risk=latest_risk,
+        latest_financial=latest_financial,
+        latest_delivery=latest_delivery,
+
+        health_trend=health_trend,
+        risk_trend=risk_trend,
+        financial_trend=financial_trend,
+        delivery_trend=delivery_trend
     )
 
 
