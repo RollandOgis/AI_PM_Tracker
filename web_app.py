@@ -3627,6 +3627,48 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS skills_gap_notes TEXT
                    """)
 
+    # Clients v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS client_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS account_manager TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS client_health_score INTEGER DEFAULT 70
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS client_risk_rating TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS opportunity_stage TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS renewal_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS contract_expiry_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS satisfaction_score INTEGER DEFAULT 0
+                   """)
+
 
 
 
@@ -7252,18 +7294,126 @@ def clients():
         SELECT *
         FROM clients
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY company_name ASC
     """, (
         session["user_id"],
     ))
 
     clients = cursor.fetchall()
 
+    total_clients = len(clients)
+
+    active_clients = 0
+    lead_clients = 0
+    at_risk_clients = 0
+
+    total_pipeline_value = 0
+
+    clients_data = []
+
+    for client in clients:
+
+        estimated_value = float(
+            client.get("estimated_value") or 0
+        )
+
+        total_pipeline_value += estimated_value
+
+        status = (
+            client.get("status")
+            or "Lead"
+        )
+
+        if status == "Active":
+            active_clients += 1
+
+        elif status == "Lead":
+            lead_clients += 1
+
+        elif status == "At Risk":
+            at_risk_clients += 1
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM projects
+            WHERE user_id = %s
+            AND client_name = %s
+        """, (
+            session["user_id"],
+            client.get("company_name")
+        ))
+
+        linked_projects = cursor.fetchone()["count"]
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM invoices
+            WHERE user_id = %s
+            AND organisation_id = %s
+        """, (
+            session["user_id"],
+            client["id"]
+        ))
+
+        linked_invoices = cursor.fetchone()["count"]
+
+        health_score = 90
+
+        if status == "Lead":
+            health_score = 70
+
+        elif status == "At Risk":
+            health_score = 40
+
+        elif status == "Inactive":
+            health_score = 20
+
+        clients_data.append({
+
+            "client": client,
+            "health_score": health_score,
+            "linked_projects": linked_projects,
+            "linked_invoices": linked_invoices
+
+        })
+
+    executive_insights = []
+
+    if active_clients > 0:
+
+        executive_insights.append(
+            f"{active_clients} active client(s) generating delivery work."
+        )
+
+    if lead_clients > 0:
+
+        executive_insights.append(
+            f"{lead_clients} lead client(s) available for conversion."
+        )
+
+    if at_risk_clients > 0:
+
+        executive_insights.append(
+            f"{at_risk_clients} client(s) require relationship attention."
+        )
+
+    if total_clients == 0:
+
+        executive_insights.append(
+            "No client records currently available."
+        )
+
     conn.close()
 
     return render_template(
         "clients.html",
-        clients=clients
+        clients_data=clients_data,
+        total_clients=total_clients,
+        active_clients=active_clients,
+        lead_clients=lead_clients,
+        at_risk_clients=at_risk_clients,
+        total_pipeline_value=total_pipeline_value,
+        executive_insights=executive_insights
     )
 
 

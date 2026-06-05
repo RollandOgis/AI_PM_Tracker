@@ -11,7 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -21,7 +22,7 @@
                 <h1>Clients</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage client relationships and linked project opportunities.
+                    Manage client relationships, opportunity value, account ownership and commercial visibility.
                 </p>
             </div>
 
@@ -33,96 +34,185 @@
 
         </div>
 
-        {% if clients %}
+        <div class="stats-grid">
 
-            <div class="projects-grid">
+            <div class="stat-card blue-card">
+                <h3>Total Clients</h3>
+                <p>{{ total_clients }}</p>
+            </div>
 
-                {% for client in clients %}
+            <div class="stat-card green-card">
+                <h3>Active Clients</h3>
+                <p>{{ active_clients }}</p>
+            </div>
 
-                    <div class="project-card">
+            <div class="stat-card amber-card">
+                <h3>Leads</h3>
+                <p>{{ lead_clients }}</p>
+            </div>
 
-                        <div class="project-top">
+            <div class="stat-card red-card">
+                <h3>At Risk</h3>
+                <p>{{ at_risk_clients }}</p>
+            </div>
 
-                            <div>
-                                <h3>{{ client["name"] }}</h3>
+            <div class="stat-card green-card">
+                <h3>Pipeline Value</h3>
+                <p>£{{ "{:,.0f}".format(total_pipeline_value) }}</p>
+            </div>
 
-                                {% if client["status"] == "Active" %}
-                                    <span class="badge badge-green">Active</span>
-                                {% elif client["status"] == "Completed" %}
-                                    <span class="badge badge-blue">Completed</span>
-                                {% else %}
-                                    <span class="badge badge-yellow">{{ client["status"] or "Lead" }}</span>
-                                {% endif %}
-                            </div>
+        </div>
 
-                        </div>
+        <div class="smart-card">
 
-                        <div class="budget-section">
+            <h3>Executive Client Insights</h3>
 
-                            <div class="budget-row">
-                                <span>Company</span>
-                                <strong>{{ client["company"] or "N/A" }}</strong>
-                            </div>
+            <div class="smart-insight">
+                {% for insight in executive_insights %}
+                    <p>{{ insight }}</p>
+                {% endfor %}
+            </div>
 
-                            <div class="budget-row">
-                                <span>Email</span>
-                                <strong>{{ client["email"] or "N/A" }}</strong>
-                            </div>
+        </div>
 
-                            <div class="budget-row">
-                                <span>Phone</span>
-                                <strong>{{ client["phone"] or "N/A" }}</strong>
-                            </div>
+        {% if clients_data %}
 
-                            <div class="budget-row">
-                                <span>Estimated Value</span>
-                                <strong>£{{ client["estimated_value"] or 0 }}</strong>
-                            </div>
+        <div class="projects-grid">
 
-                        </div>
+            {% for item in clients_data %}
 
-                        <div class="project-actions">
+            {% set client = item["client"] %}
 
-                            <a href="/edit-client/{{ client['id'] }}">
-                                Edit
-                            </a>
+            <div class="project-card">
 
-                            <a
-                                href="/delete-client/{{ client['id'] }}"
-                                onclick="return confirm('Delete this client?')"
-                            >
-                                Delete
-                            </a>
+                <div class="project-top">
 
-                        </div>
+                    <div>
+                        <h3>{{ client["name"] }}</h3>
 
-                        <div class="smart-insight">
-                            <strong>Notes:</strong>
-                            <br><br>
-                            {{ client["notes"] or "No notes added." }}
-                        </div>
-
+                        {% if client["status"] == "Active" %}
+                            <span class="badge badge-green">Active</span>
+                        {% elif client["status"] == "At Risk" %}
+                            <span class="badge badge-red">At Risk</span>
+                        {% elif client["status"] == "Inactive" %}
+                            <span class="badge badge-red">Inactive</span>
+                        {% elif client["status"] == "Won" %}
+                            <span class="badge badge-green">Won</span>
+                        {% elif client["status"] == "Lost" %}
+                            <span class="badge badge-red">Lost</span>
+                        {% else %}
+                            <span class="badge badge-yellow">{{ client["status"] or "Lead" }}</span>
+                        {% endif %}
                     </div>
 
-                {% endfor %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Company</span>
+                        <strong>{{ client["company"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Email</span>
+                        <strong>{{ client["email"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Phone</span>
+                        <strong>{{ client["phone"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Client Owner</span>
+                        <strong>{{ client["client_owner"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Account Manager</span>
+                        <strong>{{ client["account_manager"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Client Health Score</span>
+                        <strong>{{ item["health_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Estimated Value</span>
+                        <strong>£{{ "{:,.0f}".format(client["estimated_value"] or 0) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Opportunity Stage</span>
+                        <strong>{{ client["opportunity_stage"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Projects</span>
+                        <strong>{{ item["linked_projects"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Invoices</span>
+                        <strong>{{ item["linked_invoices"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Renewal Date</span>
+                        <strong>{{ client["renewal_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Contract Expiry</span>
+                        <strong>{{ client["contract_expiry_date"] or "Not set" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Client Notes:</strong>
+                    <br><br>
+                    {{ client["notes"] or "No notes added." }}
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-client/{{ client['id'] }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-client/{{ client['id'] }}"
+                        onclick="return confirm('Delete this client?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
 
             </div>
+
+            {% endfor %}
+
+        </div>
 
         {% else %}
 
-            <div class="empty-box">
+        <div class="empty-box">
 
-                <h3>No Clients Added</h3>
+            <h3>No Clients Added</h3>
 
-                <p>
-                    Add your first client to begin tracking relationships and project ownership.
-                </p>
+            <p>
+                Add your first client to begin tracking relationships, opportunities and commercial visibility.
+            </p>
 
-                <a href="/add-client" class="btn-primary">
-                    Add First Client
-                </a>
+            <a href="/add-client" class="btn-primary">
+                Add First Client
+            </a>
 
-            </div>
+        </div>
 
         {% endif %}
 
