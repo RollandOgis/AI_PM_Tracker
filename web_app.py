@@ -4066,6 +4066,64 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS subscription_notes TEXT
                    """)
 
+    # ==================================================
+    # NOTIFICATION SETTINGS V2
+    # ==================================================
+
+    cursor.execute("""
+                   ALTER TABLE notification_settings
+                       ADD COLUMN IF NOT EXISTS notification_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE notification_settings
+                       ADD COLUMN IF NOT EXISTS description TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE notification_settings
+                       ADD COLUMN IF NOT EXISTS priority TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE notification_settings
+                       ADD COLUMN IF NOT EXISTS updated_at TEXT
+                   """)
+
+    # ==================================================
+    # EMAIL NOTIFICATIONS V2
+    # ==================================================
+
+    cursor.execute("""
+                   ALTER TABLE email_notifications
+                       ADD COLUMN IF NOT EXISTS email_template TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE email_notifications
+                       ADD COLUMN IF NOT EXISTS notification_type TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE email_notifications
+                       ADD COLUMN IF NOT EXISTS scheduled_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE email_notifications
+                       ADD COLUMN IF NOT EXISTS sent_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE email_notifications
+                       ADD COLUMN IF NOT EXISTS failure_reason TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE email_notifications
+                       ADD COLUMN IF NOT EXISTS priority TEXT
+                   """)
+
 
 
     conn.commit()
@@ -21340,6 +21398,7 @@ def reset_password(token):
         user=user
     )
 
+
 @app.route("/email-notifications")
 def email_notifications():
 
@@ -21356,21 +21415,49 @@ def email_notifications():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (recipient_email, subject, message)
+            *
         FROM email_notifications
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY recipient_email, subject, message, id DESC
     """, (
         session["user_id"],
     ))
 
     notifications = cursor.fetchall()
 
+    total_notifications = len(notifications)
+
+    draft_count = len([
+        item for item in notifications
+        if item["status"] == "Draft"
+    ])
+
+    queued_count = len([
+        item for item in notifications
+        if item["status"] == "Queued"
+    ])
+
+    sent_count = len([
+        item for item in notifications
+        if item["status"] == "Sent"
+    ])
+
+    failed_count = len([
+        item for item in notifications
+        if item["status"] == "Failed"
+    ])
+
     conn.close()
 
     return render_template(
         "email_notifications.html",
-        notifications=notifications
+        notifications=notifications,
+        total_notifications=total_notifications,
+        draft_count=draft_count,
+        queued_count=queued_count,
+        sent_count=sent_count,
+        failed_count=failed_count
     )
 
 
@@ -21387,7 +21474,29 @@ def add_email_notification():
 
         conn = get_db_connection()
 
-        cursor = conn.cursor()
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+            SELECT id
+            FROM email_notifications
+            WHERE user_id = %s
+            AND recipient_email = %s
+            AND subject = %s
+            AND status IN ('Draft', 'Queued')
+            LIMIT 1
+        """, (
+            session["user_id"],
+            request.form.get("recipient_email"),
+            request.form.get("subject")
+        ))
+
+        existing_email = cursor.fetchone()
+
+        if existing_email:
+            conn.close()
+            return redirect("/email-notifications")
 
         cursor.execute("""
             INSERT INTO email_notifications
@@ -21397,15 +21506,23 @@ def add_email_notification():
                 subject,
                 message,
                 status,
+                email_template,
+                notification_type,
+                scheduled_date,
+                priority,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["recipient_email"],
-            request.form["subject"],
-            request.form["message"],
-            "Draft",
+            request.form.get("recipient_email"),
+            request.form.get("subject"),
+            request.form.get("message"),
+            request.form.get("status"),
+            request.form.get("email_template"),
+            request.form.get("notification_type"),
+            request.form.get("scheduled_date"),
+            request.form.get("priority"),
             str(datetime.now())
         ))
 
@@ -21417,7 +21534,6 @@ def add_email_notification():
     return render_template(
         "add_email_notification.html"
     )
-
 
 
 
@@ -23987,21 +24103,55 @@ def notification_settings():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (notification_type, channel)
+            *
         FROM notification_settings
         WHERE user_id = %s
-        ORDER BY id DESC
+        ORDER BY notification_type, channel, id DESC
     """, (
         session["user_id"],
     ))
 
     settings = cursor.fetchall()
 
+    total_settings = len(settings)
+
+    enabled_count = len([
+        setting for setting in settings
+        if str(setting["enabled"]) == "Yes"
+    ])
+
+    disabled_count = len([
+        setting for setting in settings
+        if str(setting["enabled"]) == "No"
+    ])
+
+    approval_alerts = len([
+        setting for setting in settings
+        if setting["notification_category"] == "Approval"
+    ])
+
+    billing_alerts = len([
+        setting for setting in settings
+        if setting["notification_category"] == "Billing"
+    ])
+
+    ai_alerts = len([
+        setting for setting in settings
+        if setting["notification_category"] == "AI"
+    ])
+
     conn.close()
 
     return render_template(
         "notification_settings.html",
-        settings=settings
+        settings=settings,
+        total_settings=total_settings,
+        enabled_count=enabled_count,
+        disabled_count=disabled_count,
+        approval_alerts=approval_alerts,
+        billing_alerts=billing_alerts,
+        ai_alerts=ai_alerts
     )
 
 
@@ -24018,26 +24168,55 @@ def add_notification_setting():
 
         conn = get_db_connection()
 
-        cursor = conn.cursor()
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+            SELECT id
+            FROM notification_settings
+            WHERE user_id = %s
+            AND notification_type = %s
+            AND channel = %s
+            LIMIT 1
+        """, (
+            session["user_id"],
+            request.form.get("notification_type"),
+            request.form.get("channel")
+        ))
+
+        existing_setting = cursor.fetchone()
+
+        if existing_setting:
+            conn.close()
+            return redirect("/notification-settings")
 
         cursor.execute("""
             INSERT INTO notification_settings
             (
                 user_id,
                 notification_type,
+                notification_category,
                 channel,
                 enabled,
                 frequency,
-                created_at
+                priority,
+                description,
+                created_at,
+                updated_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["notification_type"],
-            request.form["channel"],
-            request.form["enabled"],
-            request.form["frequency"],
-            str(date.today())
+            request.form.get("notification_type"),
+            request.form.get("notification_category"),
+            request.form.get("channel"),
+            request.form.get("enabled"),
+            request.form.get("frequency"),
+            request.form.get("priority"),
+            request.form.get("description"),
+            str(date.today()),
+            str(datetime.now())
         ))
 
         conn.commit()
@@ -24046,6 +24225,8 @@ def add_notification_setting():
         return redirect("/notification-settings")
 
     return render_template("add_notification_setting.html")
+
+
 
 @app.route("/usage-analytics")
 def usage_analytics():

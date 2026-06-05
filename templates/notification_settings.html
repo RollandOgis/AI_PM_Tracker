@@ -22,7 +22,7 @@
                 <h1>Notification Settings</h1>
 
                 <p class="dashboard-subtitle">
-                    Configure risk alerts, deadline alerts, approval alerts and email notifications.
+                    Configure alert rules, channels, categories, priority and delivery frequency.
                 </p>
             </div>
 
@@ -38,22 +38,32 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Settings</h3>
-                <p>{{ settings|length }}</p>
+                <p>{{ total_settings }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Enabled</h3>
-                <p>{{ settings | selectattr("enabled", "equalto", "Yes") | list | length }}</p>
-            </div>
-
-            <div class="stat-card amber-card">
-                <h3>Email Alerts</h3>
-                <p>{{ settings | selectattr("channel", "equalto", "Email") | list | length }}</p>
+                <p>{{ enabled_count }}</p>
             </div>
 
             <div class="stat-card red-card">
+                <h3>Disabled</h3>
+                <p>{{ disabled_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
                 <h3>Approval Alerts</h3>
-                <p>{{ settings | selectattr("notification_type", "equalto", "Approval Alert") | list | length }}</p>
+                <p>{{ approval_alerts }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Billing Alerts</h3>
+                <p>{{ billing_alerts }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>AI Alerts</h3>
+                <p>{{ ai_alerts }}</p>
             </div>
 
         </div>
@@ -78,9 +88,22 @@
                         {% endif %}
                     </div>
 
+                    {% if setting["priority"] == "High" %}
+                        <span class="badge badge-red">High</span>
+                    {% elif setting["priority"] == "Medium" %}
+                        <span class="badge badge-yellow">Medium</span>
+                    {% else %}
+                        <span class="badge badge-blue">{{ setting["priority"] or "Low" }}</span>
+                    {% endif %}
+
                 </div>
 
                 <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ setting["notification_category"] or "General" }}</strong>
+                    </div>
 
                     <div class="budget-row">
                         <span>Channel</span>
@@ -102,6 +125,17 @@
                         <strong>{{ setting["created_at"] }}</strong>
                     </div>
 
+                    <div class="budget-row">
+                        <span>Updated</span>
+                        <strong>{{ setting["updated_at"] or "Not updated" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Description:</strong>
+                    <br><br>
+                    {{ setting["description"] or "No description added." }}
                 </div>
 
             </div>

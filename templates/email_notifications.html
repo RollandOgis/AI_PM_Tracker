@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Email Notifications</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,57 +15,158 @@
 
     <main class="main-content">
 
-        <h1>Email Notifications</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Manage email notification drafts and delivery history.
-        </p>
+            <div>
+                <h1>Email Notifications</h1>
 
-        <div style="margin-top:20px;margin-bottom:30px;">
-            <a href="/add-email-notification" class="btn-primary">
-                Add Email Notification
-            </a>
-        </div>
+                <p class="dashboard-subtitle">
+                    Manage outbound email notifications, templates, delivery status and scheduled messages.
+                </p>
+            </div>
 
-        <div class="card">
-
-            <div class="table-container">
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Recipient</th>
-                            <th>Subject</th>
-                            <th>Message</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        {% for notification in notifications %}
-
-                        <tr>
-                            <td>{{ notification.recipient_email }}</td>
-                            <td>{{ notification.subject }}</td>
-                            <td>{{ notification.message }}</td>
-                            <td>
-                                <span class="badge badge-yellow">
-                                    {{ notification.status }}
-                                </span>
-                            </td>
-                            <td>{{ notification.created_at }}</td>
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-                </table>
-
+            <div class="dashboard-actions">
+                <a href="/add-email-notification" class="btn-primary">
+                    + Add Email Notification
+                </a>
             </div>
 
         </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Emails</h3>
+                <p>{{ total_notifications }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Draft</h3>
+                <p>{{ draft_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Queued</h3>
+                <p>{{ queued_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Sent</h3>
+                <p>{{ sent_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Failed</h3>
+                <p>{{ failed_count }}</p>
+            </div>
+
+        </div>
+
+        {% if notifications %}
+
+        <div class="projects-grid">
+
+            {% for notification in notifications %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ notification["subject"] }}</h3>
+
+                        <p>
+                            {{ notification["recipient_email"] }}
+                        </p>
+                    </div>
+
+                    {% if notification["status"] == "Sent" %}
+                        <span class="badge badge-green">Sent</span>
+                    {% elif notification["status"] == "Queued" %}
+                        <span class="badge badge-blue">Queued</span>
+                    {% elif notification["status"] == "Failed" %}
+                        <span class="badge badge-red">Failed</span>
+                    {% else %}
+                        <span class="badge badge-yellow">Draft</span>
+                    {% endif %}
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Template</span>
+                        <strong>{{ notification["email_template"] or "No template" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Notification Type</span>
+                        <strong>{{ notification["notification_type"] or "General" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Priority</span>
+                        <strong>{{ notification["priority"] or "Medium" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Scheduled Date</span>
+                        <strong>{{ notification["scheduled_date"] or "Not scheduled" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Sent At</span>
+                        <strong>{{ notification["sent_at"] or "Not sent" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ notification["created_at"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Message:</strong>
+
+                    <br><br>
+
+                    {{ notification["message"] }}
+
+                </div>
+
+                {% if notification["failure_reason"] %}
+
+                <div class="alert-box alert-danger">
+                    {{ notification["failure_reason"] }}
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Email Notifications Found</h3>
+
+            <p>
+                Add email notifications to prepare outbound SaaS communication.
+            </p>
+
+            <a href="/add-email-notification" class="btn-primary">
+                Add First Email Notification
+            </a>
+
+        </div>
+
+        {% endif %}
 
     </main>
 

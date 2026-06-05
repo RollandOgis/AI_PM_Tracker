@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
+
     <title>Add Email Notification</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
 </head>
 
 <body>
@@ -14,25 +19,181 @@
 
     <main class="main-content">
 
-        <h1>Add Email Notification</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Create a draft email notification record.
-        </p>
+            <div>
+
+                <h1>Add Email Notification</h1>
+
+                <p class="dashboard-subtitle">
+                    Create email notifications, reminders and subscription communications.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/email-notifications"
+                   class="btn-primary">
+                    Back to Emails
+                </a>
+
+            </div>
+
+        </div>
 
         <form method="POST" class="form-card">
 
+            <label>Email Template</label>
+
+            <select
+                name="email_template"
+                required
+            >
+
+                <option value="Subscription Reminder">
+                    Subscription Reminder
+                </option>
+
+                <option value="Trial Started">
+                    Trial Started
+                </option>
+
+                <option value="Invoice Created">
+                    Invoice Created
+                </option>
+
+                <option value="Governance Reminder">
+                    Governance Reminder
+                </option>
+
+                <option value="Project Risk Alert">
+                    Project Risk Alert
+                </option>
+
+                <option value="Project Deadline Alert">
+                    Project Deadline Alert
+                </option>
+
+                <option value="Custom">
+                    Custom
+                </option>
+
+            </select>
+
+            <label>Notification Type</label>
+
+            <select
+                name="notification_type"
+                required
+            >
+
+                <option value="Billing">
+                    Billing
+                </option>
+
+                <option value="Governance">
+                    Governance
+                </option>
+
+                <option value="Project">
+                    Project
+                </option>
+
+                <option value="Risk">
+                    Risk
+                </option>
+
+                <option value="AI">
+                    AI
+                </option>
+
+            </select>
+
             <label>Recipient Email</label>
-            <input type="email" name="recipient_email" required>
+
+            <input
+                type="email"
+                name="recipient_email"
+                required
+            >
 
             <label>Subject</label>
-            <input type="text" name="subject" required>
+
+            <input
+                type="text"
+                name="subject"
+                required
+            >
 
             <label>Message</label>
-            <textarea name="message" rows="6" required></textarea>
 
-            <button type="submit" class="btn-primary">
-                Save Notification
+            <textarea
+                name="message"
+                rows="6"
+                required
+            ></textarea>
+
+            <label>Status</label>
+
+            <select
+                name="status"
+                required
+            >
+
+                <option value="Draft">
+                    Draft
+                </option>
+
+                <option value="Queued">
+                    Queued
+                </option>
+
+                <option value="Sent">
+                    Sent
+                </option>
+
+                <option value="Failed">
+                    Failed
+                </option>
+
+            </select>
+
+            <label>Priority</label>
+
+            <select
+                name="priority"
+                required
+            >
+
+                <option value="High">
+                    High
+                </option>
+
+                <option value="Medium">
+                    Medium
+                </option>
+
+                <option value="Low">
+                    Low
+                </option>
+
+            </select>
+
+            <label>Scheduled Date</label>
+
+            <input
+                type="date"
+                name="scheduled_date"
+            >
+
+            <br><br>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Save Email Notification
             </button>
 
         </form>
