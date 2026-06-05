@@ -21,80 +21,196 @@
                 <h1>Skills Matrix</h1>
 
                 <p class="dashboard-subtitle">
-                    View team capabilities, roles and skills coverage.
+                    View team capabilities, proficiency, certifications, training needs and skills gaps.
                 </p>
             </div>
         </div>
 
-        {% if team_members %}
+        <div class="stats-grid">
 
-            <div class="projects-grid">
+            <div class="stat-card blue-card">
+                <h3>Total Members</h3>
+                <p>{{ total_members }}</p>
+            </div>
 
-                {% for member in team_members %}
+            <div class="stat-card green-card">
+                <h3>Active Members</h3>
+                <p>{{ active_members }}</p>
+            </div>
 
-                    <div class="project-card">
+            <div class="stat-card amber-card">
+                <h3>Skills Recorded</h3>
+                <p>{{ skills_recorded }}</p>
+            </div>
 
-                        <div class="project-top">
-                            <div>
-                                <h3>{{ member["name"] }}</h3>
-                                <p>{{ member["role"] }}</p>
-                            </div>
+            <div class="stat-card green-card">
+                <h3>Certifications</h3>
+                <p>{{ certification_count }}</p>
+            </div>
 
-                            {% if member["status"] == "Active" %}
-                                <span class="badge badge-green">Active</span>
-                            {% elif member["status"] == "Unavailable" %}
-                                <span class="badge badge-yellow">Unavailable</span>
-                            {% else %}
-                                <span class="badge badge-red">{{ member["status"] }}</span>
-                            {% endif %}
-                        </div>
+            <div class="stat-card red-card">
+                <h3>Training Required</h3>
+                <p>{{ training_required_count }}</p>
+            </div>
 
-                        <div class="budget-section">
+            <div class="stat-card red-card">
+                <h3>Skills Gaps</h3>
+                <p>{{ skills_gap_count }}</p>
+            </div>
 
-                            <div class="budget-row">
-                                <span>Email</span>
-                                <strong>{{ member["email"] or "N/A" }}</strong>
-                            </div>
+        </div>
 
-                            <div class="budget-row">
-                                <span>Role</span>
-                                <strong>{{ member["role"] or "N/A" }}</strong>
-                            </div>
+        <div class="smart-card">
 
-                            <div class="budget-row">
-                                <span>Status</span>
-                                <strong>{{ member["status"] or "N/A" }}</strong>
-                            </div>
+            <h3>Skills Category Coverage</h3>
 
-                        </div>
+            <div class="smart-insight">
 
-                        <div class="smart-insight">
-                            <strong>Skills:</strong>
-                            <br><br>
-                            {{ member["skills"] or "No skills added." }}
-                        </div>
+                {% if skill_categories %}
 
-                    </div>
+                    {% for category, count in skill_categories.items() %}
 
-                {% endfor %}
+                        <p>
+                            <strong>{{ category }}:</strong>
+                            {{ count }} team member(s)
+                        </p>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <p>No skill categories recorded yet.</p>
+
+                {% endif %}
 
             </div>
+
+        </div>
+
+        {% if team_members %}
+
+        <div class="projects-grid">
+
+            {% for item in team_members %}
+
+            {% set member = item["member"] %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+                    <div>
+                        <h3>{{ member["name"] }}</h3>
+                        <p>{{ member["role"] }}</p>
+                    </div>
+
+                    {% if member["status"] == "Active" %}
+                        <span class="badge badge-green">Active</span>
+                    {% elif member["status"] == "Unavailable" %}
+                        <span class="badge badge-yellow">Unavailable</span>
+                    {% else %}
+                        <span class="badge badge-red">{{ member["status"] }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Email</span>
+                        <strong>{{ member["email"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>{{ member["role"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Department</span>
+                        <strong>{{ member["department"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Skill Category</span>
+                        <strong>{{ member["skill_category"] or "Uncategorised" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Proficiency</span>
+                        <strong>{{ member["skill_proficiency"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Competency Level</span>
+                        <strong>{{ member["competency_level"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Succession Candidate</span>
+                        <strong>{{ member["succession_candidate"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ member["status"] or "N/A" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Skills:</strong>
+                    <br><br>
+                    {{ member["skills"] or "No skills added." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Certifications:</strong>
+                    <br><br>
+                    {{ member["certifications"] or "No certifications recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Training Required:</strong>
+                    <br><br>
+                    {{ member["training_required"] or "No training requirement recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Skills Gap Notes:</strong>
+                    <br><br>
+                    {{ member["skills_gap_notes"] or "No skills gap recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Resource Recommendation:</strong>
+                    <br><br>
+                    {{ item["recommendation"] }}
+                </div>
+
+                <div class="project-actions">
+                    <a href="/edit-team-member/{{ member['id'] }}">
+                        Update Skills
+                    </a>
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
 
         {% else %}
 
-            <div class="empty-box">
+        <div class="empty-box">
 
-                <h3>No Team Members Found</h3>
+            <h3>No Team Members Found</h3>
 
-                <p>
-                    Add team members and skills to generate the skills matrix.
-                </p>
+            <p>Add team members and skills to generate the skills matrix.</p>
 
-                <a href="/add-team-member" class="btn-primary">
-                    Add Team Member
-                </a>
+            <a href="/add-team-member" class="btn-primary">
+                Add Team Member
+            </a>
 
-            </div>
+        </div>
 
         {% endif %}
 

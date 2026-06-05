@@ -3595,6 +3595,38 @@ def init_db():
                    )
                    """)
 
+    # Skills Matrix v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS skill_proficiency TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS skill_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS competency_level TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS training_required TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS succession_candidate TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS skills_gap_notes TEXT
+                   """)
+
 
 
 
@@ -14693,6 +14725,7 @@ def capacity_forecast():
         forecast_data=forecast_data
     )
 
+
 @app.route("/skills-matrix")
 def skills_matrix():
 
@@ -14709,22 +14742,84 @@ def skills_matrix():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(TRIM(name)), LOWER(TRIM(email)))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY LOWER(TRIM(name)), LOWER(TRIM(email)), id DESC
     """, (
         session["user_id"],
     ))
 
     team_members = cursor.fetchall()
 
+    total_members = len(team_members)
+    active_members = 0
+    skills_recorded = 0
+    certification_count = 0
+    training_required_count = 0
+    skills_gap_count = 0
+
+    skill_categories = {}
+
+    enriched_members = []
+
+    for member in team_members:
+
+        if member["status"] == "Active":
+            active_members += 1
+
+        skills = member["skills"] or ""
+        certifications = member.get("certifications") or ""
+        training_required = member.get("training_required") or ""
+        skills_gap_notes = member.get("skills_gap_notes") or ""
+        category = member.get("skill_category") or "Uncategorised"
+
+        if skills.strip():
+            skills_recorded += 1
+
+        if certifications.strip():
+            certification_count += 1
+
+        if training_required.strip():
+            training_required_count += 1
+
+        if skills_gap_notes.strip():
+            skills_gap_count += 1
+
+        if category not in skill_categories:
+            skill_categories[category] = 0
+
+        skill_categories[category] += 1
+
+        recommendation = "No recommendation required."
+
+        if not skills.strip():
+            recommendation = "Add skills to improve resource matching."
+        elif training_required.strip():
+            recommendation = "Training required. Review development plan."
+        elif skills_gap_notes.strip():
+            recommendation = "Skills gap identified. Review capability coverage."
+
+        enriched_members.append({
+            "member": member,
+            "recommendation": recommendation
+        })
+
     conn.close()
 
     return render_template(
         "skills_matrix.html",
-        team_members=team_members
+        team_members=enriched_members,
+        total_members=total_members,
+        active_members=active_members,
+        skills_recorded=skills_recorded,
+        certification_count=certification_count,
+        training_required_count=training_required_count,
+        skills_gap_count=skills_gap_count,
+        skill_categories=skill_categories
     )
+
 
 @app.route("/stage-gates")
 def stage_gates():
