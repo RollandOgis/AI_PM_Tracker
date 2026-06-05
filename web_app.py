@@ -3827,6 +3827,38 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS created_at TEXT
                    """)
 
+    # User Invitations v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE user_invitations
+                       ADD COLUMN IF NOT EXISTS expiry_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_invitations
+                       ADD COLUMN IF NOT EXISTS resend_count INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_invitations
+                       ADD COLUMN IF NOT EXISTS last_reminder_sent TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_invitations
+                       ADD COLUMN IF NOT EXISTS invitation_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_invitations
+                       ADD COLUMN IF NOT EXISTS accepted_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_invitations
+                       ADD COLUMN IF NOT EXISTS revoked_at TEXT
+                   """)
+
 
 
 
@@ -20806,6 +20838,9 @@ def user_invitations():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -20813,25 +20848,70 @@ def user_invitations():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT
+            user_invitations.*,
+            organisations.organisation_name,
+            workspaces.workspace_name
         FROM user_invitations
-        ORDER BY id DESC
+        LEFT JOIN organisations
+        ON user_invitations.organisation_id = organisations.id
+        LEFT JOIN workspaces
+        ON user_invitations.workspace_id = workspaces.id
+        ORDER BY user_invitations.id DESC
     """)
 
     invitations = cursor.fetchall()
+
+    today = str(date.today())
+
+    pending_count = 0
+    accepted_count = 0
+    expired_count = 0
+    revoked_count = 0
+
+    invitation_data = []
+
+    for invitation in invitations:
+
+        status = invitation["status"] or "Pending"
+
+        if (
+            invitation["expiry_date"]
+            and invitation["expiry_date"] < today
+            and status == "Pending"
+        ):
+            status = "Expired"
+
+        if status == "Pending":
+            pending_count += 1
+        elif status == "Accepted":
+            accepted_count += 1
+        elif status == "Expired":
+            expired_count += 1
+        elif status == "Revoked":
+            revoked_count += 1
+
+        invitation_data.append({
+            "invitation": invitation,
+            "display_status": status
+        })
+
+    total_invitations = len(invitation_data)
 
     conn.close()
 
     return render_template(
         "user_invitations.html",
-        invitations=invitations
+        invitation_data=invitation_data,
+        total_invitations=total_invitations,
+        pending_count=pending_count,
+        accepted_count=accepted_count,
+        expired_count=expired_count,
+        revoked_count=revoked_count
     )
 
 
-@app.route(
-    "/add-user-invitation",
-    methods=["GET", "POST"]
-)
+@app.route("/add-user-invitation", methods=["GET", "POST"])
 def add_user_invitation():
 
     if "user_id" not in session:
@@ -20884,6 +20964,39 @@ def add_user_invitation():
 
     if request.method == "POST":
 
+        invited_email = request.form.get("invited_email", "").strip().lower()
+
+        cursor.execute("""
+            SELECT id
+            FROM users
+            WHERE LOWER(email) = %s
+            LIMIT 1
+        """, (
+            invited_email,
+        ))
+
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            conn.close()
+            return redirect("/user-invitations")
+
+        cursor.execute("""
+            SELECT id
+            FROM user_invitations
+            WHERE LOWER(invited_email) = %s
+            AND status = 'Pending'
+            LIMIT 1
+        """, (
+            invited_email,
+        ))
+
+        existing_invitation = cursor.fetchone()
+
+        if existing_invitation:
+            conn.close()
+            return redirect("/user-invitations")
+
         invitation_token = str(uuid.uuid4())
 
         cursor.execute("""
@@ -20896,21 +21009,27 @@ def add_user_invitation():
                 status,
                 invitation_token,
                 invited_by,
+                expiry_date,
+                resend_count,
+                last_reminder_sent,
+                invitation_notes,
                 created_at
             )
             VALUES
-            (%s,%s,%s,%s,%s,%s,%s,%s)
+            (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-
-            request.form["organisation_id"],
-            request.form["workspace_id"],
-            request.form["invited_email"],
-            request.form["role"],
-            "Pending",
+            request.form.get("organisation_id"),
+            request.form.get("workspace_id"),
+            invited_email,
+            request.form.get("role"),
+            request.form.get("status") or "Pending",
             invitation_token,
             session["user_id"],
+            request.form.get("expiry_date"),
+            0,
+            request.form.get("last_reminder_sent"),
+            request.form.get("invitation_notes"),
             str(datetime.now())
-
         ))
 
         conn.commit()

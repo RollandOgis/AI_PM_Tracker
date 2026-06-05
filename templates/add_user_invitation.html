@@ -14,44 +14,86 @@
 
     <main class="main-content">
 
-        <h1>Add User Invitation</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Add User Invitation</h1>
+                <p class="dashboard-subtitle">
+                    Invite a user into an organisation and workspace with lifecycle tracking.
+                </p>
+            </div>
 
-        <form method="POST" class="form-card">
+            <div class="dashboard-actions">
+                <a href="/user-invitations" class="btn-primary">
+                    Back to Invitations
+                </a>
+            </div>
+        </div>
 
-            <label>Organisation</label>
-            <select name="organisation_id" required>
-                {% for organisation in organisations %}
-                <option value="{{ organisation.id }}">
-                    {{ organisation.organisation_name }}
-                </option>
-                {% endfor %}
-            </select>
+        <div class="form-container">
 
-            <label>Workspace</label>
-            <select name="workspace_id" required>
-                {% for workspace in workspaces %}
-                <option value="{{ workspace.id }}">
-                    {{ workspace.workspace_name }}
-                </option>
-                {% endfor %}
-            </select>
+            <form method="POST">
 
-            <label>Invited Email</label>
-            <input type="email" name="invited_email" required>
+                <label>Organisation</label>
+                <select name="organisation_id" required>
+                    {% for organisation in organisations %}
+                    <option value="{{ organisation.id }}">
+                        {{ organisation.organisation_name }}
+                    </option>
+                    {% endfor %}
+                </select>
 
-            <label>Role</label>
-            <select name="role" required>
-                <option value="Admin">Admin</option>
-                <option value="Manager">Manager</option>
-                <option value="Team Member">Team Member</option>
-                <option value="Viewer">Viewer</option>
-            </select>
+                <label>Workspace</label>
+                <select name="workspace_id" required>
+                    {% for workspace in workspaces %}
+                    <option value="{{ workspace.id }}">
+                        {{ workspace.workspace_name }}
+                    </option>
+                    {% endfor %}
+                </select>
 
-            <button type="submit" class="btn-primary">
-                Send Invitation
-            </button>
+                <label>Invited Email</label>
+                <input type="email" name="invited_email" required>
 
-        </form>
+                <label>Role</label>
+                <select name="role" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Team Member">Team Member</option>
+                    <option value="Viewer">Viewer</option>
+                </select>
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Pending">Pending</option>
+                    <option value="Accepted">Accepted</option>
+                    <option value="Expired">Expired</option>
+                    <option value="Revoked">Revoked</option>
+                </select>
+
+                <label>Expiry Date</label>
+                <input type="date" name="expiry_date">
+
+                <label>Last Reminder Sent</label>
+                <input type="date" name="last_reminder_sent">
+
+                <label>Invitation Notes</label>
+                <textarea name="invitation_notes" rows="5"></textarea>
+
+                <div class="smart-insight">
+                    <strong>Invitation Preview:</strong>
+                    <br><br>
+                    This user will be invited to the selected organisation and workspace with the selected role.
+                </div>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Send Invitation
+                </button>
+
+            </form>
+
+        </div>
 
     </main>
 

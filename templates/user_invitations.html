@@ -1,16 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
     <meta charset="UTF-8">
-
     <title>User Invitations</title>
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}"
-    >
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -21,110 +15,149 @@
 
     <main class="main-content">
 
-        <h1>User Invitations</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>User Invitations</h1>
+                <p class="dashboard-subtitle">
+                    Track invitation lifecycle, workspace access and invitation status.
+                </p>
+            </div>
 
-        <p class="page-subtitle">
-            Manage invitations sent to users for organisations and workspaces.
-        </p>
-
-        <div style="margin-top:20px;margin-bottom:30px;">
-
-            <a
-                href="/add-user-invitation"
-                class="btn-primary"
-            >
-                Add Invitation
-            </a>
-
+            <div class="dashboard-actions">
+                <a href="/add-user-invitation" class="btn-primary">
+                    + Add Invitation
+                </a>
+            </div>
         </div>
 
-        <div class="card">
+        <div class="stats-grid">
 
-            <div class="table-container">
+            <div class="stat-card blue-card">
+                <h3>Total Invitations</h3>
+                <p>{{ total_invitations }}</p>
+            </div>
 
-                <table>
+            <div class="stat-card amber-card">
+                <h3>Pending</h3>
+                <p>{{ pending_count }}</p>
+            </div>
 
-                    <thead>
+            <div class="stat-card green-card">
+                <h3>Accepted</h3>
+                <p>{{ accepted_count }}</p>
+            </div>
 
-                        <tr>
+            <div class="stat-card red-card">
+                <h3>Expired</h3>
+                <p>{{ expired_count }}</p>
+            </div>
 
-                            <th>Email</th>
-
-                            <th>Role</th>
-
-                            <th>Status</th>
-
-                            <th>Organisation ID</th>
-
-                            <th>Workspace ID</th>
-
-                            <th>Created</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {% for invitation in invitations %}
-
-                        <tr>
-
-                            <td>
-                                {{ invitation.invited_email }}
-                            </td>
-
-                            <td>
-                                {{ invitation.role }}
-                            </td>
-
-                            <td>
-
-                                {% if invitation.status == "Accepted" %}
-
-                                    <span class="badge badge-green">
-                                        Accepted
-                                    </span>
-
-                                {% elif invitation.status == "Pending" %}
-
-                                    <span class="badge badge-yellow">
-                                        Pending
-                                    </span>
-
-                                {% else %}
-
-                                    <span class="badge badge-red">
-                                        Declined
-                                    </span>
-
-                                {% endif %}
-
-                            </td>
-
-                            <td>
-                                {{ invitation.organisation_id }}
-                            </td>
-
-                            <td>
-                                {{ invitation.workspace_id }}
-                            </td>
-
-                            <td>
-                                {{ invitation.created_at }}
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-
+            <div class="stat-card red-card">
+                <h3>Revoked</h3>
+                <p>{{ revoked_count }}</p>
             </div>
 
         </div>
+
+        {% if invitation_data %}
+
+        <div class="projects-grid">
+
+            {% for item in invitation_data %}
+
+            {% set invitation = item["invitation"] %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+                    <div>
+                        <h3>{{ invitation["invited_email"] }}</h3>
+                        <p>{{ invitation["role"] }}</p>
+                    </div>
+
+                    {% if item["display_status"] == "Accepted" %}
+                        <span class="badge badge-green">Accepted</span>
+                    {% elif item["display_status"] == "Pending" %}
+                        <span class="badge badge-yellow">Pending</span>
+                    {% elif item["display_status"] == "Expired" %}
+                        <span class="badge badge-red">Expired</span>
+                    {% elif item["display_status"] == "Revoked" %}
+                        <span class="badge badge-red">Revoked</span>
+                    {% else %}
+                        <span class="badge badge-blue">{{ item["display_status"] }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Organisation</span>
+                        <strong>{{ invitation["organisation_name"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Workspace</span>
+                        <strong>{{ invitation["workspace_name"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>{{ invitation["role"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created</span>
+                        <strong>{{ invitation["created_at"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Expiry Date</span>
+                        <strong>{{ invitation["expiry_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Resend Count</span>
+                        <strong>{{ invitation["resend_count"] or 0 }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Last Reminder Sent</span>
+                        <strong>{{ invitation["last_reminder_sent"] or "Not sent" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Accepted At</span>
+                        <strong>{{ invitation["accepted_at"] or "Not accepted" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Revoked At</span>
+                        <strong>{{ invitation["revoked_at"] or "Not revoked" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Invitation Notes:</strong>
+                    <br><br>
+                    {{ invitation["invitation_notes"] or "No notes recorded." }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Invitations Found</h3>
+            <p>No user invitations have been created yet.</p>
+            <a href="/add-user-invitation" class="btn-primary">Add First Invitation</a>
+        </div>
+
+        {% endif %}
 
     </main>
 
