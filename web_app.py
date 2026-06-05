@@ -14547,10 +14547,11 @@ def resource_heatmap():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(TRIM(name)), LOWER(TRIM(email)))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY LOWER(TRIM(name)), LOWER(TRIM(email)), id DESC
     """, (
         session["user_id"],
     ))
@@ -14559,16 +14560,24 @@ def resource_heatmap():
 
     heatmap_data = []
 
+    overloaded_count = 0
+    busy_count = 0
+    available_count = 0
+
+    department_heatmap = {}
+    role_heatmap = {}
+
     for member in members:
 
         cursor.execute("""
-            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+            SELECT COUNT(DISTINCT tasks.id) AS active_tasks
             FROM tasks
             JOIN projects
             ON tasks.project_id = projects.id
             LEFT JOIN task_team_members
             ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
+            AND tasks.status != 'Completed'
             AND (
                 tasks.assigned_to = %s
                 OR task_team_members.team_member_id = %s
@@ -14579,53 +14588,100 @@ def resource_heatmap():
             member["id"]
         ))
 
-        total_tasks = cursor.fetchone()["total_tasks"]
+        active_tasks = cursor.fetchone()["active_tasks"]
 
-        utilisation = min(
-            total_tasks * 10,
-            100
+        resource_capacity = int(
+            member.get("resource_capacity") or 100
         )
 
-        if utilisation >= 80:
+        workload_points = active_tasks * 10
+
+        if resource_capacity > 0:
+            utilisation = round(
+                (workload_points / resource_capacity) * 100
+            )
+        else:
+            utilisation = 0
+
+        department = (
+            member.get("department")
+            or "Unassigned"
+        )
+
+        role = (
+            member.get("role")
+            or "Unknown"
+        )
+
+        if utilisation >= 90:
 
             status = "Overloaded"
             colour = "red"
+            overloaded_count += 1
 
-        elif utilisation >= 50:
+        elif utilisation >= 60:
 
             status = "Busy"
             colour = "amber"
+            busy_count += 1
 
         else:
 
             status = "Available"
             colour = "green"
+            available_count += 1
+
+        department_heatmap[department] = (
+            department_heatmap.get(department, 0) + 1
+        )
+
+        role_heatmap[role] = (
+            role_heatmap.get(role, 0) + 1
+        )
+
+        workload_trend = "Stable"
+
+        if utilisation >= 90:
+            workload_trend = "Increasing"
+
+        elif utilisation <= 40:
+            workload_trend = "Underutilised"
 
         heatmap_data.append({
 
             "name": member["name"],
-            "role": member["role"],
-            "total_tasks": total_tasks,
+            "role": role,
+            "department": department,
+            "skills": member.get("skills"),
+            "active_tasks": active_tasks,
             "utilisation": utilisation,
             "status": status,
-            "colour": colour
+            "colour": colour,
+            "workload_trend": workload_trend
 
         })
 
-    overloaded_count = len([
-        item for item in heatmap_data
-        if item["status"] == "Overloaded"
-    ])
+    executive_summary = []
 
-    busy_count = len([
-        item for item in heatmap_data
-        if item["status"] == "Busy"
-    ])
+    if overloaded_count > 0:
+        executive_summary.append(
+            f"{overloaded_count} overloaded resource(s) require attention."
+        )
 
-    available_count = len([
-        item for item in heatmap_data
-        if item["status"] == "Available"
-    ])
+    if busy_count > available_count:
+        executive_summary.append(
+            "Team workload is trending high."
+        )
+
+    if available_count > busy_count:
+        executive_summary.append(
+            "Spare capacity exists within the team."
+        )
+
+    if not executive_summary:
+        executive_summary.append(
+            "Resource heat map currently stable."
+        )
 
     conn.close()
 
@@ -14634,7 +14690,10 @@ def resource_heatmap():
         heatmap_data=heatmap_data,
         overloaded_count=overloaded_count,
         busy_count=busy_count,
-        available_count=available_count
+        available_count=available_count,
+        department_heatmap=department_heatmap,
+        role_heatmap=role_heatmap,
+        executive_summary=executive_summary
     )
 
 @app.route("/capacity-forecast")

@@ -21,7 +21,7 @@
                 <h1>Resource Heat Map</h1>
 
                 <p class="dashboard-subtitle">
-                    Visualise team workload pressure and resource availability.
+                    Visualise workload pressure by resource, department, role, skills and workload trend.
                 </p>
             </div>
         </div>
@@ -45,88 +45,158 @@
 
         </div>
 
+        <div class="workload-summary-grid">
+
+            <div class="project-card">
+                <h3>Executive Heat Map Summary</h3>
+
+                <div class="smart-insight">
+                    {% for item in executive_summary %}
+                        <p>{{ item }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="project-card">
+                <h3>Department Heat Map</h3>
+
+                <div class="smart-insight">
+                    {% if department_heatmap %}
+                        {% for department, count in department_heatmap.items() %}
+                            <p>
+                                <strong>{{ department }}:</strong>
+                                {{ count }} resource(s)
+                            </p>
+                        {% endfor %}
+                    {% else %}
+                        <p>No department data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="project-card">
+                <h3>Role Heat Map</h3>
+
+                <div class="smart-insight">
+                    {% if role_heatmap %}
+                        {% for role, count in role_heatmap.items() %}
+                            <p>
+                                <strong>{{ role }}:</strong>
+                                {{ count }} resource(s)
+                            </p>
+                        {% endfor %}
+                    {% else %}
+                        <p>No role data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
         {% if heatmap_data %}
 
-            <div class="projects-grid">
+        <div class="projects-grid">
 
-                {% for item in heatmap_data %}
+            {% for item in heatmap_data %}
 
-                    <div class="project-card">
+            <div class="project-card">
 
-                        <div class="project-top">
-                            <div>
-                                <h3>{{ item["name"] }}</h3>
-                                <p>{{ item["role"] }}</p>
-                            </div>
-
-                            {% if item["status"] == "Overloaded" %}
-                                <span class="badge badge-red">Overloaded</span>
-                            {% elif item["status"] == "Busy" %}
-                                <span class="badge badge-yellow">Busy</span>
-                            {% else %}
-                                <span class="badge badge-green">Available</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="budget-section">
-
-                            <div class="budget-row">
-                                <span>Total Tasks</span>
-                                <strong>{{ item["total_tasks"] }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Utilisation</span>
-                                <strong>{{ item["utilisation"] }}%</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Status</span>
-                                <strong>{{ item["status"] }}</strong>
-                            </div>
-
-                        </div>
-
-                        <div class="progress-wrapper">
-                            <div
-                                class="progress-fill"
-                                data-width="{{ item['utilisation'] }}"
-                            ></div>
-                        </div>
-
-                        {% if item["status"] == "Overloaded" %}
-                            <div class="alert-box alert-danger">
-                                Workload pressure is high. Consider redistributing tasks.
-                            </div>
-                        {% elif item["status"] == "Busy" %}
-                            <div class="smart-insight">
-                                Resource is busy but within a manageable range.
-                            </div>
-                        {% else %}
-                            <div class="smart-insight">
-                                Resource has available capacity for additional work.
-                            </div>
-                        {% endif %}
-
+                <div class="project-top">
+                    <div>
+                        <h3>{{ item["name"] }}</h3>
+                        <p>{{ item["role"] }}</p>
                     </div>
 
-                {% endfor %}
+                    {% if item["status"] == "Overloaded" %}
+                        <span class="badge badge-red">Overloaded</span>
+                    {% elif item["status"] == "Busy" %}
+                        <span class="badge badge-yellow">Busy</span>
+                    {% else %}
+                        <span class="badge badge-green">Available</span>
+                    {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Department</span>
+                        <strong>{{ item["department"] or "Unassigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Active Tasks</span>
+                        <strong>{{ item["active_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Utilisation</span>
+                        <strong>{{ item["utilisation"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ item["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Workload Trend</span>
+                        <strong>{{ item["workload_trend"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="progress-wrapper">
+                    <div
+                        class="progress-fill"
+                        data-width="{{ item['utilisation'] }}"
+                    ></div>
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Skills Heat Map Foundation:</strong>
+                    <br><br>
+                    {{ item["skills"] or "No skills recorded." }}
+                </div>
+
+                {% if item["status"] == "Overloaded" %}
+
+                    <div class="alert-box alert-danger">
+                        Workload pressure is high. Consider redistributing tasks.
+                    </div>
+
+                {% elif item["status"] == "Busy" %}
+
+                    <div class="smart-insight">
+                        Resource is busy but still within a manageable range.
+                    </div>
+
+                {% else %}
+
+                    <div class="smart-insight">
+                        Resource has available capacity for additional work.
+                    </div>
+
+                {% endif %}
 
             </div>
+
+            {% endfor %}
+
+        </div>
 
         {% else %}
 
-            <div class="empty-box">
-                <h3>No Team Members Found</h3>
+        <div class="empty-box">
+            <h3>No Team Members Found</h3>
 
-                <p>
-                    Add team members to generate the resource heat map.
-                </p>
+            <p>
+                Add team members to generate the resource heat map.
+            </p>
 
-                <a href="/add-team-member" class="btn-primary">
-                    Add Team Member
-                </a>
-            </div>
+            <a href="/add-team-member" class="btn-primary">
+                Add Team Member
+            </a>
+        </div>
 
         {% endif %}
 
@@ -136,7 +206,17 @@
 
 <script>
 document.querySelectorAll(".progress-fill").forEach(function(bar) {
-    bar.style.width = bar.dataset.width + "%";
+    let width = parseInt(bar.dataset.width);
+
+    if (width > 100) {
+        width = 100;
+    }
+
+    if (width < 0) {
+        width = 0;
+    }
+
+    bar.style.width = width + "%";
 });
 </script>
 
