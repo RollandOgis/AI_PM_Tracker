@@ -26,6 +26,12 @@
                 </p>
             </div>
 
+            <div class="dashboard-actions">
+                <a href="/portfolio-pdf-report" class="btn-primary">
+                    Export Portfolio PDF
+                </a>
+            </div>
+
         </div>
 
         <div class="stats-grid">
@@ -50,70 +56,91 @@
                 <p>{{ total_changes["total_changes"] }}</p>
             </div>
 
+            <div class="stat-card blue-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Governance Pressure</h3>
+                <p>{{ governance_pressure_score }}%</p>
+            </div>
+
         </div>
 
         <div class="smart-card">
 
             <h3>Portfolio Health Snapshot</h3>
 
-            {% if latest_health %}
+            <div class="budget-section">
 
-                <div class="budget-section">
-
-                    <div class="budget-row">
-                        <span>Health Score</span>
-                        <strong>{{ latest_health["health_score"] }}%</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Risk Exposure</span>
-                        <strong>{{ latest_health["risk_exposure"] }}%</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Financial Health</span>
-                        <strong>{{ latest_health["financial_health"] }}%</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Performance Score</span>
-                        <strong>{{ latest_health["performance_score"] }}%</strong>
-                    </div>
-
-                    <div class="budget-row">
-                        <span>Trend</span>
-                        <strong>{{ latest_health["trend"] }}</strong>
-                    </div>
-
+                <div class="budget-row">
+                    <span>Health Score</span>
+                    <strong>{{ latest_health["health_score"] }}%</strong>
                 </div>
 
-                <div class="smart-insight">
-
-                    <strong>Executive Commentary:</strong>
-
-                    <br><br>
-
-                    {{ latest_health["commentary"] or "No commentary added." }}
-
+                <div class="budget-row">
+                    <span>Risk Exposure</span>
+                    <strong>{{ latest_health["risk_exposure"] }}%</strong>
                 </div>
 
-            {% else %}
-
-                <div class="empty-box">
-
-                    <h3>No Portfolio Health Data</h3>
-
-                    <p>
-                        Add a portfolio health snapshot to populate this executive view.
-                    </p>
-
-                    <a href="/add-portfolio-health" class="btn-primary">
-                        Add Portfolio Health
-                    </a>
-
+                <div class="budget-row">
+                    <span>Financial Health</span>
+                    <strong>{{ latest_health["financial_health"] }}%</strong>
                 </div>
 
-            {% endif %}
+                <div class="budget-row">
+                    <span>Performance Score</span>
+                    <strong>{{ latest_health["performance_score"] }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Trend</span>
+                    <strong>{{ latest_health["trend"] }}</strong>
+                </div>
+
+            </div>
+
+            <div class="smart-insight">
+                <strong>Executive Commentary:</strong>
+                <br><br>
+                {{ executive_commentary }}
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Score Breakdown</h3>
+
+            <div class="budget-section">
+
+                <div class="budget-row">
+                    <span>Health Score</span>
+                    <strong>{{ score_explanations["health_score"] }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Risk Exposure</span>
+                    <strong>{{ score_explanations["risk_exposure"] }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Financial Health</span>
+                    <strong>{{ score_explanations["financial_health"] }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Performance Score</span>
+                    <strong>{{ score_explanations["performance_score"] }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Governance Pressure</span>
+                    <strong>{{ score_explanations["governance_pressure"] }}</strong>
+                </div>
+
+            </div>
 
         </div>
 
@@ -138,17 +165,27 @@
                     <strong>{{ total_changes["total_changes"] }}</strong>
                 </div>
 
+                <div class="budget-row">
+                    <span>Governance Severity</span>
+                    <strong>
+                        {% if governance_severity == "Critical" %}
+                            <span class="badge badge-red">Critical</span>
+                        {% elif governance_severity == "High" %}
+                            <span class="badge badge-red">High</span>
+                        {% elif governance_severity == "Medium" %}
+                            <span class="badge badge-yellow">Medium</span>
+                        {% else %}
+                            <span class="badge badge-green">Low</span>
+                        {% endif %}
+                    </strong>
+                </div>
+
             </div>
 
             <div class="smart-insight">
-
-                <strong>Executive Summary:</strong>
-
+                <strong>Governance Commentary:</strong>
                 <br><br>
-
-                This dashboard gives a quick executive view of delivery volume,
-                governance pressure and portfolio health.
-
+                {{ governance_commentary }}
             </div>
 
         </div>

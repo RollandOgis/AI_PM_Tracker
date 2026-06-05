@@ -5671,7 +5671,6 @@ def calendar():
         current_date=str(date.today())
     )
 
-
 @app.route("/report")
 def report():
 
@@ -5682,20 +5681,14 @@ def report():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM projects
         WHERE user_id = %s
         ORDER BY id DESC
-    """, (
-        session["user_id"],
-    ))
-
+    """, (session["user_id"],))
     projects = cursor.fetchall()
 
     cursor.execute("""
@@ -5703,8 +5696,7 @@ def report():
             tasks.*,
             projects.name AS project_name
         FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
+        JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
         ORDER BY
             CASE
@@ -5712,35 +5704,60 @@ def report():
                 ELSE 0
             END,
             tasks.due_date ASC
-    """, (
-        session["user_id"],
-    ))
-
+    """, (session["user_id"],))
     tasks = cursor.fetchall()
 
-    total_tasks = len(tasks)
+    cursor.execute("SELECT * FROM risks WHERE user_id = %s", (session["user_id"],))
+    risks = cursor.fetchall()
 
-    completed_tasks = len([
-        task for task in tasks
-        if task["status"] == "Completed"
-    ])
+    cursor.execute("SELECT * FROM issues WHERE user_id = %s", (session["user_id"],))
+    issues = cursor.fetchall()
 
-    overdue_tasks = len([
-        task for task in tasks
-        if is_overdue(
-            task["due_date"],
-            task["status"]
-        )
-    ])
-
-    if total_tasks > 0:
-        completion_rate = round(
-            (completed_tasks / total_tasks) * 100
-        )
-    else:
-        completion_rate = 0
+    cursor.execute("SELECT * FROM changes WHERE user_id = %s", (session["user_id"],))
+    changes = cursor.fetchall()
 
     conn.close()
+
+    total_tasks = len(tasks)
+    completed_tasks = len([task for task in tasks if task["status"] == "Completed"])
+    overdue_tasks = len([task for task in tasks if is_overdue(task["due_date"], task["status"])])
+    active_projects = len([project for project in projects if project["status"] != "Completed"])
+
+    completion_rate = round((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    open_risks = len(risks)
+    open_issues = len(issues)
+    open_changes = len(changes)
+
+    delivery_confidence = max(
+        0,
+        min(
+            100,
+            completion_rate
+            - (overdue_tasks * 2)
+            - (open_risks * 1)
+            - (open_issues * 1)
+        )
+    )
+
+    if delivery_confidence >= 75:
+        executive_summary = (
+            f"Portfolio delivery confidence is strong at {delivery_confidence}%. "
+            f"The portfolio contains {len(projects)} projects and {total_tasks} tasks, "
+            f"with {completion_rate}% completion and {overdue_tasks} overdue tasks."
+        )
+    elif delivery_confidence >= 50:
+        executive_summary = (
+            f"Portfolio delivery confidence is moderate at {delivery_confidence}%. "
+            f"Leadership should monitor {open_risks} risks, {open_issues} issues, "
+            f"and {overdue_tasks} overdue tasks."
+        )
+    else:
+        executive_summary = (
+            f"Portfolio delivery confidence is low at {delivery_confidence}%. "
+            f"Immediate management attention is recommended due to governance pressure, "
+            f"open risks, issues and overdue delivery items."
+        )
 
     return render_template(
         "report.html",
@@ -5750,11 +5767,18 @@ def report():
         completed_tasks=completed_tasks,
         overdue_tasks=overdue_tasks,
         completion_rate=completion_rate,
+        active_projects=active_projects,
+        open_risks=open_risks,
+        open_issues=open_issues,
+        open_changes=open_changes,
+        delivery_confidence=delivery_confidence,
+        executive_summary=executive_summary,
         current_date=str(date.today())
     )
 
 
 @app.route("/pdf-report")
+@app.route("/export-report")
 def pdf_report():
 
     if "user_id" not in session:
@@ -5764,187 +5788,130 @@ def pdf_report():
         return "Access denied"
 
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT *
-        FROM projects
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
+    cursor.execute("SELECT * FROM projects WHERE user_id = %s ORDER BY id DESC", (session["user_id"],))
     projects = cursor.fetchall()
 
     cursor.execute("""
-        SELECT
-            tasks.*,
-            projects.name AS project_name
+        SELECT tasks.*, projects.name AS project_name
         FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
+        JOIN projects ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
+        ORDER BY tasks.id DESC
+    """, (session["user_id"],))
     tasks = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT *
-        FROM risks
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
+    cursor.execute("SELECT * FROM risks WHERE user_id = %s", (session["user_id"],))
     risks = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT *
-        FROM issues
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-
+    cursor.execute("SELECT * FROM issues WHERE user_id = %s", (session["user_id"],))
     issues = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM changes WHERE user_id = %s", (session["user_id"],))
+    changes = cursor.fetchall()
 
     conn.close()
 
     total_projects = len(projects)
     total_tasks = len(tasks)
-
-    completed_tasks = len([
-        t for t in tasks
-        if t["status"] == "Completed"
-    ])
-
-    pending_tasks = len([
-        t for t in tasks
-        if t["status"] == "Pending"
-    ])
+    completed_tasks = len([t for t in tasks if t["status"] == "Completed"])
+    pending_tasks = len([t for t in tasks if t["status"] == "Pending"])
+    overdue_tasks = len([t for t in tasks if is_overdue(t["due_date"], t["status"])])
 
     open_risks = len(risks)
     open_issues = len(issues)
+    open_changes = len(changes)
 
-    completion_rate = 0
+    completion_rate = round((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
 
-    if total_tasks > 0:
-        completion_rate = round(
-            (completed_tasks / total_tasks) * 100
+    delivery_confidence = max(
+        0,
+        min(
+            100,
+            completion_rate
+            - (overdue_tasks * 2)
+            - open_risks
+            - open_issues
         )
+    )
 
     buffer = BytesIO()
-
     pdf = canvas.Canvas(buffer, pagesize=A4)
 
     width, height = A4
     y = height - 50
 
     pdf.setFont("Helvetica-Bold", 22)
-    pdf.drawString(
-        50,
-        y,
-        "AI Project Management Executive Report"
-    )
+    pdf.drawString(50, y, "AI PM Tracker Executive Report")
 
     y -= 30
 
     pdf.setFont("Helvetica", 11)
-    pdf.drawString(
-        50,
-        y,
-        f"Generated: {date.today()}"
-    )
+    pdf.drawString(50, y, f"Generated: {date.today()}")
 
-    y -= 50
+    y -= 45
 
     pdf.setFont("Helvetica-Bold", 15)
     pdf.drawString(50, y, "Executive Summary")
 
     y -= 25
-
     pdf.setFont("Helvetica", 11)
 
-    pdf.drawString(
-        50,
-        y,
-        f"Projects Managed: {total_projects}"
-    )
+    summary_lines = [
+        f"Portfolio contains {total_projects} projects and {total_tasks} tasks.",
+        f"Completion rate is {completion_rate}% with {overdue_tasks} overdue task(s).",
+        f"Governance pressure includes {open_risks} risks, {open_issues} issues and {open_changes} changes.",
+        f"Delivery confidence score is {delivery_confidence}%."
+    ]
 
-    y -= 18
+    for line in summary_lines:
+        pdf.drawString(50, y, line)
+        y -= 18
 
-    pdf.drawString(
-        50,
-        y,
-        f"Total Tasks: {total_tasks}"
-    )
-
-    y -= 18
-
-    pdf.drawString(
-        50,
-        y,
-        f"Completion Rate: {completion_rate}%"
-    )
-
-    y -= 40
+    y -= 25
 
     pdf.setFont("Helvetica-Bold", 15)
     pdf.drawString(50, y, "Delivery Health")
 
     y -= 25
-
     pdf.setFont("Helvetica", 11)
 
-    pdf.drawString(
-        50,
-        y,
-        f"Completed Tasks: {completed_tasks}"
-    )
+    delivery_lines = [
+        f"Completed Tasks: {completed_tasks}",
+        f"Pending Tasks: {pending_tasks}",
+        f"Overdue Tasks: {overdue_tasks}",
+        f"Completion Rate: {completion_rate}%"
+    ]
 
-    y -= 18
-
-    pdf.drawString(
-        50,
-        y,
-        f"Pending Tasks: {pending_tasks}"
-    )
-
-    y -= 40
-
-    pdf.setFont("Helvetica-Bold", 15)
-    pdf.drawString(50, y, "RAID Summary")
+    for line in delivery_lines:
+        pdf.drawString(50, y, line)
+        y -= 18
 
     y -= 25
 
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(50, y, "Governance Summary")
+
+    y -= 25
     pdf.setFont("Helvetica", 11)
 
-    pdf.drawString(
-        50,
-        y,
-        f"Open Risks: {open_risks}"
-    )
+    governance_lines = [
+        f"Open Risks: {open_risks}",
+        f"Open Issues: {open_issues}",
+        f"Open Changes: {open_changes}"
+    ]
 
-    y -= 18
+    for line in governance_lines:
+        pdf.drawString(50, y, line)
+        y -= 18
 
-    pdf.drawString(
-        50,
-        y,
-        f"Open Issues: {open_issues}"
-    )
-
-    y -= 40
+    y -= 25
 
     pdf.setFont("Helvetica-Bold", 15)
     pdf.drawString(50, y, "Project Portfolio")
 
     y -= 25
-
     pdf.setFont("Helvetica", 10)
 
     for project in projects:
@@ -5952,29 +5919,34 @@ def pdf_report():
         if y < 80:
             pdf.showPage()
             y = height - 50
+            pdf.setFont("Helvetica", 10)
 
         pdf.drawString(
             60,
             y,
-            f"{project['name']} ({project['status']})"
+            f"{project['name']} | Status: {project['status']}"
         )
 
         y -= 18
 
     y -= 20
 
+    if y < 120:
+        pdf.showPage()
+        y = height - 50
+
     pdf.setFont("Helvetica-Bold", 15)
-    pdf.drawString(50, y, "Upcoming Tasks")
+    pdf.drawString(50, y, "Upcoming / Recent Tasks")
 
     y -= 25
-
     pdf.setFont("Helvetica", 10)
 
-    for task in tasks[:10]:
+    for task in tasks[:15]:
 
         if y < 80:
             pdf.showPage()
             y = height - 50
+            pdf.setFont("Helvetica", 10)
 
         pdf.drawString(
             60,
@@ -5985,17 +5957,295 @@ def pdf_report():
         y -= 18
 
     pdf.save()
-
     buffer.seek(0)
 
     return Response(
         buffer.getvalue(),
         mimetype="application/pdf",
         headers={
-            "Content-Disposition":
-            "attachment; filename=executive_project_report.pdf"
+            "Content-Disposition": "attachment; filename=executive_project_report.pdf"
         }
     )
+
+
+@app.route("/portfolio-pdf-report")
+def portfolio_pdf_report():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("SELECT COUNT(*) AS total_projects FROM projects WHERE user_id = %s", (session["user_id"],))
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("SELECT COUNT(*) AS total_risks FROM risks WHERE user_id = %s", (session["user_id"],))
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("SELECT COUNT(*) AS total_issues FROM issues WHERE user_id = %s", (session["user_id"],))
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("SELECT COUNT(*) AS total_changes FROM changes WHERE user_id = %s", (session["user_id"],))
+    total_changes = cursor.fetchone()["total_changes"]
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_health
+        WHERE user_id = %s
+        ORDER BY created_at DESC
+        LIMIT 1
+    """, (session["user_id"],))
+    latest_health = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT project_prioritisation.*, projects.name AS project_name
+        FROM project_prioritisation
+        LEFT JOIN projects ON project_prioritisation.project_id = projects.id
+        WHERE project_prioritisation.user_id = %s
+        ORDER BY project_prioritisation.priority_score DESC
+        LIMIT 5
+    """, (session["user_id"],))
+    top_priorities = cursor.fetchall()
+
+    conn.close()
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(50, y, "AI PM Tracker - Portfolio Report")
+
+    y -= 30
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(50, y, f"Generated: {date.today()}")
+
+    y -= 40
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Portfolio Summary")
+
+    y -= 25
+    pdf.setFont("Helvetica", 11)
+
+    for line in [
+        f"Total Projects: {total_projects}",
+        f"Total Risks: {total_risks}",
+        f"Total Issues: {total_issues}",
+        f"Total Changes: {total_changes}"
+    ]:
+        pdf.drawString(50, y, line)
+        y -= 20
+
+    y -= 25
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Latest Portfolio Health")
+
+    y -= 25
+    pdf.setFont("Helvetica", 11)
+
+    if latest_health:
+        health_lines = [
+            f"Health Score: {latest_health['health_score']}%",
+            f"Risk Exposure: {latest_health['risk_exposure']}%",
+            f"Financial Health: {latest_health['financial_health']}%",
+            f"Performance Score: {latest_health['performance_score']}%",
+            f"Trend: {latest_health['trend']}"
+        ]
+
+        for line in health_lines:
+            pdf.drawString(50, y, line)
+            y -= 20
+    else:
+        pdf.drawString(50, y, "No portfolio health record found.")
+        y -= 20
+
+    y -= 25
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Top Priority Projects")
+
+    y -= 25
+    pdf.setFont("Helvetica", 11)
+
+    if top_priorities:
+        rank = 1
+
+        for item in top_priorities:
+
+            if y < 80:
+                pdf.showPage()
+                y = height - 50
+                pdf.setFont("Helvetica", 11)
+
+            pdf.drawString(
+                50,
+                y,
+                f"#{rank} {item['project_name'] or 'No Project'} - Priority Score: {item['priority_score']}"
+            )
+
+            y -= 20
+            rank += 1
+    else:
+        pdf.drawString(50, y, "No project prioritisation records found.")
+
+    pdf.save()
+    buffer.seek(0)
+
+    response = make_response(buffer.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = "attachment; filename=portfolio_report.pdf"
+
+    return response
+
+
+@app.route("/executive-charts")
+def executive_charts():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Reports", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("SELECT COUNT(*) AS total_projects FROM projects WHERE user_id = %s", (session["user_id"],))
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("SELECT COUNT(*) AS total_tasks FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = %s", (session["user_id"],))
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("SELECT COUNT(*) AS completed_tasks FROM tasks JOIN projects ON tasks.project_id = projects.id WHERE projects.user_id = %s AND tasks.status = 'Completed'", (session["user_id"],))
+    completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    cursor.execute("SELECT COUNT(*) AS total_risks FROM risks WHERE user_id = %s", (session["user_id"],))
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("SELECT COUNT(*) AS total_issues FROM issues WHERE user_id = %s", (session["user_id"],))
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("SELECT COUNT(*) AS total_changes FROM changes WHERE user_id = %s", (session["user_id"],))
+    total_changes = cursor.fetchone()["total_changes"]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(budget), 0) AS total_budget,
+               COALESCE(SUM(actual_cost), 0) AS total_actual
+        FROM project_financials
+        WHERE user_id = %s
+    """, (session["user_id"],))
+    financials = cursor.fetchone()
+
+    conn.close()
+
+    completion_rate = round((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 0
+
+    governance_pressure_score = min(
+        100,
+        (total_risks * 2) + (total_issues * 2) + total_changes
+    )
+
+    risk_exposure = min(100, total_risks * 3)
+
+    total_budget = float(financials["total_budget"] or 0)
+    total_actual = float(financials["total_actual"] or 0)
+
+    if total_budget > 0:
+        financial_health = max(
+            0,
+            min(100, round((1 - (total_actual / total_budget)) * 100))
+        )
+    else:
+        financial_health = 75
+
+    performance_score = max(
+        0,
+        min(
+            100,
+            round(
+                (completion_rate * 0.6)
+                + ((100 - governance_pressure_score) * 0.25)
+                + (financial_health * 0.15)
+            )
+        )
+    )
+
+    health_score = max(
+        0,
+        min(
+            100,
+            round(
+                (performance_score * 0.5)
+                + (financial_health * 0.25)
+                + ((100 - risk_exposure) * 0.25)
+            )
+        )
+    )
+
+    if governance_pressure_score >= 80:
+        governance_severity = "Critical"
+        governance_commentary = "Governance pressure is critical and requires leadership intervention."
+    elif governance_pressure_score >= 60:
+        governance_severity = "High"
+        governance_commentary = "Governance pressure is high and should be reviewed by senior management."
+    elif governance_pressure_score >= 30:
+        governance_severity = "Medium"
+        governance_commentary = "Governance pressure is moderate and should be monitored."
+    else:
+        governance_severity = "Low"
+        governance_commentary = "Governance pressure is currently low."
+
+    if health_score >= 75:
+        executive_commentary = (
+            "Portfolio is broadly healthy. Delivery performance, financial position "
+            "and governance exposure are within an acceptable range."
+        )
+    elif health_score >= 50:
+        executive_commentary = (
+            "Portfolio health is moderate. Leadership should review open risks, issues, "
+            "changes and delivery confidence."
+        )
+    else:
+        executive_commentary = (
+            "Portfolio health is weak. Immediate executive attention is recommended."
+        )
+
+    score_explanations = {
+        "health_score": "Health Score combines performance, financial health and risk exposure.",
+        "risk_exposure": "Risk Exposure is based on the number of open risks.",
+        "financial_health": "Financial Health compares total budget against actual cost.",
+        "performance_score": "Performance Score combines completion rate, governance pressure and financial health.",
+        "governance_pressure": "Governance Pressure combines risks, issues and changes."
+    }
+
+    latest_health = {
+        "health_score": health_score,
+        "risk_exposure": risk_exposure,
+        "financial_health": financial_health,
+        "performance_score": performance_score,
+        "trend": "Calculated"
+    }
+
+    return render_template(
+        "executive_charts.html",
+        total_projects={"total_projects": total_projects},
+        total_risks={"total_risks": total_risks},
+        total_issues={"total_issues": total_issues},
+        total_changes={"total_changes": total_changes},
+        latest_health=latest_health,
+        completion_rate=completion_rate,
+        governance_pressure_score=governance_pressure_score,
+        governance_severity=governance_severity,
+        governance_commentary=governance_commentary,
+        executive_commentary=executive_commentary,
+        score_explanations=score_explanations
+    )
+
+
 @app.route("/insights")
 def insights():
 
@@ -18216,67 +18466,6 @@ def add_portfolio_health():
     return render_template("add_portfolio_health.html")
 
 
-@app.route("/executive-charts")
-def executive_charts():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Reports", "view"):
-        return "Access denied"
-
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_projects
-        FROM projects
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_projects = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_risks
-        FROM risks
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_risks = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_issues
-        FROM issues
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_issues = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_changes
-        FROM changes
-        WHERE user_id = %s
-    """, (session["user_id"],))
-    total_changes = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT *
-        FROM portfolio_health
-        WHERE user_id = %s
-        ORDER BY created_at DESC
-        LIMIT 1
-    """, (session["user_id"],))
-    latest_health = cursor.fetchone()
-
-    conn.close()
-
-    return render_template(
-        "executive_charts.html",
-        total_projects=total_projects,
-        total_risks=total_risks,
-        total_issues=total_issues,
-        total_changes=total_changes,
-        latest_health=latest_health
-    )
-
-
 @app.route("/portfolio-trends")
 def portfolio_trends():
 
@@ -19112,190 +19301,6 @@ def resource_allocation_history(team_member_id):
         "resource_allocation_history.html",
         history=history
     )
-
-
-@app.route("/portfolio-pdf-report")
-def portfolio_pdf_report():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Reports", "view"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_projects
-        FROM projects
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-    total_projects = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_risks
-        FROM risks
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-    total_risks = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_issues
-        FROM issues
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-    total_issues = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT COUNT(*) AS total_changes
-        FROM changes
-        WHERE user_id = %s
-    """, (
-        session["user_id"],
-    ))
-    total_changes = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT *
-        FROM portfolio_health
-        WHERE user_id = %s
-        ORDER BY created_at DESC
-        LIMIT 1
-    """, (
-        session["user_id"],
-    ))
-    latest_health = cursor.fetchone()
-
-    cursor.execute("""
-        SELECT
-            project_prioritisation.*,
-            projects.name AS project_name
-        FROM project_prioritisation
-        LEFT JOIN projects
-        ON project_prioritisation.project_id = projects.id
-        WHERE project_prioritisation.user_id = %s
-        ORDER BY project_prioritisation.priority_score DESC
-        LIMIT 5
-    """, (
-        session["user_id"],
-    ))
-    top_priorities = cursor.fetchall()
-
-    conn.close()
-
-    buffer = BytesIO()
-
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-
-    width, height = A4
-
-    y = height - 50
-
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(50, y, "AI PM Tracker - Portfolio Report")
-
-    y -= 30
-
-    pdf.setFont("Helvetica", 10)
-    pdf.drawString(50, y, f"Generated for User ID: {session['user_id']}")
-
-    y -= 40
-
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(50, y, "Portfolio Summary")
-
-    y -= 25
-
-    pdf.setFont("Helvetica", 11)
-    pdf.drawString(50, y, f"Total Projects: {total_projects['total_projects']}")
-    y -= 20
-    pdf.drawString(50, y, f"Total Risks: {total_risks['total_risks']}")
-    y -= 20
-    pdf.drawString(50, y, f"Total Issues: {total_issues['total_issues']}")
-    y -= 20
-    pdf.drawString(50, y, f"Total Changes: {total_changes['total_changes']}")
-
-    y -= 40
-
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(50, y, "Latest Portfolio Health")
-
-    y -= 25
-
-    pdf.setFont("Helvetica", 11)
-
-    if latest_health:
-
-        pdf.drawString(50, y, f"Health Score: {latest_health['health_score']}%")
-        y -= 20
-        pdf.drawString(50, y, f"Risk Exposure: {latest_health['risk_exposure']}%")
-        y -= 20
-        pdf.drawString(50, y, f"Financial Health: {latest_health['financial_health']}%")
-        y -= 20
-        pdf.drawString(50, y, f"Performance Score: {latest_health['performance_score']}%")
-        y -= 20
-        pdf.drawString(50, y, f"Trend: {latest_health['trend']}")
-
-    else:
-
-        pdf.drawString(50, y, "No portfolio health record found.")
-
-    y -= 40
-
-    pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(50, y, "Top Priority Projects")
-
-    y -= 25
-
-    pdf.setFont("Helvetica", 11)
-
-    if top_priorities:
-
-        rank = 1
-
-        for item in top_priorities:
-
-            if y < 80:
-                pdf.showPage()
-                y = height - 50
-                pdf.setFont("Helvetica", 11)
-
-            project_name = item["project_name"] or "No Project"
-            priority_score = item["priority_score"]
-
-            pdf.drawString(
-                50,
-                y,
-                f"#{rank} {project_name} - Priority Score: {priority_score}"
-            )
-
-            y -= 20
-            rank += 1
-
-    else:
-
-        pdf.drawString(50, y, "No project prioritisation records found.")
-
-    pdf.showPage()
-    pdf.save()
-
-    buffer.seek(0)
-
-    response = make_response(buffer.getvalue())
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = "attachment; filename=portfolio_report.pdf"
-
-    return response
 
 
 @app.route("/ai-risk-engine")
