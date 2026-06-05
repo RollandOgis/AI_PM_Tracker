@@ -3762,6 +3762,8 @@ def home():
         notifications=notifications,
         current_date=str(date.today())
     )
+
+
 @app.route("/kanban")
 def kanban():
 
@@ -7004,7 +7006,10 @@ def risks():
         return "Access denied"
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
         SELECT
@@ -7051,6 +7056,7 @@ def risks():
 
             if latest > previous:
                 risk_trend = "Increasing"
+
             elif latest < previous:
                 risk_trend = "Reducing"
 
@@ -7073,7 +7079,8 @@ def risks():
 
     escalated_risks = len([
         risk for risk in risks
-        if risk["escalation_status"] == "Escalated"
+        if risk.get("escalation_required") is True
+        or risk.get("escalation_level") in ["High", "Critical", "Escalated"]
     ])
 
     conn.close()
@@ -7086,6 +7093,7 @@ def risks():
         critical_risks=critical_risks,
         escalated_risks=escalated_risks
     )
+
 
 @app.route("/add-risk", methods=["GET", "POST"])
 def add_risk():
