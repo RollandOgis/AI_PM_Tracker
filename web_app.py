@@ -15339,15 +15339,13 @@ def programmes():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
         FROM programmes
         WHERE user_id = %s
+        AND COALESCE(archived, FALSE) = FALSE
         ORDER BY created_at DESC
     """, (
         session["user_id"],
@@ -15355,11 +15353,167 @@ def programmes():
 
     programmes = cursor.fetchall()
 
+    enriched_programmes = []
+
+    total_programmes = len(programmes)
+    active_programmes = 0
+    planning_programmes = 0
+    at_risk_programmes = 0
+    completed_programmes = 0
+
+    for programme in programmes:
+
+        programme_name = programme["programme_name"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS linked_projects
+            FROM projects
+            WHERE user_id = %s
+            AND programme = %s
+        """, (
+            session["user_id"],
+            programme_name
+        ))
+
+        linked_projects = cursor.fetchone()["linked_projects"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS milestone_count
+            FROM programme_milestones
+            WHERE programme_id = %s
+        """, (
+            programme["id"],
+        ))
+
+        milestone_count = cursor.fetchone()["milestone_count"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS benefits_count
+            FROM programme_benefits
+            WHERE programme_id = %s
+        """, (
+            programme["id"],
+        ))
+
+        benefits_count = cursor.fetchone()["benefits_count"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_risks
+            FROM risks
+            WHERE user_id = %s
+            AND status != 'Closed'
+        """, (
+            session["user_id"],
+        ))
+
+        open_risks = cursor.fetchone()["open_risks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS open_issues
+            FROM issues
+            WHERE user_id = %s
+            AND status != 'Closed'
+        """, (
+            session["user_id"],
+        ))
+
+        open_issues = cursor.fetchone()["open_issues"]
+
+        health_score = 100
+        health_score -= min(open_risks * 5, 25)
+        health_score -= min(open_issues * 5, 25)
+
+        if linked_projects == 0:
+            health_score -= 20
+
+        if programme["status"] == "At Risk":
+            health_score -= 20
+
+        health_score = max(0, min(100, health_score))
+
+        if health_score >= 80:
+            health_status = "Green"
+        elif health_score >= 50:
+            health_status = "Amber"
+        else:
+            health_status = "Red"
+
+        cursor.execute("""
+            UPDATE programmes
+            SET
+                health_score = %s,
+                health_status = %s,
+                linked_projects = %s,
+                milestone_count = %s,
+                open_risks = %s,
+                open_issues = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            health_score,
+            health_status,
+            linked_projects,
+            milestone_count,
+            open_risks,
+            open_issues,
+            programme["id"],
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO programme_history
+            (
+                programme_id,
+                user_id,
+                health_score,
+                open_risks,
+                open_issues,
+                linked_projects,
+                action,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            programme["id"],
+            session["user_id"],
+            health_score,
+            open_risks,
+            open_issues,
+            linked_projects,
+            "Programme health snapshot",
+            str(date.today())
+        ))
+
+        programme["health_score"] = health_score
+        programme["health_status"] = health_status
+        programme["linked_projects"] = linked_projects
+        programme["milestone_count"] = milestone_count
+        programme["benefits_count"] = benefits_count
+        programme["open_risks"] = open_risks
+        programme["open_issues"] = open_issues
+
+        enriched_programmes.append(programme)
+
+        if programme["status"] == "Active":
+            active_programmes += 1
+        elif programme["status"] == "Planning":
+            planning_programmes += 1
+        elif programme["status"] == "At Risk":
+            at_risk_programmes += 1
+        elif programme["status"] == "Completed":
+            completed_programmes += 1
+
+    conn.commit()
     conn.close()
 
     return render_template(
         "programmes.html",
-        programmes=programmes
+        programmes=enriched_programmes,
+        total_programmes=total_programmes,
+        active_programmes=active_programmes,
+        planning_programmes=planning_programmes,
+        at_risk_programmes=at_risk_programmes,
+        completed_programmes=completed_programmes
     )
 
 
@@ -15373,10 +15527,7 @@ def add_programme():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     if request.method == "POST":
 
@@ -15432,10 +15583,7 @@ def edit_programme(programme_id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -15508,114 +15656,11 @@ def delete_programme(programme_id):
         return "Access denied"
 
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute("""
-        DELETE FROM programmes
-        WHERE id = %s
-        AND user_id = %s
-    """, (
-        programme_id,
-        session["user_id"]
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/programmes")
-
-
-@app.route("/edit-programme/<int:programme_id>", methods=["GET", "POST"])
-def edit_programme(programme_id):
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Programmes", "edit"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT *
-        FROM programmes
-        WHERE id = %s
-        AND user_id = %s
-    """, (
-        programme_id,
-        session["user_id"]
-    ))
-
-    programme = cursor.fetchone()
-
-    if not programme:
-        conn.close()
-        return redirect("/programmes")
-
-    if request.method == "POST":
-
-        cursor.execute("""
-            UPDATE programmes
-            SET
-                programme_name = %s,
-                description = %s,
-                sponsor = %s,
-                manager = %s,
-                status = %s,
-                start_date = %s,
-                end_date = %s,
-                budget = %s,
-                benefits = %s,
-                risks = %s
-            WHERE id = %s
-            AND user_id = %s
-        """, (
-            request.form["programme_name"],
-            request.form["description"],
-            request.form["sponsor"],
-            request.form["manager"],
-            request.form["status"],
-            request.form["start_date"],
-            request.form["end_date"],
-            request.form["budget"],
-            request.form["benefits"],
-            request.form["risks"],
-            programme_id,
-            session["user_id"]
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/programmes")
-
-    conn.close()
-
-    return render_template(
-        "edit_programme.html",
-        programme=programme
-    )
-
-@app.route("/delete-programme/<int:programme_id>")
-def delete_programme(programme_id):
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Programmes", "delete"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        DELETE FROM programmes
+        UPDATE programmes
+        SET archived = TRUE
         WHERE id = %s
         AND user_id = %s
     """, (

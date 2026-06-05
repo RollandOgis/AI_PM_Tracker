@@ -22,7 +22,7 @@
                 <h1>Programme Management</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage related projects, strategic outcomes, programme budgets, risks and benefits.
+                    Manage strategic delivery, linked projects, programme health, risks, issues, milestones and benefits.
                 </p>
             </div>
 
@@ -38,22 +38,27 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Programmes</h3>
-                <p>{{ programmes|length }}</p>
+                <p>{{ total_programmes }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Active</h3>
-                <p>{{ programmes | selectattr("status", "equalto", "Active") | list | length }}</p>
+                <p>{{ active_programmes }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Planning</h3>
-                <p>{{ programmes | selectattr("status", "equalto", "Planning") | list | length }}</p>
+                <p>{{ planning_programmes }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>At Risk</h3>
-                <p>{{ programmes | selectattr("status", "equalto", "At Risk") | list | length }}</p>
+                <p>{{ at_risk_programmes }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completed</h3>
+                <p>{{ completed_programmes }}</p>
             </div>
 
         </div>
@@ -72,30 +77,12 @@
 
                         <h3>{{ programme["programme_name"] }}</h3>
 
-                        {% if programme["status"] == "Active" %}
-
-                            <span class="badge badge-green">
-                                Active
-                            </span>
-
-                        {% elif programme["status"] == "Planning" %}
-
-                            <span class="badge badge-yellow">
-                                Planning
-                            </span>
-
-                        {% elif programme["status"] == "At Risk" %}
-
-                            <span class="badge badge-red">
-                                At Risk
-                            </span>
-
+                        {% if programme["health_status"] == "Green" %}
+                            <span class="badge badge-green">Healthy</span>
+                        {% elif programme["health_status"] == "Amber" %}
+                            <span class="badge badge-yellow">Monitor</span>
                         {% else %}
-
-                            <span class="badge badge-blue">
-                                {{ programme["status"] }}
-                            </span>
-
+                            <span class="badge badge-red">At Risk</span>
                         {% endif %}
 
                     </div>
@@ -119,6 +106,41 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ programme["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>{{ programme["health_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Projects</span>
+                        <strong>{{ programme["linked_projects"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Milestones</span>
+                        <strong>{{ programme["milestone_count"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Benefits</span>
+                        <strong>{{ programme["benefits_count"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Risks</span>
+                        <strong>{{ programme["open_risks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Issues</span>
+                        <strong>{{ programme["open_issues"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Start Date</span>
                         <strong>{{ programme["start_date"] or "Not set" }}</strong>
                     </div>
@@ -133,16 +155,11 @@
                         <strong>£{{ programme["budget"] or 0 }}</strong>
                     </div>
 
-                    <div class="budget-row">
-                        <span>Status</span>
-                        <strong>{{ programme["status"] }}</strong>
-                    </div>
-
                 </div>
 
                 <div class="smart-insight">
 
-                    <strong>Benefits:</strong>
+                    <strong>Benefits Summary:</strong>
 
                     <br><br>
 
@@ -152,11 +169,26 @@
 
                 <div class="smart-insight">
 
-                    <strong>Risks:</strong>
+                    <strong>Programme Risks Summary:</strong>
 
                     <br><br>
 
                     {{ programme["risks"] or "No risks recorded." }}
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-programme/{{ programme['id'] }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-programme/{{ programme['id'] }}"
+                        onclick="return confirm('Archive this programme?')"
+                    >
+                        Archive
+                    </a>
 
                 </div>
 

@@ -22,7 +22,7 @@
                 <h1>Add Programme</h1>
 
                 <p class="dashboard-subtitle">
-                    Create a programme to manage related projects and strategic benefits.
+                    Create a programme to manage related projects, strategic outcomes, benefits and governance.
                 </p>
             </div>
 
@@ -57,14 +57,14 @@
                 <input
                     type="text"
                     name="sponsor"
-                    placeholder="Executive sponsor"
+                    placeholder="Executive Sponsor"
                 >
 
                 <label>Programme Manager</label>
                 <input
                     type="text"
                     name="manager"
-                    placeholder="Programme manager"
+                    placeholder="Programme Manager"
                 >
 
                 <label>Status</label>
@@ -73,7 +73,8 @@
                     <option value="Active">Active</option>
                     <option value="At Risk">At Risk</option>
                     <option value="Completed">Completed</option>
-                    <option value="Paused">Paused</option>
+                    <option value="On Hold">On Hold</option>
+                    <option value="Cancelled">Cancelled</option>
                 </select>
 
                 <label>Start Date</label>
@@ -88,26 +89,26 @@
                     name="end_date"
                 >
 
-                <label>Budget</label>
+                <label>Budget (£)</label>
                 <input
                     type="number"
-                    name="budget"
-                    placeholder="Programme budget"
                     step="0.01"
+                    name="budget"
+                    placeholder="Programme Budget"
                 >
 
                 <label>Benefits</label>
                 <textarea
                     name="benefits"
                     rows="4"
-                    placeholder="Expected programme benefits"
+                    placeholder="Expected Programme Benefits"
                 ></textarea>
 
                 <label>Risks</label>
                 <textarea
                     name="risks"
                     rows="4"
-                    placeholder="Programme-level risks"
+                    placeholder="Programme-Level Risks"
                 ></textarea>
 
                 <br><br>

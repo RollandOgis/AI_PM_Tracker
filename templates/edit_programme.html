@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Programme</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Edit Programme</h1>
+
+                <p class="dashboard-subtitle">
+                    Update programme governance, delivery status, risks and benefits.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/programmes" class="btn-primary">
+                    Back to Programmes
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Programme Name</label>
+                <input
+                    type="text"
+                    name="programme_name"
+                    value="{{ programme['programme_name'] }}"
+                    required
+                >
+
+                <label>Description</label>
+                <textarea name="description" rows="4">{{ programme['description'] }}</textarea>
+
+                <label>Sponsor</label>
+                <input
+                    type="text"
+                    name="sponsor"
+                    value="{{ programme['sponsor'] }}"
+                >
+
+                <label>Manager</label>
+                <input
+                    type="text"
+                    name="manager"
+                    value="{{ programme['manager'] }}"
+                >
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="{{ programme['status'] }}" selected>{{ programme['status'] }}</option>
+                    <option value="Planning">Planning</option>
+                    <option value="Active">Active</option>
+                    <option value="At Risk">At Risk</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+
+                <label>Start Date</label>
+                <input
+                    type="date"
+                    name="start_date"
+                    value="{{ programme['start_date'] }}"
+                >
+
+                <label>End Date</label>
+                <input
+                    type="date"
+                    name="end_date"
+                    value="{{ programme['end_date'] }}"
+                >
+
+                <label>Budget</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    name="budget"
+                    value="{{ programme['budget'] or 0 }}"
+                >
+
+                <label>Benefits</label>
+                <textarea name="benefits" rows="4">{{ programme['benefits'] }}</textarea>
+
+                <label>Risks</label>
+                <textarea name="risks" rows="4">{{ programme['risks'] }}</textarea>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Update Programme
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
