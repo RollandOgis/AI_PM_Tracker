@@ -21,103 +21,163 @@
                 <h1>Capacity Forecast</h1>
 
                 <p class="dashboard-subtitle">
-                    Forecast future workload pressure and resource capacity.
+                    Forecast monthly and quarterly workload pressure, future capacity, hiring needs and skills demand.
                 </p>
             </div>
         </div>
 
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Resources</h3>
+                <p>{{ total_resources }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>High Risk</h3>
+                <p>{{ high_risk_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Medium Risk</h3>
+                <p>{{ medium_risk_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Low Risk</h3>
+                <p>{{ low_risk_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Hiring Required</h3>
+                <p>{{ hiring_required_count }}</p>
+            </div>
+
+        </div>
+
         {% if forecast_data %}
 
-            <div class="projects-grid">
+        <div class="projects-grid">
 
-                {% for item in forecast_data %}
+            {% for item in forecast_data %}
 
-                    <div class="project-card">
+            <div class="project-card">
 
-                        <div class="project-top">
-                            <div>
-                                <h3>{{ item["name"] }}</h3>
-                                <p>{{ item["role"] }}</p>
-                            </div>
-
-                            {% if item["forecast_risk"] == "High" %}
-                                <span class="badge badge-red">High Risk</span>
-                            {% elif item["forecast_risk"] == "Medium" %}
-                                <span class="badge badge-yellow">Medium Risk</span>
-                            {% else %}
-                                <span class="badge badge-green">Low Risk</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="budget-section">
-
-                            <div class="budget-row">
-                                <span>Current Tasks</span>
-                                <strong>{{ item["total_tasks"] }}</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Current Utilisation</span>
-                                <strong>{{ item["current_utilisation"] }}%</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Forecasted Utilisation</span>
-                                <strong>{{ item["forecasted_utilisation"] }}%</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Available Capacity</span>
-                                <strong>{{ item["available_capacity"] }}%</strong>
-                            </div>
-
-                            <div class="budget-row">
-                                <span>Forecast Risk</span>
-                                <strong>{{ item["forecast_risk"] }}</strong>
-                            </div>
-
-                        </div>
-
-                        <div class="progress-wrapper">
-                            <div
-                                class="progress-fill"
-                                data-width="{{ item['forecasted_utilisation'] }}"
-                            ></div>
-                        </div>
-
-                        {% if item["forecast_risk"] == "High" %}
-                            <div class="alert-box alert-danger">
-                                Future workload risk is high. Consider rebalancing work before assigning more tasks.
-                            </div>
-                        {% elif item["forecast_risk"] == "Medium" %}
-                            <div class="smart-insight">
-                                Forecasted workload is manageable but should be monitored.
-                            </div>
-                        {% else %}
-                            <div class="smart-insight">
-                                Resource has healthy future capacity.
-                            </div>
-                        {% endif %}
-
+                <div class="project-top">
+                    <div>
+                        <h3>{{ item["name"] }}</h3>
+                        <p>{{ item["role"] }}</p>
                     </div>
 
-                {% endfor %}
+                    {% if item["forecast_risk"] == "High" %}
+                        <span class="badge badge-red">High Risk</span>
+                    {% elif item["forecast_risk"] == "Medium" %}
+                        <span class="badge badge-yellow">Medium Risk</span>
+                    {% else %}
+                        <span class="badge badge-green">Low Risk</span>
+                    {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Department</span>
+                        <strong>{{ item["department"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Active Tasks</span>
+                        <strong>{{ item["active_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Resource Capacity</span>
+                        <strong>{{ item["resource_capacity"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Current Utilisation</span>
+                        <strong>{{ item["current_utilisation"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Monthly Forecast</span>
+                        <strong>{{ item["monthly_forecast"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Quarterly Forecast</span>
+                        <strong>{{ item["quarterly_forecast"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Available Capacity</span>
+                        <strong>{{ item["available_capacity"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Risk</span>
+                        <strong>{{ item["forecast_risk"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="progress-wrapper">
+                    <div
+                        class="progress-fill"
+                        data-width="{{ item['quarterly_forecast'] }}"
+                    ></div>
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Hiring Forecast:</strong>
+                    <br><br>
+                    {{ item["hiring_forecast"] }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Skills Demand Forecast:</strong>
+                    <br><br>
+                    {{ item["skills_demand"] }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Recruitment Recommendation:</strong>
+                    <br><br>
+                    {{ item["recruitment_recommendation"] }}
+                </div>
+
+                {% if item["forecast_risk"] == "High" %}
+                    <div class="alert-box alert-danger">
+                        Future workload risk is high. Rebalance work or increase capacity.
+                    </div>
+                {% elif item["forecast_risk"] == "Medium" %}
+                    <div class="smart-insight">
+                        Forecasted workload should be monitored.
+                    </div>
+                {% else %}
+                    <div class="smart-insight">
+                        Resource has healthy future capacity.
+                    </div>
+                {% endif %}
 
             </div>
+
+            {% endfor %}
+
+        </div>
 
         {% else %}
 
-            <div class="empty-box">
-                <h3>No Capacity Data</h3>
+        <div class="empty-box">
+            <h3>No Capacity Data</h3>
 
-                <p>
-                    Add team members and tasks to generate capacity forecasts.
-                </p>
+            <p>Add team members and tasks to generate capacity forecasts.</p>
 
-                <a href="/add-team-member" class="btn-primary">
-                    Add Team Member
-                </a>
-            </div>
+            <a href="/add-team-member" class="btn-primary">
+                Add Team Member
+            </a>
+        </div>
 
         {% endif %}
 
@@ -127,7 +187,13 @@
 
 <script>
 document.querySelectorAll(".progress-fill").forEach(function(bar) {
-    bar.style.width = bar.dataset.width + "%";
+    let width = bar.dataset.width;
+
+    if (width > 100) {
+        width = 100;
+    }
+
+    bar.style.width = width + "%";
 });
 </script>
 

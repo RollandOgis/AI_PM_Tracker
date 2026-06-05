@@ -14653,10 +14653,11 @@ def capacity_forecast():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(TRIM(name)), LOWER(TRIM(email)))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY LOWER(TRIM(name)), LOWER(TRIM(email)), id DESC
     """, (
         session["user_id"],
     ))
@@ -14665,16 +14666,23 @@ def capacity_forecast():
 
     forecast_data = []
 
+    total_resources = len(members)
+    high_risk_count = 0
+    medium_risk_count = 0
+    low_risk_count = 0
+    hiring_required_count = 0
+
     for member in members:
 
         cursor.execute("""
-            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
+            SELECT COUNT(DISTINCT tasks.id) AS active_tasks
             FROM tasks
             JOIN projects
             ON tasks.project_id = projects.id
             LEFT JOIN task_team_members
             ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
+            AND tasks.status != 'Completed'
             AND (
                 tasks.assigned_to = %s
                 OR task_team_members.team_member_id = %s
@@ -14685,44 +14693,77 @@ def capacity_forecast():
             member["id"]
         ))
 
-        total_tasks = cursor.fetchone()["total_tasks"]
+        active_tasks = cursor.fetchone()["active_tasks"]
 
-        current_utilisation = min(
-            total_tasks * 10,
-            100
-        )
+        resource_capacity = int(member.get("resource_capacity") or 100)
 
-        forecasted_utilisation = min(
-            current_utilisation + 15,
-            100
-        )
+        current_demand = active_tasks * 10
 
-        available_capacity = 100 - current_utilisation
+        if resource_capacity > 0:
+            current_utilisation = round((current_demand / resource_capacity) * 100)
+        else:
+            current_utilisation = 0
 
-        if forecasted_utilisation >= 80:
+        current_utilisation = min(current_utilisation, 150)
+
+        monthly_forecast = min(current_utilisation + 10, 150)
+        quarterly_forecast = min(current_utilisation + 25, 150)
+
+        available_capacity = max(0, resource_capacity - current_demand)
+
+        skills = member.get("skills") or ""
+        role = member.get("role") or "Unassigned"
+
+        if quarterly_forecast >= 100:
             forecast_risk = "High"
-
-        elif forecasted_utilisation >= 50:
+            high_risk_count += 1
+            hiring_forecast = "Hiring or workload redistribution required."
+            hiring_required_count += 1
+        elif quarterly_forecast >= 75:
             forecast_risk = "Medium"
-
+            medium_risk_count += 1
+            hiring_forecast = "Monitor workload and prepare backup capacity."
         else:
             forecast_risk = "Low"
+            low_risk_count += 1
+            hiring_forecast = "No immediate hiring requirement."
+
+        if not skills.strip():
+            skills_demand = "Skills not recorded. Update skills profile."
+        elif active_tasks >= 5:
+            skills_demand = f"Demand increasing for {role} capability."
+        else:
+            skills_demand = "Skills demand currently manageable."
+
+        recruitment_recommendation = hiring_forecast
 
         forecast_data.append({
             "name": member["name"],
-            "role": member["role"],
-            "total_tasks": total_tasks,
+            "role": role,
+            "department": member.get("department"),
+            "skills": skills,
+            "active_tasks": active_tasks,
+            "resource_capacity": resource_capacity,
             "current_utilisation": current_utilisation,
-            "forecasted_utilisation": forecasted_utilisation,
+            "monthly_forecast": monthly_forecast,
+            "quarterly_forecast": quarterly_forecast,
             "available_capacity": available_capacity,
-            "forecast_risk": forecast_risk
+            "forecast_risk": forecast_risk,
+            "hiring_forecast": hiring_forecast,
+            "skills_demand": skills_demand,
+            "recruitment_recommendation": recruitment_recommendation
         })
 
     conn.close()
 
     return render_template(
         "capacity_forecast.html",
-        forecast_data=forecast_data
+        forecast_data=forecast_data,
+        total_resources=total_resources,
+        high_risk_count=high_risk_count,
+        medium_risk_count=medium_risk_count,
+        low_risk_count=low_risk_count,
+        hiring_required_count=hiring_required_count
     )
 
 
