@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <title>User Invitations</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
@@ -16,18 +19,26 @@
     <main class="main-content">
 
         <div class="dashboard-header">
+
             <div>
                 <h1>User Invitations</h1>
+
                 <p class="dashboard-subtitle">
                     Track invitation lifecycle, workspace access and invitation status.
                 </p>
             </div>
 
             <div class="dashboard-actions">
-                <a href="/add-user-invitation" class="btn-primary">
+
+                <a
+                    href="/add-user-invitation"
+                    class="btn-primary"
+                >
                     + Add Invitation
                 </a>
+
             </div>
+
         </div>
 
         <div class="stats-grid">
@@ -70,77 +81,149 @@
             <div class="project-card">
 
                 <div class="project-top">
+
                     <div>
-                        <h3>{{ invitation["invited_email"] }}</h3>
-                        <p>{{ invitation["role"] }}</p>
+
+                        <h3>
+                            {{ invitation["invited_email"] }}
+                        </h3>
+
+                        <p>
+                            {{ invitation["role"] }}
+                        </p>
+
                     </div>
 
                     {% if item["display_status"] == "Accepted" %}
-                        <span class="badge badge-green">Accepted</span>
+
+                        <span class="badge badge-green">
+                            Accepted
+                        </span>
+
                     {% elif item["display_status"] == "Pending" %}
-                        <span class="badge badge-yellow">Pending</span>
+
+                        <span class="badge badge-yellow">
+                            Pending
+                        </span>
+
                     {% elif item["display_status"] == "Expired" %}
-                        <span class="badge badge-red">Expired</span>
+
+                        <span class="badge badge-red">
+                            Expired
+                        </span>
+
                     {% elif item["display_status"] == "Revoked" %}
-                        <span class="badge badge-red">Revoked</span>
-                    {% else %}
-                        <span class="badge badge-blue">{{ item["display_status"] }}</span>
+
+                        <span class="badge badge-red">
+                            Revoked
+                        </span>
+
                     {% endif %}
+
                 </div>
 
                 <div class="budget-section">
 
                     <div class="budget-row">
                         <span>Organisation</span>
-                        <strong>{{ invitation["organisation_name"] or "Not linked" }}</strong>
+                        <strong>
+                            {{ invitation["organisation_name"] or "Not linked" }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Workspace</span>
-                        <strong>{{ invitation["workspace_name"] or "Not linked" }}</strong>
+                        <strong>
+                            {{ invitation["workspace_name"] or "Not linked" }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Role</span>
-                        <strong>{{ invitation["role"] }}</strong>
+                        <strong>
+                            {{ invitation["role"] }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Created</span>
-                        <strong>{{ invitation["created_at"] }}</strong>
+                        <strong>
+                            {{ invitation["created_at"] }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Expiry Date</span>
-                        <strong>{{ invitation["expiry_date"] or "Not set" }}</strong>
+                        <strong>
+                            {{ invitation["expiry_date"] or "Not set" }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Resend Count</span>
-                        <strong>{{ invitation["resend_count"] or 0 }}</strong>
+                        <strong>
+                            {{ invitation["resend_count"] or 0 }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
-                        <span>Last Reminder Sent</span>
-                        <strong>{{ invitation["last_reminder_sent"] or "Not sent" }}</strong>
+                        <span>Last Reminder</span>
+                        <strong>
+                            {{ invitation["last_reminder_sent"] or "Never" }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Accepted At</span>
-                        <strong>{{ invitation["accepted_at"] or "Not accepted" }}</strong>
+                        <strong>
+                            {{ invitation["accepted_at"] or "Not accepted" }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Revoked At</span>
-                        <strong>{{ invitation["revoked_at"] or "Not revoked" }}</strong>
+                        <strong>
+                            {{ invitation["revoked_at"] or "Not revoked" }}
+                        </strong>
                     </div>
 
                 </div>
 
                 <div class="smart-insight">
+
                     <strong>Invitation Notes:</strong>
+
                     <br><br>
+
                     {{ invitation["invitation_notes"] or "No notes recorded." }}
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a
+                        href="/edit-user-invitation/{{ invitation['id'] }}"
+                    >
+                        Edit
+                    </a>
+
+                    <a
+                        href="/resend-user-invitation/{{ invitation['id'] }}"
+                    >
+                        Resend
+                    </a>
+
+                    {% if item["display_status"] != "Revoked" %}
+
+                    <a
+                        href="/revoke-user-invitation/{{ invitation['id'] }}"
+                        onclick="return confirm('Revoke this invitation?')"
+                    >
+                        Revoke
+                    </a>
+
+                    {% endif %}
+
                 </div>
 
             </div>
@@ -152,9 +235,20 @@
         {% else %}
 
         <div class="empty-box">
+
             <h3>No Invitations Found</h3>
-            <p>No user invitations have been created yet.</p>
-            <a href="/add-user-invitation" class="btn-primary">Add First Invitation</a>
+
+            <p>
+                No user invitations have been created yet.
+            </p>
+
+            <a
+                href="/add-user-invitation"
+                class="btn-primary"
+            >
+                Add First Invitation
+            </a>
+
         </div>
 
         {% endif %}

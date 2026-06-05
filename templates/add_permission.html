@@ -22,7 +22,7 @@
                 <h1>Add Permission</h1>
 
                 <p class="dashboard-subtitle">
-                    Assign module-level permissions to a role.
+                    Create enterprise permission controls and access policies.
                 </p>
             </div>
 
@@ -58,6 +58,56 @@
                     <option value="Reports">Reports</option>
                     <option value="Admin">Admin</option>
                 </select>
+
+                <label>Permission Category</label>
+                <input
+                    type="text"
+                    name="permission_category"
+                    placeholder="Delivery, Governance, Financial, Admin"
+                >
+
+                <label>Permission Template</label>
+                <input
+                    type="text"
+                    name="permission_template"
+                    placeholder="Standard PM Template"
+                >
+
+                <label>Inherits From</label>
+                <input
+                    type="text"
+                    name="inherits_from"
+                    placeholder="Admin, PM, Viewer"
+                >
+
+                <label>Risk Level</label>
+                <select name="risk_level">
+
+                    <option value="Low">
+                        Low
+                    </option>
+
+                    <option value="Medium">
+                        Medium
+                    </option>
+
+                    <option value="High">
+                        High
+                    </option>
+
+                </select>
+
+                <label>Last Reviewed Date</label>
+                <input
+                    type="date"
+                    name="last_reviewed_date"
+                >
+
+                <label>Permission Notes</label>
+                <textarea
+                    name="permission_notes"
+                    rows="4"
+                ></textarea>
 
                 <div class="smart-insight">
 

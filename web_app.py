@@ -3859,6 +3859,75 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS revoked_at TEXT
                    """)
 
+    # Permissions v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS permission_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS permission_template TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS inherits_from TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS risk_level TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS permission_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS last_reviewed_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS created_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE permissions
+                       ADD COLUMN IF NOT EXISTS updated_at TEXT
+                   """)
+
+    # Activity Feed v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE activities
+                       ADD COLUMN IF NOT EXISTS user_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE activities
+                       ADD COLUMN IF NOT EXISTS activity_type TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE activities
+                       ADD COLUMN IF NOT EXISTS module TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE activities
+                       ADD COLUMN IF NOT EXISTS project_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE activities
+                       ADD COLUMN IF NOT EXISTS severity TEXT
+                   """)
+
 
 
 
@@ -7841,30 +7910,108 @@ def activity():
     if not has_permission("Activity", "view"):
         return "Access denied"
 
+    user_filter = request.args.get("user_id")
+    type_filter = request.args.get("activity_type")
+    module_filter = request.args.get("module")
+    date_filter = request.args.get("created_at")
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-    cursor.execute("""
-        SELECT *
+    query = """
+        SELECT DISTINCT ON (activities.activity, activities.created_at)
+            activities.*,
+            users.username
         FROM activities
-        ORDER BY id DESC
-        LIMIT 100
-    """)
+        LEFT JOIN users
+        ON activities.user_id = users.id
+        WHERE 1 = 1
+    """
 
+    params = []
+
+    if user_filter:
+        query += " AND activities.user_id = %s"
+        params.append(user_filter)
+
+    if type_filter:
+        query += " AND activities.activity_type = %s"
+        params.append(type_filter)
+
+    if module_filter:
+        query += " AND activities.module = %s"
+        params.append(module_filter)
+
+    if date_filter:
+        query += " AND activities.created_at LIKE %s"
+        params.append(f"{date_filter}%")
+
+    query += """
+        ORDER BY activities.activity, activities.created_at, activities.id DESC
+        LIMIT 100
+    """
+
+    cursor.execute(query, params)
     activities = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT id, username
+        FROM users
+        ORDER BY username ASC
+    """)
+    users = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT DISTINCT activity_type
+        FROM activities
+        WHERE activity_type IS NOT NULL
+        ORDER BY activity_type ASC
+    """)
+    activity_types = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT DISTINCT module
+        FROM activities
+        WHERE module IS NOT NULL
+        ORDER BY module ASC
+    """)
+    modules = cursor.fetchall()
+
+    total_activities = len(activities)
+
+    high_severity_count = len([
+        activity for activity in activities
+        if activity["severity"] == "High"
+    ])
 
     conn.close()
 
     return render_template(
         "activity.html",
-        activities=activities
+        activities=activities,
+        users=users,
+        activity_types=activity_types,
+        modules=modules,
+        total_activities=total_activities,
+        high_severity_count=high_severity_count,
+        user_filter=user_filter,
+        type_filter=type_filter,
+        module_filter=module_filter,
+        date_filter=date_filter
     )
 
 
-def create_activity(activity_text):
+def create_activity(
+    activity_text,
+    user_id=None,
+    activity_type="General",
+    module="System",
+    project_id=None,
+    severity="Low"
+):
 
     try:
 
@@ -7875,11 +8022,21 @@ def create_activity(activity_text):
             INSERT INTO activities
             (
                 activity,
+                user_id,
+                activity_type,
+                module,
+                project_id,
+                severity,
                 created_at
             )
-            VALUES (%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
         """, (
             activity_text,
+            user_id,
+            activity_type,
+            module,
+            project_id,
+            severity,
             str(datetime.now())
         ))
 
@@ -20362,18 +20519,80 @@ def permissions():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (role, module)
+            *
         FROM permissions
-        ORDER BY role, module
+        ORDER BY role, module, id DESC
     """)
 
     permissions = cursor.fetchall()
+
+    total_permissions = len(permissions)
+
+    admin_permissions = len([
+        permission for permission in permissions
+        if permission["role"] == "Admin"
+    ])
+
+    manager_permissions = len([
+        permission for permission in permissions
+        if permission["role"] in ["Manager", "Project Manager"]
+    ])
+
+    viewer_permissions = len([
+        permission for permission in permissions
+        if permission["role"] == "Viewer"
+    ])
+
+    high_risk_permissions = len([
+        permission for permission in permissions
+        if permission["risk_level"] == "High"
+    ])
+
+    module_summary = {}
+
+    role_summary = {}
+
+    for permission in permissions:
+
+        module = permission["module"] or "Unknown"
+        role = permission["role"] or "Unknown"
+
+        if module not in module_summary:
+            module_summary[module] = 0
+
+        if role not in role_summary:
+            role_summary[role] = 0
+
+        module_summary[module] += 1
+        role_summary[role] += 1
+
+    permission_health_score = 100
+
+    if total_permissions == 0:
+        permission_health_score -= 40
+
+    if admin_permissions == 0:
+        permission_health_score -= 20
+
+    if high_risk_permissions > 0:
+        permission_health_score -= 10
+
+    permission_health_score = max(0, permission_health_score)
 
     conn.close()
 
     return render_template(
         "permissions.html",
-        permissions=permissions
+        permissions=permissions,
+        total_permissions=total_permissions,
+        admin_permissions=admin_permissions,
+        manager_permissions=manager_permissions,
+        viewer_permissions=viewer_permissions,
+        high_risk_permissions=high_risk_permissions,
+        module_summary=module_summary,
+        role_summary=role_summary,
+        permission_health_score=permission_health_score
     )
 
 
@@ -20390,7 +20609,26 @@ def add_permission():
 
         conn = get_db_connection()
 
-        cursor = conn.cursor()
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+            SELECT id
+            FROM permissions
+            WHERE role = %s
+            AND module = %s
+            LIMIT 1
+        """, (
+            request.form.get("role"),
+            request.form.get("module")
+        ))
+
+        existing_permission = cursor.fetchone()
+
+        if existing_permission:
+            conn.close()
+            return redirect("/permissions")
 
         cursor.execute("""
             INSERT INTO permissions
@@ -20400,16 +20638,32 @@ def add_permission():
                 can_view,
                 can_create,
                 can_edit,
-                can_delete
+                can_delete,
+                permission_category,
+                permission_template,
+                inherits_from,
+                risk_level,
+                permission_notes,
+                last_reviewed_date,
+                created_at,
+                updated_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            request.form["role"],
-            request.form["module"],
+            request.form.get("role"),
+            request.form.get("module"),
             request.form.get("can_view") == "on",
             request.form.get("can_create") == "on",
             request.form.get("can_edit") == "on",
-            request.form.get("can_delete") == "on"
+            request.form.get("can_delete") == "on",
+            request.form.get("permission_category"),
+            request.form.get("permission_template"),
+            request.form.get("inherits_from"),
+            request.form.get("risk_level"),
+            request.form.get("permission_notes"),
+            request.form.get("last_reviewed_date"),
+            str(datetime.now()),
+            str(datetime.now())
         ))
 
         conn.commit()
@@ -20419,6 +20673,84 @@ def add_permission():
 
     return render_template(
         "add_permission.html"
+    )
+
+
+@app.route("/edit-permission/<int:id>", methods=["GET", "POST"])
+def edit_permission(id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM permissions
+        WHERE id = %s
+    """, (
+        id,
+    ))
+
+    permission = cursor.fetchone()
+
+    if not permission:
+        conn.close()
+        return redirect("/permissions")
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE permissions
+            SET
+                role = %s,
+                module = %s,
+                can_view = %s,
+                can_create = %s,
+                can_edit = %s,
+                can_delete = %s,
+                permission_category = %s,
+                permission_template = %s,
+                inherits_from = %s,
+                risk_level = %s,
+                permission_notes = %s,
+                last_reviewed_date = %s,
+                updated_at = %s
+            WHERE id = %s
+        """, (
+            request.form.get("role"),
+            request.form.get("module"),
+            request.form.get("can_view") == "on",
+            request.form.get("can_create") == "on",
+            request.form.get("can_edit") == "on",
+            request.form.get("can_delete") == "on",
+            request.form.get("permission_category"),
+            request.form.get("permission_template"),
+            request.form.get("inherits_from"),
+            request.form.get("risk_level"),
+            request.form.get("permission_notes"),
+            request.form.get("last_reviewed_date"),
+            str(datetime.now()),
+            id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/permissions")
+
+    conn.close()
+
+    return render_template(
+        "edit_permission.html",
+        permission=permission
     )
 
 
@@ -20832,6 +21164,92 @@ def user_management():
         mfa_enabled_count=mfa_enabled_count
     )
 
+@app.route("/edit-user/<int:user_id>", methods=["GET", "POST"])
+def edit_user(user_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        WHERE id = %s
+    """, (user_id,))
+
+    user = cursor.fetchone()
+
+    if not user:
+        conn.close()
+        return redirect("/user-management")
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE users
+            SET
+                username = %s,
+                email = %s,
+                avatar_initials = %s,
+                status = %s,
+                organisation = %s,
+                mfa_enabled = %s,
+                password_reset_date = %s
+            WHERE id = %s
+        """, (
+            request.form.get("username"),
+            request.form.get("email"),
+            request.form.get("avatar_initials"),
+            request.form.get("status"),
+            request.form.get("organisation"),
+            request.form.get("mfa_enabled"),
+            request.form.get("password_reset_date"),
+            user_id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/user-management")
+
+    conn.close()
+
+    return render_template(
+        "edit_user.html",
+        user=user
+    )
+
+@app.route("/delete-user/<int:user_id>")
+def delete_user(user_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM users
+        WHERE id = %s
+    """, (
+        user_id,
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/user-management")
+
+
 @app.route("/user-invitations")
 def user_invitations():
 
@@ -21045,8 +21463,8 @@ def add_user_invitation():
         workspaces=workspaces
     )
 
-@app.route("/edit-user/<int:user_id>", methods=["GET", "POST"])
-def edit_user(user_id):
+@app.route("/edit-user-invitation/<int:invitation_id>", methods=["GET", "POST"])
+def edit_user_invitation(invitation_id):
 
     if "user_id" not in session:
         return redirect("/login")
@@ -21059,76 +21477,150 @@ def edit_user(user_id):
 
     cursor.execute("""
         SELECT *
-        FROM users
+        FROM user_invitations
         WHERE id = %s
-    """, (user_id,))
+    """, (
+        invitation_id,
+    ))
 
-    user = cursor.fetchone()
+    invitation = cursor.fetchone()
 
-    if not user:
+    if not invitation:
         conn.close()
-        return redirect("/user-management")
+        return redirect("/user-invitations")
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces = cursor.fetchall()
 
     if request.method == "POST":
 
+        status = request.form.get("status")
+
+        accepted_at = invitation["accepted_at"]
+        revoked_at = invitation["revoked_at"]
+
+        if status == "Accepted" and not accepted_at:
+            accepted_at = str(datetime.now())
+
+        if status == "Revoked" and not revoked_at:
+            revoked_at = str(datetime.now())
+
         cursor.execute("""
-            UPDATE users
+            UPDATE user_invitations
             SET
-                username = %s,
-                email = %s,
-                avatar_initials = %s,
+                organisation_id = %s,
+                workspace_id = %s,
+                invited_email = %s,
+                role = %s,
                 status = %s,
-                organisation = %s,
-                mfa_enabled = %s,
-                password_reset_date = %s
+                expiry_date = %s,
+                last_reminder_sent = %s,
+                invitation_notes = %s,
+                accepted_at = %s,
+                revoked_at = %s
             WHERE id = %s
         """, (
-            request.form.get("username"),
-            request.form.get("email"),
-            request.form.get("avatar_initials"),
-            request.form.get("status"),
-            request.form.get("organisation"),
-            request.form.get("mfa_enabled"),
-            request.form.get("password_reset_date"),
-            user_id
+            request.form.get("organisation_id"),
+            request.form.get("workspace_id"),
+            request.form.get("invited_email"),
+            request.form.get("role"),
+            status,
+            request.form.get("expiry_date"),
+            request.form.get("last_reminder_sent"),
+            request.form.get("invitation_notes"),
+            accepted_at,
+            revoked_at,
+            invitation_id
         ))
 
         conn.commit()
         conn.close()
 
-        return redirect("/user-management")
+        return redirect("/user-invitations")
 
     conn.close()
 
     return render_template(
-        "edit_user.html",
-        user=user
+        "edit_user_invitation.html",
+        invitation=invitation,
+        organisations=organisations,
+        workspaces=workspaces
     )
 
-@app.route("/delete-user/<int:user_id>")
-def delete_user(user_id):
+
+@app.route("/revoke-user-invitation/<int:invitation_id>")
+def revoke_user_invitation(invitation_id):
 
     if "user_id" not in session:
         return redirect("/login")
 
-    if not has_permission("Admin", "delete"):
+    if not has_permission("Admin", "edit"):
         return "Access denied"
 
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute("""
-        DELETE FROM users
+        UPDATE user_invitations
+        SET
+            status = 'Revoked',
+            revoked_at = %s
         WHERE id = %s
     """, (
-        user_id,
+        str(datetime.now()),
+        invitation_id
     ))
 
     conn.commit()
     conn.close()
 
-    return redirect("/user-management")
+    return redirect("/user-invitations")
+
+
+@app.route("/resend-user-invitation/<int:invitation_id>")
+def resend_user_invitation(invitation_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE user_invitations
+        SET
+            resend_count = COALESCE(resend_count, 0) + 1,
+            last_reminder_sent = %s
+        WHERE id = %s
+    """, (
+        str(datetime.now()),
+        invitation_id
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/user-invitations")
 
 
 

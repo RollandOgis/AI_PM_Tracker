@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit User Invitation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Edit User Invitation</h1>
+                <p class="dashboard-subtitle">
+                    Update invitation lifecycle, workspace access, role and expiry details.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/user-invitations" class="btn-primary">
+                    Back to Invitations
+                </a>
+            </div>
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Organisation</label>
+                <select name="organisation_id" required>
+                    {% for organisation in organisations %}
+                        <option
+                            value="{{ organisation['id'] }}"
+                            {% if organisation['id'] == invitation['organisation_id'] %}
+                            selected
+                            {% endif %}
+                        >
+                            {{ organisation['organisation_name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Workspace</label>
+                <select name="workspace_id" required>
+                    {% for workspace in workspaces %}
+                        <option
+                            value="{{ workspace['id'] }}"
+                            {% if workspace['id'] == invitation['workspace_id'] %}
+                            selected
+                            {% endif %}
+                        >
+                            {{ workspace['workspace_name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Invited Email</label>
+                <input
+                    type="email"
+                    name="invited_email"
+                    value="{{ invitation['invited_email'] }}"
+                    required
+                >
+
+                <label>Role</label>
+                <select name="role" required>
+                    <option value="Admin"
+                        {% if invitation['role'] == 'Admin' %}selected{% endif %}
+                    >
+                        Admin
+                    </option>
+
+                    <option value="Manager"
+                        {% if invitation['role'] == 'Manager' %}selected{% endif %}
+                    >
+                        Manager
+                    </option>
+
+                    <option value="Team Member"
+                        {% if invitation['role'] == 'Team Member' %}selected{% endif %}
+                    >
+                        Team Member
+                    </option>
+
+                    <option value="Viewer"
+                        {% if invitation['role'] == 'Viewer' %}selected{% endif %}
+                    >
+                        Viewer
+                    </option>
+                </select>
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Pending"
+                        {% if invitation['status'] == 'Pending' %}selected{% endif %}
+                    >
+                        Pending
+                    </option>
+
+                    <option value="Accepted"
+                        {% if invitation['status'] == 'Accepted' %}selected{% endif %}
+                    >
+                        Accepted
+                    </option>
+
+                    <option value="Expired"
+                        {% if invitation['status'] == 'Expired' %}selected{% endif %}
+                    >
+                        Expired
+                    </option>
+
+                    <option value="Revoked"
+                        {% if invitation['status'] == 'Revoked' %}selected{% endif %}
+                    >
+                        Revoked
+                    </option>
+                </select>
+
+                <label>Expiry Date</label>
+                <input
+                    type="date"
+                    name="expiry_date"
+                    value="{{ invitation['expiry_date'] or '' }}"
+                >
+
+                <label>Last Reminder Sent</label>
+                <input
+                    type="date"
+                    name="last_reminder_sent"
+                    value="{{ invitation['last_reminder_sent'] or '' }}"
+                >
+
+                <label>Invitation Notes</label>
+                <textarea
+                    name="invitation_notes"
+                    rows="5"
+                >{{ invitation['invitation_notes'] or '' }}</textarea>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Update Invitation
+                </button>
+
+            </form>
+
+        </div>
+
+    </main>
+
+</div>
+
+</body>
+</html>

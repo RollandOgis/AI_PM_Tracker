@@ -22,7 +22,7 @@
                 <h1>Permissions</h1>
 
                 <p class="dashboard-subtitle">
-                    Control what each role can view, create, edit and delete.
+                    Manage role-based access, permission categories, inheritance, templates and risk levels.
                 </p>
             </div>
 
@@ -38,22 +38,70 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Permissions</h3>
-                <p>{{ permissions|length }}</p>
+                <p>{{ total_permissions }}</p>
             </div>
 
             <div class="stat-card green-card">
-                <h3>View Access</h3>
-                <p>{{ permissions | selectattr("can_view", "equalto", True) | list | length }}</p>
+                <h3>Admin Permissions</h3>
+                <p>{{ admin_permissions }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Create Access</h3>
-                <p>{{ permissions | selectattr("can_create", "equalto", True) | list | length }}</p>
+                <h3>Manager Permissions</h3>
+                <p>{{ manager_permissions }}</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>Delete Access</h3>
-                <p>{{ permissions | selectattr("can_delete", "equalto", True) | list | length }}</p>
+                <h3>Viewer Permissions</h3>
+                <p>{{ viewer_permissions }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>High Risk</h3>
+                <p>{{ high_risk_permissions }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Permission Health</h3>
+                <p>{{ permission_health_score }}%</p>
+            </div>
+
+        </div>
+
+        <div class="workload-summary-grid">
+
+            <div class="project-card">
+                <h3>Module Permission Summary</h3>
+
+                <div class="smart-insight">
+                    {% if module_summary %}
+                        {% for module, count in module_summary.items() %}
+                            <p>
+                                <strong>{{ module }}:</strong>
+                                {{ count }} permission record(s)
+                            </p>
+                        {% endfor %}
+                    {% else %}
+                        <p>No module summary available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="project-card">
+                <h3>Role Permission Summary</h3>
+
+                <div class="smart-insight">
+                    {% if role_summary %}
+                        {% for role, count in role_summary.items() %}
+                            <p>
+                                <strong>{{ role }}:</strong>
+                                {{ count }} permission record(s)
+                            </p>
+                        {% endfor %}
+                    {% else %}
+                        <p>No role summary available.</p>
+                    {% endif %}
+                </div>
             </div>
 
         </div>
@@ -69,14 +117,20 @@
                 <div class="project-top">
 
                     <div>
-
                         <h3>{{ permission["role"] }}</h3>
 
                         <span class="badge badge-blue">
                             {{ permission["module"] }}
                         </span>
-
                     </div>
+
+                    {% if permission["risk_level"] == "High" %}
+                        <span class="badge badge-red">High Risk</span>
+                    {% elif permission["risk_level"] == "Medium" %}
+                        <span class="badge badge-yellow">Medium Risk</span>
+                    {% elif permission["risk_level"] == "Low" %}
+                        <span class="badge badge-green">Low Risk</span>
+                    {% endif %}
 
                 </div>
 
@@ -88,58 +142,79 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ permission["permission_category"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Template</span>
+                        <strong>{{ permission["permission_template"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Inherits From</span>
+                        <strong>{{ permission["inherits_from"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Can View</span>
-                        <strong>
-                            {% if permission["can_view"] %}
-                                Yes
-                            {% else %}
-                                No
-                            {% endif %}
-                        </strong>
+                        <strong>{{ "Yes" if permission["can_view"] else "No" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Can Create</span>
-                        <strong>
-                            {% if permission["can_create"] %}
-                                Yes
-                            {% else %}
-                                No
-                            {% endif %}
-                        </strong>
+                        <strong>{{ "Yes" if permission["can_create"] else "No" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Can Edit</span>
-                        <strong>
-                            {% if permission["can_edit"] %}
-                                Yes
-                            {% else %}
-                                No
-                            {% endif %}
-                        </strong>
+                        <strong>{{ "Yes" if permission["can_edit"] else "No" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Can Delete</span>
-                        <strong>
-                            {% if permission["can_delete"] %}
-                                Yes
-                            {% else %}
-                                No
-                            {% endif %}
-                        </strong>
+                        <strong>{{ "Yes" if permission["can_delete"] else "No" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Level</span>
+                        <strong>{{ permission["risk_level"] or "Not assessed" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Last Reviewed</span>
+                        <strong>{{ permission["last_reviewed_date"] or "Not reviewed" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created At</span>
+                        <strong>{{ permission["created_at"] or "Not recorded" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Updated At</span>
+                        <strong>{{ permission["updated_at"] or "Not updated" }}</strong>
                     </div>
 
                 </div>
 
+                <div class="smart-insight">
+                    <strong>Permission Notes:</strong>
+                    <br><br>
+                    {{ permission["permission_notes"] or "No permission notes added." }}
+                </div>
+
                 <div class="project-actions">
+
+                    <a href="/edit-permission/{{ permission['id'] }}">
+                        Edit
+                    </a>
 
                     <a
                         href="/delete-permission/{{ permission['id'] }}"
                         onclick="return confirm('Delete this permission?')"
                     >
-                        Delete Permission
+                        Delete
                     </a>
 
                 </div>
@@ -156,9 +231,7 @@
 
             <h3>No Permissions Added</h3>
 
-            <p>
-                Add permissions to define role-based access.
-            </p>
+            <p>Add permissions to define role-based access.</p>
 
             <a href="/add-permission" class="btn-primary">
                 Add First Permission
