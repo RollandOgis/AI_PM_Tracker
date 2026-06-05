@@ -3947,6 +3947,37 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS password_reset_date TEXT
                    """)
 
+    # ==================================================
+    # SAAS USAGE ANALYTICS
+    # ==================================================
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS ai_usage
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       user_id
+                       INTEGER,
+                       organisation_id
+                       INTEGER,
+                       workspace_id
+                       INTEGER,
+                       usage_type
+                       TEXT,
+                       usage_count
+                       INTEGER
+                       DEFAULT
+                       0,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+
+
+
 
 
 
@@ -23463,6 +23494,9 @@ def usage_analytics():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -23470,7 +23504,7 @@ def usage_analytics():
     )
 
     cursor.execute("""
-        SELECT COUNT(*) AS total_organisations
+        SELECT COUNT(DISTINCT id) AS total_organisations
         FROM organisations
         WHERE user_id = %s
     """, (
@@ -23480,7 +23514,7 @@ def usage_analytics():
     total_organisations = cursor.fetchone()["total_organisations"]
 
     cursor.execute("""
-        SELECT COUNT(*) AS total_workspaces
+        SELECT COUNT(DISTINCT id) AS total_workspaces
         FROM workspaces
         WHERE user_id = %s
     """, (
@@ -23490,7 +23524,7 @@ def usage_analytics():
     total_workspaces = cursor.fetchone()["total_workspaces"]
 
     cursor.execute("""
-        SELECT COUNT(*) AS total_projects
+        SELECT COUNT(DISTINCT id) AS total_projects
         FROM projects
         WHERE user_id = %s
     """, (
@@ -23500,17 +23534,24 @@ def usage_analytics():
     total_projects = cursor.fetchone()["total_projects"]
 
     cursor.execute("""
-        SELECT COUNT(*) AS total_users
+        SELECT COUNT(DISTINCT invited_email) AS invited_users
         FROM user_invitations
         WHERE invited_by = %s
     """, (
         session["user_id"],
     ))
 
-    total_users = cursor.fetchone()["total_users"]
+    invited_users = cursor.fetchone()["invited_users"]
 
     cursor.execute("""
-        SELECT COALESCE(SUM(usage_count),0) AS total_ai_usage
+        SELECT COUNT(DISTINCT id) AS registered_users
+        FROM users
+    """)
+
+    registered_users = cursor.fetchone()["registered_users"]
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(usage_count), 0) AS total_ai_usage
         FROM ai_usage
         WHERE user_id = %s
     """, (
@@ -23519,6 +23560,67 @@ def usage_analytics():
 
     total_ai_usage = cursor.fetchone()["total_ai_usage"]
 
+    cursor.execute("""
+        SELECT COUNT(DISTINCT organisation_id) AS organisations_using_ai
+        FROM ai_usage
+        WHERE user_id = %s
+        AND organisation_id IS NOT NULL
+    """, (
+        session["user_id"],
+    ))
+
+    organisations_using_ai = cursor.fetchone()["organisations_using_ai"]
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT workspace_id) AS workspaces_using_ai
+        FROM ai_usage
+        WHERE user_id = %s
+        AND workspace_id IS NOT NULL
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces_using_ai = cursor.fetchone()["workspaces_using_ai"]
+
+    if total_projects > 0:
+        project_usage_ratio = round(
+            (total_projects / max(total_organisations, 1)) ,
+            2
+        )
+    else:
+        project_usage_ratio = 0
+
+    if total_workspaces > 0:
+        workspace_usage_score = min(
+            round((total_projects / total_workspaces) * 100),
+            100
+        )
+    else:
+        workspace_usage_score = 0
+
+    usage_health_score = 100
+
+    if total_organisations == 0:
+        usage_health_score -= 25
+
+    if total_workspaces == 0:
+        usage_health_score -= 25
+
+    if total_projects == 0:
+        usage_health_score -= 25
+
+    if total_ai_usage == 0:
+        usage_health_score -= 10
+
+    usage_health_score = max(0, usage_health_score)
+
+    if usage_health_score >= 80:
+        usage_health_status = "Healthy"
+    elif usage_health_score >= 50:
+        usage_health_status = "Monitor"
+    else:
+        usage_health_status = "Needs Attention"
+
     conn.close()
 
     return render_template(
@@ -23526,8 +23628,15 @@ def usage_analytics():
         total_organisations=total_organisations,
         total_workspaces=total_workspaces,
         total_projects=total_projects,
-        total_users=total_users,
-        total_ai_usage=total_ai_usage
+        invited_users=invited_users,
+        registered_users=registered_users,
+        total_ai_usage=total_ai_usage,
+        organisations_using_ai=organisations_using_ai,
+        workspaces_using_ai=workspaces_using_ai,
+        project_usage_ratio=project_usage_ratio,
+        workspace_usage_score=workspace_usage_score,
+        usage_health_score=usage_health_score,
+        usage_health_status=usage_health_status
     )
 
 

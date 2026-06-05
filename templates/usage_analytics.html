@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Usage Analytics</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
@@ -12,11 +14,14 @@
 
     <main class="main-content">
 
-        <h1>Usage Analytics</h1>
-
-        <p class="page-subtitle">
-            Track SaaS usage across organisations, workspaces, projects, users and AI activity.
-        </p>
+        <div class="dashboard-header">
+            <div>
+                <h1>Usage Analytics</h1>
+                <p class="dashboard-subtitle">
+                    Track SaaS usage across organisations, workspaces, projects, users and AI activity.
+                </p>
+            </div>
+        </div>
 
         <div class="stats-grid">
 
@@ -36,13 +41,68 @@
             </div>
 
             <div class="stat-card blue-card">
-                <h3>Users Invited</h3>
-                <p>{{ total_users }}</p>
+                <h3>Invited Users</h3>
+                <p>{{ invited_users }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Registered Users</h3>
+                <p>{{ registered_users }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>AI Usage</h3>
                 <p>{{ total_ai_usage }}</p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Organisations Using AI</h3>
+                <p>{{ organisations_using_ai }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Workspaces Using AI</h3>
+                <p>{{ workspaces_using_ai }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Projects Per Organisation</h3>
+                <p>{{ project_usage_ratio }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Workspace Usage Score</h3>
+                <p>{{ workspace_usage_score }}%</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Usage Health</h3>
+                <p>{{ usage_health_score }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Usage Health Summary</h3>
+
+            <div class="smart-insight">
+                <p>
+                    Status:
+                    <strong>{{ usage_health_status }}</strong>
+                </p>
+
+                {% if usage_health_score >= 80 %}
+                    <p>SaaS usage is healthy and operational.</p>
+                {% elif usage_health_score >= 50 %}
+                    <p>SaaS usage is active but should be monitored.</p>
+                {% else %}
+                    <p>SaaS usage needs attention. Add organisations, workspaces, projects or AI activity.</p>
+                {% endif %}
             </div>
 
         </div>
