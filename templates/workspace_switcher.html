@@ -14,50 +14,123 @@
 
     <main class="main-content">
 
-        <h1>Workspace Switcher</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Workspace Switcher</h1>
+                <p class="dashboard-subtitle">
+                    Switch between available workspaces and clearly see the active workspace.
+                </p>
+            </div>
+        </div>
 
-        <p class="page-subtitle">
-            Switch between available workspaces for your organisation.
-        </p>
+        <div class="stats-grid">
 
-        <div class="table-container">
+            <div class="stat-card blue-card">
+                <h3>Total Workspaces</h3>
+                <p>{{ total_workspaces }}</p>
+            </div>
 
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Workspace</th>
-                        <th>Type</th>
-                        <th>Owner</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for workspace in workspaces %}
-
-                    <tr>
-                        <td>{{ workspace.workspace_name }}</td>
-                        <td>{{ workspace.workspace_type }}</td>
-                        <td>{{ workspace.owner }}</td>
-                        <td>{{ workspace.status }}</td>
-
-                        <td>
-                            <a href="/switch-workspace/{{ workspace.id }}" class="btn-primary">
-                                Switch
-                            </a>
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="stat-card green-card">
+                <h3>Current Workspace</h3>
+                <p>
+                    {% if current_workspace %}
+                        {{ current_workspace["workspace_name"] }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </p>
+            </div>
 
         </div>
+
+        {% if workspaces %}
+
+        <div class="projects-grid">
+
+            {% for workspace in workspaces %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ workspace["workspace_name"] }}</h3>
+                        <p>{{ workspace["organisation_name"] or "No organisation" }}</p>
+                    </div>
+
+                    {% if current_workspace_id == workspace["id"] %}
+                        <span class="badge badge-green">Current</span>
+                    {% elif workspace["status"] == "Archived" %}
+                        <span class="badge badge-red">Archived</span>
+                    {% elif workspace["status"] == "Suspended" %}
+                        <span class="badge badge-red">Suspended</span>
+                    {% elif workspace["status"] == "Pending" %}
+                        <span class="badge badge-yellow">Pending</span>
+                    {% else %}
+                        <span class="badge badge-blue">Available</span>
+                    {% endif %}
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Workspace Type</span>
+                        <strong>{{ workspace["workspace_type"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>{{ workspace["owner"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ workspace["status"] or "Unknown" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>{{ workspace["workspace_health_score"] or 80 }}%</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    {{ workspace["workspace_description"] or "No workspace description provided." }}
+                </div>
+
+                <div class="project-actions">
+
+                    {% if current_workspace_id == workspace["id"] %}
+                        <span class="badge badge-green">
+                            Currently Active
+                        </span>
+                    {% else %}
+                        <a href="/switch-workspace/{{ workspace['id'] }}">
+                            Switch Workspace
+                        </a>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Workspaces Found</h3>
+            <p>Add a workspace before using the workspace switcher.</p>
+            <a href="/add-workspace" class="btn-primary">
+                Add Workspace
+            </a>
+        </div>
+
+        {% endif %}
 
     </main>
 

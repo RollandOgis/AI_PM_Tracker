@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Organisations</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 </head>
 
 <body>
@@ -14,82 +18,233 @@
 
     <main class="main-content">
 
-        <h1>Organisations</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Manage organisations, plans, trial periods and subscription status.
-        </p>
+            <div>
 
-        <div style="margin-top:20px;margin-bottom:30px;">
-            <a href="/add-organisation" class="btn-primary">
-                Add Organisation
-            </a>
-        </div>
+                <h1>Organisations</h1>
 
-        <div class="card">
+                <p class="dashboard-subtitle">
+                    Manage organisations, tenancy, subscription status and account health.
+                </p>
 
-            <div class="table-container">
+            </div>
 
-                <table>
+            <div class="dashboard-actions">
 
-                    <thead>
-                        <tr>
-                            <th>Organisation</th>
-                            <th>Industry</th>
-                            <th>Plan</th>
-                            <th>Status</th>
-                            <th>Trial Start</th>
-                            <th>Trial End</th>
-                            <th>Subscription</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        {% for organisation in organisations %}
-
-                        <tr>
-                            <td>{{ organisation.organisation_name }}</td>
-                            <td>{{ organisation.industry }}</td>
-                            <td>{{ organisation.plan }}</td>
-
-                            <td>
-                                {% if organisation.status == "Active" %}
-                                    <span class="badge badge-green">Active</span>
-                                {% else %}
-                                    <span class="badge badge-yellow">
-                                        {{ organisation.status }}
-                                    </span>
-                                {% endif %}
-                            </td>
-
-                            <td>{{ organisation.trial_start_date or "Not set" }}</td>
-                            <td>{{ organisation.trial_end_date or "Not set" }}</td>
-
-                            <td>
-                                {% if organisation.subscription_status == "Active" %}
-                                    <span class="badge badge-green">Active</span>
-                                {% elif organisation.subscription_status == "Trial" %}
-                                    <span class="badge badge-yellow">Trial</span>
-                                {% elif organisation.subscription_status == "Expired" %}
-                                    <span class="badge badge-red">Expired</span>
-                                {% else %}
-                                    <span class="badge badge-blue">
-                                        {{ organisation.subscription_status or "Unknown" }}
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
+                <a
+                    href="/add-organisation"
+                    class="btn-primary"
+                >
+                    + Add Organisation
+                </a>
 
             </div>
 
         </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Organisations</h3>
+                <p>{{ total_organisations }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Active</h3>
+                <p>{{ active_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Suspended</h3>
+                <p>{{ suspended_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Trial</h3>
+                <p>{{ trial_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Paid</h3>
+                <p>{{ paid_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Expired</h3>
+                <p>{{ expired_count }}</p>
+            </div>
+
+        </div>
+
+        {% if organisations %}
+
+        <div class="projects-grid">
+
+            {% for organisation in organisations %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>
+                            {{ organisation["organisation_name"] }}
+                        </h3>
+
+                        {% if organisation["account_status"] == "Active" %}
+
+                            <span class="badge badge-green">
+                                Active
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-red">
+                                Suspended
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Industry</span>
+                        <strong>
+                            {{ organisation["industry"] or "N/A" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>
+                            {{ organisation["plan"] or "N/A" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Subscription</span>
+
+                        <strong>
+
+                            {% if organisation["subscription_status"] == "Trial" %}
+
+                                <span class="badge badge-yellow">
+                                    Trial
+                                </span>
+
+                            {% elif organisation["subscription_status"] == "Paid" %}
+
+                                <span class="badge badge-green">
+                                    Paid
+                                </span>
+
+                            {% elif organisation["subscription_status"] == "Expired" %}
+
+                                <span class="badge badge-red">
+                                    Expired
+                                </span>
+
+                            {% else %}
+
+                                {{ organisation["subscription_status"] }}
+
+                            {% endif %}
+
+                        </strong>
+
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Owner</span>
+                        <strong>
+                            {{ organisation["organisation_owner"] or "Not Assigned" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Contact Email</span>
+                        <strong>
+                            {{ organisation["contact_email"] or "Not Set" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Organisation Size</span>
+                        <strong>
+                            {{ organisation["organisation_size"] or "Not Set" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Region</span>
+                        <strong>
+                            {{ organisation["region"] or "Not Set" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Trial Start</span>
+                        <strong>
+                            {{ organisation["trial_start_date"] or "Not Set" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Trial End</span>
+                        <strong>
+                            {{ organisation["trial_end_date"] or "Not Set" }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-organisation/{{ organisation['id'] }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-organisation/{{ organisation['id'] }}"
+                        onclick="return confirm('Delete this organisation?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Organisations Found</h3>
+
+            <p>
+                Create your first organisation to start using multi-tenant SaaS features.
+            </p>
+
+            <a
+                href="/add-organisation"
+                class="btn-primary"
+            >
+                Add First Organisation
+            </a>
+
+        </div>
+
+        {% endif %}
 
     </main>
 

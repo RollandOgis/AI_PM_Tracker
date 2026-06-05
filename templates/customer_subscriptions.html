@@ -22,7 +22,7 @@
                 <h1>Customer Subscriptions</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage organisation subscriptions, plan status and payment status.
+                    Connect organisations to SaaS plans and keep subscription records aligned.
                 </p>
             </div>
 
@@ -38,22 +38,22 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Subscriptions</h3>
-                <p>{{ subscriptions|length }}</p>
+                <p>{{ total_subscriptions }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Active</h3>
-                <p>{{ subscriptions | selectattr("status", "equalto", "Active") | list | length }}</p>
+                <p>{{ active_subscriptions }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Trial</h3>
-                <p>{{ subscriptions | selectattr("status", "equalto", "Trial") | list | length }}</p>
+                <p>{{ trial_subscriptions }}</p>
             </div>
 
             <div class="stat-card red-card">
-                <h3>Unpaid</h3>
-                <p>{{ subscriptions | selectattr("payment_status", "equalto", "Unpaid") | list | length }}</p>
+                <h3>Expired</h3>
+                <p>{{ expired_subscriptions }}</p>
             </div>
 
         </div>
@@ -75,8 +75,10 @@
                             <span class="badge badge-green">Active</span>
                         {% elif subscription["status"] == "Trial" %}
                             <span class="badge badge-yellow">Trial</span>
+                        {% elif subscription["status"] == "Expired" %}
+                            <span class="badge badge-red">Expired</span>
                         {% else %}
-                            <span class="badge badge-red">{{ subscription["status"] }}</span>
+                            <span class="badge badge-blue">{{ subscription["status"] or "Unknown" }}</span>
                         {% endif %}
                     </div>
 
@@ -85,18 +87,28 @@
                 <div class="budget-section">
 
                     <div class="budget-row">
-                        <span>Plan</span>
+                        <span>Subscription Plan</span>
                         <strong>{{ subscription["plan_name"] or "No Plan" }}</strong>
                     </div>
 
                     <div class="budget-row">
+                        <span>Organisation Plan</span>
+                        <strong>{{ subscription["organisation_plan"] or "Not synced" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Organisation Subscription Status</span>
+                        <strong>{{ subscription["subscription_status"] or "Not synced" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Start Date</span>
-                        <strong>{{ subscription["start_date"] }}</strong>
+                        <strong>{{ subscription["start_date"] or "Not set" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>End Date</span>
-                        <strong>{{ subscription["end_date"] }}</strong>
+                        <strong>{{ subscription["end_date"] or "Not set" }}</strong>
                     </div>
 
                     <div class="budget-row">

@@ -27,9 +27,15 @@
             </div>
 
             <div class="dashboard-actions">
+
+                <a href="/workspace-switcher" class="btn-primary">
+                    Switch Workspace
+                </a>
+
                 <a href="/add-workspace" class="btn-primary">
                     + Add Workspace
                 </a>
+
             </div>
 
         </div>
@@ -38,22 +44,27 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Workspaces</h3>
-                <p>{{ workspaces|length }}</p>
+                <p>{{ total_workspaces }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Active</h3>
-                <p>{{ workspaces | selectattr("status", "equalto", "Active") | list | length }}</p>
+                <p>{{ active_count }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Project Workspaces</h3>
-                <p>{{ workspaces | selectattr("workspace_type", "equalto", "Project") | list | length }}</p>
+                <p>{{ project_workspace_count }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>PMO Workspaces</h3>
-                <p>{{ workspaces | selectattr("workspace_type", "equalto", "PMO") | list | length }}</p>
+                <p>{{ pmo_workspace_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Finance Workspaces</h3>
+                <p>{{ finance_workspace_count }}</p>
             </div>
 
         </div>
@@ -69,15 +80,25 @@
                 <div class="project-top">
 
                     <div>
-                        <h3>{{ workspace["workspace_name"] }}</h3>
+
+                        <h3>
+                            {{ workspace["workspace_name"] }}
+                        </h3>
 
                         {% if workspace["status"] == "Active" %}
-                            <span class="badge badge-green">Active</span>
+                            <span class="badge badge-green">
+                                Active
+                            </span>
                         {% elif workspace["status"] == "Pending" %}
-                            <span class="badge badge-yellow">Pending</span>
+                            <span class="badge badge-yellow">
+                                Pending
+                            </span>
                         {% else %}
-                            <span class="badge badge-red">{{ workspace["status"] }}</span>
+                            <span class="badge badge-red">
+                                {{ workspace["status"] }}
+                            </span>
                         {% endif %}
+
                     </div>
 
                 </div>
@@ -86,28 +107,55 @@
 
                     <div class="budget-row">
                         <span>Organisation</span>
-                        <strong>{{ workspace["organisation_name"] or "No Organisation" }}</strong>
+                        <strong>
+                            {{ workspace["organisation_name"] or "No Organisation" }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Workspace Type</span>
-                        <strong>{{ workspace["workspace_type"] }}</strong>
+                        <strong>
+                            {{ workspace["workspace_type"] }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Owner</span>
-                        <strong>{{ workspace["owner"] or "Not assigned" }}</strong>
+                        <strong>
+                            {{ workspace["owner"] or "Not assigned" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>
+                            {{ workspace["workspace_health_score"] or 80 }}%
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Status</span>
-                        <strong>{{ workspace["status"] }}</strong>
+                        <strong>
+                            {{ workspace["status"] }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Created</span>
-                        <strong>{{ workspace["created_at"] }}</strong>
+                        <strong>
+                            {{ workspace["created_at"] }}
+                        </strong>
                     </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Description</strong>
+
+                    <br><br>
+
+                    {{ workspace["workspace_description"] or "No description provided." }}
 
                 </div>
 

@@ -22,7 +22,7 @@
                 <h1>Add Subscription Plan</h1>
 
                 <p class="dashboard-subtitle">
-                    Create a pricing plan for SaaS subscription management.
+                    Create SaaS subscription plans and usage limits.
                 </p>
             </div>
 
@@ -39,62 +39,71 @@
             <form method="POST">
 
                 <label>Plan Name</label>
+
                 <select name="plan_name" required>
                     <option value="Free">Free</option>
-                    <option value="Pro">Pro</option>
-                    <option value="Business">Business</option>
+                    <option value="Basic">Basic</option>
+                    <option value="Professional">Professional</option>
                     <option value="Enterprise">Enterprise</option>
                 </select>
 
-                <label>Price</label>
+                <label>Price (£)</label>
+
                 <input
                     type="number"
                     name="price"
                     step="0.01"
-                    placeholder="0.00"
+                    placeholder="29.99"
                     required
                 >
 
                 <label>Billing Cycle</label>
+
                 <select name="billing_cycle" required>
                     <option value="Monthly">Monthly</option>
                     <option value="Yearly">Yearly</option>
-                    <option value="One-Time">One-Time</option>
                 </select>
 
-                <label>Max Projects</label>
+                <label>Maximum Projects</label>
+
                 <input
                     type="number"
                     name="max_projects"
-                    placeholder="10"
+                    placeholder="10 (use 9999 for unlimited)"
                     required
                 >
 
-                <label>Max Users</label>
+                <label>Maximum Users</label>
+
                 <input
                     type="number"
                     name="max_users"
-                    placeholder="5"
+                    placeholder="5 (use 9999 for unlimited)"
                     required
                 >
 
                 <label>Features</label>
+
                 <textarea
                     name="features"
-                    rows="5"
-                    placeholder="List included features"
+                    rows="6"
+                    placeholder="Projects, Risks, Issues, AI Assistant, Portfolio Management..."
                 ></textarea>
 
                 <label>Status</label>
+
                 <select name="status" required>
-                    <option value="Draft">Draft</option>
                     <option value="Active">Active</option>
+                    <option value="Draft">Draft</option>
                     <option value="Archived">Archived</option>
                 </select>
 
                 <br><br>
 
-                <button type="submit" class="btn-primary">
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Save Plan
                 </button>
 

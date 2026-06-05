@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workspace Roles</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,126 +16,162 @@
 
     <main class="main-content">
 
-        <h1>Workspace Roles</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            View users and their roles across organisations and workspaces.
-        </p>
+            <div>
+                <h1>Workspace Roles</h1>
 
-        <div style="margin-top:20px;margin-bottom:30px;">
+                <p class="dashboard-subtitle">
+                    Manage workspace access, role assignments and workspace membership.
+                </p>
+            </div>
 
-            <a
-                href="/add-workspace-role"
-                class="btn-primary"
-            >
-                Add Workspace Role
-            </a>
+            <div class="dashboard-actions">
 
-        </div>
-
-        <div class="card">
-
-            <div class="table-container">
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Organisation</th>
-                            <th>Workspace</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {% for role in roles %}
-
-                        <tr>
-
-                            <td>
-                                {{ role.username or "Unknown User" }}
-                            </td>
-
-                            <td>
-
-                                {% if role.role == "Admin" %}
-
-                                    <span class="badge badge-red">
-                                        Admin
-                                    </span>
-
-                                {% elif role.role == "Manager" %}
-
-                                    <span class="badge badge-yellow">
-                                        Manager
-                                    </span>
-
-                                {% elif role.role == "Viewer" %}
-
-                                    <span class="badge badge-blue">
-                                        Viewer
-                                    </span>
-
-                                {% else %}
-
-                                    <span class="badge badge-green">
-                                        Team Member
-                                    </span>
-
-                                {% endif %}
-
-                            </td>
-
-                            <td>
-                                {{ role.organisation_name or "No Organisation" }}
-                            </td>
-
-                            <td>
-                                {{ role.workspace_name or "No Workspace" }}
-                            </td>
-
-                            <td>
-                                {{ role.created_at }}
-                            </td>
-
-                            <td>
-
-                                <a
-                                    href="/edit-workspace-role/{{ role.id }}"
-                                    class="btn-primary"
-                                >
-                                    Edit
-                                </a>
-
-                                <a
-                                    href="/delete-workspace-role/{{ role.id }}"
-                                    class="btn-danger"
-                                    onclick="return confirm('Delete this role?')"
-                                >
-                                    Delete
-                                </a>
-
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
+                <a href="/add-workspace-role" class="btn-primary">
+                    + Add Workspace Role
+                </a>
 
             </div>
 
         </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Roles</h3>
+                <p>{{ total_roles }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Admins</h3>
+                <p>{{ admin_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Managers</h3>
+                <p>{{ manager_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Team Members</h3>
+                <p>{{ team_member_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Viewers</h3>
+                <p>{{ viewer_count }}</p>
+            </div>
+
+        </div>
+
+        {% if roles %}
+
+        <div class="projects-grid">
+
+            {% for role in roles %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>
+                            {{ role.username or "Unknown User" }}
+                        </h3>
+
+                        <p>
+                            {{ role.email or "No Email" }}
+                        </p>
+
+                    </div>
+
+                    {% if role.role == "Admin" %}
+                        <span class="badge badge-red">Admin</span>
+
+                    {% elif role.role == "Manager" %}
+                        <span class="badge badge-yellow">Manager</span>
+
+                    {% elif role.role == "Viewer" %}
+                        <span class="badge badge-blue">Viewer</span>
+
+                    {% else %}
+                        <span class="badge badge-green">Team Member</span>
+                    {% endif %}
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Organisation</span>
+                        <strong>
+                            {{ role.organisation_name or "No Organisation" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Workspace</span>
+                        <strong>
+                            {{ role.workspace_name or "No Workspace" }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>
+                            {{ role.role }}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Assigned</span>
+                        <strong>
+                            {{ role.created_at }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-workspace-role/{{ role.id }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-workspace-role/{{ role.id }}"
+                        onclick="return confirm('Delete this workspace role?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Workspace Roles Found</h3>
+
+            <p>
+                Assign users to organisations and workspaces to begin managing access.
+            </p>
+
+            <a href="/add-workspace-role" class="btn-primary">
+                Add First Workspace Role
+            </a>
+
+        </div>
+
+        {% endif %}
 
     </main>
 

@@ -22,7 +22,7 @@
                 <h1>Subscription Plans</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage SaaS pricing plans, billing cycles and feature limits.
+                    Manage SaaS pricing plans, billing cycles, feature limits and AI access.
                 </p>
             </div>
 
@@ -38,22 +38,17 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Plans</h3>
-                <p>{{ plans|length }}</p>
+                <p>{{ total_plans }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Active Plans</h3>
-                <p>{{ plans | selectattr("status", "equalto", "Active") | list | length }}</p>
+                <p>{{ active_plans }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>Monthly Plans</h3>
-                <p>{{ plans | selectattr("billing_cycle", "equalto", "Monthly") | list | length }}</p>
-            </div>
-
-            <div class="stat-card red-card">
-                <h3>Enterprise Plans</h3>
-                <p>{{ plans | selectattr("plan_name", "equalto", "Enterprise") | list | length }}</p>
+                <h3>Free Plans</h3>
+                <p>{{ free_plans }}</p>
             </div>
 
         </div>
@@ -96,12 +91,24 @@
 
                     <div class="budget-row">
                         <span>Max Projects</span>
-                        <strong>{{ plan["max_projects"] }}</strong>
+                        <strong>
+                            {% if plan["max_projects"]|int >= 9999 %}
+                                Unlimited
+                            {% else %}
+                                {{ plan["max_projects"] }}
+                            {% endif %}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Max Users</span>
-                        <strong>{{ plan["max_users"] }}</strong>
+                        <strong>
+                            {% if plan["max_users"]|int >= 9999 %}
+                                Unlimited
+                            {% else %}
+                                {{ plan["max_users"] }}
+                            {% endif %}
+                        </strong>
                     </div>
 
                     <div class="budget-row">

@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Workspace Role</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,54 +16,124 @@
 
     <main class="main-content">
 
-        <h1>Add Workspace Role</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Assign a user role within an organisation and workspace.
-        </p>
+            <div>
+                <h1>Add Workspace Role</h1>
 
-        <form method="POST" class="form-card">
+                <p class="dashboard-subtitle">
+                    Assign users to organisations and workspaces with role-based access.
+                </p>
+            </div>
 
-            <label>User</label>
-            <select name="user_id" required>
-                {% for user in users %}
+            <div class="dashboard-actions">
+
+                <a href="/workspace-roles" class="btn-primary">
+                    Back to Workspace Roles
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>User</label>
+
+                <select name="user_id" required>
+
+                    {% for user in users %}
+
                     <option value="{{ user.id }}">
                         {{ user.username }}
+                        {% if user.email %}
+                            ({{ user.email }})
+                        {% endif %}
                     </option>
-                {% endfor %}
-            </select>
 
-            <label>Role</label>
-            <select name="role" required>
-                <option value="Admin">Admin</option>
-                <option value="Manager">Manager</option>
-                <option value="Team Member">Team Member</option>
-                <option value="Viewer">Viewer</option>
-            </select>
+                    {% endfor %}
 
-            <label>Organisation</label>
-            <select name="organisation_id" required>
-                {% for organisation in organisations %}
+                </select>
+
+                <label>Role</label>
+
+                <select name="role" required>
+
+                    <option value="Admin">
+                        Admin
+                    </option>
+
+                    <option value="Manager">
+                        Manager
+                    </option>
+
+                    <option value="Team Member">
+                        Team Member
+                    </option>
+
+                    <option value="Viewer">
+                        Viewer
+                    </option>
+
+                </select>
+
+                <label>Organisation</label>
+
+                <select name="organisation_id" required>
+
+                    {% for organisation in organisations %}
+
                     <option value="{{ organisation.id }}">
                         {{ organisation.organisation_name }}
                     </option>
-                {% endfor %}
-            </select>
 
-            <label>Workspace</label>
-            <select name="workspace_id" required>
-                {% for workspace in workspaces %}
+                    {% endfor %}
+
+                </select>
+
+                <label>Workspace</label>
+
+                <select name="workspace_id" required>
+
+                    {% for workspace in workspaces %}
+
                     <option value="{{ workspace.id }}">
                         {{ workspace.workspace_name }}
                     </option>
-                {% endfor %}
-            </select>
 
-            <button type="submit" class="btn-primary">
-                Add Workspace Role
-            </button>
+                    {% endfor %}
 
-        </form>
+                </select>
+
+                <div class="smart-insight">
+
+                    <strong>Assignment Rules</strong>
+
+                    <ul>
+                        <li>A user cannot have duplicate role assignments in the same workspace.</li>
+                        <li>Workspace roles are organisation-specific.</li>
+                        <li>Admins have full access.</li>
+                        <li>Managers can manage workspace activities.</li>
+                        <li>Team Members contribute to delivery work.</li>
+                        <li>Viewers have read-only access.</li>
+                    </ul>
+
+                </div>
+
+                <br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Assign Workspace Role
+                </button>
+
+            </form>
+
+        </div>
 
     </main>
 

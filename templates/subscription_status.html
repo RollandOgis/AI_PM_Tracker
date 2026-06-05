@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Subscription Status</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -17,8 +19,32 @@
         <h1>Subscription Status</h1>
 
         <p class="page-subtitle">
-            View trial periods and subscription status for organisations.
+            Monitor organisation plans, trial periods and subscription lifecycle.
         </p>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Organisations</h3>
+                <p>{{ organisations|length }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Trial</h3>
+                <p>{{ trial_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Paid</h3>
+                <p>{{ paid_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Expired</h3>
+                <p>{{ expired_count }}</p>
+            </div>
+
+        </div>
 
         <div class="card">
 
@@ -34,9 +60,9 @@
                             <th>Plan</th>
                             <th>Trial Start</th>
                             <th>Trial End</th>
-                            <th>Status</th>
+                            <th>Subscription</th>
                             <th>Days Remaining</th>
-                            <th>Actions</th>
+                            <th>Action</th>
 
                         </tr>
 
@@ -57,19 +83,19 @@
                             </td>
 
                             <td>
-                                {{ organisation.trial_start_date }}
+                                {{ organisation.trial_start_date or "-" }}
                             </td>
 
                             <td>
-                                {{ organisation.trial_end_date }}
+                                {{ organisation.trial_end_date or "-" }}
                             </td>
 
                             <td>
 
-                                {% if organisation.subscription_status == "Active" %}
+                                {% if organisation.subscription_status == "Paid" %}
 
                                     <span class="badge badge-green">
-                                        Active
+                                        Paid
                                     </span>
 
                                 {% elif organisation.subscription_status == "Trial" %}
@@ -78,10 +104,16 @@
                                         Trial
                                     </span>
 
-                                {% else %}
+                                {% elif organisation.subscription_status == "Expired" %}
 
                                     <span class="badge badge-red">
                                         Expired
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-blue">
+                                        {{ organisation.subscription_status }}
                                     </span>
 
                                 {% endif %}
@@ -90,16 +122,26 @@
 
                             <td>
 
-                                {% if organisation.days_remaining > 0 %}
+                                {% if organisation.subscription_status == "Trial" %}
 
-                                    <span class="badge badge-green">
-                                        {{ organisation.days_remaining }} Days
-                                    </span>
+                                    {% if organisation.days_remaining > 0 %}
+
+                                        <span class="badge badge-green">
+                                            {{ organisation.days_remaining }} Days
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge badge-red">
+                                            Expired
+                                        </span>
+
+                                    {% endif %}
 
                                 {% else %}
 
-                                    <span class="badge badge-red">
-                                        Expired
+                                    <span class="badge badge-blue">
+                                        N/A
                                     </span>
 
                                 {% endif %}

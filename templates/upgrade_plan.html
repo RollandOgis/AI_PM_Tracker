@@ -1,9 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+
+    <meta charset="UTF-8">
+
     <title>Upgrade Plan</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
 </head>
+
 <body>
 
 <div class="layout">
@@ -14,36 +23,122 @@
 
         <h1>Upgrade Plan</h1>
 
-        <div class="card">
+        <p class="page-subtitle">
+            Upgrade your organisation subscription and unlock additional capacity.
+        </p>
 
-            <h3>Choose Your Plan</h3>
+        <div class="projects-grid">
 
-            <br>
+            <div class="project-card">
 
-            <a
-                href="/process-upgrade/{{ organisation_id }}/Basic"
-                class="btn-primary"
-            >
-                Basic Plan
-            </a>
+                <h3>Basic</h3>
 
-            <br><br>
+                <div class="budget-section">
 
-            <a
-                href="/process-upgrade/{{ organisation_id }}/Professional"
-                class="btn-primary"
-            >
-                Professional Plan
-            </a>
+                    <div class="budget-row">
+                        <span>Projects</span>
+                        <strong>10</strong>
+                    </div>
 
-            <br><br>
+                    <div class="budget-row">
+                        <span>Users</span>
+                        <strong>5</strong>
+                    </div>
 
-            <a
-                href="/process-upgrade/{{ organisation_id }}/Enterprise"
-                class="btn-primary"
-            >
-                Enterprise Plan
-            </a>
+                    <div class="budget-row">
+                        <span>Workspaces</span>
+                        <strong>3</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Features</span>
+                        <strong>No</strong>
+                    </div>
+
+                </div>
+
+                <a
+                    href="/process-upgrade/{{ organisation_id }}/Basic"
+                    class="btn-primary"
+                >
+                    Upgrade to Basic
+                </a>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Professional</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Projects</span>
+                        <strong>50</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Users</span>
+                        <strong>25</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Workspaces</span>
+                        <strong>10</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Features</span>
+                        <strong>Yes</strong>
+                    </div>
+
+                </div>
+
+                <a
+                    href="/process-upgrade/{{ organisation_id }}/Professional"
+                    class="btn-primary"
+                >
+                    Upgrade to Professional
+                </a>
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Enterprise</h3>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Projects</span>
+                        <strong>Unlimited</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Users</span>
+                        <strong>Unlimited</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Workspaces</span>
+                        <strong>Unlimited</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Features</span>
+                        <strong>Yes</strong>
+                    </div>
+
+                </div>
+
+                <a
+                    href="/process-upgrade/{{ organisation_id }}/Enterprise"
+                    class="btn-primary"
+                >
+                    Upgrade to Enterprise
+                </a>
+
+            </div>
 
         </div>
 

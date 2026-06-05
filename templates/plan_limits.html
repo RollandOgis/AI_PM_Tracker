@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Plan Limits</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -20,6 +22,43 @@
             View project, user, workspace and AI access limits by subscription plan.
         </p>
 
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Organisations</h3>
+                <p>{{ plan_data|length }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>AI Enabled</h3>
+                <p>
+                    {{
+                        plan_data
+                        | selectattr("ai_enabled", "equalto", True)
+                        | list
+                        | length
+                    }}
+                </p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Professional+</h3>
+                <p>
+                    {{
+                        plan_data
+                        | selectattr(
+                            "organisation.plan",
+                            "in",
+                            ["Professional", "Enterprise"]
+                        )
+                        | list
+                        | length
+                    }}
+                </p>
+            </div>
+
+        </div>
+
         <div class="card">
 
             <div class="table-container">
@@ -27,14 +66,18 @@
                 <table>
 
                     <thead>
+
                         <tr>
+
                             <th>Organisation</th>
                             <th>Plan</th>
                             <th>Max Projects</th>
                             <th>Max Users</th>
                             <th>Max Workspaces</th>
                             <th>AI Enabled</th>
+
                         </tr>
+
                     </thead>
 
                     <tbody>
@@ -42,19 +85,45 @@
                         {% for item in plan_data %}
 
                         <tr>
-                            <td>{{ item.organisation.organisation_name }}</td>
-                            <td>{{ item.organisation.plan }}</td>
-                            <td>{{ item.max_projects }}</td>
-                            <td>{{ item.max_users }}</td>
-                            <td>{{ item.max_workspaces }}</td>
 
                             <td>
-                                {% if item.ai_enabled %}
-                                    <span class="badge badge-green">Yes</span>
-                                {% else %}
-                                    <span class="badge badge-red">No</span>
-                                {% endif %}
+                                {{ item.organisation.organisation_name }}
                             </td>
+
+                            <td>
+                                {{ item.organisation.plan }}
+                            </td>
+
+                            <td>
+                                {{ item.max_projects }}
+                            </td>
+
+                            <td>
+                                {{ item.max_users }}
+                            </td>
+
+                            <td>
+                                {{ item.max_workspaces }}
+                            </td>
+
+                            <td>
+
+                                {% if item.ai_enabled %}
+
+                                    <span class="badge badge-green">
+                                        Enabled
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-red">
+                                        Disabled
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
                         </tr>
 
                         {% endfor %}

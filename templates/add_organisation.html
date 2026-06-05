@@ -22,7 +22,7 @@
                 <h1>Add Organisation</h1>
 
                 <p class="dashboard-subtitle">
-                    Create an organisation account for multi-company workspace support.
+                    Create an organisation account and subscription profile.
                 </p>
             </div>
 
@@ -42,7 +42,6 @@
                 <input
                     type="text"
                     name="organisation_name"
-                    placeholder="Example: Acme Group Ltd"
                     required
                 >
 
@@ -50,7 +49,6 @@
                 <input
                     type="text"
                     name="industry"
-                    placeholder="Technology, Construction, Healthcare..."
                 >
 
                 <label>Plan</label>
@@ -61,17 +59,54 @@
                     <option value="Enterprise">Enterprise</option>
                 </select>
 
-                <label>Status</label>
-                <select name="status" required>
+                <label>Account Status</label>
+                <select name="account_status" required>
                     <option value="Active">Active</option>
-                    <option value="Trial">Trial</option>
                     <option value="Suspended">Suspended</option>
-                    <option value="Cancelled">Cancelled</option>
                 </select>
+
+                <label>Subscription Status</label>
+                <select name="subscription_status" required>
+                    <option value="Trial">Trial</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Expired">Expired</option>
+                </select>
+
+                <label>Organisation Owner</label>
+                <input
+                    type="text"
+                    name="organisation_owner"
+                >
+
+                <label>Contact Email</label>
+                <input
+                    type="email"
+                    name="contact_email"
+                >
+
+                <label>Organisation Size</label>
+                <select name="organisation_size">
+                    <option value="">Select Size</option>
+                    <option value="1-10">1-10</option>
+                    <option value="11-50">11-50</option>
+                    <option value="51-250">51-250</option>
+                    <option value="251-1000">251-1000</option>
+                    <option value="1000+">1000+</option>
+                </select>
+
+                <label>Region</label>
+                <input
+                    type="text"
+                    name="region"
+                    placeholder="UK, Europe, North America..."
+                >
 
                 <br><br>
 
-                <button type="submit" class="btn-primary">
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Save Organisation
                 </button>
 

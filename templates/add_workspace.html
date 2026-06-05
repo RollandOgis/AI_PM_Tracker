@@ -27,9 +27,11 @@
             </div>
 
             <div class="dashboard-actions">
+
                 <a href="/workspaces" class="btn-primary">
                     Back to Workspaces
                 </a>
+
             </div>
 
         </div>
@@ -39,48 +41,94 @@
             <form method="POST">
 
                 <label>Organisation</label>
+
                 <select name="organisation_id" required>
+
                     {% for organisation in organisations %}
-                        <option value="{{ organisation['id'] }}">
-                            {{ organisation['organisation_name'] }}
-                        </option>
+
+                    <option value="{{ organisation['id'] }}">
+                        {{ organisation['organisation_name'] }}
+                    </option>
+
                     {% endfor %}
+
                 </select>
 
                 <label>Workspace Name</label>
+
                 <input
                     type="text"
                     name="workspace_name"
-                    placeholder="PMO Workspace"
                     required
                 >
 
+                <label>Workspace Description</label>
+
+                <textarea
+                    name="workspace_description"
+                    rows="4"
+                    placeholder="Describe the purpose of this workspace..."
+                ></textarea>
+
                 <label>Workspace Type</label>
+
                 <select name="workspace_type" required>
+
                     <option value="PMO">PMO</option>
                     <option value="Project">Project</option>
                     <option value="Programme">Programme</option>
                     <option value="Portfolio">Portfolio</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Operations">Operations</option>
                     <option value="Client">Client</option>
+
                 </select>
 
-                <label>Owner</label>
+                <label>Workspace Owner</label>
+
                 <input
                     type="text"
                     name="owner"
-                    placeholder="Workspace owner"
+                >
+
+                <label>Workspace Health Score (%)</label>
+
+                <input
+                    type="number"
+                    name="workspace_health_score"
+                    min="0"
+                    max="100"
+                    value="80"
                 >
 
                 <label>Status</label>
+
                 <select name="status" required>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Archived">Archived</option>
+
+                    <option value="Active">
+                        Active
+                    </option>
+
+                    <option value="Pending">
+                        Pending
+                    </option>
+
+                    <option value="Suspended">
+                        Suspended
+                    </option>
+
+                    <option value="Archived">
+                        Archived
+                    </option>
+
                 </select>
 
                 <br><br>
 
-                <button type="submit" class="btn-primary">
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Save Workspace
                 </button>
 

@@ -3975,10 +3975,96 @@ def init_db():
                    )
                    """)
 
+    # Organisations v2 upgrades
 
+    cursor.execute("""
+                   ALTER TABLE organisations
+                       ADD COLUMN IF NOT EXISTS account_status TEXT DEFAULT 'Active'
+                   """)
 
+    cursor.execute("""
+                   ALTER TABLE organisations
+                       ADD COLUMN IF NOT EXISTS organisation_owner TEXT
+                   """)
 
+    cursor.execute("""
+                   ALTER TABLE organisations
+                       ADD COLUMN IF NOT EXISTS contact_email TEXT
+                   """)
 
+    cursor.execute("""
+                   ALTER TABLE organisations
+                       ADD COLUMN IF NOT EXISTS organisation_size TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE organisations
+                       ADD COLUMN IF NOT EXISTS region TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE organisations
+                       ADD COLUMN IF NOT EXISTS updated_at TEXT
+                   """)
+
+    # Workspaces v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE workspaces
+                       ADD COLUMN IF NOT EXISTS workspace_description TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE workspaces
+                       ADD COLUMN IF NOT EXISTS workspace_health_score INTEGER DEFAULT 80
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE workspaces
+                       ADD COLUMN IF NOT EXISTS updated_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS organisation_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS workspace_id INTEGER
+                   """)
+
+    # Subscription v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE subscription_plans
+                       ADD COLUMN IF NOT EXISTS max_workspaces INTEGER DEFAULT 1
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE subscription_plans
+                       ADD COLUMN IF NOT EXISTS ai_enabled TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE subscription_plans
+                       ADD COLUMN IF NOT EXISTS plan_description TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE subscription_plans
+                       ADD COLUMN IF NOT EXISTS updated_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE customer_subscriptions
+                       ADD COLUMN IF NOT EXISTS renewal_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE customer_subscriptions
+                       ADD COLUMN IF NOT EXISTS subscription_notes TEXT
+                   """)
 
 
 
@@ -7550,6 +7636,95 @@ def verify_email(token):
     <p>Your email has been verified successfully.</p>
     <p><a href="/login">Go to Login</a></p>
     """
+
+@app.route("/accept-invitation/<token>", methods=["GET", "POST"])
+def accept_invitation(token):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM user_invitations
+        WHERE invitation_token = %s
+        AND status = 'Pending'
+    """, (
+        token,
+    ))
+
+    invitation = cursor.fetchone()
+
+    if not invitation:
+        conn.close()
+        return "Invalid or expired invitation"
+
+    if request.method == "POST":
+
+        username = request.form["username"]
+        password = request.form["password"]
+
+        hashed_password = generate_password_hash(password)
+        avatar_initials = username[:2].upper()
+
+        cursor.execute("""
+            INSERT INTO users
+            (
+                username,
+                email,
+                password,
+                avatar_initials
+            )
+            VALUES (%s,%s,%s,%s)
+            RETURNING id
+        """, (
+            username,
+            invitation["invited_email"],
+            hashed_password,
+            avatar_initials
+        ))
+
+        new_user = cursor.fetchone()
+        new_user_id = new_user["id"]
+
+        cursor.execute("""
+                       INSERT INTO user_roles
+                       (user_id,
+                        role,
+                        organisation_id,
+                        workspace_id,
+                        created_at)
+                       VALUES (%s, %s, %s, %s, %s)
+                       """, (
+                           new_user_id,
+                           invitation["role"],
+                           invitation["organisation_id"],
+                           invitation["workspace_id"],
+                           str(datetime.now())
+                       ))
+
+        cursor.execute("""
+            UPDATE user_invitations
+            SET status = 'Accepted'
+            WHERE id = %s
+        """, (
+            invitation["id"],
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/login")
+
+    conn.close()
+
+    return render_template(
+        "accept_invitation.html",
+        invitation=invitation
+    )
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -21243,6 +21418,9 @@ def add_email_notification():
         "add_email_notification.html"
     )
 
+
+
+
 @app.route("/user-management")
 def user_management():
 
@@ -21882,6 +22060,7 @@ def alerts():
     )
 
 
+
 @app.route("/organisations")
 def organisations():
 
@@ -21892,10 +22071,7 @@ def organisations():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -21908,11 +22084,44 @@ def organisations():
 
     organisations = cursor.fetchall()
 
+    total_organisations = len(organisations)
+
+    active_count = len([
+        org for org in organisations
+        if org["account_status"] == "Active"
+    ])
+
+    suspended_count = len([
+        org for org in organisations
+        if org["account_status"] == "Suspended"
+    ])
+
+    trial_count = len([
+        org for org in organisations
+        if org["subscription_status"] == "Trial"
+    ])
+
+    paid_count = len([
+        org for org in organisations
+        if org["subscription_status"] == "Paid"
+    ])
+
+    expired_count = len([
+        org for org in organisations
+        if org["subscription_status"] == "Expired"
+    ])
+
     conn.close()
 
     return render_template(
         "organisations.html",
-        organisations=organisations
+        organisations=organisations,
+        total_organisations=total_organisations,
+        active_count=active_count,
+        suspended_count=suspended_count,
+        trial_count=trial_count,
+        paid_count=paid_count,
+        expired_count=expired_count
     )
 
 
@@ -21922,14 +22131,18 @@ def add_organisation():
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Admin", "create"):
+        return "Access denied"
+
     if request.method == "POST":
 
         conn = get_db_connection()
-
         cursor = conn.cursor()
 
         trial_start_date = date.today()
         trial_end_date = date.today() + timedelta(days=14)
+
+        subscription_status = request.form.get("subscription_status") or "Trial"
 
         cursor.execute("""
             INSERT INTO organisations
@@ -21939,22 +22152,34 @@ def add_organisation():
                 industry,
                 plan,
                 status,
+                account_status,
+                subscription_status,
+                organisation_owner,
+                contact_email,
+                organisation_size,
+                region,
                 trial_start_date,
                 trial_end_date,
-                subscription_status,
-                created_at
+                created_at,
+                updated_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["organisation_name"],
-            request.form["industry"],
-            request.form["plan"],
-            request.form["status"],
+            request.form.get("organisation_name"),
+            request.form.get("industry"),
+            request.form.get("plan"),
+            request.form.get("account_status"),
+            request.form.get("account_status"),
+            subscription_status,
+            request.form.get("organisation_owner"),
+            request.form.get("contact_email"),
+            request.form.get("organisation_size"),
+            request.form.get("region"),
             str(trial_start_date),
             str(trial_end_date),
-            "Trial",
-            str(date.today())
+            str(date.today()),
+            str(datetime.now())
         ))
 
         conn.commit()
@@ -21963,6 +22188,113 @@ def add_organisation():
         return redirect("/organisations")
 
     return render_template("add_organisation.html")
+
+
+@app.route("/edit-organisation/<int:organisation_id>", methods=["GET", "POST"])
+def edit_organisation(organisation_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        organisation_id,
+        session["user_id"]
+    ))
+
+    organisation = cursor.fetchone()
+
+    if not organisation:
+        conn.close()
+        return redirect("/organisations")
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE organisations
+            SET
+                organisation_name = %s,
+                industry = %s,
+                plan = %s,
+                status = %s,
+                account_status = %s,
+                subscription_status = %s,
+                organisation_owner = %s,
+                contact_email = %s,
+                organisation_size = %s,
+                region = %s,
+                trial_start_date = %s,
+                trial_end_date = %s,
+                updated_at = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("organisation_name"),
+            request.form.get("industry"),
+            request.form.get("plan"),
+            request.form.get("account_status"),
+            request.form.get("account_status"),
+            request.form.get("subscription_status"),
+            request.form.get("organisation_owner"),
+            request.form.get("contact_email"),
+            request.form.get("organisation_size"),
+            request.form.get("region"),
+            request.form.get("trial_start_date"),
+            request.form.get("trial_end_date"),
+            str(datetime.now()),
+            organisation_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/organisations")
+
+    conn.close()
+
+    return render_template(
+        "edit_organisation.html",
+        organisation=organisation
+    )
+
+
+@app.route("/delete-organisation/<int:organisation_id>")
+def delete_organisation(organisation_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM organisations
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        organisation_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/organisations")
+
 
 @app.route("/organisation-switcher")
 def organisation_switcher():
@@ -21973,6 +22305,8 @@ def organisation_switcher():
     if not has_permission("Admin", "view"):
         return "Access denied"
 
+    current_organisation_id = session.get("organisation_id")
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
@@ -21980,21 +22314,33 @@ def organisation_switcher():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (organisation_name)
+            *
         FROM organisations
         WHERE user_id = %s
-        ORDER BY organisation_name
+        ORDER BY organisation_name, id DESC
     """, (
         session["user_id"],
     ))
 
     organisations = cursor.fetchall()
 
+    total_organisations = len(organisations)
+
+    current_organisation = None
+
+    for organisation in organisations:
+        if current_organisation_id and organisation["id"] == current_organisation_id:
+            current_organisation = organisation
+
     conn.close()
 
     return render_template(
         "organisation_switcher.html",
-        organisations=organisations
+        organisations=organisations,
+        current_organisation_id=current_organisation_id,
+        current_organisation=current_organisation,
+        total_organisations=total_organisations
     )
 
 
@@ -22028,89 +22374,22 @@ def switch_organisation(organisation_id):
     conn.close()
 
     if organisation:
+
         session["organisation_id"] = organisation_id
+        session["organisation_name"] = organisation["organisation_name"]
+
         session.pop("workspace_id", None)
+        session.pop("workspace_name", None)
 
-    return redirect("/")
+        create_activity(
+            f"Switched organisation to {organisation['organisation_name']}",
+            user_id=session["user_id"],
+            activity_type="Switch",
+            module="Organisation",
+            severity="Low"
+        )
 
-@app.route(
-    "/add-workspace-role",
-    methods=["GET", "POST"]
-)
-def add_workspace_role():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Admin", "create"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT *
-        FROM users
-        ORDER BY username
-    """)
-
-    users = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT *
-        FROM organisations
-        ORDER BY organisation_name
-    """)
-
-    organisations = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT *
-        FROM workspaces
-        ORDER BY workspace_name
-    """)
-
-    workspaces = cursor.fetchall()
-
-    if request.method == "POST":
-
-        cursor.execute("""
-            INSERT INTO user_roles
-            (
-                user_id,
-                role,
-                organisation_id,
-                workspace_id,
-                created_at
-            )
-            VALUES (%s,%s,%s,%s,%s)
-        """, (
-
-            request.form["user_id"],
-            request.form["role"],
-            request.form["organisation_id"],
-            request.form["workspace_id"],
-            str(datetime.now())
-
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/workspace-roles")
-
-    conn.close()
-
-    return render_template(
-        "add_workspace_role.html",
-        users=users,
-        organisations=organisations,
-        workspaces=workspaces
-    )
-
+    return redirect("/organisation-switcher")
 
 @app.route("/workspaces")
 def workspaces():
@@ -22128,25 +22407,52 @@ def workspaces():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (workspaces.workspace_name, workspaces.organisation_id)
             workspaces.*,
             organisations.organisation_name
         FROM workspaces
         LEFT JOIN organisations
         ON workspaces.organisation_id = organisations.id
         WHERE workspaces.user_id = %s
-        ORDER BY workspaces.id DESC
+        ORDER BY workspaces.workspace_name, workspaces.organisation_id, workspaces.id DESC
     """, (
         session["user_id"],
     ))
 
     workspaces = cursor.fetchall()
 
+    total_workspaces = len(workspaces)
+
+    active_count = len([
+        workspace for workspace in workspaces
+        if workspace["status"] == "Active"
+    ])
+
+    project_workspace_count = len([
+        workspace for workspace in workspaces
+        if workspace["workspace_type"] == "Project"
+    ])
+
+    pmo_workspace_count = len([
+        workspace for workspace in workspaces
+        if workspace["workspace_type"] == "PMO"
+    ])
+
+    finance_workspace_count = len([
+        workspace for workspace in workspaces
+        if workspace["workspace_type"] == "Finance"
+    ])
+
     conn.close()
 
     return render_template(
         "workspaces.html",
-        workspaces=workspaces
+        workspaces=workspaces,
+        total_workspaces=total_workspaces,
+        active_count=active_count,
+        project_workspace_count=project_workspace_count,
+        pmo_workspace_count=pmo_workspace_count,
+        finance_workspace_count=finance_workspace_count
     )
 
 
@@ -22198,6 +22504,25 @@ def add_workspace():
     if request.method == "POST":
 
         cursor.execute("""
+            SELECT id
+            FROM workspaces
+            WHERE user_id = %s
+            AND organisation_id = %s
+            AND LOWER(TRIM(workspace_name)) = LOWER(TRIM(%s))
+            LIMIT 1
+        """, (
+            session["user_id"],
+            request.form.get("organisation_id"),
+            request.form.get("workspace_name")
+        ))
+
+        existing_workspace = cursor.fetchone()
+
+        if existing_workspace:
+            conn.close()
+            return redirect("/workspaces")
+
+        cursor.execute("""
             INSERT INTO workspaces
             (
                 user_id,
@@ -22206,17 +22531,23 @@ def add_workspace():
                 workspace_type,
                 owner,
                 status,
-                created_at
+                workspace_description,
+                workspace_health_score,
+                created_at,
+                updated_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["organisation_id"],
-            request.form["workspace_name"],
-            request.form["workspace_type"],
-            request.form["owner"],
-            request.form["status"],
-            str(date.today())
+            request.form.get("organisation_id"),
+            request.form.get("workspace_name"),
+            request.form.get("workspace_type"),
+            request.form.get("owner"),
+            request.form.get("status"),
+            request.form.get("workspace_description"),
+            int(request.form.get("workspace_health_score") or 80),
+            str(date.today()),
+            str(datetime.now())
         ))
 
         conn.commit()
@@ -22231,11 +22562,15 @@ def add_workspace():
         organisations=organisations
     )
 
+
 @app.route("/switch-workspace/<int:workspace_id>")
 def switch_workspace(workspace_id):
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
     conn = get_db_connection()
 
@@ -22258,15 +22593,32 @@ def switch_workspace(workspace_id):
     conn.close()
 
     if workspace:
-        session["workspace_id"] = workspace_id
 
-    return redirect("/")
+        session["workspace_id"] = workspace_id
+        session["workspace_name"] = workspace["workspace_name"]
+        session["organisation_id"] = workspace["organisation_id"]
+
+        create_activity(
+            f"Switched workspace to {workspace['workspace_name']}",
+            user_id=session["user_id"],
+            activity_type="Switch",
+            module="Workspace",
+            severity="Low"
+        )
+
+    return redirect("/workspace-switcher")
+
 
 @app.route("/workspace-switcher")
 def workspace_switcher():
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "view"):
+        return "Access denied"
+
+    current_workspace_id = session.get("workspace_id")
 
     conn = get_db_connection()
 
@@ -22275,22 +22627,36 @@ def workspace_switcher():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (workspaces.workspace_name, workspaces.organisation_id)
+            workspaces.*,
+            organisations.organisation_name
         FROM workspaces
-        WHERE user_id = %s
-        ORDER BY workspace_name
+        LEFT JOIN organisations
+        ON workspaces.organisation_id = organisations.id
+        WHERE workspaces.user_id = %s
+        ORDER BY workspaces.workspace_name, workspaces.organisation_id, workspaces.id DESC
     """, (
         session["user_id"],
     ))
 
     workspaces = cursor.fetchall()
 
+    current_workspace = None
+
+    for workspace in workspaces:
+        if current_workspace_id and workspace["id"] == current_workspace_id:
+            current_workspace = workspace
+
     conn.close()
 
     return render_template(
         "workspace_switcher.html",
-        workspaces=workspaces
+        workspaces=workspaces,
+        current_workspace_id=current_workspace_id,
+        current_workspace=current_workspace,
+        total_workspaces=len(workspaces)
     )
+
 
 @app.route("/workspace-roles")
 def workspace_roles():
@@ -22308,9 +22674,15 @@ def workspace_roles():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (
+            user_roles.user_id,
+            user_roles.organisation_id,
+            user_roles.workspace_id,
+            user_roles.role
+        )
             user_roles.*,
             users.username,
+            users.email,
             organisations.organisation_name,
             workspaces.workspace_name
         FROM user_roles
@@ -22320,17 +22692,154 @@ def workspace_roles():
         ON user_roles.organisation_id = organisations.id
         LEFT JOIN workspaces
         ON user_roles.workspace_id = workspaces.id
-        ORDER BY user_roles.id DESC
+        WHERE user_roles.workspace_id IS NOT NULL
+        ORDER BY
+            user_roles.user_id,
+            user_roles.organisation_id,
+            user_roles.workspace_id,
+            user_roles.role,
+            user_roles.id DESC
     """)
 
     roles = cursor.fetchall()
+
+    total_roles = len(roles)
+
+    admin_count = len([
+        role for role in roles
+        if role["role"] == "Admin"
+    ])
+
+    manager_count = len([
+        role for role in roles
+        if role["role"] == "Manager"
+    ])
+
+    team_member_count = len([
+        role for role in roles
+        if role["role"] == "Team Member"
+    ])
+
+    viewer_count = len([
+        role for role in roles
+        if role["role"] == "Viewer"
+    ])
 
     conn.close()
 
     return render_template(
         "workspace_roles.html",
-        roles=roles
+        roles=roles,
+        total_roles=total_roles,
+        admin_count=admin_count,
+        manager_count=manager_count,
+        team_member_count=team_member_count,
+        viewer_count=viewer_count
     )
+
+
+@app.route("/add-workspace-role", methods=["GET", "POST"])
+def add_workspace_role():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "create"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        ORDER BY username
+    """)
+
+    users = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM workspaces
+        WHERE user_id = %s
+        ORDER BY workspace_name
+    """, (
+        session["user_id"],
+    ))
+
+    workspaces = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            SELECT id
+            FROM user_roles
+            WHERE user_id = %s
+            AND role = %s
+            AND organisation_id = %s
+            AND workspace_id = %s
+            LIMIT 1
+        """, (
+            request.form.get("user_id"),
+            request.form.get("role"),
+            request.form.get("organisation_id"),
+            request.form.get("workspace_id")
+        ))
+
+        existing_role = cursor.fetchone()
+
+        if existing_role:
+            conn.close()
+            return redirect("/workspace-roles")
+
+        cursor.execute("""
+            INSERT INTO user_roles
+            (
+                user_id,
+                role,
+                organisation_id,
+                workspace_id,
+                created_at,
+                updated_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            request.form.get("user_id"),
+            request.form.get("role"),
+            request.form.get("organisation_id"),
+            request.form.get("workspace_id"),
+            str(datetime.now()),
+            str(datetime.now())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/workspace-roles")
+
+    conn.close()
+
+    return render_template(
+        "add_workspace_role.html",
+        users=users,
+        organisations=organisations,
+        workspaces=workspaces
+    )
+
 
 @app.route("/edit-workspace-role/<int:role_id>", methods=["GET", "POST"])
 def edit_workspace_role(role_id):
@@ -22372,20 +22881,49 @@ def edit_workspace_role(role_id):
     cursor.execute("""
         SELECT *
         FROM organisations
+        WHERE user_id = %s
         ORDER BY organisation_name
-    """)
+    """, (
+        session["user_id"],
+    ))
 
     organisations = cursor.fetchall()
 
     cursor.execute("""
         SELECT *
         FROM workspaces
+        WHERE user_id = %s
         ORDER BY workspace_name
-    """)
+    """, (
+        session["user_id"],
+    ))
 
     workspaces = cursor.fetchall()
 
     if request.method == "POST":
+
+        cursor.execute("""
+            SELECT id
+            FROM user_roles
+            WHERE user_id = %s
+            AND role = %s
+            AND organisation_id = %s
+            AND workspace_id = %s
+            AND id != %s
+            LIMIT 1
+        """, (
+            request.form.get("user_id"),
+            request.form.get("role"),
+            request.form.get("organisation_id"),
+            request.form.get("workspace_id"),
+            role_id
+        ))
+
+        existing_role = cursor.fetchone()
+
+        if existing_role:
+            conn.close()
+            return redirect("/workspace-roles")
 
         cursor.execute("""
             UPDATE user_roles
@@ -22393,13 +22931,15 @@ def edit_workspace_role(role_id):
                 user_id = %s,
                 role = %s,
                 organisation_id = %s,
-                workspace_id = %s
+                workspace_id = %s,
+                updated_at = %s
             WHERE id = %s
         """, (
-            request.form["user_id"],
-            request.form["role"],
-            request.form["organisation_id"],
-            request.form["workspace_id"],
+            request.form.get("user_id"),
+            request.form.get("role"),
+            request.form.get("organisation_id"),
+            request.form.get("workspace_id"),
+            str(datetime.now()),
             role_id
         ))
 
@@ -22417,6 +22957,7 @@ def edit_workspace_role(role_id):
         organisations=organisations,
         workspaces=workspaces
     )
+
 
 @app.route("/delete-workspace-role/<int:role_id>")
 def delete_workspace_role(role_id):
@@ -22454,115 +22995,30 @@ def subscription_plans():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (plan_name)
+            *
         FROM subscription_plans
         WHERE user_id = %s
-        ORDER BY id DESC
-    """, (
-        session["user_id"],
-    ))
+        ORDER BY plan_name, id DESC
+    """, (session["user_id"],))
 
     plans = cursor.fetchall()
+
+    total_plans = len(plans)
+    active_plans = len([p for p in plans if p["status"] == "Active"])
+    free_plans = len([p for p in plans if p["price"] == 0 or str(p["price"]) == "0"])
 
     conn.close()
 
     return render_template(
         "subscription_plans.html",
-        plans=plans
-    )
-
-@app.route("/accept-invitation/<token>", methods=["GET", "POST"])
-def accept_invitation(token):
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("""
-        SELECT *
-        FROM user_invitations
-        WHERE invitation_token = %s
-        AND status = 'Pending'
-    """, (
-        token,
-    ))
-
-    invitation = cursor.fetchone()
-
-    if not invitation:
-        conn.close()
-        return "Invalid or expired invitation"
-
-    if request.method == "POST":
-
-        username = request.form["username"]
-        password = request.form["password"]
-
-        hashed_password = generate_password_hash(password)
-        avatar_initials = username[:2].upper()
-
-        cursor.execute("""
-            INSERT INTO users
-            (
-                username,
-                email,
-                password,
-                avatar_initials
-            )
-            VALUES (%s,%s,%s,%s)
-            RETURNING id
-        """, (
-            username,
-            invitation["invited_email"],
-            hashed_password,
-            avatar_initials
-        ))
-
-        new_user = cursor.fetchone()
-        new_user_id = new_user["id"]
-
-        cursor.execute("""
-                       INSERT INTO user_roles
-                       (user_id,
-                        role,
-                        organisation_id,
-                        workspace_id,
-                        created_at)
-                       VALUES (%s, %s, %s, %s, %s)
-                       """, (
-                           new_user_id,
-                           invitation["role"],
-                           invitation["organisation_id"],
-                           invitation["workspace_id"],
-                           str(datetime.now())
-                       ))
-
-        cursor.execute("""
-            UPDATE user_invitations
-            SET status = 'Accepted'
-            WHERE id = %s
-        """, (
-            invitation["id"],
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/login")
-
-    conn.close()
-
-    return render_template(
-        "accept_invitation.html",
-        invitation=invitation
+        plans=plans,
+        total_plans=total_plans,
+        active_plans=active_plans,
+        free_plans=free_plans
     )
 
 
@@ -22578,8 +23034,24 @@ def add_subscription_plan():
     if request.method == "POST":
 
         conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id
+            FROM subscription_plans
+            WHERE user_id = %s
+            AND LOWER(plan_name) = LOWER(%s)
+            LIMIT 1
+        """, (
+            session["user_id"],
+            request.form.get("plan_name")
+        ))
+
+        existing_plan = cursor.fetchone()
+
+        if existing_plan:
+            conn.close()
+            return redirect("/subscription-plans")
 
         cursor.execute("""
             INSERT INTO subscription_plans
@@ -22597,13 +23069,13 @@ def add_subscription_plan():
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["plan_name"],
-            request.form["price"],
-            request.form["billing_cycle"],
-            request.form["max_projects"],
-            request.form["max_users"],
-            request.form["features"],
-            request.form["status"],
+            request.form.get("plan_name"),
+            request.form.get("price"),
+            request.form.get("billing_cycle"),
+            request.form.get("max_projects"),
+            request.form.get("max_users"),
+            request.form.get("features"),
+            request.form.get("status"),
             str(date.today())
         ))
 
@@ -22613,6 +23085,7 @@ def add_subscription_plan():
         return redirect("/subscription-plans")
 
     return render_template("add_subscription_plan.html")
+
 
 @app.route("/customer-subscriptions")
 def customer_subscriptions():
@@ -22624,15 +23097,14 @@ def customer_subscriptions():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (customer_subscriptions.organisation_id)
             customer_subscriptions.*,
             organisations.organisation_name,
+            organisations.subscription_status,
+            organisations.plan AS organisation_plan,
             subscription_plans.plan_name
         FROM customer_subscriptions
         LEFT JOIN organisations
@@ -22640,18 +23112,27 @@ def customer_subscriptions():
         LEFT JOIN subscription_plans
         ON customer_subscriptions.plan_id = subscription_plans.id
         WHERE customer_subscriptions.user_id = %s
-        ORDER BY customer_subscriptions.id DESC
+        ORDER BY customer_subscriptions.organisation_id, customer_subscriptions.id DESC
     """, (
         session["user_id"],
     ))
 
     subscriptions = cursor.fetchall()
 
+    total_subscriptions = len(subscriptions)
+    active_subscriptions = len([s for s in subscriptions if s["status"] == "Active"])
+    trial_subscriptions = len([s for s in subscriptions if s["status"] == "Trial"])
+    expired_subscriptions = len([s for s in subscriptions if s["status"] == "Expired"])
+
     conn.close()
 
     return render_template(
         "customer_subscriptions.html",
-        subscriptions=subscriptions
+        subscriptions=subscriptions,
+        total_subscriptions=total_subscriptions,
+        active_subscriptions=active_subscriptions,
+        trial_subscriptions=trial_subscriptions,
+        expired_subscriptions=expired_subscriptions
     )
 
 
@@ -22665,10 +23146,7 @@ def add_customer_subscription():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -22682,10 +23160,11 @@ def add_customer_subscription():
     organisations = cursor.fetchall()
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (plan_name)
+            *
         FROM subscription_plans
         WHERE user_id = %s
-        ORDER BY plan_name
+        ORDER BY plan_name, id DESC
     """, (
         session["user_id"],
     ))
@@ -22693,6 +23172,23 @@ def add_customer_subscription():
     plans = cursor.fetchall()
 
     if request.method == "POST":
+
+        cursor.execute("""
+            SELECT id
+            FROM customer_subscriptions
+            WHERE user_id = %s
+            AND organisation_id = %s
+            LIMIT 1
+        """, (
+            session["user_id"],
+            request.form.get("organisation_id")
+        ))
+
+        existing_subscription = cursor.fetchone()
+
+        if existing_subscription:
+            conn.close()
+            return redirect("/customer-subscriptions")
 
         cursor.execute("""
             INSERT INTO customer_subscriptions
@@ -22709,14 +23205,49 @@ def add_customer_subscription():
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["organisation_id"],
-            request.form["plan_id"],
-            request.form["start_date"],
-            request.form["end_date"],
-            request.form["status"],
-            request.form["payment_status"],
+            request.form.get("organisation_id"),
+            request.form.get("plan_id"),
+            request.form.get("start_date"),
+            request.form.get("end_date"),
+            request.form.get("status"),
+            request.form.get("payment_status"),
             str(date.today())
         ))
+
+        cursor.execute("""
+            SELECT plan_name
+            FROM subscription_plans
+            WHERE id = %s
+        """, (
+            request.form.get("plan_id"),
+        ))
+
+        selected_plan = cursor.fetchone()
+
+        if selected_plan:
+
+            subscription_status = request.form.get("status")
+
+            if subscription_status == "Active":
+                organisation_subscription_status = "Paid"
+            elif subscription_status == "Trial":
+                organisation_subscription_status = "Trial"
+            else:
+                organisation_subscription_status = "Expired"
+
+            cursor.execute("""
+                UPDATE organisations
+                SET
+                    plan = %s,
+                    subscription_status = %s
+                WHERE id = %s
+                AND user_id = %s
+            """, (
+                selected_plan["plan_name"],
+                organisation_subscription_status,
+                request.form.get("organisation_id"),
+                session["user_id"]
+            ))
 
         conn.commit()
         conn.close()
@@ -22731,17 +23262,18 @@ def add_customer_subscription():
         plans=plans
     )
 
+
 @app.route("/subscription-status")
 def subscription_status():
 
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -22756,6 +23288,10 @@ def subscription_status():
 
     today = date.today()
 
+    trial_count = 0
+    paid_count = 0
+    expired_count = 0
+
     for organisation in organisations:
 
         days_remaining = 0
@@ -22763,27 +23299,35 @@ def subscription_status():
         if organisation["trial_end_date"]:
 
             try:
-
                 trial_end = datetime.strptime(
-                    organisation["trial_end_date"],
+                    str(organisation["trial_end_date"]),
                     "%Y-%m-%d"
                 ).date()
 
-                days_remaining = (
-                    trial_end - today
-                ).days
+                days_remaining = (trial_end - today).days
 
             except:
-                pass
+                days_remaining = 0
 
         organisation["days_remaining"] = days_remaining
+
+        if organisation["subscription_status"] == "Trial":
+            trial_count += 1
+        elif organisation["subscription_status"] == "Paid":
+            paid_count += 1
+        elif organisation["subscription_status"] == "Expired":
+            expired_count += 1
 
     conn.close()
 
     return render_template(
         "subscription_status.html",
-        organisations=organisations
+        organisations=organisations,
+        trial_count=trial_count,
+        paid_count=paid_count,
+        expired_count=expired_count
     )
+
 
 @app.route("/upgrade-plan/<int:organisation_id>")
 def upgrade_plan(organisation_id):
@@ -22791,16 +23335,23 @@ def upgrade_plan(organisation_id):
     if "user_id" not in session:
         return redirect("/login")
 
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
     return render_template(
         "upgrade_plan.html",
         organisation_id=organisation_id
     )
+
 
 @app.route("/process-upgrade/<int:organisation_id>/<plan>")
 def process_upgrade(organisation_id, plan):
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
 
     allowed_plans = [
         "Free",
@@ -22813,19 +23364,22 @@ def process_upgrade(organisation_id, plan):
         return "Invalid plan"
 
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute("""
         UPDATE organisations
         SET
             plan = %s,
-            subscription_status = %s
+            subscription_status = %s,
+            account_status = %s,
+            updated_at = %s
         WHERE id = %s
         AND user_id = %s
     """, (
         plan,
+        "Paid",
         "Active",
+        str(datetime.now()),
         organisation_id,
         session["user_id"]
     ))
@@ -22842,11 +23396,11 @@ def plan_limits():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db_connection()
+    if not has_permission("Admin", "view"):
+        return "Access denied"
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -22867,11 +23421,15 @@ def plan_limits():
             organisation["plan"]
         )
 
+        max_projects = limits["max_projects"]
+        max_users = limits["max_users"]
+        max_workspaces = limits["max_workspaces"]
+
         plan_data.append({
             "organisation": organisation,
-            "max_projects": limits["max_projects"],
-            "max_users": limits["max_users"],
-            "max_workspaces": limits["max_workspaces"],
+            "max_projects": "Unlimited" if max_projects == 9999 else max_projects,
+            "max_users": "Unlimited" if max_users == 9999 else max_users,
+            "max_workspaces": "Unlimited" if max_workspaces == 9999 else max_workspaces,
             "ai_enabled": limits["ai_enabled"]
         })
 
@@ -22881,6 +23439,7 @@ def plan_limits():
         "plan_limits.html",
         plan_data=plan_data
     )
+
 
 @app.route("/billing-history")
 def billing_history():

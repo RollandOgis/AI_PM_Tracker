@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Workspace Role</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,74 +16,121 @@
 
     <main class="main-content">
 
-        <h1>Edit Workspace Role</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Update a user's role within an organisation and workspace.
-        </p>
+            <div>
+                <h1>Edit Workspace Role</h1>
 
-        <form method="POST" class="form-card">
+                <p class="dashboard-subtitle">
+                    Update a user's role within an organisation and workspace.
+                </p>
+            </div>
 
-            <label>User</label>
-            <select name="user_id" required>
-                {% for user in users %}
+            <div class="dashboard-actions">
+                <a href="/workspace-roles" class="btn-primary">
+                    Back to Workspace Roles
+                </a>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>User</label>
+                <select name="user_id" required>
+
+                    {% for user in users %}
+
                     <option
                         value="{{ user.id }}"
                         {% if user.id == role.user_id %}selected{% endif %}
                     >
                         {{ user.username }}
+                        {% if user.email %}
+                            ({{ user.email }})
+                        {% endif %}
                     </option>
-                {% endfor %}
-            </select>
 
-            <label>Role</label>
-            <select name="role" required>
-                <option value="Admin" {% if role.role == "Admin" %}selected{% endif %}>
-                    Admin
-                </option>
+                    {% endfor %}
 
-                <option value="Manager" {% if role.role == "Manager" %}selected{% endif %}>
-                    Manager
-                </option>
+                </select>
 
-                <option value="Team Member" {% if role.role == "Team Member" %}selected{% endif %}>
-                    Team Member
-                </option>
+                <label>Role</label>
+                <select name="role" required>
 
-                <option value="Viewer" {% if role.role == "Viewer" %}selected{% endif %}>
-                    Viewer
-                </option>
-            </select>
+                    <option value="Admin"
+                        {% if role.role == "Admin" %}selected{% endif %}
+                    >
+                        Admin
+                    </option>
 
-            <label>Organisation</label>
-            <select name="organisation_id" required>
-                {% for organisation in organisations %}
+                    <option value="Manager"
+                        {% if role.role == "Manager" %}selected{% endif %}
+                    >
+                        Manager
+                    </option>
+
+                    <option value="Team Member"
+                        {% if role.role == "Team Member" %}selected{% endif %}
+                    >
+                        Team Member
+                    </option>
+
+                    <option value="Viewer"
+                        {% if role.role == "Viewer" %}selected{% endif %}
+                    >
+                        Viewer
+                    </option>
+
+                </select>
+
+                <label>Organisation</label>
+                <select name="organisation_id" required>
+
+                    {% for organisation in organisations %}
+
                     <option
                         value="{{ organisation.id }}"
                         {% if organisation.id == role.organisation_id %}selected{% endif %}
                     >
                         {{ organisation.organisation_name }}
                     </option>
-                {% endfor %}
-            </select>
 
-            <label>Workspace</label>
-            <select name="workspace_id" required>
-                {% for workspace in workspaces %}
+                    {% endfor %}
+
+                </select>
+
+                <label>Workspace</label>
+                <select name="workspace_id" required>
+
+                    {% for workspace in workspaces %}
+
                     <option
                         value="{{ workspace.id }}"
                         {% if workspace.id == role.workspace_id %}selected{% endif %}
                     >
                         {{ workspace.workspace_name }}
                     </option>
-                {% endfor %}
-            </select>
 
-            <button type="submit" class="btn-primary">
-                Update Workspace Role
-            </button>
+                    {% endfor %}
 
-        </form>
+                </select>
+
+                <div class="smart-insight">
+                    Duplicate user, organisation, workspace and role combinations are blocked automatically.
+                </div>
+
+                <br>
+
+                <button type="submit" class="btn-primary">
+                    Update Workspace Role
+                </button>
+
+            </form>
+
+        </div>
 
     </main>
 

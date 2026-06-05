@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Organisation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Edit Organisation</h1>
+
+                <p class="dashboard-subtitle">
+                    Update organisation, subscription and account information.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/organisations" class="btn-primary">
+                    Back to Organisations
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Organisation Name</label>
+
+                <input
+                    type="text"
+                    name="organisation_name"
+                    value="{{ organisation['organisation_name'] }}"
+                    required
+                >
+
+                <label>Industry</label>
+
+                <input
+                    type="text"
+                    name="industry"
+                    value="{{ organisation['industry'] or '' }}"
+                >
+
+                <label>Plan</label>
+
+                <select name="plan">
+
+                    <option value="Trial"
+                        {% if organisation['plan'] == 'Trial' %}selected{% endif %}>
+                        Trial
+                    </option>
+
+                    <option value="Free"
+                        {% if organisation['plan'] == 'Free' %}selected{% endif %}>
+                        Free
+                    </option>
+
+                    <option value="Pro"
+                        {% if organisation['plan'] == 'Pro' %}selected{% endif %}>
+                        Pro
+                    </option>
+
+                    <option value="Enterprise"
+                        {% if organisation['plan'] == 'Enterprise' %}selected{% endif %}>
+                        Enterprise
+                    </option>
+
+                </select>
+
+                <label>Account Status</label>
+
+                <select name="account_status">
+
+                    <option value="Active"
+                        {% if organisation['account_status'] == 'Active' %}selected{% endif %}>
+                        Active
+                    </option>
+
+                    <option value="Suspended"
+                        {% if organisation['account_status'] == 'Suspended' %}selected{% endif %}>
+                        Suspended
+                    </option>
+
+                </select>
+
+                <label>Subscription Status</label>
+
+                <select name="subscription_status">
+
+                    <option value="Trial"
+                        {% if organisation['subscription_status'] == 'Trial' %}selected{% endif %}>
+                        Trial
+                    </option>
+
+                    <option value="Paid"
+                        {% if organisation['subscription_status'] == 'Paid' %}selected{% endif %}>
+                        Paid
+                    </option>
+
+                    <option value="Expired"
+                        {% if organisation['subscription_status'] == 'Expired' %}selected{% endif %}>
+                        Expired
+                    </option>
+
+                </select>
+
+                <label>Organisation Owner</label>
+
+                <input
+                    type="text"
+                    name="organisation_owner"
+                    value="{{ organisation['organisation_owner'] or '' }}"
+                >
+
+                <label>Contact Email</label>
+
+                <input
+                    type="email"
+                    name="contact_email"
+                    value="{{ organisation['contact_email'] or '' }}"
+                >
+
+                <label>Organisation Size</label>
+
+                <select name="organisation_size">
+
+                    <option value="">Select Size</option>
+
+                    <option value="1-10"
+                        {% if organisation['organisation_size'] == '1-10' %}selected{% endif %}>
+                        1-10
+                    </option>
+
+                    <option value="11-50"
+                        {% if organisation['organisation_size'] == '11-50' %}selected{% endif %}>
+                        11-50
+                    </option>
+
+                    <option value="51-250"
+                        {% if organisation['organisation_size'] == '51-250' %}selected{% endif %}>
+                        51-250
+                    </option>
+
+                    <option value="251-1000"
+                        {% if organisation['organisation_size'] == '251-1000' %}selected{% endif %}>
+                        251-1000
+                    </option>
+
+                    <option value="1000+"
+                        {% if organisation['organisation_size'] == '1000+' %}selected{% endif %}>
+                        1000+
+                    </option>
+
+                </select>
+
+                <label>Region</label>
+
+                <input
+                    type="text"
+                    name="region"
+                    value="{{ organisation['region'] or '' }}"
+                >
+
+                <label>Trial Start Date</label>
+
+                <input
+                    type="date"
+                    name="trial_start_date"
+                    value="{{ organisation['trial_start_date'] or '' }}"
+                >
+
+                <label>Trial End Date</label>
+
+                <input
+                    type="date"
+                    name="trial_end_date"
+                    value="{{ organisation['trial_end_date'] or '' }}"
+                >
+
+                <br><br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Update Organisation
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

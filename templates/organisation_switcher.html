@@ -14,50 +14,111 @@
 
     <main class="main-content">
 
-        <h1>Organisation Switcher</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Organisation Switcher</h1>
+                <p class="dashboard-subtitle">
+                    Switch between organisations linked to your account.
+                </p>
+            </div>
+        </div>
 
-        <p class="page-subtitle">
-            Switch between organisations linked to your account.
-        </p>
+        <div class="stats-grid">
 
-        <div class="table-container">
+            <div class="stat-card blue-card">
+                <h3>Total Organisations</h3>
+                <p>{{ total_organisations }}</p>
+            </div>
 
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Organisation</th>
-                        <th>Industry</th>
-                        <th>Plan</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for organisation in organisations %}
-
-                    <tr>
-                        <td>{{ organisation.organisation_name }}</td>
-                        <td>{{ organisation.industry }}</td>
-                        <td>{{ organisation.plan }}</td>
-                        <td>{{ organisation.status }}</td>
-
-                        <td>
-                            <a href="/switch-organisation/{{ organisation.id }}" class="btn-primary">
-                                Switch
-                            </a>
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="stat-card green-card">
+                <h3>Current Organisation</h3>
+                <p>
+                    {% if current_organisation %}
+                        {{ current_organisation["organisation_name"] }}
+                    {% else %}
+                        None
+                    {% endif %}
+                </p>
+            </div>
 
         </div>
+
+        {% if organisations %}
+
+        <div class="projects-grid">
+
+            {% for organisation in organisations %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+                    <div>
+                        <h3>{{ organisation["organisation_name"] }}</h3>
+                        <p>{{ organisation["industry"] or "No industry set" }}</p>
+                    </div>
+
+                    {% if current_organisation_id == organisation["id"] %}
+                        <span class="badge badge-green">Current</span>
+                    {% elif organisation["account_status"] == "Suspended" %}
+                        <span class="badge badge-red">Suspended</span>
+                    {% else %}
+                        <span class="badge badge-blue">Available</span>
+                    {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>{{ organisation["plan"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Account Status</span>
+                        <strong>{{ organisation["account_status"] or organisation["status"] or "Unknown" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Subscription</span>
+                        <strong>{{ organisation["subscription_status"] or "Unknown" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Region</span>
+                        <strong>{{ organisation["region"] or "Not set" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="project-actions">
+
+                    {% if current_organisation_id == organisation["id"] %}
+                        <span class="badge badge-green">Currently Active</span>
+                    {% else %}
+                        <a href="/switch-organisation/{{ organisation['id'] }}">
+                            Switch Organisation
+                        </a>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Organisations Found</h3>
+            <p>Add an organisation before using the organisation switcher.</p>
+            <a href="/add-organisation" class="btn-primary">
+                Add Organisation
+            </a>
+        </div>
+
+        {% endif %}
 
     </main>
 

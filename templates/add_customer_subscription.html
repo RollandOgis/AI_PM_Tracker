@@ -22,7 +22,7 @@
                 <h1>Add Customer Subscription</h1>
 
                 <p class="dashboard-subtitle">
-                    Assign a subscription plan to an organisation.
+                    Assign a SaaS plan to an organisation and sync its subscription status.
                 </p>
             </div>
 
@@ -57,34 +57,30 @@
                 </select>
 
                 <label>Start Date</label>
-                <input
-                    type="date"
-                    name="start_date"
-                    required
-                >
+                <input type="date" name="start_date" required>
 
                 <label>End Date</label>
-                <input
-                    type="date"
-                    name="end_date"
-                >
+                <input type="date" name="end_date">
 
                 <label>Status</label>
                 <select name="status" required>
                     <option value="Trial">Trial</option>
                     <option value="Active">Active</option>
-                    <option value="Paused">Paused</option>
-                    <option value="Cancelled">Cancelled</option>
                     <option value="Expired">Expired</option>
+                    <option value="Cancelled">Cancelled</option>
                 </select>
 
                 <label>Payment Status</label>
                 <select name="payment_status" required>
                     <option value="Paid">Paid</option>
-                    <option value="Unpaid">Unpaid</option>
                     <option value="Pending">Pending</option>
+                    <option value="Unpaid">Unpaid</option>
                     <option value="Failed">Failed</option>
                 </select>
+
+                <div class="smart-insight">
+                    When saved, this will also update the organisation plan and subscription status.
+                </div>
 
                 <br><br>
 
