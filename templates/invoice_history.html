@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Invoice History</h1>
+
+                <p class="dashboard-subtitle">
+                    View invoice lifecycle changes and audit trail.
+                </p>
+            </div>
+
+            <div>
+                <a href="/invoices" class="btn-primary">
+                    Back to Invoices
+                </a>
+            </div>
+
+        </div>
+
+        {% if history %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Date</th>
+                        <th>Action</th>
+                        <th>Old Status</th>
+                        <th>New Status</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for item in history %}
+
+                    <tr>
+
+                        <td>
+                            {{ item["created_at"] }}
+                        </td>
+
+                        <td>
+                            {{ item["action"] }}
+                        </td>
+
+                        <td>
+                            {{ item["previous_status"] }}
+                        </td>
+
+                        <td>
+                            {{ item["new_status"] }}
+                        </td>
+
+                        <td>
+                            £{{ item["amount"] }}
+                        </td>
+
+                        <td>
+                            {{ item["notes"] }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Invoice History</h3>
+
+            <p>
+                No audit trail entries exist for this invoice.
+            </p>
+
+        </div>
+
+        {% endif %}
+
+    </main>
+
+</div>
+
+</body>
+</html>

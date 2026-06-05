@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Financial Health</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Project Financial Health</h1>
+
+                <p class="dashboard-subtitle">
+                    Monitor budget health, forecast risk, financial approvals and linked financial risks.
+                </p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Records</h3>
+                <p>{{ total_cards }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Healthy</h3>
+                <p>{{ healthy_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Monitor</h3>
+                <p>{{ monitor_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>At Risk</h3>
+                <p>{{ at_risk_count }}</p>
+            </div>
+
+        </div>
+
+        {% if health_cards %}
+
+        <div class="projects-grid">
+
+            {% for item in health_cards %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name or "No Project" }}</h3>
+
+                        {% if item.health_status == "Healthy" %}
+                            <span class="badge badge-green">Healthy</span>
+                        {% elif item.health_status == "Monitor" %}
+                            <span class="badge badge-yellow">Monitor</span>
+                        {% else %}
+                            <span class="badge badge-red">At Risk</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>{{ item.health_score }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Level</span>
+                        <strong>{{ item.risk_level }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item.budget_amount) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item.actual_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item.forecast_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Remaining Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item.remaining_budget) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Variance</span>
+                        <strong>£{{ "{:,.0f}".format(item.forecast_variance) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget Owner</span>
+                        <strong>{{ item.budget_owner or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Financial Approver</span>
+                        <strong>{{ item.financial_approver or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Last Review Date</span>
+                        <strong>{{ item.last_review_date or "Not reviewed" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Risks</span>
+                        <strong>{{ item.linked_risks }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Financial Health Insight:</strong>
+                    <br><br>
+                    {{ item.message }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Financial Comments:</strong>
+                    <br><br>
+                    {{ item.financial_comments or "No financial comments recorded." }}
+                </div>
+
+                <div class="project-actions">
+                    <a href="/edit-budget/{{ item.budget_id }}">Edit Budget</a>
+                    <a href="/budget-history/{{ item.budget_id }}">Budget History</a>
+                    <a href="/forecast-history/{{ item.budget_id }}">Forecast History</a>
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Financial Health Records</h3>
+            <p>Add budget records first to generate financial health cards.</p>
+            <a href="/add-budget" class="btn-primary">Add Budget</a>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

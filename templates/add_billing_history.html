@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Billing History</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
@@ -12,49 +16,114 @@
 
     <main class="main-content">
 
-        <h1>Add Billing History</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Billing History</h1>
+                <p class="dashboard-subtitle">
+                    Record payments, billing cycles, gateway references, refunds and invoice links.
+                </p>
+            </div>
 
-        <form method="POST" class="form-card">
+            <div class="dashboard-actions">
+                <a href="/billing-history" class="btn-primary">
+                    Back to Billing History
+                </a>
+            </div>
+        </div>
 
-            <label>Organisation</label>
-            <select name="organisation_id" required>
-                {% for organisation in organisations %}
-                    <option value="{{ organisation.id }}">
-                        {{ organisation.organisation_name }}
-                    </option>
-                {% endfor %}
-            </select>
+        <div class="form-container">
 
-            <label>Plan</label>
-            <select name="plan" required>
-                <option value="Free">Free</option>
-                <option value="Basic">Basic</option>
-                <option value="Professional">Professional</option>
-                <option value="Enterprise">Enterprise</option>
-            </select>
+            <form method="POST">
 
-            <label>Amount</label>
-            <input type="number" step="0.01" name="amount" required>
+                <label>Organisation</label>
+                <select name="organisation_id" required>
+                    {% for organisation in organisations %}
+                        <option value="{{ organisation.id }}">
+                            {{ organisation.organisation_name }}
+                        </option>
+                    {% endfor %}
+                </select>
 
-            <label>Status</label>
-            <select name="status" required>
-                <option value="Paid">Paid</option>
-                <option value="Pending">Pending</option>
-                <option value="Failed">Failed</option>
-                <option value="Refunded">Refunded</option>
-            </select>
+                <label>Linked Invoice</label>
+                <select name="invoice_id">
+                    <option value="">No Invoice</option>
+                    {% for invoice in invoices %}
+                        <option value="{{ invoice.id }}">
+                            {{ invoice.invoice_number }}
+                        </option>
+                    {% endfor %}
+                </select>
 
-            <label>Reference Number</label>
-            <input type="text" name="reference_number" required>
+                <label>Plan</label>
+                <select name="plan" required>
+                    <option value="Free">Free</option>
+                    <option value="Basic">Basic</option>
+                    <option value="Professional">Professional</option>
+                    <option value="Enterprise">Enterprise</option>
+                </select>
 
-            <label>Billing Date</label>
-            <input type="date" name="billing_date" required>
+                <label>Amount</label>
+                <input type="number" step="0.01" name="amount" required>
 
-            <button type="submit" class="btn-primary">
-                Save Billing Record
-            </button>
+                <label>Status</label>
+                <select name="status" required>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                    <option value="Refunded">Refunded</option>
+                </select>
 
-        </form>
+                <label>Reference Number</label>
+                <input type="text" name="reference_number" required>
+
+                <label>Billing Date</label>
+                <input type="date" name="billing_date" required>
+
+                <label>Payment Gateway</label>
+                <input type="text" name="payment_gateway" placeholder="Stripe, PayPal, Bank Transfer">
+
+                <label>Transaction ID</label>
+                <input type="text" name="transaction_id">
+
+                <label>Billing Cycle</label>
+                <select name="billing_cycle">
+                    <option value="">Select</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Yearly">Yearly</option>
+                    <option value="One-off">One-off</option>
+                </select>
+
+                <label>Renewal Date</label>
+                <input type="date" name="renewal_date">
+
+                <label>Refund Amount</label>
+                <input type="number" step="0.01" name="refund_amount" value="0">
+
+                <label>Chargeback Status</label>
+                <select name="chargeback_status">
+                    <option value="">None</option>
+                    <option value="No Chargeback">No Chargeback</option>
+                    <option value="Chargeback Opened">Chargeback Opened</option>
+                    <option value="Chargeback Won">Chargeback Won</option>
+                    <option value="Chargeback Lost">Chargeback Lost</option>
+                </select>
+
+                <label>Stripe Payment Reference</label>
+                <input type="text" name="stripe_payment_reference">
+
+                <label>Billing Notes</label>
+                <textarea name="billing_notes" rows="5"></textarea>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Save Billing Record
+                </button>
+
+            </form>
+
+        </div>
 
     </main>
 

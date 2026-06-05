@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing History</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
@@ -12,64 +16,169 @@
 
     <main class="main-content">
 
-        <h1>Billing History</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Billing History</h1>
+                <p class="dashboard-subtitle">
+                    Track payments, invoices, billing cycles, transaction references, refunds and gateway records.
+                </p>
+            </div>
 
-        <div class="card">
+            <div class="dashboard-actions">
+                <a href="/add-billing-history" class="btn-primary">
+                    + Add Billing Record
+                </a>
+            </div>
+        </div>
 
-            <table>
+        <div class="stats-grid">
 
-                <thead>
+            <div class="stat-card blue-card">
+                <h3>Total Records</h3>
+                <p>{{ total_records }}</p>
+            </div>
 
-                    <tr>
-                        <th>Organisation</th>
-                        <th>Plan</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Reference</th>
-                        <th>Billing Date</th>
-                    </tr>
+            <div class="stat-card green-card">
+                <h3>Total Amount</h3>
+                <p>£{{ "{:,.0f}".format(total_amount) }}</p>
+            </div>
 
-                </thead>
+            <div class="stat-card green-card">
+                <h3>Paid Amount</h3>
+                <p>£{{ "{:,.0f}".format(paid_amount) }}</p>
+            </div>
 
-                <tbody>
+            <div class="stat-card red-card">
+                <h3>Failed Amount</h3>
+                <p>£{{ "{:,.0f}".format(failed_amount) }}</p>
+            </div>
 
-                    {% for record in billing_records %}
+            <div class="stat-card amber-card">
+                <h3>Refunded</h3>
+                <p>£{{ "{:,.0f}".format(refunded_amount) }}</p>
+            </div>
 
-                    <tr>
-
-                        <td>
-                            {{ record.organisation_name }}
-                        </td>
-
-                        <td>
-                            {{ record.plan }}
-                        </td>
-
-                        <td>
-                            £{{ record.amount }}
-                        </td>
-
-                        <td>
-                            {{ record.status }}
-                        </td>
-
-                        <td>
-                            {{ record.reference_number }}
-                        </td>
-
-                        <td>
-                            {{ record.billing_date }}
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="stat-card blue-card">
+                <h3>Billing Cycles</h3>
+                <p>{{ active_cycles }}</p>
+            </div>
 
         </div>
+
+        {% if billing_records %}
+
+        <div class="projects-grid">
+
+            {% for record in billing_records %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+                    <div>
+                        <h3>{{ record["reference_number"] or "No Reference" }}</h3>
+
+                        {% if record["status"] == "Paid" %}
+                            <span class="badge badge-green">Paid</span>
+                        {% elif record["status"] == "Failed" %}
+                            <span class="badge badge-red">Failed</span>
+                        {% elif record["status"] == "Refunded" %}
+                            <span class="badge badge-yellow">Refunded</span>
+                        {% else %}
+                            <span class="badge badge-blue">{{ record["status"] }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Organisation</span>
+                        <strong>{{ record["organisation_name"] or "No Organisation" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Linked Invoice</span>
+                        <strong>{{ record["invoice_number"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>{{ record["plan"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Amount</span>
+                        <strong>£{{ "{:,.0f}".format(record["amount"] or 0) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Refund Amount</span>
+                        <strong>£{{ "{:,.0f}".format(record["refund_amount"] or 0) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ record["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Billing Date</span>
+                        <strong>{{ record["billing_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Billing Cycle</span>
+                        <strong>{{ record["billing_cycle"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Renewal Date</span>
+                        <strong>{{ record["renewal_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Payment Gateway</span>
+                        <strong>{{ record["payment_gateway"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Transaction ID</span>
+                        <strong>{{ record["transaction_id"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Stripe Reference</span>
+                        <strong>{{ record["stripe_payment_reference"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Chargeback Status</span>
+                        <strong>{{ record["chargeback_status"] or "None" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Billing Notes:</strong>
+                    <br><br>
+                    {{ record["billing_notes"] or "No billing notes added." }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Billing Records</h3>
+            <p>Add billing records to track payments and subscription billing.</p>
+            <a href="/add-billing-history" class="btn-primary">Add First Billing Record</a>
+        </div>
+
+        {% endif %}
 
     </main>
 

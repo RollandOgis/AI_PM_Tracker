@@ -3361,6 +3361,121 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS benefits_realisation_value NUMERIC DEFAULT 0
                    """)
 
+    # Invoices v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS due_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS payment_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS vat_amount NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'GBP'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS invoice_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS payment_terms TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS stripe_invoice_reference TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE invoices
+                       ADD COLUMN IF NOT EXISTS invoice_attachment_url TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS invoice_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       invoice_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       previous_status
+                       TEXT,
+                       new_status
+                       TEXT,
+                       amount
+                       NUMERIC,
+                       notes
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+    # Billing History v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS payment_gateway TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS transaction_id TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS billing_cycle TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS renewal_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS refund_amount NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS chargeback_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS invoice_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS stripe_payment_reference TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE billing_history
+                       ADD COLUMN IF NOT EXISTS billing_notes TEXT
+                   """)
+
 
 
 
@@ -3412,30 +3527,59 @@ def calculate_weighted_progress(tasks):
     return round(progress_points / len(tasks))
 
 
-def calculate_financial_health(budget_amount, actual_cost):
+def calculate_financial_health(budget_amount, actual_cost, forecast_cost=0):
 
     budget_amount = float(budget_amount or 0)
     actual_cost = float(actual_cost or 0)
+    forecast_cost = float(forecast_cost or 0)
 
     if budget_amount <= 0:
-        return 50
+        return {
+            "score": 50,
+            "status": "No Budget",
+            "risk": "Medium",
+            "message": "No approved budget has been set."
+        }
 
-    usage = round((actual_cost / budget_amount) * 100)
+    actual_usage = round((actual_cost / budget_amount) * 100)
+    forecast_usage = round((forecast_cost / budget_amount) * 100)
 
-    if usage <= 50:
-        return 90
+    score = 100
 
-    elif usage <= 70:
-        return 80
+    if actual_usage > 100:
+        score -= 40
+    elif actual_usage > 90:
+        score -= 25
+    elif actual_usage > 70:
+        score -= 10
 
-    elif usage <= 90:
-        return 65
+    if forecast_usage > 100:
+        score -= 25
+    elif forecast_usage > 90:
+        score -= 15
 
-    elif usage <= 100:
-        return 50
+    score = max(0, min(100, score))
 
+    if score >= 80:
+        status = "Healthy"
+        risk = "Low"
+        message = "Financial position is healthy."
+    elif score >= 60:
+        status = "Monitor"
+        risk = "Medium"
+        message = "Financial position requires monitoring."
     else:
-        return max(0, 50 - ((usage - 100) * 2))
+        status = "At Risk"
+        risk = "High"
+        message = "Financial position requires immediate review."
+
+    return {
+        "score": score,
+        "status": status,
+        "risk": risk,
+        "message": message
+    }
+
 
 
 def calculate_risk_health(high_risks, medium_risks, low_risks, open_issues):
@@ -16657,6 +16801,105 @@ def financial_trends():
         under_budget_projects=under_budget_projects
     )
 
+@app.route("/financial-health")
+def financial_health():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT DISTINCT ON (budgets.id)
+            budgets.*,
+            projects.name AS project_name
+        FROM budgets
+        LEFT JOIN projects
+        ON budgets.project_id = projects.id
+        WHERE budgets.user_id = %s
+        ORDER BY budgets.id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    budgets = cursor.fetchall()
+
+    health_cards = []
+
+    healthy_count = 0
+    monitor_count = 0
+    at_risk_count = 0
+
+    for budget in budgets:
+
+        budget_amount = float(budget["budget_amount"] or 0)
+        actual_cost = float(budget["actual_cost"] or 0)
+        forecast_cost = float(budget["forecast_cost"] or 0)
+
+        result = calculate_financial_health(
+            budget_amount,
+            actual_cost,
+            forecast_cost
+        )
+
+        remaining_budget = budget_amount - actual_cost
+        forecast_variance = budget_amount - forecast_cost
+
+        if result["status"] == "Healthy":
+            healthy_count += 1
+        elif result["status"] == "Monitor":
+            monitor_count += 1
+        else:
+            at_risk_count += 1
+
+        cursor.execute("""
+            SELECT COUNT(*) AS linked_risks
+            FROM risks
+            WHERE project_id = %s
+            AND status != 'Closed'
+        """, (
+            budget["project_id"],
+        ))
+
+        linked_risks = cursor.fetchone()["linked_risks"]
+
+        health_cards.append({
+            "budget_id": budget["id"],
+            "project_name": budget["project_name"],
+            "budget_amount": budget_amount,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "remaining_budget": remaining_budget,
+            "forecast_variance": forecast_variance,
+            "health_score": result["score"],
+            "health_status": result["status"],
+            "risk_level": result["risk"],
+            "message": result["message"],
+            "budget_owner": budget.get("budget_owner"),
+            "financial_approver": budget.get("budget_approver"),
+            "last_review_date": budget.get("approval_date"),
+            "financial_comments": budget.get("budget_notes"),
+            "linked_risks": linked_risks
+        })
+
+    conn.close()
+
+    return render_template(
+        "financial_health.html",
+        health_cards=health_cards,
+        healthy_count=healthy_count,
+        monitor_count=monitor_count,
+        at_risk_count=at_risk_count,
+        total_cards=len(health_cards)
+    )
+
 
 @app.route("/forecast-vs-actual")
 def forecast_vs_actual():
@@ -20698,31 +20941,62 @@ def billing_history():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (billing_history.id)
             billing_history.*,
-            organisations.organisation_name
+            organisations.organisation_name,
+            invoices.invoice_number
         FROM billing_history
         LEFT JOIN organisations
         ON billing_history.organisation_id = organisations.id
+        LEFT JOIN invoices
+        ON billing_history.invoice_id = invoices.id
         WHERE billing_history.user_id = %s
-        ORDER BY billing_date DESC
+        ORDER BY billing_history.id DESC
     """, (
         session["user_id"],
     ))
 
     billing_records = cursor.fetchall()
 
+    total_records = len(billing_records)
+    total_amount = 0
+    paid_amount = 0
+    failed_amount = 0
+    refunded_amount = 0
+    active_cycles = 0
+
+    for record in billing_records:
+
+        amount = float(record["amount"] or 0)
+        refund_amount = float(record["refund_amount"] or 0)
+
+        total_amount += amount
+        refunded_amount += refund_amount
+
+        if record["status"] == "Paid":
+            paid_amount += amount
+
+        if record["status"] == "Failed":
+            failed_amount += amount
+
+        if record["billing_cycle"]:
+            active_cycles += 1
+
     conn.close()
 
     return render_template(
         "billing_history.html",
-        billing_records=billing_records
+        billing_records=billing_records,
+        total_records=total_records,
+        total_amount=total_amount,
+        paid_amount=paid_amount,
+        failed_amount=failed_amount,
+        refunded_amount=refunded_amount,
+        active_cycles=active_cycles
     )
 
-@app.route(
-    "/add-billing-history",
-    methods=["GET", "POST"]
-)
+
+@app.route("/add-billing-history", methods=["GET", "POST"])
 def add_billing_history():
 
     if "user_id" not in session:
@@ -20745,6 +21019,17 @@ def add_billing_history():
 
     organisations = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT *
+        FROM invoices
+        WHERE user_id = %s
+        ORDER BY id DESC
+    """, (
+        session["user_id"],
+    ))
+
+    invoices = cursor.fetchall()
+
     if request.method == "POST":
 
         cursor.execute("""
@@ -20752,26 +21037,42 @@ def add_billing_history():
             (
                 user_id,
                 organisation_id,
+                invoice_id,
                 plan,
                 amount,
                 status,
                 reference_number,
                 billing_date,
+                payment_gateway,
+                transaction_id,
+                billing_cycle,
+                renewal_date,
+                refund_amount,
+                chargeback_status,
+                stripe_payment_reference,
+                billing_notes,
                 created_at
             )
             VALUES
-            (%s,%s,%s,%s,%s,%s,%s,%s)
+            (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-
             session["user_id"],
-            request.form["organisation_id"],
-            request.form["plan"],
-            request.form["amount"],
-            request.form["status"],
-            request.form["reference_number"],
-            request.form["billing_date"],
+            request.form.get("organisation_id"),
+            request.form.get("invoice_id") or None,
+            request.form.get("plan"),
+            request.form.get("amount") or 0,
+            request.form.get("status"),
+            request.form.get("reference_number"),
+            request.form.get("billing_date"),
+            request.form.get("payment_gateway"),
+            request.form.get("transaction_id"),
+            request.form.get("billing_cycle"),
+            request.form.get("renewal_date"),
+            request.form.get("refund_amount") or 0,
+            request.form.get("chargeback_status"),
+            request.form.get("stripe_payment_reference"),
+            request.form.get("billing_notes"),
             str(date.today())
-
         ))
 
         conn.commit()
@@ -20783,8 +21084,10 @@ def add_billing_history():
 
     return render_template(
         "add_billing_history.html",
-        organisations=organisations
+        organisations=organisations,
+        invoices=invoices
     )
+
 @app.route("/invoices")
 def invoices():
 
@@ -20798,26 +21101,63 @@ def invoices():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (invoices.id)
             invoices.*,
             organisations.organisation_name
         FROM invoices
         LEFT JOIN organisations
         ON invoices.organisation_id = organisations.id
         WHERE invoices.user_id = %s
-        ORDER BY invoice_date DESC
+        ORDER BY invoices.id DESC
     """, (
         session["user_id"],
     ))
 
     invoices_list = cursor.fetchall()
 
+    total_invoices = len(invoices_list)
+    total_amount = 0
+    paid_amount = 0
+    unpaid_amount = 0
+    overdue_count = 0
+    paid_count = 0
+    pending_count = 0
+
+    today = str(date.today())
+
+    for invoice in invoices_list:
+
+        amount = float(invoice["amount"] or 0)
+        total_amount += amount
+
+        if invoice["status"] == "Paid":
+            paid_amount += amount
+            paid_count += 1
+        else:
+            unpaid_amount += amount
+            pending_count += 1
+
+        if (
+            invoice["due_date"]
+            and invoice["due_date"] < today
+            and invoice["status"] != "Paid"
+        ):
+            overdue_count += 1
+
     conn.close()
 
     return render_template(
         "invoices.html",
-        invoices_list=invoices_list
+        invoices_list=invoices_list,
+        total_invoices=total_invoices,
+        total_amount=total_amount,
+        paid_amount=paid_amount,
+        unpaid_amount=unpaid_amount,
+        overdue_count=overdue_count,
+        paid_count=paid_count,
+        pending_count=pending_count
     )
+
 
 @app.route("/add-invoice", methods=["GET", "POST"])
 def add_invoice():
@@ -20845,6 +21185,24 @@ def add_invoice():
     if request.method == "POST":
 
         cursor.execute("""
+            SELECT COUNT(*) AS invoice_count
+            FROM invoices
+            WHERE user_id = %s
+        """, (
+            session["user_id"],
+        ))
+
+        invoice_count = cursor.fetchone()["invoice_count"] + 1
+
+        invoice_number = request.form.get("invoice_number")
+
+        if not invoice_number:
+            invoice_number = f"INV-{session['user_id']}-{str(invoice_count).zfill(3)}"
+
+        amount = float(request.form.get("amount") or 0)
+        vat_amount = float(request.form.get("vat_amount") or 0)
+
+        cursor.execute("""
             INSERT INTO invoices
             (
                 user_id,
@@ -20854,18 +21212,61 @@ def add_invoice():
                 amount,
                 status,
                 invoice_date,
+                due_date,
+                payment_date,
+                vat_amount,
+                currency,
+                invoice_notes,
+                payment_terms,
+                stripe_invoice_reference,
+                invoice_attachment_url,
                 created_at
             )
             VALUES
-            (%s,%s,%s,%s,%s,%s,%s,%s)
+            (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
-            request.form["organisation_id"],
-            request.form["invoice_number"],
-            request.form["plan"],
-            request.form["amount"],
-            request.form["status"],
-            request.form["invoice_date"],
+            request.form.get("organisation_id"),
+            invoice_number,
+            request.form.get("plan"),
+            amount,
+            request.form.get("status"),
+            request.form.get("invoice_date"),
+            request.form.get("due_date"),
+            request.form.get("payment_date"),
+            vat_amount,
+            request.form.get("currency") or "GBP",
+            request.form.get("invoice_notes"),
+            request.form.get("payment_terms"),
+            request.form.get("stripe_invoice_reference"),
+            request.form.get("invoice_attachment_url"),
+            str(date.today())
+        ))
+
+        invoice_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO invoice_history
+            (
+                invoice_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                amount,
+                notes,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            invoice_id,
+            session["user_id"],
+            "Invoice created",
+            "",
+            request.form.get("status"),
+            amount,
+            "Initial invoice created",
             str(date.today())
         ))
 
@@ -20879,6 +21280,182 @@ def add_invoice():
     return render_template(
         "add_invoice.html",
         organisations=organisations
+    )
+
+
+@app.route("/edit-invoice/<int:invoice_id>", methods=["GET", "POST"])
+def edit_invoice(invoice_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM invoices
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        invoice_id,
+        session["user_id"]
+    ))
+
+    invoice = cursor.fetchone()
+
+    if not invoice:
+        conn.close()
+        return redirect("/invoices")
+
+    cursor.execute("""
+        SELECT *
+        FROM organisations
+        WHERE user_id = %s
+        ORDER BY organisation_name
+    """, (
+        session["user_id"],
+    ))
+
+    organisations = cursor.fetchall()
+
+    if request.method == "POST":
+
+        previous_status = invoice["status"]
+        amount = float(request.form.get("amount") or 0)
+        vat_amount = float(request.form.get("vat_amount") or 0)
+
+        cursor.execute("""
+            UPDATE invoices
+            SET
+                organisation_id = %s,
+                invoice_number = %s,
+                plan = %s,
+                amount = %s,
+                status = %s,
+                invoice_date = %s,
+                due_date = %s,
+                payment_date = %s,
+                vat_amount = %s,
+                currency = %s,
+                invoice_notes = %s,
+                payment_terms = %s,
+                stripe_invoice_reference = %s,
+                invoice_attachment_url = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("organisation_id"),
+            request.form.get("invoice_number"),
+            request.form.get("plan"),
+            amount,
+            request.form.get("status"),
+            request.form.get("invoice_date"),
+            request.form.get("due_date"),
+            request.form.get("payment_date"),
+            vat_amount,
+            request.form.get("currency") or "GBP",
+            request.form.get("invoice_notes"),
+            request.form.get("payment_terms"),
+            request.form.get("stripe_invoice_reference"),
+            request.form.get("invoice_attachment_url"),
+            invoice_id,
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO invoice_history
+            (
+                invoice_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                amount,
+                notes,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            invoice_id,
+            session["user_id"],
+            "Invoice updated",
+            previous_status,
+            request.form.get("status"),
+            amount,
+            request.form.get("invoice_notes"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/invoices")
+
+    conn.close()
+
+    return render_template(
+        "edit_invoice.html",
+        invoice=invoice,
+        organisations=organisations
+    )
+
+
+@app.route("/delete-invoice/<int:invoice_id>")
+def delete_invoice(invoice_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM invoices
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        invoice_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/invoices")
+
+
+@app.route("/invoice-history/<int:invoice_id>")
+def invoice_history(invoice_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM invoice_history
+        WHERE invoice_id = %s
+        ORDER BY id DESC
+    """, (
+        invoice_id,
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "invoice_history.html",
+        history=history
     )
 
 @app.route("/notification-settings")

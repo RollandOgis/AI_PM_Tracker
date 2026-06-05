@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoices</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
 <div class="layout">
@@ -12,64 +16,209 @@
 
     <main class="main-content">
 
-        <h1>Invoices</h1>
+        <div class="dashboard-header">
 
-        <div class="card">
+            <div>
+                <h1>Invoices</h1>
 
-            <table>
+                <p class="dashboard-subtitle">
+                    Manage invoice records, payment status, due dates, VAT, currency and billing references.
+                </p>
+            </div>
 
-                <thead>
-
-                    <tr>
-                        <th>Invoice Number</th>
-                        <th>Organisation</th>
-                        <th>Plan</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Invoice Date</th>
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {% for invoice in invoices_list %}
-
-                    <tr>
-
-                        <td>
-                            {{ invoice.invoice_number }}
-                        </td>
-
-                        <td>
-                            {{ invoice.organisation_name }}
-                        </td>
-
-                        <td>
-                            {{ invoice.plan }}
-                        </td>
-
-                        <td>
-                            £{{ invoice.amount }}
-                        </td>
-
-                        <td>
-                            {{ invoice.status }}
-                        </td>
-
-                        <td>
-                            {{ invoice.invoice_date }}
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="dashboard-actions">
+                <a href="/add-invoice" class="btn-primary">
+                    + Add Invoice
+                </a>
+            </div>
 
         </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Invoices</h3>
+                <p>{{ total_invoices }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Total Amount</h3>
+                <p>£{{ "{:,.0f}".format(total_amount) }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Paid Amount</h3>
+                <p>£{{ "{:,.0f}".format(paid_amount) }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Unpaid Amount</h3>
+                <p>£{{ "{:,.0f}".format(unpaid_amount) }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Overdue</h3>
+                <p>{{ overdue_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Paid</h3>
+                <p>{{ paid_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Pending</h3>
+                <p>{{ pending_count }}</p>
+            </div>
+
+        </div>
+
+        {% if invoices_list %}
+
+        <div class="projects-grid">
+
+            {% for invoice in invoices_list %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>{{ invoice["invoice_number"] }}</h3>
+
+                        {% if invoice["status"] == "Paid" %}
+                            <span class="badge badge-green">Paid</span>
+                        {% elif invoice["status"] == "Overdue" %}
+                            <span class="badge badge-red">Overdue</span>
+                        {% elif invoice["status"] == "Cancelled" %}
+                            <span class="badge badge-red">Cancelled</span>
+                        {% else %}
+                            <span class="badge badge-yellow">{{ invoice["status"] }}</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Organisation</span>
+                        <strong>{{ invoice["organisation_name"] or "No Organisation" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Plan</span>
+                        <strong>{{ invoice["plan"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Amount</span>
+                        <strong>{{ invoice["currency"] or "GBP" }} {{ "{:,.0f}".format(invoice["amount"] or 0) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>VAT</span>
+                        <strong>{{ invoice["currency"] or "GBP" }} {{ "{:,.0f}".format(invoice["vat_amount"] or 0) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ invoice["status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Invoice Date</span>
+                        <strong>{{ invoice["invoice_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Due Date</span>
+                        <strong>{{ invoice["due_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Payment Date</span>
+                        <strong>{{ invoice["payment_date"] or "Not paid" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Payment Terms</span>
+                        <strong>{{ invoice["payment_terms"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Stripe Reference</span>
+                        <strong>{{ invoice["stripe_invoice_reference"] or "Not linked" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Invoice Notes:</strong>
+
+                    <br><br>
+
+                    {{ invoice["invoice_notes"] or "No invoice notes added." }}
+
+                </div>
+
+                {% if invoice["invoice_attachment_url"] %}
+
+                <div class="smart-insight">
+                    <strong>Attachment:</strong>
+                    <br><br>
+                    <a href="{{ invoice['invoice_attachment_url'] }}" target="_blank">
+                        View Invoice Attachment
+                    </a>
+                </div>
+
+                {% endif %}
+
+                <div class="project-actions">
+
+                    <a href="/edit-invoice/{{ invoice['id'] }}">
+                        Edit
+                    </a>
+
+                    <a href="/invoice-history/{{ invoice['id'] }}">
+                        History
+                    </a>
+
+                    <a
+                        href="/delete-invoice/{{ invoice['id'] }}"
+                        onclick="return confirm('Delete this invoice?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Invoices Added</h3>
+
+            <p>
+                Add invoices to begin billing control.
+            </p>
+
+            <a href="/add-invoice" class="btn-primary">
+                Add First Invoice
+            </a>
+
+        </div>
+
+        {% endif %}
 
     </main>
 
