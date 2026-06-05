@@ -4124,6 +4124,40 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS priority TEXT
                    """)
 
+    # ==================================================
+    # ACCOUNT & AUTHENTICATION V2
+    # ==================================================
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS verification_token TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS verification_token_created_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS last_login TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS failed_login_count INTEGER DEFAULT 0
+                   """)
+
 
 
     conn.commit()
@@ -7592,16 +7626,66 @@ def register():
 
     if request.method == "POST":
 
-        username = request.form["username"]
-        email = request.form.get("email", "")
-        password = request.form["password"]
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            error = "Username and password are required."
+            return render_template(
+                "register.html",
+                error=error
+            )
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+            SELECT id
+            FROM users
+            WHERE LOWER(username) = LOWER(%s)
+            LIMIT 1
+        """, (
+            username,
+        ))
+
+        existing_username = cursor.fetchone()
+
+        if existing_username:
+            conn.close()
+            error = "Username already exists."
+            return render_template(
+                "register.html",
+                error=error
+            )
+
+        if email:
+
+            cursor.execute("""
+                SELECT id
+                FROM users
+                WHERE LOWER(email) = LOWER(%s)
+                LIMIT 1
+            """, (
+                email,
+            ))
+
+            existing_email = cursor.fetchone()
+
+            if existing_email:
+                conn.close()
+                error = "Email already exists."
+                return render_template(
+                    "register.html",
+                    error=error
+                )
 
         hashed_password = generate_password_hash(password)
         avatar_initials = username[:2].upper()
         verification_token = str(uuid.uuid4())
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
 
         try:
 
@@ -7614,32 +7698,49 @@ def register():
                     avatar_initials,
                     is_verified,
                     verification_token,
-                    verification_token_created_at
+                    verification_token_created_at,
+                    status,
+                    created_at,
+                    login_count,
+                    failed_login_count
                 )
-                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             """, (
                 username,
                 email,
                 hashed_password,
                 avatar_initials,
-                False,
-                verification_token,
-                str(datetime.now())
+                False if email else True,
+                verification_token if email else None,
+                str(datetime.now()) if email else None,
+                "Active",
+                str(datetime.now()),
+                0,
+                0
             ))
 
             conn.commit()
             conn.close()
 
-            return f"""
-            <h2>Account Created</h2>
-            <p>Your account was created successfully.</p>
-            <p><strong>Verification Token:</strong> {verification_token}</p>
-            <p>
-                <a href="/verify-email/{verification_token}">
-                    Verify Email
-                </a>
-            </p>
-            """
+            if email:
+
+                return f"""
+                <h2>Account Created</h2>
+
+                <p>Your account was created successfully.</p>
+
+                <p>Please verify your email before logging in.</p>
+
+                <p><strong>Verification Token:</strong> {verification_token}</p>
+
+                <p>
+                    <a href="/verify-email/{verification_token}">
+                        Verify Email
+                    </a>
+                </p>
+                """
+
+            return redirect("/login")
 
         except Exception as e:
 
@@ -7649,6 +7750,142 @@ def register():
     return render_template(
         "register.html",
         error=error
+    )
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+
+        cursor.execute("""
+            SELECT *
+            FROM users
+            WHERE LOWER(username) = LOWER(%s)
+            LIMIT 1
+        """, (
+            username,
+        ))
+
+        user = cursor.fetchone()
+
+        if user:
+
+            stored_password = user["password"]
+
+            password_valid = False
+
+            try:
+
+                password_valid = check_password_hash(
+                    stored_password,
+                    password
+                )
+
+            except Exception:
+
+                password_valid = False
+
+            if not password_valid and stored_password == password:
+
+                password_valid = True
+
+            if password_valid:
+
+                if user.get("status") in [
+                    "Inactive",
+                    "Suspended"
+                ]:
+
+                    conn.close()
+
+                    return """
+                    <h2>Account Disabled</h2>
+                    <p>Your account is inactive or suspended.</p>
+                    """
+
+                if (
+                    user.get("email")
+                    and user.get("is_verified") is False
+                ):
+
+                    conn.close()
+
+                    return """
+                    <h2>Email Not Verified</h2>
+                    <p>Please verify your email before logging in.</p>
+                    """
+
+                cursor.execute("""
+                    UPDATE users
+                    SET
+                        last_login = %s,
+                        login_count = COALESCE(login_count, 0) + 1
+                    WHERE id = %s
+                """, (
+                    str(datetime.now()),
+                    user["id"]
+                ))
+
+                conn.commit()
+                conn.close()
+
+                session["user_id"] = user["id"]
+                session["username"] = user["username"]
+
+                session["avatar_initials"] = (
+                    user["avatar_initials"]
+                    or user["username"][:2].upper()
+                )
+
+                try:
+
+                    create_activity(
+                        f"{user['username']} logged in",
+                        user_id=user["id"],
+                        activity_type="Login",
+                        module="Account",
+                        severity="Low"
+                    )
+
+                except:
+
+                    pass
+
+                return redirect("/")
+
+            else:
+
+                cursor.execute("""
+                    UPDATE users
+                    SET
+                        failed_login_count =
+                        COALESCE(failed_login_count, 0) + 1
+                    WHERE id = %s
+                """, (
+                    user["id"],
+                ))
+
+                conn.commit()
+
+        conn.close()
+
+        return render_template(
+            "login.html",
+            error="Invalid username or password"
+        )
+
+    return render_template(
+        "login.html",
+        error=None
     )
 
 
@@ -7673,7 +7910,37 @@ def verify_email(token):
 
     if not user:
         conn.close()
-        return "Invalid verification token"
+
+        return """
+        <h2>Invalid Verification Link</h2>
+        <p>The verification token is invalid.</p>
+        <p><a href="/login">Back to Login</a></p>
+        """
+
+    try:
+
+        if user["verification_token_created_at"]:
+
+            token_date = datetime.fromisoformat(
+                str(user["verification_token_created_at"])
+            )
+
+            hours_passed = (
+                datetime.now() - token_date
+            ).total_seconds() / 3600
+
+            if hours_passed > 24:
+
+                conn.close()
+
+                return """
+                <h2>Verification Link Expired</h2>
+                <p>Your verification link has expired.</p>
+                <p>Please register again or request a new verification email.</p>
+                """
+
+    except Exception:
+        pass
 
     cursor.execute("""
         UPDATE users
@@ -7689,11 +7956,31 @@ def verify_email(token):
     conn.commit()
     conn.close()
 
+    try:
+
+        create_activity(
+            f"{user['username']} verified email",
+            user_id=user["id"],
+            activity_type="Verification",
+            module="Account",
+            severity="Low"
+        )
+
+    except:
+        pass
+
     return """
     <h2>Email Verified</h2>
+
     <p>Your email has been verified successfully.</p>
-    <p><a href="/login">Go to Login</a></p>
+
+    <p>
+        <a href="/login">
+            Go to Login
+        </a>
+    </p>
     """
+
 
 @app.route("/accept-invitation/<token>", methods=["GET", "POST"])
 def accept_invitation(token):
@@ -7717,12 +8004,80 @@ def accept_invitation(token):
 
     if not invitation:
         conn.close()
-        return "Invalid or expired invitation"
+        return """
+        <h2>Invalid or Expired Invitation</h2>
+        <p>This invitation is no longer valid.</p>
+        <p><a href="/login">Back to Login</a></p>
+        """
+
+    if invitation.get("expiry_date"):
+
+        try:
+            expiry_date = datetime.strptime(
+                str(invitation["expiry_date"]),
+                "%Y-%m-%d"
+            ).date()
+
+            if date.today() > expiry_date:
+
+                cursor.execute("""
+                    UPDATE user_invitations
+                    SET status = 'Expired'
+                    WHERE id = %s
+                """, (
+                    invitation["id"],
+                ))
+
+                conn.commit()
+                conn.close()
+
+                return """
+                <h2>Invitation Expired</h2>
+                <p>This invitation has expired.</p>
+                <p>Please contact your administrator for a new invitation.</p>
+                """
+
+        except Exception:
+            pass
 
     if request.method == "POST":
 
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            conn.close()
+            return "Username and password are required"
+
+        cursor.execute("""
+            SELECT id
+            FROM users
+            WHERE LOWER(username) = LOWER(%s)
+            LIMIT 1
+        """, (
+            username,
+        ))
+
+        existing_username = cursor.fetchone()
+
+        if existing_username:
+            conn.close()
+            return "Username already exists"
+
+        cursor.execute("""
+            SELECT id
+            FROM users
+            WHERE LOWER(email) = LOWER(%s)
+            LIMIT 1
+        """, (
+            invitation["invited_email"].lower(),
+        ))
+
+        existing_email = cursor.fetchone()
+
+        if existing_email:
+            conn.close()
+            return "A user with this invited email already exists"
 
         hashed_password = generate_password_hash(password)
         avatar_initials = username[:2].upper()
@@ -7733,46 +8088,93 @@ def accept_invitation(token):
                 username,
                 email,
                 password,
-                avatar_initials
+                avatar_initials,
+                is_verified,
+                status,
+                created_at,
+                login_count,
+                failed_login_count
             )
-            VALUES (%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
             RETURNING id
         """, (
             username,
             invitation["invited_email"],
             hashed_password,
-            avatar_initials
+            avatar_initials,
+            True,
+            "Active",
+            str(datetime.now()),
+            0,
+            0
         ))
 
         new_user = cursor.fetchone()
         new_user_id = new_user["id"]
 
         cursor.execute("""
-                       INSERT INTO user_roles
-                       (user_id,
-                        role,
-                        organisation_id,
-                        workspace_id,
-                        created_at)
-                       VALUES (%s, %s, %s, %s, %s)
-                       """, (
-                           new_user_id,
-                           invitation["role"],
-                           invitation["organisation_id"],
-                           invitation["workspace_id"],
-                           str(datetime.now())
-                       ))
+            SELECT id
+            FROM user_roles
+            WHERE user_id = %s
+            AND role = %s
+            AND organisation_id = %s
+            AND workspace_id = %s
+            LIMIT 1
+        """, (
+            new_user_id,
+            invitation["role"],
+            invitation["organisation_id"],
+            invitation["workspace_id"]
+        ))
+
+        existing_role = cursor.fetchone()
+
+        if not existing_role:
+
+            cursor.execute("""
+                INSERT INTO user_roles
+                (
+                    user_id,
+                    role,
+                    organisation_id,
+                    workspace_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (%s,%s,%s,%s,%s,%s)
+            """, (
+                new_user_id,
+                invitation["role"],
+                invitation["organisation_id"],
+                invitation["workspace_id"],
+                str(datetime.now()),
+                str(datetime.now())
+            ))
 
         cursor.execute("""
             UPDATE user_invitations
-            SET status = 'Accepted'
+            SET
+                status = 'Accepted',
+                accepted_at = %s
             WHERE id = %s
         """, (
-            invitation["id"],
+            str(datetime.now()),
+            invitation["id"]
         ))
 
         conn.commit()
         conn.close()
+
+        try:
+            create_activity(
+                f"{username} accepted an invitation",
+                user_id=new_user_id,
+                activity_type="Invitation",
+                module="Account",
+                severity="Low"
+            )
+        except:
+            pass
 
         return redirect("/login")
 
@@ -7784,58 +8186,43 @@ def accept_invitation(token):
     )
 
 
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-
-    if request.method == "POST":
-
-        username = request.form["username"]
-        password = request.form["password"]
-
-        conn = get_db_connection()
-
-        cursor = conn.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM users
-            WHERE username = %s
-        """, (
-            username,
-        ))
-
-        user = cursor.fetchone()
-
-        conn.close()
-
-        if user:
-
-            stored_password = user["password"]
-
-            if check_password_hash(stored_password, password) or stored_password == password:
-
-                if user.get("email") and user.get("is_verified") is False:
-                    return """
-                    <h2>Email Not Verified</h2>
-                    <p>Please verify your email before logging in.</p>
-                    """
-
-                session["user_id"] = user["id"]
-                session["username"] = user["username"]
-                session["avatar_initials"] = user["avatar_initials"] or user["username"][:2].upper()
-
-                return redirect("/")
-
-        return "Invalid username or password"
-
-    return render_template("login.html")
-
-
 @app.route("/logout")
 def logout():
+
+    if "user_id" in session:
+
+        try:
+
+            create_activity(
+                f"{session.get('username', 'Unknown User')} logged out",
+                user_id=session["user_id"],
+                activity_type="Logout",
+                module="Account",
+                severity="Low"
+            )
+
+        except:
+            pass
+
+    session.clear()
+
+    return redirect("/login")@app.route("/logout")
+def logout():
+
+    if "user_id" in session:
+
+        try:
+
+            create_activity(
+                f"{session.get('username', 'Unknown User')} logged out",
+                user_id=session["user_id"],
+                activity_type="Logout",
+                module="Account",
+                severity="Low"
+            )
+
+        except:
+            pass
 
     session.clear()
 

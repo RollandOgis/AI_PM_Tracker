@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Login</title>
 
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+
 </head>
 
 <body>
@@ -17,15 +20,10 @@
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h1>AI PM Tracker</h1>
 
-        <a href="/">Dashboard</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/kanban">Kanban</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/register">Register</a>
         <a href="/login">Login</a>
+        <a href="/register">Register</a>
 
     </div>
 
@@ -35,6 +33,20 @@
 
             <h2>Login</h2>
 
+            <p class="page-subtitle">
+                Access your projects, governance, portfolio and AI workspace.
+            </p>
+
+            {% if error %}
+
+                <div class="alert-box alert-danger">
+
+                    {{ error }}
+
+                </div>
+
+            {% endif %}
+
             <form method="POST">
 
                 <label>Username</label>
@@ -42,6 +54,7 @@
                 <input
                     type="text"
                     name="username"
+                    placeholder="Enter username"
                     required
                 >
 
@@ -50,10 +63,16 @@
                 <input
                     type="password"
                     name="password"
+                    placeholder="Enter password"
                     required
                 >
 
-                <button type="submit">
+                <br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Login
                 </button>
 
@@ -61,7 +80,15 @@
 
             <p style="margin-top:20px;">
 
-                Don’t have an account?
+                <a href="/forgot-password">
+                    Forgot Password?
+                </a>
+
+            </p>
+
+            <p style="margin-top:20px;">
+
+                Don't have an account?
 
                 <a href="/register">
                     Register

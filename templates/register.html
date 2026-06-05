@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Register</title>
 
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+
 </head>
 
 <body>
@@ -17,15 +20,10 @@
 
     <div class="sidebar">
 
-        <h1>AI PM</h1>
+        <h1>AI PM Tracker</h1>
 
-        <a href="/">Dashboard</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/kanban">Kanban</a>
-        <a href="/add-task">Add Task</a>
-        <a href="/add-project">Add Project</a>
-        <a href="/register">Register</a>
         <a href="/login">Login</a>
+        <a href="/register">Register</a>
 
     </div>
 
@@ -35,11 +33,17 @@
 
             <h2>Create Account</h2>
 
+            <p class="page-subtitle">
+                Create your account to access projects, governance, portfolio and AI features.
+            </p>
+
             {% if error %}
 
-                <p style="color:red; margin-bottom:20px;">
+                <div class="alert-box alert-danger">
+
                     {{ error }}
-                </p>
+
+                </div>
 
             {% endif %}
 
@@ -50,6 +54,7 @@
                 <input
                     type="text"
                     name="username"
+                    placeholder="Enter username"
                     required
                 >
 
@@ -58,7 +63,7 @@
                 <input
                     type="email"
                     name="email"
-                    required
+                    placeholder="Optional"
                 >
 
                 <label>Password</label>
@@ -66,10 +71,20 @@
                 <input
                     type="password"
                     name="password"
+                    placeholder="Enter password"
                     required
                 >
 
-                <button type="submit">
+                <small>
+                    Use at least 8 characters.
+                </small>
+
+                <br><br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Register
                 </button>
 

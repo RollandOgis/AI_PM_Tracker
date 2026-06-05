@@ -2,34 +2,97 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accept Invitation</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
 
-<div class="main-content">
+<div class="container">
 
-    <h1>Accept Invitation</h1>
+    <div class="sidebar">
+        <h1>AI PM Tracker</h1>
 
-    <p>
-        You have been invited as:
-        <strong>{{ invitation.role }}</strong>
-    </p>
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+    </div>
 
-    <form method="POST" class="form-card">
+    <div class="main-content">
 
-        <label>Username</label>
-        <input type="text" name="username" required>
+        <div class="form-card">
 
-        <label>Password</label>
-        <input type="password" name="password" required>
+            <h2>Accept Invitation</h2>
 
-        <button type="submit" class="btn-primary">
-            Create Account
-        </button>
+            <p class="page-subtitle">
+                Create your account to join the workspace.
+            </p>
 
-    </form>
+            <div class="smart-insight">
+
+                <strong>Invitation Details</strong>
+
+                <br><br>
+
+                Email:
+                <strong>{{ invitation.invited_email }}</strong>
+
+                <br>
+
+                Role:
+                <strong>{{ invitation.role }}</strong>
+
+                <br>
+
+                Status:
+                <strong>{{ invitation.status }}</strong>
+
+            </div>
+
+            <form method="POST">
+
+                <label>Username</label>
+
+                <input
+                    type="text"
+                    name="username"
+                    placeholder="Choose a username"
+                    required
+                >
+
+                <label>Password</label>
+
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Create a password"
+                    required
+                >
+
+                <small>
+                    Use at least 8 characters.
+                </small>
+
+                <br><br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Create Account
+                </button>
+
+            </form>
+
+            <p style="margin-top:20px;">
+                Already have an account?
+                <a href="/login">Login</a>
+            </p>
+
+        </div>
+
+    </div>
 
 </div>
 
