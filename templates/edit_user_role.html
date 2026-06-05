@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add User Role</title>
+    <title>Edit User Role</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -19,10 +19,10 @@
         <div class="dashboard-header">
 
             <div>
-                <h1>Add User Role</h1>
+                <h1>Edit User Role</h1>
 
                 <p class="dashboard-subtitle">
-                    Assign a platform role with ownership, hierarchy and template context.
+                    Update role assignment, hierarchy, ownership and template information.
                 </p>
             </div>
 
@@ -43,7 +43,12 @@
 
                     {% for user in users %}
 
-                        <option value="{{ user['id'] }}">
+                        <option
+                            value="{{ user['id'] }}"
+                            {% if user['id'] == role['user_id'] %}
+                            selected
+                            {% endif %}
+                        >
                             {{ user['username'] }} - {{ user['email'] or 'No email' }}
                         </option>
 
@@ -53,50 +58,85 @@
 
                 <label>Role</label>
                 <select name="role" required>
-                    <option value="Admin">Admin</option>
-                    <option value="Project Manager">Project Manager</option>
-                    <option value="Project Coordinator">Project Coordinator</option>
-                    <option value="Viewer">Viewer</option>
+
+                    <option value="Admin"
+                        {% if role['role'] == 'Admin' %}selected{% endif %}
+                    >
+                        Admin
+                    </option>
+
+                    <option value="Project Manager"
+                        {% if role['role'] == 'Project Manager' %}selected{% endif %}
+                    >
+                        Project Manager
+                    </option>
+
+                    <option value="Project Coordinator"
+                        {% if role['role'] == 'Project Coordinator' %}selected{% endif %}
+                    >
+                        Project Coordinator
+                    </option>
+
+                    <option value="Viewer"
+                        {% if role['role'] == 'Viewer' %}selected{% endif %}
+                    >
+                        Viewer
+                    </option>
+
                 </select>
 
                 <label>Role Description</label>
                 <textarea
                     name="role_description"
                     rows="4"
-                    placeholder="Describe what this role is responsible for"
-                ></textarea>
+                >{{ role['role_description'] or '' }}</textarea>
 
                 <label>Parent Role</label>
                 <input
                     type="text"
                     name="parent_role"
-                    placeholder="Example: Admin"
+                    value="{{ role['parent_role'] or '' }}"
                 >
 
                 <label>Role Owner</label>
                 <input
                     type="text"
                     name="role_owner"
-                    placeholder="Example: System Administrator"
+                    value="{{ role['role_owner'] or '' }}"
                 >
 
                 <label>Role Template</label>
                 <input
                     type="text"
                     name="role_template"
-                    placeholder="Example: Standard PM Access"
+                    value="{{ role['role_template'] or '' }}"
                 >
 
                 <label>Custom Role</label>
                 <select name="custom_role">
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
+
+                    <option value="No"
+                        {% if not role['custom_role'] %}
+                        selected
+                        {% endif %}
+                    >
+                        No
+                    </option>
+
+                    <option value="Yes"
+                        {% if role['custom_role'] %}
+                        selected
+                        {% endif %}
+                    >
+                        Yes
+                    </option>
+
                 </select>
 
                 <br><br>
 
                 <button type="submit" class="btn-primary">
-                    Save Role
+                    Update Role
                 </button>
 
             </form>

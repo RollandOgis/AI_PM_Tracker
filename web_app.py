@@ -2723,6 +2723,80 @@ def init_db():
                    )
                    """)
 
+
+
+    cursor.execute("""
+
+        ALTER TABLE users
+
+        ADD COLUMN IF NOT EXISTS timezone TEXT
+
+    """)
+
+    cursor.execute("""
+
+        ALTER TABLE users
+
+        ADD COLUMN IF NOT EXISTS language TEXT
+
+    """)
+
+    cursor.execute("""
+
+        ALTER TABLE users
+
+        ADD COLUMN IF NOT EXISTS theme_preference TEXT
+
+    """)
+
+    cursor.execute("""
+
+        ALTER TABLE users
+
+        ADD COLUMN IF NOT EXISTS notifications_enabled TEXT
+
+    """)
+
+    cursor.execute("""
+
+        ALTER TABLE users
+
+        ADD COLUMN IF NOT EXISTS mfa_enabled TEXT
+
+    """)
+
+    # User Roles v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS role_description TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS parent_role TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS role_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS role_template TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS custom_role BOOLEAN DEFAULT FALSE
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE user_roles
+                       ADD COLUMN IF NOT EXISTS updated_at TEXT
+                   """)
+
     # Permissions Table
 
     cursor.execute("""
@@ -5712,24 +5786,31 @@ def profile():
 
     if request.method == "POST":
 
-        avatar_initials = request.form["avatar_initials"]
-
         cursor.execute("""
             UPDATE users
-            SET avatar_initials = %s
+            SET
+                avatar_initials = %s,
+                timezone = %s,
+                language = %s,
+                theme_preference = %s,
+                notifications_enabled = %s
             WHERE id = %s
         """, (
-            avatar_initials,
+            request.form.get("avatar_initials"),
+            request.form.get("timezone"),
+            request.form.get("language"),
+            request.form.get("theme_preference"),
+            request.form.get("notifications_enabled"),
             session["user_id"]
         ))
 
         conn.commit()
 
-        session["avatar_initials"] = avatar_initials
+        session["avatar_initials"] = (
+            request.form.get("avatar_initials")
+        )
 
-        conn.close()
-
-        return redirect("/")
+        return redirect("/profile")
 
     cursor.execute("""
         SELECT *
@@ -5741,11 +5822,29 @@ def profile():
 
     user = cursor.fetchone()
 
+    profile_score = 0
+
+    fields = [
+        user.get("username"),
+        user.get("email"),
+        user.get("avatar_initials"),
+        user.get("timezone"),
+        user.get("language"),
+        user.get("theme_preference")
+    ]
+
+    for field in fields:
+        if field:
+            profile_score += 15
+
+    profile_score = min(profile_score, 100)
+
     conn.close()
 
     return render_template(
         "profile.html",
-        user=user
+        user=user,
+        profile_score=profile_score
     )
 
 
@@ -19917,18 +20016,76 @@ def user_roles():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (user_roles.user_id, user_roles.role)
+            user_roles.*,
+            users.username,
+            users.email
         FROM user_roles
-        ORDER BY id DESC
+        LEFT JOIN users
+        ON user_roles.user_id = users.id
+        ORDER BY user_roles.user_id, user_roles.role, user_roles.id DESC
     """)
 
     roles = cursor.fetchall()
+
+    total_roles = len(roles)
+
+    admin_count = len([
+        role for role in roles
+        if role["role"] == "Admin"
+    ])
+
+    project_manager_count = len([
+        role for role in roles
+        if role["role"] == "Project Manager"
+    ])
+
+    coordinator_count = len([
+        role for role in roles
+        if role["role"] == "Project Coordinator"
+    ])
+
+    viewer_count = len([
+        role for role in roles
+        if role["role"] == "Viewer"
+    ])
+
+    role_summary = {}
+
+    for role in roles:
+
+        role_name = role["role"] or "Unknown"
+
+        if role_name not in role_summary:
+            role_summary[role_name] = 0
+
+        role_summary[role_name] += 1
+
+    role_health_score = 100
+
+    if total_roles == 0:
+        role_health_score -= 40
+
+    if admin_count == 0:
+        role_health_score -= 25
+
+    if viewer_count == 0:
+        role_health_score -= 10
+
+    role_health_score = max(0, role_health_score)
 
     conn.close()
 
     return render_template(
         "user_roles.html",
-        roles=roles
+        roles=roles,
+        total_roles=total_roles,
+        admin_count=admin_count,
+        project_manager_count=project_manager_count,
+        coordinator_count=coordinator_count,
+        viewer_count=viewer_count,
+        role_summary=role_summary,
+        role_health_score=role_health_score
     )
 
 
@@ -19941,23 +20098,62 @@ def add_user_role():
     if not has_permission("Admin", "create"):
         return "Access denied"
 
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        ORDER BY username ASC
+    """)
+
+    users = cursor.fetchall()
+
     if request.method == "POST":
 
-        conn = get_db_connection()
+        cursor.execute("""
+            SELECT id
+            FROM user_roles
+            WHERE user_id = %s
+            AND role = %s
+            LIMIT 1
+        """, (
+            request.form.get("user_id"),
+            request.form.get("role")
+        ))
 
-        cursor = conn.cursor()
+        existing_role = cursor.fetchone()
+
+        if existing_role:
+            conn.close()
+            return redirect("/user-roles")
 
         cursor.execute("""
             INSERT INTO user_roles
             (
                 user_id,
                 role,
-                created_at
+                role_description,
+                parent_role,
+                role_owner,
+                role_template,
+                custom_role,
+                created_at,
+                updated_at
             )
-            VALUES (%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            request.form["user_id"],
-            request.form["role"],
+            request.form.get("user_id"),
+            request.form.get("role"),
+            request.form.get("role_description"),
+            request.form.get("parent_role"),
+            request.form.get("role_owner"),
+            request.form.get("role_template"),
+            True if request.form.get("custom_role") == "Yes" else False,
+            str(datetime.now()),
             str(datetime.now())
         ))
 
@@ -19966,8 +20162,87 @@ def add_user_role():
 
         return redirect("/user-roles")
 
+    conn.close()
+
     return render_template(
-        "add_user_role.html"
+        "add_user_role.html",
+        users=users
+    )
+
+@app.route("/edit-user-role/<int:id>", methods=["GET", "POST"])
+def edit_user_role(id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM user_roles
+        WHERE id = %s
+    """, (
+        id,
+    ))
+
+    role = cursor.fetchone()
+
+    if not role:
+        conn.close()
+        return redirect("/user-roles")
+
+    cursor.execute("""
+        SELECT *
+        FROM users
+        ORDER BY username ASC
+    """)
+
+    users = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE user_roles
+            SET
+                user_id = %s,
+                role = %s,
+                role_description = %s,
+                parent_role = %s,
+                role_owner = %s,
+                role_template = %s,
+                custom_role = %s,
+                updated_at = %s
+            WHERE id = %s
+        """, (
+            request.form.get("user_id"),
+            request.form.get("role"),
+            request.form.get("role_description"),
+            request.form.get("parent_role"),
+            request.form.get("role_owner"),
+            request.form.get("role_template"),
+            True if request.form.get("custom_role") == "Yes" else False,
+            str(datetime.now()),
+            id
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/user-roles")
+
+    conn.close()
+
+    return render_template(
+        "edit_user_role.html",
+        role=role,
+        users=users
     )
 
 

@@ -2,48 +2,143 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
 
-<div class="container">
+<div class="layout">
 
-    <div class="sidebar">
-        <h1>AI PM</h1>
-        <a href="/">Dashboard</a>
-        <a href="/tasks">Tasks</a>
-        <a href="/kanban">Kanban</a>
-        <a href="/calendar">Calendar</a>
-        <a href="/insights">AI Insights</a>
-        <a href="/profile">Profile</a>
-        <a href="/report">PDF Report</a>
-        <a href="/logout">Logout</a>
-    </div>
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
-        <div class="form-card">
+        <div class="dashboard-header">
 
-            <h2>User Profile</h2>
+            <div>
+                <h1>My Profile</h1>
+
+                <p class="dashboard-subtitle">
+                    Manage account settings and personal preferences.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Profile Completion</h3>
+                <p>{{ profile_score }}%</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>MFA Status</h3>
+                <p>{{ user["mfa_enabled"] or "No" }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Theme</h3>
+                <p>{{ user["theme_preference"] or "Default" }}</p>
+            </div>
+
+        </div>
+
+        <div class="form-container">
 
             <div class="avatar-circle">
-                {{ user["avatar_initials"] or session.get("username", "U")[0:2].upper() }}
+                {{ user["avatar_initials"] or session["username"][0:2].upper() }}
             </div>
 
             <form method="POST">
 
-                <label>Avatar Initials</label>
+                <label>Username</label>
+                <input
+                    type="text"
+                    value="{{ user['username'] }}"
+                    readonly
+                >
 
+                <label>Email</label>
+                <input
+                    type="text"
+                    value="{{ user['email'] or 'Not Set' }}"
+                    readonly
+                >
+
+                <label>Avatar Initials</label>
                 <input
                     type="text"
                     name="avatar_initials"
                     maxlength="3"
-                    placeholder="e.g. DO"
                     value="{{ user['avatar_initials'] or '' }}"
                 >
 
-                <button type="submit">
+                <label>Timezone</label>
+                <input
+                    type="text"
+                    name="timezone"
+                    value="{{ user['timezone'] or 'Europe/London' }}"
+                >
+
+                <label>Language</label>
+                <input
+                    type="text"
+                    name="language"
+                    value="{{ user['language'] or 'English' }}"
+                >
+
+                <label>Theme Preference</label>
+                <select name="theme_preference">
+
+                    <option value="Light"
+                        {% if user['theme_preference'] == 'Light' %}
+                        selected
+                        {% endif %}
+                    >
+                        Light
+                    </option>
+
+                    <option value="Dark"
+                        {% if user['theme_preference'] == 'Dark' %}
+                        selected
+                        {% endif %}
+                    >
+                        Dark
+                    </option>
+
+                </select>
+
+                <label>Notifications</label>
+
+                <select name="notifications_enabled">
+
+                    <option value="Yes"
+                        {% if user['notifications_enabled'] == 'Yes' %}
+                        selected
+                        {% endif %}
+                    >
+                        Enabled
+                    </option>
+
+                    <option value="No"
+                        {% if user['notifications_enabled'] == 'No' %}
+                        selected
+                        {% endif %}
+                    >
+                        Disabled
+                    </option>
+
+                </select>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
                     Save Profile
                 </button>
 

@@ -22,16 +22,14 @@
                 <h1>User Roles</h1>
 
                 <p class="dashboard-subtitle">
-                    Manage user access levels across the AI PM Tracker platform.
+                    Manage user roles, hierarchy, ownership and access readiness.
                 </p>
             </div>
 
             <div class="dashboard-actions">
-
                 <a href="/add-user-role" class="btn-primary">
                     + Add Role
                 </a>
-
             </div>
 
         </div>
@@ -40,28 +38,59 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Roles</h3>
-                <p>{{ roles|length }}</p>
+                <p>{{ total_roles }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Admins</h3>
-                <p>
-                    {{ roles | selectattr("role", "equalto", "Admin") | list | length }}
-                </p>
+                <p>{{ admin_count }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Project Managers</h3>
-                <p>
-                    {{ roles | selectattr("role", "equalto", "Project Manager") | list | length }}
-                </p>
+                <p>{{ project_manager_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Coordinators</h3>
+                <p>{{ coordinator_count }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Viewers</h3>
-                <p>
-                    {{ roles | selectattr("role", "equalto", "Viewer") | list | length }}
-                </p>
+                <p>{{ viewer_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Role Health</h3>
+                <p>{{ role_health_score }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Role Summary</h3>
+
+            <div class="smart-insight">
+
+                {% if role_summary %}
+
+                    {% for role_name, count in role_summary.items() %}
+
+                        <p>
+                            <strong>{{ role_name }}:</strong>
+                            {{ count }} user(s)
+                        </p>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <p>No role summary available.</p>
+
+                {% endif %}
+
             </div>
 
         </div>
@@ -78,7 +107,13 @@
 
                     <div>
 
-                        <h3>User ID: {{ role["user_id"] }}</h3>
+                        <h3>
+                            {{ role["username"] or "Unknown User" }}
+                        </h3>
+
+                        <p>
+                            {{ role["email"] or "No email recorded" }}
+                        </p>
 
                         {% if role["role"] == "Admin" %}
 
@@ -101,7 +136,7 @@
                         {% else %}
 
                             <span class="badge badge-blue">
-                                Viewer
+                                {{ role["role"] or "Viewer" }}
                             </span>
 
                         {% endif %}
@@ -113,28 +148,67 @@
                 <div class="budget-section">
 
                     <div class="budget-row">
+                        <span>User</span>
+                        <strong>{{ role["username"] or "Unknown" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Email</span>
+                        <strong>{{ role["email"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Role</span>
                         <strong>{{ role["role"] }}</strong>
                     </div>
 
                     <div class="budget-row">
-                        <span>User ID</span>
-                        <strong>{{ role["user_id"] }}</strong>
+                        <span>Parent Role</span>
+                        <strong>{{ role["parent_role"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Role Owner</span>
+                        <strong>{{ role["role_owner"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Template</span>
+                        <strong>{{ role["role_template"] or "None" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Custom Role</span>
+                        <strong>{{ "Yes" if role["custom_role"] else "No" }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Created At</span>
-                        <strong>{{ role["created_at"] }}</strong>
+                        <strong>{{ role["created_at"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Updated At</span>
+                        <strong>{{ role["updated_at"] or "Not updated" }}</strong>
                     </div>
 
                 </div>
 
-                <div style="margin-top:15px;">
+                <div class="smart-insight">
+                    <strong>Role Description:</strong>
+                    <br><br>
+                    {{ role["role_description"] or "No role description added." }}
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-user-role/{{ role['id'] }}">
+                        Edit Role
+                    </a>
 
                     <a
                         href="/delete-user-role/{{ role['id'] }}"
                         onclick="return confirm('Delete this role?')"
-                        class="btn-primary"
                     >
                         Delete Role
                     </a>
@@ -153,9 +227,7 @@
 
             <h3>No User Roles Added</h3>
 
-            <p>
-                Add roles to start managing platform access.
-            </p>
+            <p>Add roles to start managing platform access.</p>
 
             <a href="/add-user-role" class="btn-primary">
                 Add First Role
