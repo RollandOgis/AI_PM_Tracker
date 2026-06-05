@@ -2026,6 +2026,70 @@ def init_db():
                    )
                    """)
 
+    # Portfolio Roadmap v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS roadmap_milestone TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS roadmap_dependency TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS strategic_initiative TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS baseline_start_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS baseline_end_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS roadmap_status TEXT DEFAULT 'On Track'
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS portfolio_roadmap_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       user_id
+                       INTEGER,
+                       project_id
+                       INTEGER,
+                       project_name
+                       TEXT,
+                       start_date
+                       TEXT,
+                       end_date
+                       TEXT,
+                       baseline_start_date
+                       TEXT,
+                       baseline_end_date
+                       TEXT,
+                       progress
+                       INTEGER,
+                       roadmap_status
+                       TEXT,
+                       created_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
     # Portfolio Health Table
 
     cursor.execute("""
@@ -18853,14 +18917,18 @@ def portfolio_roadmap():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (projects.id)
+            projects.*
         FROM projects
-        WHERE user_id = %s
+        WHERE projects.user_id = %s
+        AND COALESCE(projects.is_archived, FALSE) = FALSE
+        AND COALESCE(projects.portfolio_archived, FALSE) = FALSE
         ORDER BY
+            projects.id,
             CASE
-                WHEN start_date IS NULL OR start_date = ''
+                WHEN projects.start_date IS NULL OR projects.start_date = ''
                 THEN '9999-12-31'
-                ELSE start_date
+                ELSE projects.start_date
             END ASC
     """, (
         session["user_id"],
@@ -18869,6 +18937,15 @@ def portfolio_roadmap():
     projects = cursor.fetchall()
 
     roadmap_items = []
+
+    on_track_count = 0
+    at_risk_count = 0
+    delayed_count = 0
+    completed_count = 0
+
+    total_progress = 0
+    milestone_count = 0
+    dependency_count = 0
 
     for project in projects:
 
@@ -18896,71 +18973,114 @@ def portfolio_roadmap():
         if total_tasks > 0:
             progress = round((completed_tasks / total_tasks) * 100)
         else:
-            progress = 0
+            progress = 100 if project["status"] == "Completed" else 0
+
+        total_progress += progress
+
+        roadmap_status = project.get("roadmap_status") or "On Track"
+
+        if project["status"] == "Completed":
+            roadmap_status = "Completed"
+
+        elif project["end_date"] and project["end_date"] < str(date.today()) and progress < 100:
+            roadmap_status = "Delayed"
+
+        elif progress < 40 and project["status"] == "In Progress":
+            roadmap_status = "At Risk"
+
+        if roadmap_status == "On Track":
+            on_track_count += 1
+        elif roadmap_status == "At Risk":
+            at_risk_count += 1
+        elif roadmap_status == "Delayed":
+            delayed_count += 1
+        elif roadmap_status == "Completed":
+            completed_count += 1
+
+        if project.get("roadmap_milestone"):
+            milestone_count += 1
+
+        if project.get("roadmap_dependency"):
+            dependency_count += 1
+
+        baseline_variance = "No baseline"
+
+        if project.get("baseline_end_date") and project.get("end_date"):
+            if project["end_date"] > project["baseline_end_date"]:
+                baseline_variance = "Behind Baseline"
+            elif project["end_date"] < project["baseline_end_date"]:
+                baseline_variance = "Ahead of Baseline"
+            else:
+                baseline_variance = "On Baseline"
 
         roadmap_items.append({
+            "project_id": project["id"],
             "project_name": project["name"],
+            "programme": project.get("programme"),
+            "portfolio": project.get("portfolio"),
             "status": project["status"],
             "start_date": project["start_date"],
             "end_date": project["end_date"],
-            "progress": progress
+            "baseline_start_date": project.get("baseline_start_date"),
+            "baseline_end_date": project.get("baseline_end_date"),
+            "progress": progress,
+            "roadmap_status": roadmap_status,
+            "roadmap_milestone": project.get("roadmap_milestone"),
+            "roadmap_dependency": project.get("roadmap_dependency"),
+            "strategic_initiative": project.get("strategic_initiative"),
+            "baseline_variance": baseline_variance
         })
 
+        cursor.execute("""
+            INSERT INTO portfolio_roadmap_history
+            (
+                user_id,
+                project_id,
+                project_name,
+                start_date,
+                end_date,
+                baseline_start_date,
+                baseline_end_date,
+                progress,
+                roadmap_status
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            project["id"],
+            project["name"],
+            project["start_date"],
+            project["end_date"],
+            project.get("baseline_start_date"),
+            project.get("baseline_end_date"),
+            progress,
+            roadmap_status
+        ))
+
+    total_projects = len(projects)
+
+    if total_projects > 0:
+        average_progress = round(total_progress / total_projects)
+    else:
+        average_progress = 0
+
+    conn.commit()
     conn.close()
 
     return render_template(
         "portfolio_roadmap.html",
-        roadmap_items=roadmap_items
-    )
-@app.route("/portfolio-kanban")
-def portfolio_kanban():
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    if not has_permission("Projects", "view"):
-        return "Access denied"
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
+        roadmap_items=roadmap_items,
+        total_projects=total_projects,
+        average_progress=average_progress,
+        on_track_count=on_track_count,
+        at_risk_count=at_risk_count,
+        delayed_count=delayed_count,
+        completed_count=completed_count,
+        milestone_count=milestone_count,
+        dependency_count=dependency_count
     )
 
-    cursor.execute("""
-        SELECT *
-        FROM projects
-        WHERE user_id = %s
-        ORDER BY id DESC
-    """, (
-        session["user_id"],
-    ))
 
-    projects = cursor.fetchall()
-
-    grouped_projects = {
-        "Planning": [],
-        "In Progress": [],
-        "Completed": [],
-        "On Hold": [],
-        "Cancelled": []
-    }
-
-    for project in projects:
-
-        status = project["status"]
-
-        if status in grouped_projects:
-            grouped_projects[status].append(project)
-        else:
-            grouped_projects["Planning"].append(project)
-
-    conn.close()
-
-    return render_template(
-        "portfolio_kanban.html",
-        grouped_projects=grouped_projects
-    )
 
 @app.route("/seed-linkedin-demo")
 def seed_linkedin_demo():

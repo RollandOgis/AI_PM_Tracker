@@ -14,45 +14,195 @@
 
     <main class="main-content">
 
-        <h1>Portfolio Roadmap</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Portfolio Roadmap</h1>
+                <p class="dashboard-subtitle">
+                    View delivery timelines, baseline movement, milestones, dependencies and strategic initiatives.
+                </p>
+            </div>
+        </div>
 
-        <p class="page-subtitle">
-            View project timelines, progress and delivery status across the portfolio.
-        </p>
+        <div class="stats-grid">
 
-        <div class="table-container">
+            <div class="stat-card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
 
-            <table>
+            <div class="stat-card green-card">
+                <h3>Average Progress</h3>
+                <p>{{ average_progress }}%</p>
+            </div>
 
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Status</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Progress</th>
-                    </tr>
-                </thead>
+            <div class="stat-card green-card">
+                <h3>On Track</h3>
+                <p>{{ on_track_count }}</p>
+            </div>
 
-                <tbody>
+            <div class="stat-card amber-card">
+                <h3>At Risk</h3>
+                <p>{{ at_risk_count }}</p>
+            </div>
 
-                    {% for item in roadmap_items %}
+            <div class="stat-card red-card">
+                <h3>Delayed</h3>
+                <p>{{ delayed_count }}</p>
+            </div>
 
-                    <tr>
-                        <td>{{ item.project_name }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.start_date or "Not set" }}</td>
-                        <td>{{ item.end_date or "Not set" }}</td>
-                        <td>{{ item.progress }}%</td>
-                    </tr>
+            <div class="stat-card blue-card">
+                <h3>Completed</h3>
+                <p>{{ completed_count }}</p>
+            </div>
 
-                    {% endfor %}
+            <div class="stat-card amber-card">
+                <h3>Milestones</h3>
+                <p>{{ milestone_count }}</p>
+            </div>
 
-                </tbody>
-
-            </table>
+            <div class="stat-card red-card">
+                <h3>Dependencies</h3>
+                <p>{{ dependency_count }}</p>
+            </div>
 
         </div>
+
+        {% if roadmap_items %}
+
+        <div class="smart-card">
+
+            <h3>Roadmap Summary</h3>
+
+            <div class="smart-insight">
+                <p>
+                    <strong>{{ total_projects }}</strong> active portfolio project(s) are shown on this roadmap.
+                </p>
+
+                <p>
+                    Average delivery progress is <strong>{{ average_progress }}%</strong>.
+                </p>
+
+                <p>
+                    <strong>{{ delayed_count }}</strong> project(s) are delayed and
+                    <strong>{{ at_risk_count }}</strong> project(s) are currently at risk.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="projects-grid">
+
+            {% for item in roadmap_items %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name }}</h3>
+
+                        {% if item.roadmap_status == "Completed" %}
+                            <span class="badge badge-green">Completed</span>
+                        {% elif item.roadmap_status == "On Track" %}
+                            <span class="badge badge-green">On Track</span>
+                        {% elif item.roadmap_status == "At Risk" %}
+                            <span class="badge badge-yellow">At Risk</span>
+                        {% elif item.roadmap_status == "Delayed" %}
+                            <span class="badge badge-red">Delayed</span>
+                        {% else %}
+                            <span class="badge badge-blue">{{ item.roadmap_status }}</span>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ item.status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Programme</span>
+                        <strong>{{ item.programme or "No Programme" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Portfolio</span>
+                        <strong>{{ item.portfolio or "No Portfolio" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Start Date</span>
+                        <strong>{{ item.start_date or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>End Date</span>
+                        <strong>{{ item.end_date or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline Start</span>
+                        <strong>{{ item.baseline_start_date or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline End</span>
+                        <strong>{{ item.baseline_end_date or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline Variance</span>
+                        <strong>{{ item.baseline_variance }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Progress</span>
+                        <strong>{{ item.progress }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Roadmap Status</span>
+                        <strong>{{ item.roadmap_status }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Milestone Marker:</strong>
+                    <br><br>
+                    {{ item.roadmap_milestone or "No roadmap milestone recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Dependency:</strong>
+                    <br><br>
+                    {{ item.roadmap_dependency or "No dependency recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Strategic Initiative:</strong>
+                    <br><br>
+                    {{ item.strategic_initiative or "No strategic initiative recorded." }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Roadmap Items</h3>
+            <p>No active portfolio projects are available for roadmap tracking.</p>
+        </div>
+
+        {% endif %}
 
     </main>
 
