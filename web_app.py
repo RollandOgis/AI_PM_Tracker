@@ -3928,6 +3928,25 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS severity TEXT
                    """)
 
+    # ==================================================
+    # USER SECURITY & PASSWORD RESET
+    # ==================================================
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS reset_token TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS reset_token_created_at TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS password_reset_date TEXT
+                   """)
+
 
 
 
@@ -20964,12 +20983,14 @@ def admin_dashboard():
         recent_logs=recent_logs,
         recent_activities=recent_activities
     )
-
 @app.route("/admin-reset-password/<int:user_id>")
 def admin_reset_password(user_id):
 
     if "user_id" not in session:
         return redirect("/login")
+
+    if not has_permission("Admin", "edit"):
+        return "Access denied"
 
     reset_token = str(uuid.uuid4())
 
@@ -20985,7 +21006,7 @@ def admin_reset_password(user_id):
             reset_token = %s,
             reset_token_created_at = %s
         WHERE id = %s
-        RETURNING id, username, reset_token
+        RETURNING id, username, email, reset_token
     """, (
         reset_token,
         str(datetime.now()),
@@ -21000,22 +21021,38 @@ def admin_reset_password(user_id):
     if not updated_user:
         return "User not found"
 
+    create_activity(
+        f"Password reset token generated for {updated_user['username']}",
+        user_id=session["user_id"],
+        activity_type="Security",
+        module="Admin",
+        severity="Medium"
+    )
+
     return f"""
     <h2>Password Reset Token Generated</h2>
+
     <p><strong>User:</strong> {updated_user['username']}</p>
+
+    <p><strong>Email:</strong> {updated_user['email'] or 'No email recorded'}</p>
+
     <p><strong>Token:</strong> {updated_user['reset_token']}</p>
+
     <p>
         <a href="/reset-password/{updated_user['reset_token']}">
             Open Reset Password Page
         </a>
     </p>
+
+    <p>
+        <a href="/user-management">
+            Back to User Management
+        </a>
+    </p>
     """
 
 
-@app.route(
-    "/reset-password/<token>",
-    methods=["GET", "POST"]
-)
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password(token):
 
     conn = get_db_connection()
@@ -21038,6 +21075,33 @@ def reset_password(token):
         conn.close()
         return "Invalid reset token"
 
+    token_created_at = user.get("reset_token_created_at")
+
+    if token_created_at:
+
+        try:
+            token_time = datetime.fromisoformat(str(token_created_at))
+            expiry_time = token_time + timedelta(hours=24)
+
+            if datetime.now() > expiry_time:
+                cursor.execute("""
+                    UPDATE users
+                    SET
+                        reset_token = NULL,
+                        reset_token_created_at = NULL
+                    WHERE id = %s
+                """, (
+                    user["id"],
+                ))
+
+                conn.commit()
+                conn.close()
+
+                return "Reset token has expired"
+
+        except Exception:
+            pass
+
     if request.method == "POST":
 
         new_password = generate_password_hash(
@@ -21049,10 +21113,12 @@ def reset_password(token):
             SET
                 password = %s,
                 reset_token = NULL,
-                reset_token_created_at = NULL
+                reset_token_created_at = NULL,
+                password_reset_date = %s
             WHERE id = %s
         """, (
             new_password,
+            str(date.today()),
             user["id"]
         ))
 
