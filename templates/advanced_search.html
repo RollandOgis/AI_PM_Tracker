@@ -11,6 +11,7 @@
 <body>
 
 <div class="layout">
+
     {% include "sidebar.html" %}
 
     <div class="main-content">
@@ -18,97 +19,190 @@
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Advanced Search</h1>
 
                 <p class="dashboard-subtitle">
-                    Search across projects and tasks
+                    Search across task titles, projects, status, priority and assigned owners.
                 </p>
-
             </div>
 
         </div>
 
-        <form
-            method="GET"
-            action="/advanced-search"
-            class="search-form"
-        >
+        <div class="smart-card">
 
-            <input
-                type="text"
-                name="search"
-                placeholder="Search task title, project, status or priority..."
-                value="{{ search or '' }}"
-            >
+            <h3>Search Criteria</h3>
 
-            <button
-                type="submit"
-                class="btn-primary"
-            >
-                Search
-            </button>
+            <form method="GET" action="/advanced-search">
 
-        </form>
+                <label>Keyword</label>
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Task title, project, status, priority or assigned owner"
+                    value="{{ search or '' }}"
+                >
 
-        {% if tasks %}
+                <label>Status</label>
+                <select name="status">
+                    <option value="">All Statuses</option>
+
+                    <option value="Pending"
+                        {% if status_filter == "Pending" %}selected{% endif %}
+                    >
+                        Pending
+                    </option>
+
+                    <option value="In Progress"
+                        {% if status_filter == "In Progress" %}selected{% endif %}
+                    >
+                        In Progress
+                    </option>
+
+                    <option value="Completed"
+                        {% if status_filter == "Completed" %}selected{% endif %}
+                    >
+                        Completed
+                    </option>
+
+                    <option value="Blocked"
+                        {% if status_filter == "Blocked" %}selected{% endif %}
+                    >
+                        Blocked
+                    </option>
+                </select>
+
+                <label>Priority</label>
+                <select name="priority">
+                    <option value="">All Priorities</option>
+
+                    <option value="High"
+                        {% if priority_filter == "High" %}selected{% endif %}
+                    >
+                        High
+                    </option>
+
+                    <option value="Medium"
+                        {% if priority_filter == "Medium" %}selected{% endif %}
+                    >
+                        Medium
+                    </option>
+
+                    <option value="Low"
+                        {% if priority_filter == "Low" %}selected{% endif %}
+                    >
+                        Low
+                    </option>
+                </select>
+
+                <label>Project</label>
+                <select name="project">
+                    <option value="">All Projects</option>
+
+                    {% for project in projects %}
+                        <option
+                            value="{{ project['name'] }}"
+                            {% if project_filter == project['name'] %}selected{% endif %}
+                        >
+                            {{ project["name"] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Search
+                </button>
+
+                <a href="/advanced-search" class="btn-secondary">
+                    Clear Search
+                </a>
+
+            </form>
+
+        </div>
+
+        {% if has_searched %}
+
+            <div class="stats-grid">
+
+                <div class="stat-card blue-card">
+                    <h3>Results Found</h3>
+                    <p>{{ result_count }}</p>
+                </div>
+
+            </div>
+
+        {% endif %}
+
+        {% if has_searched and tasks %}
 
             <div class="projects-grid">
 
                 {% for task in tasks %}
 
-                    <div class="project-card">
+                <div class="project-card">
 
-                        <h3>
-                            {{ task["title"] }}
-                        </h3>
+                    <div class="project-top">
 
-                        <div class="budget-section">
+                        <div>
+                            <h3>{{ task["title"] }}</h3>
+                            <p>{{ task["project_name"] }}</p>
+                        </div>
 
-                            <div class="budget-row">
-                                <span>Project</span>
-                                <strong>
-                                    {{ task["project_name"] }}
-                                </strong>
-                            </div>
+                        {% if task["priority"] == "High" %}
+                            <span class="badge badge-red">High</span>
+                        {% elif task["priority"] == "Medium" %}
+                            <span class="badge badge-yellow">Medium</span>
+                        {% else %}
+                            <span class="badge badge-green">{{ task["priority"] or "Low" }}</span>
+                        {% endif %}
 
-                            <div class="budget-row">
-                                <span>Status</span>
-                                <strong>
-                                    {{ task["status"] }}
-                                </strong>
-                            </div>
+                    </div>
 
-                            <div class="budget-row">
-                                <span>Priority</span>
-                                <strong>
-                                    {{ task["priority"] }}
-                                </strong>
-                            </div>
+                    <div class="budget-section">
 
-                            <div class="budget-row">
-                                <span>Due Date</span>
-                                <strong>
-                                    {{ task["due_date"] or "No date" }}
-                                </strong>
-                            </div>
+                        <div class="budget-row">
+                            <span>Project</span>
+                            <strong>{{ task["project_name"] }}</strong>
+                        </div>
 
+                        <div class="budget-row">
+                            <span>Status</span>
+                            <strong>{{ task["status"] }}</strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Priority</span>
+                            <strong>{{ task["priority"] }}</strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Assigned To</span>
+                            <strong>{{ task["assigned_to"] or "Unassigned" }}</strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Due Date</span>
+                            <strong>{{ task["due_date"] or "No date" }}</strong>
                         </div>
 
                     </div>
+
+                </div>
 
                 {% endfor %}
 
             </div>
 
-        {% elif search %}
+        {% elif has_searched and not tasks %}
 
             <div class="empty-box">
 
                 <h3>No Results Found</h3>
 
                 <p>
-                    Try searching for a different keyword.
+                    Try changing the keyword, status, priority or project filter.
                 </p>
 
             </div>
@@ -120,7 +214,7 @@
                 <h3>Search Your Work</h3>
 
                 <p>
-                    Enter a keyword above to search tasks and projects.
+                    Enter a keyword or choose a filter to search tasks across your projects.
                 </p>
 
             </div>

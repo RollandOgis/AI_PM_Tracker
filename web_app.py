@@ -8057,7 +8057,16 @@ def advanced_search():
     if not has_permission("Tasks", "view"):
         return "Access denied"
 
-    search = request.args.get("search", "")
+    search = request.args.get("search", "").strip()
+    status_filter = request.args.get("status", "").strip()
+    priority_filter = request.args.get("priority", "").strip()
+    project_filter = request.args.get("project", "").strip()
+
+    has_searched = bool(
+        search or status_filter or priority_filter or project_filter
+    )
+
+    tasks = []
 
     conn = get_db_connection()
 
@@ -8066,36 +8075,81 @@ def advanced_search():
     )
 
     cursor.execute("""
-        SELECT
-            tasks.*,
-            projects.name AS project_name
-        FROM tasks
-        JOIN projects
-        ON tasks.project_id = projects.id
-        WHERE projects.user_id = %s
-        AND (
-            tasks.title ILIKE %s
-            OR projects.name ILIKE %s
-            OR tasks.status ILIKE %s
-            OR tasks.priority ILIKE %s
-        )
-        ORDER BY tasks.id DESC
+        SELECT DISTINCT name
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name ASC
     """, (
         session["user_id"],
-        f"%{search}%",
-        f"%{search}%",
-        f"%{search}%",
-        f"%{search}%"
     ))
 
-    tasks = cursor.fetchall()
+    projects = cursor.fetchall()
+
+    if has_searched:
+
+        query = """
+            SELECT
+                tasks.*,
+                projects.name AS project_name
+            FROM tasks
+            JOIN projects
+            ON tasks.project_id = projects.id
+            WHERE projects.user_id = %s
+        """
+
+        params = [session["user_id"]]
+
+        if search:
+            query += """
+                AND (
+                    tasks.title ILIKE %s
+                    OR projects.name ILIKE %s
+                    OR tasks.status ILIKE %s
+                    OR tasks.priority ILIKE %s
+                    OR tasks.assigned_to ILIKE %s
+                )
+            """
+
+            params.extend([
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%",
+                f"%{search}%"
+            ])
+
+        if status_filter:
+            query += " AND tasks.status = %s"
+            params.append(status_filter)
+
+        if priority_filter:
+            query += " AND tasks.priority = %s"
+            params.append(priority_filter)
+
+        if project_filter:
+            query += " AND projects.name = %s"
+            params.append(project_filter)
+
+        query += " ORDER BY tasks.id DESC"
+
+        cursor.execute(query, params)
+
+        tasks = cursor.fetchall()
+
+    result_count = len(tasks)
 
     conn.close()
 
     return render_template(
         "advanced_search.html",
         tasks=tasks,
-        search=search
+        search=search,
+        status_filter=status_filter,
+        priority_filter=priority_filter,
+        project_filter=project_filter,
+        projects=projects,
+        has_searched=has_searched,
+        result_count=result_count
     )
 
 @app.route("/gantt")
