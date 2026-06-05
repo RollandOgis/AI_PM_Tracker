@@ -19,24 +19,17 @@
         <div class="dashboard-header">
 
             <div>
-
                 <h1>Budget Management</h1>
 
                 <p class="dashboard-subtitle">
-                    Monitor project budgets, spend, forecast and financial health.
+                    Monitor budget control, baselines, spend, forecast, funding source and financial governance.
                 </p>
-
             </div>
 
-            <div>
-
-                <a
-                    href="/add-budget"
-                    class="btn-primary"
-                >
+            <div class="dashboard-actions">
+                <a href="/add-budget" class="btn-primary">
                     + Add Budget
                 </a>
-
             </div>
 
         </div>
@@ -44,43 +37,43 @@
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
-
                 <h3>Total Budget</h3>
-
-                <p>
-                    £{{ "{:,.0f}".format(total_budget) }}
-                </p>
-
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
             </div>
 
             <div class="stat-card red-card">
-
                 <h3>Actual Cost</h3>
-
-                <p>
-                    £{{ "{:,.0f}".format(total_actual_cost) }}
-                </p>
-
+                <p>£{{ "{:,.0f}".format(total_actual_cost) }}</p>
             </div>
 
             <div class="stat-card amber-card">
-
-                <h3>Remaining Budget</h3>
-
-                <p>
-                    £{{ "{:,.0f}".format(remaining_budget) }}
-                </p>
-
+                <h3>Forecast Cost</h3>
+                <p>£{{ "{:,.0f}".format(total_forecast_cost) }}</p>
             </div>
 
             <div class="stat-card green-card">
+                <h3>Remaining Budget</h3>
+                <p>£{{ "{:,.0f}".format(remaining_budget) }}</p>
+            </div>
 
+            <div class="stat-card blue-card">
                 <h3>Budget Usage</h3>
+                <p>{{ budget_usage }}%</p>
+            </div>
 
-                <p>
-                    {{ budget_usage }}%
-                </p>
+            <div class="stat-card red-card">
+                <h3>Over Budget</h3>
+                <p>{{ over_budget_count }}</p>
+            </div>
 
+            <div class="stat-card amber-card">
+                <h3>Forecast Risk</h3>
+                <p>{{ over_forecast_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Approved</h3>
+                <p>{{ approved_count }}</p>
             </div>
 
         </div>
@@ -104,7 +97,12 @@
                     </p>
 
                     <p>
-                        Over Budget Projects:
+                        Forecast Usage:
+                        <strong>{{ forecast_usage }}%</strong>
+                    </p>
+
+                    <p>
+                        Over Budget Records:
                         <strong>{{ over_budget_count }}</strong>
                     </p>
 
@@ -123,24 +121,23 @@
                 <div class="smart-insight">
 
                     <p>
-                        Forecast Variance:
-                        <strong>
-                            £{{ "{:,.0f}".format(forecast_variance) }}
-                        </strong>
+                        Total Variance:
+                        <strong>£{{ "{:,.0f}".format(total_variance) }}</strong>
                     </p>
 
                     <p>
-                        Forecast Budget Usage:
-                        <strong>
-                            {{ forecast_usage }}%
-                        </strong>
+                        Forecast Variance:
+                        <strong>£{{ "{:,.0f}".format(total_forecast_variance) }}</strong>
+                    </p>
+
+                    <p>
+                        Baseline Variance:
+                        <strong>£{{ "{:,.0f}".format(total_baseline_variance) }}</strong>
                     </p>
 
                     <p>
                         Financial Risk Level:
-                        <strong>
-                            {{ financial_risk_level }}
-                        </strong>
+                        <strong>{{ financial_risk_level }}</strong>
                     </p>
 
                     <p>
@@ -151,143 +148,247 @@
 
             </div>
 
+            <div class="project-card">
+
+                <h3>CAPEX / OPEX Summary</h3>
+
+                <div class="smart-insight">
+
+                    <p>
+                        CAPEX:
+                        <strong>£{{ "{:,.0f}".format(capex_total) }}</strong>
+                    </p>
+
+                    <p>
+                        OPEX:
+                        <strong>£{{ "{:,.0f}".format(opex_total) }}</strong>
+                    </p>
+
+                    <p>
+                        Pending Approvals:
+                        <strong>{{ pending_count }}</strong>
+                    </p>
+
+                    <p>
+                        Rejected:
+                        <strong>{{ rejected_count }}</strong>
+                    </p>
+
+                </div>
+
+            </div>
+
         </div>
 
         {% if budgets %}
 
-            <div class="projects-grid">
+        <div class="projects-grid">
 
-                {% for budget in budgets %}
+            {% for item in budgets %}
 
-                    {% set variance =
-                    budget["budget_amount"] -
-                    budget["actual_cost"] %}
+            {% set budget = item["budget"] %}
 
-                   <div class="project-card">
+            <div class="project-card">
 
-    <div class="project-top">
+                <div class="project-top">
 
-        <div>
+                    <div>
 
-            <h3>
-                {{ budget["project_name"] }}
-            </h3>
+                        <h3>{{ budget["project_name"] or "No Project" }}</h3>
 
-            {% if variance >= 0 %}
-
-                <span class="badge badge-green">
-                    On Budget
-                </span>
-
-            {% else %}
-
-                <span class="badge badge-red">
-                    Over Budget
-                </span>
-
-            {% endif %}
-
-        </div>
-
-    </div>
-
-    <div class="budget-section">
-
-        <div class="budget-row">
-            <span>Budget</span>
-            <strong>
-                £{{ "{:,.0f}".format(budget["budget_amount"]) }}
-            </strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Actual Cost</span>
-            <strong>
-                £{{ "{:,.0f}".format(budget["actual_cost"]) }}
-            </strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Forecast Cost</span>
-            <strong>
-                £{{ "{:,.0f}".format(budget["forecast_cost"]) }}
-            </strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Variance</span>
-            <strong>
-                £{{ "{:,.0f}".format(variance) }}
-            </strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Approved By</span>
-            <strong>
-                {{ budget["approved_by"] }}
-            </strong>
-        </div>
-
-        <div class="budget-row">
-            <span>Status</span>
-            <strong>
-                {{ budget["status"] }}
-            </strong>
-        </div>
-
-    </div>
-
-    <div class="smart-insight">
-
-        <strong>
-            Remaining Budget:
-            £{{ "{:,.0f}".format(variance) }}
-        </strong>
-
-    </div>
-
-    {% if variance < 0 %}
-
-        <div class="alert-box alert-danger">
-            Budget exceeded. Review project spend immediately.
-        </div>
-
-    {% else %}
-
-        <div class="smart-insight">
-            Project remains within budget allocation.
-        </div>
-
-    {% endif %}
-
-</div>
-
-
+                        {% if item["budget_status"] == "Over Budget" %}
+                            <span class="badge badge-red">Over Budget</span>
+                        {% elif item["budget_status"] == "Forecast Risk" %}
+                            <span class="badge badge-yellow">Forecast Risk</span>
+                        {% elif item["budget_status"] == "Under Budget" %}
+                            <span class="badge badge-green">Under Budget</span>
+                        {% else %}
+                            <span class="badge badge-blue">On Budget</span>
+                        {% endif %}
 
                     </div>
 
-                {% endfor %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item["budget_amount"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline</span>
+                        <strong>£{{ "{:,.0f}".format(item["budget_baseline"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item["actual_cost"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item["forecast_cost"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Remaining Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item["remaining_budget"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Variance</span>
+                        <strong>£{{ "{:,.0f}".format(item["variance"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Variance</span>
+                        <strong>£{{ "{:,.0f}".format(item["forecast_variance"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline Variance</span>
+                        <strong>£{{ "{:,.0f}".format(item["baseline_variance"]) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget Usage</span>
+                        <strong>{{ item["usage_percent"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Usage</span>
+                        <strong>{{ item["forecast_usage_percent"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget Owner</span>
+                        <strong>{{ item["owner"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget Approver</span>
+                        <strong>{{ item["approver"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Approved By</span>
+                        <strong>{{ budget["approved_by"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Approval Date</span>
+                        <strong>{{ budget["approval_date"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Category</span>
+                        <strong>{{ budget["budget_category"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Funding Source</span>
+                        <strong>{{ budget["funding_source"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>CAPEX/OPEX</span>
+                        <strong>{{ budget["capex_opex"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Cost Centre</span>
+                        <strong>{{ budget["cost_centre"] or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Programme</span>
+                        <strong>{{ budget["programme_link"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Portfolio</span>
+                        <strong>{{ budget["portfolio_link"] or "Not linked" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ budget["status"] }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Budget Notes:</strong>
+
+                    <br><br>
+
+                    {{ budget["budget_notes"] or "No budget notes added." }}
+
+                </div>
+
+                {% if item["budget_status"] == "Over Budget" %}
+
+                    <div class="alert-box alert-danger">
+                        Budget exceeded. Review project spend immediately.
+                    </div>
+
+                {% elif item["budget_status"] == "Forecast Risk" %}
+
+                    <div class="smart-insight">
+                        Forecast cost is above budget. Review assumptions and forecast accuracy.
+                    </div>
+
+                {% else %}
+
+                    <div class="smart-insight">
+                        Budget position is currently within acceptable limits.
+                    </div>
+
+                {% endif %}
+
+                <div class="project-actions">
+
+                    <a href="/edit-budget/{{ budget['id'] }}">
+                        Edit
+                    </a>
+
+                    <a href="/budget-history/{{ budget['id'] }}">
+                        History
+                    </a>
+
+                    <a
+                        href="/delete-budget/{{ budget['id'] }}"
+                        onclick="return confirm('Delete this budget record?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
 
             </div>
+
+            {% endfor %}
+
+        </div>
 
         {% else %}
 
-            <div class="empty-box">
+        <div class="empty-box">
 
-                <h3>No Budgets Added</h3>
+            <h3>No Budgets Added</h3>
 
-                <p>
-                    Add a project budget to start financial tracking.
-                </p>
+            <p>
+                Add a project budget to start financial tracking.
+            </p>
 
-                <a
-                    href="/add-budget"
-                    class="btn-primary"
-                >
-                    Add First Budget
-                </a>
+            <a href="/add-budget" class="btn-primary">
+                Add First Budget
+            </a>
 
-            </div>
+        </div>
 
         {% endif %}
 

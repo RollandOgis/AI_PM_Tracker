@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Budget</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Edit Budget</h1>
+
+                <p class="dashboard-subtitle">
+                    Update budget baselines, approvals, forecasts and financial governance records.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/budgets" class="btn-primary">
+                    Back to Budgets
+                </a>
+            </div>
+
+        </div>
+
+        <div class="form-container">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+                    {% for project in projects %}
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == budget['project_id'] %}selected{% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Budget Amount (£)</label>
+                <input type="number" step="0.01" name="budget_amount" value="{{ budget['budget_amount'] }}" required>
+
+                <label>Budget Baseline (£)</label>
+                <input type="number" step="0.01" name="budget_baseline" value="{{ budget['budget_baseline'] or 0 }}">
+
+                <label>Actual Cost (£)</label>
+                <input type="number" step="0.01" name="actual_cost" value="{{ budget['actual_cost'] }}" required>
+
+                <label>Forecast Cost (£)</label>
+                <input type="number" step="0.01" name="forecast_cost" value="{{ budget['forecast_cost'] }}" required>
+
+                <label>Budget Owner</label>
+                <input type="text" name="budget_owner" value="{{ budget['budget_owner'] or '' }}">
+
+                <label>Budget Approver</label>
+                <input type="text" name="budget_approver" value="{{ budget['budget_approver'] or '' }}">
+
+                <label>Approved By</label>
+                <input type="text" name="approved_by" value="{{ budget['approved_by'] or '' }}">
+
+                <label>Approval Date</label>
+                <input type="date" name="approval_date" value="{{ budget['approval_date'] or '' }}">
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Draft" {% if budget['status'] == 'Draft' %}selected{% endif %}>Draft</option>
+                    <option value="Pending" {% if budget['status'] == 'Pending' %}selected{% endif %}>Pending</option>
+                    <option value="Approved" {% if budget['status'] == 'Approved' %}selected{% endif %}>Approved</option>
+                    <option value="Rejected" {% if budget['status'] == 'Rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="In Review" {% if budget['status'] == 'In Review' %}selected{% endif %}>In Review</option>
+                </select>
+
+                <label>Budget Category</label>
+                <select name="budget_category">
+                    <option value="">Select</option>
+                    <option value="Operational" {% if budget['budget_category'] == 'Operational' %}selected{% endif %}>Operational</option>
+                    <option value="Project" {% if budget['budget_category'] == 'Project' %}selected{% endif %}>Project</option>
+                    <option value="Programme" {% if budget['budget_category'] == 'Programme' %}selected{% endif %}>Programme</option>
+                    <option value="Portfolio" {% if budget['budget_category'] == 'Portfolio' %}selected{% endif %}>Portfolio</option>
+                </select>
+
+                <label>Funding Source</label>
+                <input type="text" name="funding_source" value="{{ budget['funding_source'] or '' }}">
+
+                <label>CAPEX / OPEX</label>
+                <select name="capex_opex">
+                    <option value="">Select</option>
+                    <option value="CAPEX" {% if budget['capex_opex'] == 'CAPEX' %}selected{% endif %}>CAPEX</option>
+                    <option value="OPEX" {% if budget['capex_opex'] == 'OPEX' %}selected{% endif %}>OPEX</option>
+                </select>
+
+                <label>Cost Centre</label>
+                <input type="text" name="cost_centre" value="{{ budget['cost_centre'] or '' }}">
+
+                <label>Programme Link</label>
+                <input type="text" name="programme_link" value="{{ budget['programme_link'] or '' }}">
+
+                <label>Portfolio Link</label>
+                <input type="text" name="portfolio_link" value="{{ budget['portfolio_link'] or '' }}">
+
+                <label>Budget Notes</label>
+                <textarea name="budget_notes" rows="5">{{ budget['budget_notes'] or '' }}</textarea>
+
+                <label>Change Note</label>
+                <textarea name="change_note" rows="3" placeholder="Reason for this budget update"></textarea>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Update Budget
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

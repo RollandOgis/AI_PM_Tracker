@@ -22,8 +22,14 @@
                 <h1>Add Budget</h1>
 
                 <p class="dashboard-subtitle">
-                    Create and manage project financial budgets.
+                    Create budget baselines, approvals, funding sources and financial governance records.
                 </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/budgets" class="btn-primary">
+                    Back to Budgets
+                </a>
             </div>
 
         </div>
@@ -37,11 +43,9 @@
                 <select name="project_id" required>
 
                     {% for project in projects %}
-
                         <option value="{{ project['id'] }}">
                             {{ project['name'] }}
                         </option>
-
                     {% endfor %}
 
                 </select>
@@ -52,6 +56,14 @@
                     step="0.01"
                     name="budget_amount"
                     required
+                >
+
+                <label>Budget Baseline (£)</label>
+                <input
+                    type="number"
+                    step="0.01"
+                    name="budget_baseline"
+                    value="0"
                 >
 
                 <label>Actual Cost (£)</label>
@@ -72,30 +84,98 @@
                     required
                 >
 
+                <label>Budget Owner</label>
+                <input
+                    type="text"
+                    name="budget_owner"
+                >
+
+                <label>Budget Approver</label>
+                <input
+                    type="text"
+                    name="budget_approver"
+                >
+
                 <label>Approved By</label>
                 <input
                     type="text"
                     name="approved_by"
-                    required
+                >
+
+                <label>Approval Date</label>
+                <input
+                    type="date"
+                    name="approval_date"
                 >
 
                 <label>Status</label>
 
                 <select name="status">
 
-                    <option value="Draft">
-                        Draft
-                    </option>
-
-                    <option value="Approved">
-                        Approved
-                    </option>
-
-                    <option value="In Review">
-                        In Review
-                    </option>
+                    <option value="Draft">Draft</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="In Review">In Review</option>
 
                 </select>
+
+                <label>Budget Category</label>
+
+                <select name="budget_category">
+
+                    <option value="">Select</option>
+                    <option value="Operational">Operational</option>
+                    <option value="Project">Project</option>
+                    <option value="Programme">Programme</option>
+                    <option value="Portfolio">Portfolio</option>
+
+                </select>
+
+                <label>Funding Source</label>
+
+                <input
+                    type="text"
+                    name="funding_source"
+                >
+
+                <label>CAPEX / OPEX</label>
+
+                <select name="capex_opex">
+
+                    <option value="">Select</option>
+                    <option value="CAPEX">CAPEX</option>
+                    <option value="OPEX">OPEX</option>
+
+                </select>
+
+                <label>Cost Centre</label>
+
+                <input
+                    type="text"
+                    name="cost_centre"
+                >
+
+                <label>Programme Link</label>
+
+                <input
+                    type="text"
+                    name="programme_link"
+                >
+
+                <label>Portfolio Link</label>
+
+                <input
+                    type="text"
+                    name="portfolio_link"
+                >
+
+                <label>Budget Notes</label>
+
+                <textarea
+                    name="budget_notes"
+                    rows="5"
+                ></textarea>
 
                 <br><br>
 

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Budget History</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+{% include "sidebar.html" %}
+
+<div class="main-content">
+
+<h1>Budget History</h1>
+
+{% if history %}
+
+<div class="table-container">
+
+<table>
+
+<thead>
+<tr>
+<th>Date</th>
+<th>Action</th>
+<th>Old Budget</th>
+<th>New Budget</th>
+<th>Old Actual</th>
+<th>New Actual</th>
+<th>Old Forecast</th>
+<th>New Forecast</th>
+<th>Notes</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for item in history %}
+
+<tr>
+
+<td>{{ item["created_at"] }}</td>
+
+<td>{{ item["action"] }}</td>
+
+<td>£{{ item["old_budget_amount"] }}</td>
+
+<td>£{{ item["new_budget_amount"] }}</td>
+
+<td>£{{ item["old_actual_cost"] }}</td>
+
+<td>£{{ item["new_actual_cost"] }}</td>
+
+<td>£{{ item["old_forecast_cost"] }}</td>
+
+<td>£{{ item["new_forecast_cost"] }}</td>
+
+<td>{{ item["change_note"] }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% else %}
+
+<div class="empty-box">
+
+<h3>No Budget History</h3>
+
+<p>No changes have been recorded yet.</p>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</body>
+</html>

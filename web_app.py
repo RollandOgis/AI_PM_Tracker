@@ -3183,6 +3183,97 @@ def init_db():
     except:
         pass
 
+    # Budget Management v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS budget_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS budget_approver TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS budget_baseline NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS budget_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS funding_source TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS capex_opex TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS approval_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS budget_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS cost_centre TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS programme_link TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS portfolio_link TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS budget_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       budget_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       old_budget_amount
+                       NUMERIC,
+                       new_budget_amount
+                       NUMERIC,
+                       old_actual_cost
+                       NUMERIC,
+                       new_actual_cost
+                       NUMERIC,
+                       old_forecast_cost
+                       NUMERIC,
+                       new_forecast_cost
+                       NUMERIC,
+                       change_note
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+
+
 
 
     conn.commit()
@@ -12747,7 +12838,7 @@ def budgets():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (budgets.id)
             budgets.*,
             projects.name AS project_name
         FROM budgets
@@ -12761,54 +12852,125 @@ def budgets():
 
     budgets = cursor.fetchall()
 
+    enriched_budgets = []
+
     total_budget = 0
     total_actual_cost = 0
     total_forecast_cost = 0
+    total_baseline = 0
+
     over_budget_count = 0
+    over_forecast_count = 0
+    under_budget_count = 0
+
+    approved_count = 0
+    pending_count = 0
+    rejected_count = 0
+
+    capex_total = 0
+    opex_total = 0
 
     for budget in budgets:
 
         budget_amount = float(budget["budget_amount"] or 0)
         actual_cost = float(budget["actual_cost"] or 0)
         forecast_cost = float(budget["forecast_cost"] or 0)
+        budget_baseline = float(budget.get("budget_baseline") or 0)
 
         total_budget += budget_amount
         total_actual_cost += actual_cost
         total_forecast_cost += forecast_cost
+        total_baseline += budget_baseline
+
+        remaining_budget = budget_amount - actual_cost
+        variance = budget_amount - actual_cost
+        forecast_variance = budget_amount - forecast_cost
+        baseline_variance = budget_amount - budget_baseline
+
+        if budget_amount > 0:
+            usage_percent = round((actual_cost / budget_amount) * 100)
+            forecast_usage_percent = round((forecast_cost / budget_amount) * 100)
+        else:
+            usage_percent = 0
+            forecast_usage_percent = 0
 
         if actual_cost > budget_amount:
+            budget_status = "Over Budget"
             over_budget_count += 1
+        elif forecast_cost > budget_amount:
+            budget_status = "Forecast Risk"
+            over_forecast_count += 1
+        elif actual_cost < budget_amount:
+            budget_status = "Under Budget"
+            under_budget_count += 1
+        else:
+            budget_status = "On Budget"
 
-    remaining_budget = total_budget - total_actual_cost
+        if budget.get("status") == "Approved":
+            approved_count += 1
+        elif budget.get("status") == "Pending":
+            pending_count += 1
+        elif budget.get("status") == "Rejected":
+            rejected_count += 1
+
+        if budget.get("capex_opex") == "CAPEX":
+            capex_total += budget_amount
+        elif budget.get("capex_opex") == "OPEX":
+            opex_total += budget_amount
+
+        approver = (
+            budget.get("budget_approver")
+            or budget.get("approved_by")
+            or "Not assigned"
+        )
+
+        owner = budget.get("budget_owner") or "Not assigned"
+
+        enriched_budgets.append({
+            "budget": budget,
+            "budget_amount": budget_amount,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "budget_baseline": budget_baseline,
+            "remaining_budget": remaining_budget,
+            "variance": variance,
+            "forecast_variance": forecast_variance,
+            "baseline_variance": baseline_variance,
+            "usage_percent": usage_percent,
+            "forecast_usage_percent": forecast_usage_percent,
+            "budget_status": budget_status,
+            "approver": approver,
+            "owner": owner
+        })
+
+    total_remaining_budget = total_budget - total_actual_cost
+    total_variance = total_budget - total_actual_cost
+    total_forecast_variance = total_budget - total_forecast_cost
+    total_baseline_variance = total_budget - total_baseline
 
     if total_budget > 0:
         budget_usage = round((total_actual_cost / total_budget) * 100)
+        forecast_usage = round((total_forecast_cost / total_budget) * 100)
     else:
         budget_usage = 0
+        forecast_usage = 0
 
-    if budget_usage <= 70:
-        financial_health = "Green"
-        financial_health_message = "Financial position is healthy."
-    elif budget_usage <= 90:
+    if over_budget_count > 0 or budget_usage > 90:
+        financial_health = "Red"
+        financial_health_message = "Budget usage is high and requires immediate attention."
+    elif budget_usage > 70 or over_forecast_count > 0:
         financial_health = "Amber"
         financial_health_message = "Budget usage requires monitoring."
     else:
-        financial_health = "Red"
-        financial_health_message = "Budget usage is high and requires attention."
-
-    forecast_variance = total_budget - total_forecast_cost
-
-    if total_budget > 0:
-        forecast_usage = round((total_forecast_cost / total_budget) * 100)
-    else:
-        forecast_usage = 0
+        financial_health = "Green"
+        financial_health_message = "Financial position is currently healthy."
 
     if over_budget_count > 0:
         financial_risk_level = "High"
-        financial_recommendation = "Review overspending and reduce non-critical project costs."
-    elif budget_usage >= 80:
+        financial_recommendation = "Review overspending, validate forecasts and reduce non-critical costs."
+    elif over_forecast_count > 0 or budget_usage >= 80:
         financial_risk_level = "Medium"
-        financial_recommendation = "Monitor project spend closely as budget usage is increasing."
+        financial_recommendation = "Monitor forecast pressure and review budget owners."
     else:
         financial_risk_level = "Low"
         financial_recommendation = "Financial position is currently stable."
@@ -12817,17 +12979,29 @@ def budgets():
 
     return render_template(
         "budgets.html",
-        budgets=budgets,
+        budgets=enriched_budgets,
         total_budget=total_budget,
         total_actual_cost=total_actual_cost,
         total_forecast_cost=total_forecast_cost,
-        remaining_budget=remaining_budget,
+        total_baseline=total_baseline,
+        total_remaining_budget=total_remaining_budget,
+        remaining_budget=total_remaining_budget,
+        total_variance=total_variance,
+        total_forecast_variance=total_forecast_variance,
+        total_baseline_variance=total_baseline_variance,
         budget_usage=budget_usage,
+        forecast_usage=forecast_usage,
         over_budget_count=over_budget_count,
+        over_forecast_count=over_forecast_count,
+        under_budget_count=under_budget_count,
+        approved_count=approved_count,
+        pending_count=pending_count,
+        rejected_count=rejected_count,
+        capex_total=capex_total,
+        opex_total=opex_total,
         financial_health=financial_health,
         financial_health_message=financial_health_message,
-        forecast_variance=forecast_variance,
-        forecast_usage=forecast_usage,
+        forecast_variance=total_forecast_variance,
         financial_risk_level=financial_risk_level,
         financial_recommendation=financial_recommendation
     )
@@ -12850,6 +13024,11 @@ def add_budget():
 
     if request.method == "POST":
 
+        budget_amount = float(request.form.get("budget_amount") or 0)
+        actual_cost = float(request.form.get("actual_cost") or 0)
+        forecast_cost = float(request.form.get("forecast_cost") or 0)
+        budget_baseline = float(request.form.get("budget_baseline") or 0)
+
         cursor.execute("""
             INSERT INTO budgets
             (
@@ -12860,17 +13039,72 @@ def add_budget():
                 forecast_cost,
                 approved_by,
                 status,
+                budget_owner,
+                budget_approver,
+                budget_baseline,
+                budget_category,
+                funding_source,
+                capex_opex,
+                approval_date,
+                budget_notes,
+                cost_centre,
+                programme_link,
+                portfolio_link,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            RETURNING id
         """, (
             session["user_id"],
-            request.form["project_id"],
-            request.form["budget_amount"],
-            request.form["actual_cost"],
-            request.form["forecast_cost"],
-            request.form["approved_by"],
-            request.form["status"],
+            request.form.get("project_id"),
+            budget_amount,
+            actual_cost,
+            forecast_cost,
+            request.form.get("approved_by"),
+            request.form.get("status"),
+            request.form.get("budget_owner"),
+            request.form.get("budget_approver"),
+            budget_baseline,
+            request.form.get("budget_category"),
+            request.form.get("funding_source"),
+            request.form.get("capex_opex"),
+            request.form.get("approval_date"),
+            request.form.get("budget_notes"),
+            request.form.get("cost_centre"),
+            request.form.get("programme_link"),
+            request.form.get("portfolio_link"),
+            str(date.today())
+        ))
+
+        budget_id = cursor.fetchone()["id"]
+
+        cursor.execute("""
+            INSERT INTO budget_history
+            (
+                budget_id,
+                user_id,
+                action,
+                old_budget_amount,
+                new_budget_amount,
+                old_actual_cost,
+                new_actual_cost,
+                old_forecast_cost,
+                new_forecast_cost,
+                change_note,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            budget_id,
+            session["user_id"],
+            "Budget created",
+            0,
+            budget_amount,
+            0,
+            actual_cost,
+            0,
+            forecast_cost,
+            "Initial budget record created",
             str(date.today())
         ))
 
@@ -12895,6 +13129,208 @@ def add_budget():
     return render_template(
         "add_budget.html",
         projects=projects
+    )
+
+@app.route("/edit-budget/<int:budget_id>", methods=["GET", "POST"])
+def edit_budget(budget_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM budgets
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        budget_id,
+        session["user_id"]
+    ))
+
+    budget = cursor.fetchone()
+
+    if not budget:
+        conn.close()
+        return redirect("/budgets")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        old_budget_amount = float(budget["budget_amount"] or 0)
+        old_actual_cost = float(budget["actual_cost"] or 0)
+        old_forecast_cost = float(budget["forecast_cost"] or 0)
+
+        new_budget_amount = float(request.form.get("budget_amount") or 0)
+        new_actual_cost = float(request.form.get("actual_cost") or 0)
+        new_forecast_cost = float(request.form.get("forecast_cost") or 0)
+        new_budget_baseline = float(request.form.get("budget_baseline") or 0)
+
+        cursor.execute("""
+            UPDATE budgets
+            SET
+                project_id = %s,
+                budget_amount = %s,
+                actual_cost = %s,
+                forecast_cost = %s,
+                approved_by = %s,
+                status = %s,
+                budget_owner = %s,
+                budget_approver = %s,
+                budget_baseline = %s,
+                budget_category = %s,
+                funding_source = %s,
+                capex_opex = %s,
+                approval_date = %s,
+                budget_notes = %s,
+                cost_centre = %s,
+                programme_link = %s,
+                portfolio_link = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            new_budget_amount,
+            new_actual_cost,
+            new_forecast_cost,
+            request.form.get("approved_by"),
+            request.form.get("status"),
+            request.form.get("budget_owner"),
+            request.form.get("budget_approver"),
+            new_budget_baseline,
+            request.form.get("budget_category"),
+            request.form.get("funding_source"),
+            request.form.get("capex_opex"),
+            request.form.get("approval_date"),
+            request.form.get("budget_notes"),
+            request.form.get("cost_centre"),
+            request.form.get("programme_link"),
+            request.form.get("portfolio_link"),
+            budget_id,
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO budget_history
+            (
+                budget_id,
+                user_id,
+                action,
+                old_budget_amount,
+                new_budget_amount,
+                old_actual_cost,
+                new_actual_cost,
+                old_forecast_cost,
+                new_forecast_cost,
+                change_note,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            budget_id,
+            session["user_id"],
+            "Budget updated",
+            old_budget_amount,
+            new_budget_amount,
+            old_actual_cost,
+            new_actual_cost,
+            old_forecast_cost,
+            new_forecast_cost,
+            request.form.get("change_note") or "Budget record updated",
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/budgets")
+
+    conn.close()
+
+    return render_template(
+        "edit_budget.html",
+        budget=budget,
+        projects=projects
+    )
+
+
+@app.route("/delete-budget/<int:budget_id>")
+def delete_budget(budget_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM budgets
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        budget_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/budgets")
+
+
+@app.route("/budget-history/<int:budget_id>")
+def budget_history(budget_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM budget_history
+        WHERE budget_id = %s
+        ORDER BY id DESC
+    """, (
+        budget_id,
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "budget_history.html",
+        history=history
     )
 
 
