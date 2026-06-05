@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Project Prioritisation</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>Edit Project Prioritisation</h1>
+
+                <p class="dashboard-subtitle">
+                    Update strategic investment scoring and portfolio ranking.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/project-prioritisation"
+                   class="btn-primary">
+                    Back to Prioritisation
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id" required>
+
+                    {% for project in projects %}
+
+                        <option
+                            value="{{ project['id'] }}"
+                            {% if project['id'] == priority['project_id'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ project['name'] }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Business Value Score</label>
+
+                <input
+                    type="number"
+                    name="business_value_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['business_value_score'] }}"
+                    required
+                >
+
+                <label>Strategic Alignment Score</label>
+
+                <input
+                    type="number"
+                    name="strategic_alignment_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['strategic_alignment_score'] }}"
+                    required
+                >
+
+                <label>ROI Score</label>
+
+                <input
+                    type="number"
+                    name="roi_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['roi_score'] or 0 }}"
+                    required
+                >
+
+                <label>Benefits Score</label>
+
+                <input
+                    type="number"
+                    name="benefits_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['benefits_score'] or 0 }}"
+                    required
+                >
+
+                <label>Resource Score</label>
+
+                <input
+                    type="number"
+                    name="resource_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['resource_score'] or 0 }}"
+                    required
+                >
+
+                <label>Risk Score</label>
+
+                <input
+                    type="number"
+                    name="risk_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['risk_score'] }}"
+                    required
+                >
+
+                <label>Cost Score</label>
+
+                <input
+                    type="number"
+                    name="cost_score"
+                    min="1"
+                    max="10"
+                    value="{{ priority['cost_score'] }}"
+                    required
+                >
+
+                <label>Strategic Objective</label>
+
+                <textarea
+                    name="strategic_objective"
+                    rows="4"
+                >{{ priority['strategic_objective'] }}</textarea>
+
+                <br><br>
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    Update Priority Score
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

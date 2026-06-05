@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Prioritisation</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -19,85 +20,90 @@
         <div class="dashboard-header">
 
             <div>
+
                 <h1>Project Prioritisation</h1>
 
                 <p class="dashboard-subtitle">
-                    Rank projects using business value, strategic alignment, risk and cost scoring.
+                    Strategic investment ranking, portfolio balancing and executive prioritisation.
                 </p>
+
             </div>
 
             <div class="dashboard-actions">
-                <a href="/add-project-prioritisation" class="btn-primary">
+
+                <a href="/add-project-prioritisation"
+                   class="btn-primary">
                     + Add Priority Score
                 </a>
+
             </div>
 
         </div>
+
 
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
-                <h3>Total Ranked</h3>
-                <p>{{ priorities|length }}</p>
+                <h3>Total Ranked Projects</h3>
+                <p>{{ total_projects }}</p>
             </div>
 
             <div class="stat-card green-card">
-                <h3>Highest Score</h3>
-                <p>
-                    {% if priorities %}
-                        {{ priorities[0]["priority_score"] }}
-                    {% else %}
-                        0
-                    {% endif %}
-                </p>
+                <h3>High Priority</h3>
+                <p>{{ high_priority }}</p>
             </div>
 
             <div class="stat-card amber-card">
-                <h3>High Priority</h3>
-                <p>
-                    {{ priorities | selectattr("priority_score", "ge", 30) | list | length }}
-                </p>
+                <h3>Medium Priority</h3>
+                <p>{{ medium_priority }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Low Priority</h3>
-                <p>
-                    {{ priorities | rejectattr("priority_score", "ge", 20) | list | length }}
-                </p>
+                <p>{{ low_priority }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Average Score</h3>
+                <p>{{ average_score }}</p>
             </div>
 
         </div>
+
 
         {% if priorities %}
 
+        {% set top_priority = priorities[0] %}
+
         <div class="smart-card">
 
-            <h3>Top Priority Project</h3>
-
-            {% set top_priority = priorities[0] %}
+            <h3>Executive Investment Recommendation</h3>
 
             <div class="smart-insight">
 
-                <strong>{{ top_priority["project_name"] or "No Project" }}</strong>
+                <strong>
+                    {{ top_priority["project_name"] }}
+                </strong>
 
                 <p>
-                    Priority Score:
-                    {{ top_priority["priority_score"] }}
+                    Weighted Score:
+                    {{ top_priority["weighted_priority_score"] }}
                 </p>
 
                 <p>
-                    Business Value:
-                    {{ top_priority["business_value_score"] }}
+                    Category:
+                    {{ top_priority["investment_category"] }}
                 </p>
 
                 <p>
-                    Strategic Alignment:
-                    {{ top_priority["strategic_alignment_score"] }}
+                    Strategic Objective:
+                    {{ top_priority["strategic_objective"] }}
                 </p>
 
             </div>
 
         </div>
+
 
         <div class="projects-grid">
 
@@ -110,17 +116,20 @@
                     <div>
 
                         <h3>
+
                             #{{ loop.index }}
-                            {{ priority["project_name"] or "No Project" }}
+
+                            {{ priority["project_name"] }}
+
                         </h3>
 
-                        {% if priority["priority_score"] >= 30 %}
+                        {% if priority["priority_band"] == "High" %}
 
                             <span class="badge badge-green">
                                 High Priority
                             </span>
 
-                        {% elif priority["priority_score"] >= 20 %}
+                        {% elif priority["priority_band"] == "Medium" %}
 
                             <span class="badge badge-yellow">
                                 Medium Priority
@@ -138,6 +147,7 @@
 
                 </div>
 
+
                 <div class="budget-section">
 
                     <div class="budget-row">
@@ -151,6 +161,21 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>ROI Score</span>
+                        <strong>{{ priority["roi_score"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Benefits Score</span>
+                        <strong>{{ priority["benefits_score"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Resource Score</span>
+                        <strong>{{ priority["resource_score"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Risk Score</span>
                         <strong>{{ priority["risk_score"] }}</strong>
                     </div>
@@ -161,14 +186,57 @@
                     </div>
 
                     <div class="budget-row">
-                        <span>Priority Score</span>
+                        <span>Basic Score</span>
                         <strong>{{ priority["priority_score"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Weighted Score</span>
+                        <strong>{{ priority["weighted_priority_score"] }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Portfolio Rank</span>
                         <strong>#{{ loop.index }}</strong>
                     </div>
+
+                </div>
+
+
+                <div class="smart-insight">
+
+                    <strong>Strategic Objective</strong>
+
+                    <br><br>
+
+                    {{ priority["strategic_objective"] or "Not Assigned" }}
+
+                </div>
+
+
+                <div class="smart-insight">
+
+                    <strong>Investment Category</strong>
+
+                    <br><br>
+
+                    {{ priority["investment_category"] }}
+
+                </div>
+
+
+                <div class="project-actions">
+
+                    <a href="/edit-project-prioritisation/{{ priority['id'] }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-project-prioritisation/{{ priority['id'] }}"
+                        onclick="return confirm('Delete this priority score?')"
+                    >
+                        Delete
+                    </a>
 
                 </div>
 
@@ -185,10 +253,11 @@
             <h3>No Projects Prioritised</h3>
 
             <p>
-                Add priority scores to rank your project portfolio.
+                Add portfolio prioritisation records to begin investment analysis.
             </p>
 
-            <a href="/add-project-prioritisation" class="btn-primary">
+            <a href="/add-project-prioritisation"
+               class="btn-primary">
                 Add First Priority Score
             </a>
 

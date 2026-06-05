@@ -1913,6 +1913,60 @@ def init_db():
                    )
                    """)
 
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS roi_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS benefits_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS resource_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS strategic_objective TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS weighted_priority_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS investment_category TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS prioritisation_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       prioritisation_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       project_id
+                       INTEGER,
+                       priority_score
+                       INTEGER,
+                       weighted_priority_score
+                       INTEGER,
+                       created_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
+                   )
+                   """)
+
 
     # Programmes Table
 
@@ -13957,18 +14011,80 @@ def project_prioritisation():
         LEFT JOIN projects
         ON project_prioritisation.project_id = projects.id
         WHERE project_prioritisation.user_id = %s
-        ORDER BY project_prioritisation.priority_score DESC
+        ORDER BY
+            project_prioritisation.weighted_priority_score DESC,
+            project_prioritisation.priority_score DESC
     """, (
         session["user_id"],
     ))
 
     priorities = cursor.fetchall()
 
+    total_projects = len(priorities)
+    high_priority = 0
+    medium_priority = 0
+    low_priority = 0
+    total_score = 0
+
+    for item in priorities:
+
+        weighted_score = item["weighted_priority_score"] or 0
+
+        if weighted_score == 0:
+            weighted_score = (
+                (item["business_value_score"] or 0) * 3
+                + (item["strategic_alignment_score"] or 0) * 3
+                + (item["benefits_score"] or 0) * 2
+                + (item["roi_score"] or 0) * 2
+                + (item["resource_score"] or 0)
+                + (item["risk_score"] or 0)
+                + (item["cost_score"] or 0)
+            )
+
+        item["weighted_priority_score"] = weighted_score
+        total_score += weighted_score
+
+        if weighted_score >= 60:
+            item["priority_band"] = "High"
+            high_priority += 1
+        elif weighted_score >= 35:
+            item["priority_band"] = "Medium"
+            medium_priority += 1
+        else:
+            item["priority_band"] = "Low"
+            low_priority += 1
+
+        cursor.execute("""
+            INSERT INTO prioritisation_history
+            (
+                prioritisation_id,
+                user_id,
+                project_id,
+                priority_score,
+                weighted_priority_score
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            item["id"],
+            session["user_id"],
+            item["project_id"],
+            item["priority_score"],
+            weighted_score
+        ))
+
+    average_score = round(total_score / total_projects) if total_projects > 0 else 0
+
+    conn.commit()
     conn.close()
 
     return render_template(
         "project_prioritisation.html",
-        priorities=priorities
+        priorities=priorities,
+        total_projects=total_projects,
+        high_priority=high_priority,
+        medium_priority=medium_priority,
+        low_priority=low_priority,
+        average_score=average_score
     )
 
 
@@ -14000,10 +14116,13 @@ def add_project_prioritisation():
 
     if request.method == "POST":
 
-        business_value_score = int(request.form["business_value_score"])
-        strategic_alignment_score = int(request.form["strategic_alignment_score"])
-        risk_score = int(request.form["risk_score"])
-        cost_score = int(request.form["cost_score"])
+        business_value_score = int(request.form.get("business_value_score") or 0)
+        strategic_alignment_score = int(request.form.get("strategic_alignment_score") or 0)
+        risk_score = int(request.form.get("risk_score") or 0)
+        cost_score = int(request.form.get("cost_score") or 0)
+        roi_score = int(request.form.get("roi_score") or 0)
+        benefits_score = int(request.form.get("benefits_score") or 0)
+        resource_score = int(request.form.get("resource_score") or 0)
 
         priority_score = (
             business_value_score
@@ -14011,6 +14130,23 @@ def add_project_prioritisation():
             + risk_score
             + cost_score
         )
+
+        weighted_priority_score = (
+            (business_value_score * 3)
+            + (strategic_alignment_score * 3)
+            + (benefits_score * 2)
+            + (roi_score * 2)
+            + resource_score
+            + risk_score
+            + cost_score
+        )
+
+        if weighted_priority_score >= 60:
+            investment_category = "Strategic Investment"
+        elif weighted_priority_score >= 35:
+            investment_category = "Recommended Investment"
+        else:
+            investment_category = "Low Priority Investment"
 
         cursor.execute("""
             INSERT INTO project_prioritisation
@@ -14021,18 +14157,30 @@ def add_project_prioritisation():
                 strategic_alignment_score,
                 risk_score,
                 cost_score,
+                roi_score,
+                benefits_score,
+                resource_score,
+                strategic_objective,
                 priority_score,
+                weighted_priority_score,
+                investment_category,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["project_id"],
+            request.form.get("project_id"),
             business_value_score,
             strategic_alignment_score,
             risk_score,
             cost_score,
+            roi_score,
+            benefits_score,
+            resource_score,
+            request.form.get("strategic_objective"),
             priority_score,
+            weighted_priority_score,
+            investment_category,
             str(date.today())
         ))
 
@@ -14047,6 +14195,156 @@ def add_project_prioritisation():
         "add_project_prioritisation.html",
         projects=projects
     )
+
+@app.route("/edit-project-prioritisation/<int:priority_id>", methods=["GET", "POST"])
+def edit_project_prioritisation(priority_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Project Prioritisation", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM project_prioritisation
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        priority_id,
+        session["user_id"]
+    ))
+
+    priority = cursor.fetchone()
+
+    if not priority:
+        conn.close()
+        return redirect("/project-prioritisation")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        business_value_score = int(request.form.get("business_value_score") or 0)
+        strategic_alignment_score = int(request.form.get("strategic_alignment_score") or 0)
+        risk_score = int(request.form.get("risk_score") or 0)
+        cost_score = int(request.form.get("cost_score") or 0)
+        roi_score = int(request.form.get("roi_score") or 0)
+        benefits_score = int(request.form.get("benefits_score") or 0)
+        resource_score = int(request.form.get("resource_score") or 0)
+
+        priority_score = (
+            business_value_score
+            + strategic_alignment_score
+            + risk_score
+            + cost_score
+        )
+
+        weighted_priority_score = (
+            (business_value_score * 3)
+            + (strategic_alignment_score * 3)
+            + (benefits_score * 2)
+            + (roi_score * 2)
+            + resource_score
+            + risk_score
+            + cost_score
+        )
+
+        if weighted_priority_score >= 60:
+            investment_category = "Strategic Investment"
+        elif weighted_priority_score >= 35:
+            investment_category = "Recommended Investment"
+        else:
+            investment_category = "Low Priority Investment"
+
+        cursor.execute("""
+            UPDATE project_prioritisation
+            SET
+                project_id = %s,
+                business_value_score = %s,
+                strategic_alignment_score = %s,
+                risk_score = %s,
+                cost_score = %s,
+                roi_score = %s,
+                benefits_score = %s,
+                resource_score = %s,
+                strategic_objective = %s,
+                priority_score = %s,
+                weighted_priority_score = %s,
+                investment_category = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            business_value_score,
+            strategic_alignment_score,
+            risk_score,
+            cost_score,
+            roi_score,
+            benefits_score,
+            resource_score,
+            request.form.get("strategic_objective"),
+            priority_score,
+            weighted_priority_score,
+            investment_category,
+            priority_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/project-prioritisation")
+
+    conn.close()
+
+    return render_template(
+        "edit_project_prioritisation.html",
+        priority=priority,
+        projects=projects
+    )
+
+@app.route("/delete-project-prioritisation/<int:priority_id>")
+def delete_project_prioritisation(priority_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Project Prioritisation", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM project_prioritisation
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        priority_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/project-prioritisation")
 
 
 @app.route("/programmes")
