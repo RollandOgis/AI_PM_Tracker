@@ -4,6 +4,25 @@
     <meta charset="UTF-8">
     <title>Portfolio Kanban</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .kanban-card {
+            cursor: grab;
+        }
+
+        .kanban-card:active {
+            cursor: grabbing;
+        }
+
+        .kanban-column.drag-over {
+            outline: 3px dashed #2563eb;
+            outline-offset: 6px;
+        }
+
+        .filter-card {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 
 <body>
@@ -18,9 +37,59 @@
             <div>
                 <h1>Portfolio Kanban</h1>
                 <p class="dashboard-subtitle">
-                    View project flow across portfolio delivery stages, risk status and programme grouping.
+                    Drag projects across portfolio delivery stages and filter by portfolio or programme.
                 </p>
             </div>
+        </div>
+
+        <div class="smart-card filter-card">
+
+            <form method="GET">
+
+                <label>Portfolio Filter</label>
+                <select name="portfolio">
+                    <option value="">All Portfolios</option>
+
+                    {% for item in portfolios %}
+                        <option
+                            value="{{ item['portfolio'] }}"
+                            {% if selected_portfolio == item['portfolio'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ item['portfolio'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label>Programme Filter</label>
+                <select name="programme">
+                    <option value="">All Programmes</option>
+
+                    {% for item in programmes %}
+                        <option
+                            value="{{ item['programme'] }}"
+                            {% if selected_programme == item['programme'] %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ item['programme'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Apply Filters
+                </button>
+
+                <a href="/portfolio-kanban" class="btn-secondary">
+                    Clear Filters
+                </a>
+
+            </form>
+
         </div>
 
         <div class="stats-grid">
@@ -69,6 +138,10 @@
                 {% for alert in workflow_alerts %}
                     <p>{{ alert }}</p>
                 {% endfor %}
+
+                <p>
+                    Drag a project card into another column to update its portfolio delivery stage.
+                </p>
             </div>
         </div>
 
@@ -76,13 +149,25 @@
 
             {% for status, projects in grouped_projects.items() %}
 
-            <div class="kanban-column">
+            <div
+                class="kanban-column"
+                data-status="{{ status }}"
+                ondragover="allowDrop(event)"
+                ondragenter="handleDragEnter(event)"
+                ondragleave="handleDragLeave(event)"
+                ondrop="dropProject(event)"
+            >
 
                 <h2>{{ status }}</h2>
 
                 {% for project in projects %}
 
-                <div class="kanban-card">
+                <div
+                    class="kanban-card"
+                    draggable="true"
+                    data-project-id="{{ project.id }}"
+                    ondragstart="dragProject(event)"
+                >
 
                     <h3>{{ project.name }}</h3>
 
@@ -161,6 +246,67 @@
     </main>
 
 </div>
+
+<script>
+    let draggedProjectId = null;
+
+    function dragProject(event) {
+        draggedProjectId = event.currentTarget.dataset.projectId;
+        event.dataTransfer.setData("text/plain", draggedProjectId);
+    }
+
+    function allowDrop(event) {
+        event.preventDefault();
+    }
+
+    function handleDragEnter(event) {
+        event.preventDefault();
+
+        const column = event.currentTarget;
+        column.classList.add("drag-over");
+    }
+
+    function handleDragLeave(event) {
+        const column = event.currentTarget;
+        column.classList.remove("drag-over");
+    }
+
+    function dropProject(event) {
+        event.preventDefault();
+
+        const column = event.currentTarget;
+        column.classList.remove("drag-over");
+
+        const newStatus = column.dataset.status;
+        const projectId = draggedProjectId || event.dataTransfer.getData("text/plain");
+
+        if (!projectId || !newStatus) {
+            return;
+        }
+
+        fetch("/update-portfolio-kanban-stage", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                new_status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || "Could not update project stage.");
+            }
+        })
+        .catch(() => {
+            alert("Could not update project stage.");
+        });
+    }
+</script>
 
 </body>
 </html>

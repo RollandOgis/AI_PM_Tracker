@@ -20708,25 +20708,65 @@ def portfolio_kanban():
     if not has_permission("Projects", "view"):
         return "Access denied"
 
+    selected_portfolio = request.args.get("portfolio", "")
+    selected_programme = request.args.get("programme", "")
+
     conn = get_db_connection()
 
     cursor = conn.cursor(
         cursor_factory=psycopg2.extras.RealDictCursor
     )
 
-    cursor.execute("""
+    query = """
         SELECT DISTINCT ON (projects.id)
             projects.*
         FROM projects
         WHERE projects.user_id = %s
         AND COALESCE(projects.is_archived, FALSE) = FALSE
         AND COALESCE(projects.portfolio_archived, FALSE) = FALSE
-        ORDER BY projects.id DESC
+    """
+
+    params = [session["user_id"]]
+
+    if selected_portfolio:
+        query += " AND projects.portfolio = %s"
+        params.append(selected_portfolio)
+
+    if selected_programme:
+        query += " AND projects.programme = %s"
+        params.append(selected_programme)
+
+    query += " ORDER BY projects.id DESC"
+
+    cursor.execute(query, tuple(params))
+
+    projects = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT DISTINCT portfolio
+        FROM projects
+        WHERE user_id = %s
+        AND portfolio IS NOT NULL
+        AND portfolio != ''
+        ORDER BY portfolio
     """, (
         session["user_id"],
     ))
 
-    projects = cursor.fetchall()
+    portfolios = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT DISTINCT programme
+        FROM projects
+        WHERE user_id = %s
+        AND programme IS NOT NULL
+        AND programme != ''
+        ORDER BY programme
+    """, (
+        session["user_id"],
+    ))
+
+    programmes = cursor.fetchall()
 
     grouped_projects = {
         "Planning": [],
@@ -20797,9 +20837,7 @@ def portfolio_kanban():
 
         project_status = project["status"] or "Planning"
 
-        if open_risks >= 3 or open_issues >= 3:
-            portfolio_stage = "At Risk"
-        elif project_status in grouped_projects:
+        if project_status in grouped_projects:
             portfolio_stage = project_status
         else:
             portfolio_stage = "Planning"
@@ -20860,8 +20898,60 @@ def portfolio_kanban():
         on_hold_count=on_hold_count,
         completed_count=completed_count,
         cancelled_count=cancelled_count,
-        workflow_alerts=workflow_alerts
+        workflow_alerts=workflow_alerts,
+        portfolios=portfolios,
+        programmes=programmes,
+        selected_portfolio=selected_portfolio,
+        selected_programme=selected_programme
     )
+
+
+@app.route("/update-portfolio-kanban-stage", methods=["POST"])
+def update_portfolio_kanban_stage():
+
+    if "user_id" not in session:
+        return jsonify({"success": False, "message": "Not logged in"}), 401
+
+    if not has_permission("Projects", "edit"):
+        return jsonify({"success": False, "message": "Access denied"}), 403
+
+    data = request.get_json()
+
+    project_id = data.get("project_id")
+    new_status = data.get("new_status")
+
+    allowed_statuses = [
+        "Planning",
+        "In Progress",
+        "At Risk",
+        "On Hold",
+        "Completed",
+        "Cancelled"
+    ]
+
+    if not project_id or new_status not in allowed_statuses:
+        return jsonify({"success": False, "message": "Invalid request"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE projects
+        SET status = %s
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        new_status,
+        project_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
+
+
 
 @app.route("/seed-linkedin-demo")
 def seed_linkedin_demo():
