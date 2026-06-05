@@ -14,42 +14,62 @@
 
     <main class="main-content">
 
-        <h1>Resource Allocation</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Resource Allocation</h1>
+                <p class="dashboard-subtitle">
+                    View workload distribution, planned allocation, actual allocation and project split by resource.
+                </p>
+            </div>
+        </div>
 
-        <p class="page-subtitle">
-            View workload distribution across team members.
-        </p>
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Resources</h3>
+                <p>{{ total_resources }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Available</h3>
+                <p>{{ available_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Allocated</h3>
+                <p>{{ allocated_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Overallocated</h3>
+                <p>{{ overallocated_count }}</p>
+            </div>
+
+        </div>
 
         {% for item in allocation_data %}
 
-        <div class="card" style="margin-bottom: 35px;">
+        <div class="project-card" style="margin-bottom: 35px;">
 
-            <div style="margin-bottom: 20px;">
+            <div class="project-top">
 
-                <h2 style="margin-bottom: 8px;">
-                    {{ item.member.name }}
-                </h2>
+                <div>
 
-                <span class="badge badge-blue">
-                    {{ item.member.role }}
-                </span>
+                    <h2>{{ item.member.name }}</h2>
 
-                {% if item.allocation_status == "Available" %}
-                    <span class="badge badge-green">
-                        Available
+                    <span class="badge badge-blue">
+                        {{ item.member.role }}
                     </span>
 
-                {% elif item.allocation_status == "Allocated" %}
-                    <span class="badge badge-yellow">
-                        Allocated
-                    </span>
+                    {% if item.allocation_status == "Available" %}
+                        <span class="badge badge-green">Available</span>
+                    {% elif item.allocation_status == "Allocated" %}
+                        <span class="badge badge-yellow">Allocated</span>
+                    {% else %}
+                        <span class="badge badge-red">Overallocated</span>
+                    {% endif %}
 
-                {% else %}
-                    <span class="badge badge-red">
-                        Overallocated
-                    </span>
-
-                {% endif %}
+                </div>
 
             </div>
 
@@ -68,6 +88,76 @@
                 <div class="stat-card blue-card">
                     <h3>Utilisation</h3>
                     <p>{{ item.utilisation }}%</p>
+                </div>
+
+                <div class="stat-card amber-card">
+                    <h3>Planned Allocation</h3>
+                    <p>{{ item.planned_allocation }}%</p>
+                </div>
+
+                <div class="stat-card blue-card">
+                    <h3>Actual Allocation</h3>
+                    <p>{{ item.actual_allocation }}%</p>
+                </div>
+
+                <div class="stat-card red-card">
+                    <h3>Allocation Gap</h3>
+                    <p>{{ item.allocation_gap }}%</p>
+                </div>
+
+            </div>
+
+            <div class="workload-summary-grid">
+
+                <div class="project-card">
+
+                    <h3>Project Allocation Split</h3>
+
+                    <div class="smart-insight">
+
+                        {% if item.project_split %}
+
+                            {% for project_name, count in item.project_split.items() %}
+
+                                <p>
+                                    <strong>{{ project_name }}:</strong>
+                                    {{ count }} active task(s)
+                                </p>
+
+                            {% endfor %}
+
+                        {% else %}
+
+                            <p>No active project allocation.</p>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                <div class="project-card">
+
+                    <h3>Allocation Insight</h3>
+
+                    <div class="smart-insight">
+
+                        {% if item.allocation_status == "Overallocated" %}
+                            <p>
+                                This resource is overallocated. Review active tasks and redistribute work.
+                            </p>
+                        {% elif item.allocation_status == "Allocated" %}
+                            <p>
+                                This resource is actively allocated but still within acceptable workload range.
+                            </p>
+                        {% else %}
+                            <p>
+                                This resource has available capacity for additional work.
+                            </p>
+                        {% endif %}
+
+                    </div>
+
                 </div>
 
             </div>
@@ -107,6 +197,14 @@
                     </tbody>
 
                 </table>
+
+            </div>
+
+            <div class="project-actions">
+
+                <a href="/resource-allocation-history/{{ item.member.id }}">
+                    Allocation History
+                </a>
 
             </div>
 

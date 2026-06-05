@@ -3476,6 +3476,58 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS billing_notes TEXT
                    """)
 
+    # Resource Allocation v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS allocation_percentage INTEGER DEFAULT 100
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS planned_allocation INTEGER DEFAULT 100
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS actual_allocation INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS resource_capacity INTEGER DEFAULT 100
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS resource_allocation_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       team_member_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       active_tasks
+                       INTEGER,
+                       completed_tasks
+                       INTEGER,
+                       utilisation
+                       INTEGER,
+                       allocation_status
+                       TEXT,
+                       planned_allocation
+                       INTEGER,
+                       actual_allocation
+                       INTEGER,
+                       notes
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
 
 
@@ -17223,10 +17275,11 @@ def resource_allocation():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (team_members.id)
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY team_members.id DESC
     """, (
         session["user_id"],
     ))
@@ -17235,15 +17288,22 @@ def resource_allocation():
 
     allocation_data = []
 
+    total_resources = len(team_members)
+    available_count = 0
+    allocated_count = 0
+    overallocated_count = 0
+
     for member in team_members:
 
         cursor.execute("""
-            SELECT
+            SELECT DISTINCT ON (tasks.id)
+                tasks.id,
                 tasks.title,
                 tasks.status,
                 tasks.priority,
                 tasks.due_date,
-                projects.name AS project_name
+                projects.name AS project_name,
+                projects.id AS project_id
             FROM tasks
             JOIN projects
             ON tasks.project_id = projects.id
@@ -17254,7 +17314,7 @@ def resource_allocation():
                 tasks.assigned_to = %s
                 OR task_team_members.team_member_id = %s
             )
-            ORDER BY tasks.due_date ASC
+            ORDER BY tasks.id, tasks.due_date ASC
         """, (
             session["user_id"],
             member["name"],
@@ -17273,17 +17333,84 @@ def resource_allocation():
             if task["status"] == "Completed"
         ]
 
-        utilisation = min(
+        project_split = {}
+
+        for task in active_tasks:
+            project_name = task["project_name"] or "No Project"
+
+            if project_name not in project_split:
+                project_split[project_name] = 0
+
+            project_split[project_name] += 1
+
+        resource_capacity = int(member.get("resource_capacity") or 100)
+        planned_allocation = int(member.get("planned_allocation") or 100)
+
+        actual_allocation = min(
             len(active_tasks) * 10,
-            100
+            150
         )
 
-        if utilisation >= 80:
+        if resource_capacity > 0:
+            utilisation = round(
+                (actual_allocation / resource_capacity) * 100
+            )
+        else:
+            utilisation = 0
+
+        if utilisation >= 100:
             allocation_status = "Overallocated"
-        elif utilisation >= 50:
+            overallocated_count += 1
+        elif utilisation >= 60:
             allocation_status = "Allocated"
+            allocated_count += 1
         else:
             allocation_status = "Available"
+            available_count += 1
+
+        allocation_gap = planned_allocation - actual_allocation
+
+        cursor.execute("""
+            UPDATE team_members
+            SET
+                actual_allocation = %s,
+                allocation_percentage = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            actual_allocation,
+            utilisation,
+            member["id"],
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO resource_allocation_history
+            (
+                team_member_id,
+                user_id,
+                active_tasks,
+                completed_tasks,
+                utilisation,
+                allocation_status,
+                planned_allocation,
+                actual_allocation,
+                notes,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            member["id"],
+            session["user_id"],
+            len(active_tasks),
+            len(completed_tasks),
+            utilisation,
+            allocation_status,
+            planned_allocation,
+            actual_allocation,
+            "Resource allocation snapshot",
+            str(date.today())
+        ))
 
         allocation_data.append({
             "member": member,
@@ -17291,14 +17418,60 @@ def resource_allocation():
             "active_tasks": len(active_tasks),
             "completed_tasks": len(completed_tasks),
             "utilisation": utilisation,
-            "allocation_status": allocation_status
+            "allocation_status": allocation_status,
+            "planned_allocation": planned_allocation,
+            "actual_allocation": actual_allocation,
+            "allocation_gap": allocation_gap,
+            "resource_capacity": resource_capacity,
+            "project_split": project_split
         })
 
+    conn.commit()
     conn.close()
 
     return render_template(
         "resource_allocation.html",
-        allocation_data=allocation_data
+        allocation_data=allocation_data,
+        total_resources=total_resources,
+        available_count=available_count,
+        allocated_count=allocated_count,
+        overallocated_count=overallocated_count
+    )
+
+
+@app.route("/resource-allocation-history/<int:team_member_id>")
+def resource_allocation_history(team_member_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Team", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM resource_allocation_history
+        WHERE team_member_id = %s
+        AND user_id = %s
+        ORDER BY id DESC
+    """, (
+        team_member_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "resource_allocation_history.html",
+        history=history
     )
 
 
