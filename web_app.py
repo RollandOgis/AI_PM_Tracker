@@ -6133,11 +6133,15 @@ def executive_charts():
     total_changes = cursor.fetchone()["total_changes"]
 
     cursor.execute("""
-        SELECT COALESCE(SUM(budget), 0) AS total_budget,
-               COALESCE(SUM(actual_cost), 0) AS total_actual
-        FROM project_financials
-        WHERE user_id = %s
-    """, (session["user_id"],))
+                   SELECT COALESCE(SUM(budget_amount), 0) AS total_budget,
+                          COALESCE(SUM(actual_cost), 0)   AS total_actual,
+                          COALESCE(SUM(forecast_cost), 0) AS total_forecast
+                   FROM budgets
+                   WHERE user_id = %s
+                   """, (
+                       session["user_id"],
+                   ))
+
     financials = cursor.fetchone()
 
     conn.close()
