@@ -20,7 +20,7 @@
             <div>
                 <h1>Team Utilisation</h1>
                 <p class="dashboard-subtitle">
-                    Monitor workload, capacity and resource balance across the delivery team.
+                    Monitor utilisation trends, capacity, burnout risk and workload redistribution recommendations.
                 </p>
             </div>
         </div>
@@ -29,7 +29,7 @@
 
             <div class="stat-card blue-card">
                 <h3>Total Team Members</h3>
-                <p>{{ utilisation_data|length }}</p>
+                <p>{{ total_members }}</p>
             </div>
 
             <div class="stat-card red-card">
@@ -47,6 +47,11 @@
                 <p>{{ available_count }}</p>
             </div>
 
+            <div class="stat-card red-card">
+                <h3>Burnout Risk</h3>
+                <p>{{ burnout_risk_count }}</p>
+            </div>
+
         </div>
 
         <div class="workload-summary-grid">
@@ -62,15 +67,23 @@
                     </p>
 
                     <p>
-                        Available Capacity:
+                        Average Available Capacity:
                         <strong>{{ average_capacity }}%</strong>
                     </p>
 
-                    <p>
-                        Most Loaded Resource:
-                        <strong>{{ most_loaded["name"] }}</strong>
-                        ({{ most_loaded["utilisation"] }}%)
-                    </p>
+                    {% if overloaded_count > 0 %}
+                        <p>
+                            Recommendation: Redistribute workload from overloaded resources.
+                        </p>
+                    {% elif available_count > balanced_count %}
+                        <p>
+                            Recommendation: Team currently has spare delivery capacity.
+                        </p>
+                    {% else %}
+                        <p>
+                            Recommendation: Resource allocation is healthy.
+                        </p>
+                    {% endif %}
                 </div>
 
                 <div class="budget-section">
@@ -90,33 +103,12 @@
                         <strong>{{ available_count }}</strong>
                     </div>
 
+                    <div class="budget-row">
+                        <span>Burnout Risk Resources</span>
+                        <strong>{{ burnout_risk_count }}</strong>
+                    </div>
+
                 </div>
-
-                <div class="smart-insight">
-                    {% if overloaded_count > 0 %}
-                        Recommendation: Redistribute workload from overloaded resources.
-                    {% elif available_count > balanced_count %}
-                        Recommendation: Team currently has spare delivery capacity.
-                    {% else %}
-                        Recommendation: Resource allocation is healthy.
-                    {% endif %}
-                </div>
-
-                <div class="smart-insight">
-
-    <strong>Capacity Breakdown</strong>
-
-    <br><br>
-
-    Utilised Capacity:
-    <strong>{{ average_utilisation }}%</strong>
-
-    <br>
-
-    Remaining Capacity:
-    <strong>{{ average_capacity }}%</strong>
-
-</div>
 
             </div>
 
@@ -134,80 +126,129 @@
 
         </div>
 
+        {% if utilisation_data %}
+
         <div class="projects-grid">
 
             {% for item in utilisation_data %}
 
-                <div class="project-card">
+            <div class="project-card">
 
-                    <div class="project-top">
-                        <div>
-                            <h3>{{ item["name"] }}</h3>
-
-                            {% if item["utilisation"] >= 80 %}
-                                <span class="badge badge-red">Overloaded</span>
-                            {% elif item["utilisation"] >= 50 %}
-                                <span class="badge badge-yellow">Balanced</span>
-                            {% else %}
-                                <span class="badge badge-green">Capacity Available</span>
-                            {% endif %}
-                        </div>
+                <div class="project-top">
+                    <div>
+                        <h3>{{ item["name"] }}</h3>
+                        <p>{{ item["role"] or "No role assigned" }}</p>
                     </div>
 
-                    <p>{{ item["role"] }}</p>
-
-                    <div class="budget-section">
-
-                        <div class="budget-row">
-                            <span>Total Tasks</span>
-                            <strong>{{ item["total_tasks"] }}</strong>
-                        </div>
-
-                        <div class="budget-row">
-                            <span>Utilisation</span>
-
-                            {% if item["utilisation"] >= 80 %}
-                                <strong class="health-warning">{{ item["utilisation"] }}%</strong>
-                            {% elif item["utilisation"] >= 50 %}
-                                <strong class="health-neutral">{{ item["utilisation"] }}%</strong>
-                            {% else %}
-                                <strong class="health-good">{{ item["utilisation"] }}%</strong>
-                            {% endif %}
-                        </div>
-
-                        <div class="budget-row">
-                            <span>Available Capacity</span>
-                            <strong>{{ 100 - item["utilisation"] }}%</strong>
-                        </div>
-
-                    </div>
-
-                    <div class="progress-wrapper">
-                        <div
-                            class="progress-fill"
-                            data-width="{{ item['utilisation'] }}"
-                        ></div>
-                    </div>
-
-                    {% if item["utilisation"] >= 80 %}
-                        <div class="smart-insight">
-                            Resource is overloaded. Consider redistributing tasks.
-                        </div>
-                    {% elif item["utilisation"] >= 50 %}
-                        <div class="smart-insight">
-                            Resource is operating within a healthy workload range.
-                        </div>
+                    {% if item["status"] == "Overloaded" %}
+                        <span class="badge badge-red">Overloaded</span>
+                    {% elif item["status"] == "Balanced" %}
+                        <span class="badge badge-yellow">Balanced</span>
                     {% else %}
-                        <div class="smart-insight">
-                            Resource has spare capacity and can support additional work.
-                        </div>
+                        <span class="badge badge-green">Capacity Available</span>
                     {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Department</span>
+                        <strong>{{ item["department"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Active Tasks</span>
+                        <strong>{{ item["active_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completed Tasks</span>
+                        <strong>{{ item["completed_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Utilisation</span>
+
+                        {% if item["utilisation"] >= 90 %}
+                            <strong class="health-warning">{{ item["utilisation"] }}%</strong>
+                        {% elif item["utilisation"] >= 60 %}
+                            <strong class="health-neutral">{{ item["utilisation"] }}%</strong>
+                        {% else %}
+                            <strong class="health-good">{{ item["utilisation"] }}%</strong>
+                        {% endif %}
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Available Capacity</span>
+                        <strong>
+                            {% if 100 - item["utilisation"] > 0 %}
+                                {{ 100 - item["utilisation"] }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Burnout Risk</span>
+                        <strong>{{ item["burnout_risk"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Utilisation Trend</span>
+                        <strong>{{ item["utilisation_trend"] }}</strong>
+                    </div>
 
                 </div>
+
+                <div class="progress-wrapper">
+                    <div
+                        class="progress-fill"
+                        data-width="{{ item['utilisation'] }}"
+                    ></div>
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Redistribution Recommendation:</strong>
+                    <br><br>
+                    {{ item["redistribution_recommendation"] }}
+                </div>
+
+                {% if item["status"] == "Overloaded" %}
+                    <div class="alert-box alert-danger">
+                        Resource is overloaded. Immediate workload review recommended.
+                    </div>
+                {% elif item["status"] == "Balanced" %}
+                    <div class="smart-insight">
+                        Resource is operating within a manageable workload range.
+                    </div>
+                {% else %}
+                    <div class="smart-insight">
+                        Resource has spare capacity and can support additional work.
+                    </div>
+                {% endif %}
+
+            </div>
 
             {% endfor %}
 
         </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Team Utilisation Data</h3>
+
+            <p>Add team members and tasks to generate utilisation reporting.</p>
+
+            <a href="/add-team-member" class="btn-primary">
+                Add Team Member
+            </a>
+
+        </div>
+
+        {% endif %}
 
     </div>
 
@@ -215,7 +256,17 @@
 
 <script>
 document.querySelectorAll(".progress-fill").forEach(function(bar) {
-    bar.style.width = bar.dataset.width + "%";
+    let width = parseInt(bar.dataset.width);
+
+    if (width > 100) {
+        width = 100;
+    }
+
+    if (width < 0) {
+        width = 0;
+    }
+
+    bar.style.width = width + "%";
 });
 </script>
 

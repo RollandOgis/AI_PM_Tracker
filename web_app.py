@@ -11612,10 +11612,11 @@ def team_utilisation():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(TRIM(name)), LOWER(TRIM(email)))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY LOWER(TRIM(name)), LOWER(TRIM(email)), id DESC
     """, (
         session["user_id"],
     ))
@@ -11624,48 +11625,12 @@ def team_utilisation():
 
     utilisation_data = []
 
+    overloaded_count = 0
+    balanced_count = 0
+    available_count = 0
+    burnout_risk_count = 0
+
     for member in members:
-
-        cursor.execute("""
-            SELECT COUNT(DISTINCT tasks.id) AS total_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            LEFT JOIN task_team_members
-            ON task_team_members.task_id = tasks.id
-            WHERE projects.user_id = %s
-            AND (
-                tasks.assigned_to = %s
-                OR task_team_members.team_member_id = %s
-            )
-        """, (
-            session["user_id"],
-            member["name"],
-            member["id"]
-        ))
-
-        total_tasks = cursor.fetchone()["total_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            LEFT JOIN task_team_members
-            ON task_team_members.task_id = tasks.id
-            WHERE projects.user_id = %s
-            AND tasks.status = 'Completed'
-            AND (
-                tasks.assigned_to = %s
-                OR task_team_members.team_member_id = %s
-            )
-        """, (
-            session["user_id"],
-            member["name"],
-            member["id"]
-        ))
-
-        completed_tasks = cursor.fetchone()["completed_tasks"]
 
         cursor.execute("""
             SELECT COUNT(DISTINCT tasks.id) AS active_tasks
@@ -11689,14 +11654,14 @@ def team_utilisation():
         active_tasks = cursor.fetchone()["active_tasks"]
 
         cursor.execute("""
-            SELECT COUNT(DISTINCT tasks.id) AS blocked_tasks
+            SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
             FROM tasks
             JOIN projects
             ON tasks.project_id = projects.id
             LEFT JOIN task_team_members
             ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
-            AND tasks.status = 'Blocked'
+            AND tasks.status = 'Completed'
             AND (
                 tasks.assigned_to = %s
                 OR task_team_members.team_member_id = %s
@@ -11707,110 +11672,127 @@ def team_utilisation():
             member["id"]
         ))
 
-        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+        completed_tasks = cursor.fetchone()["completed_tasks"]
 
-        if total_tasks > 0:
-            utilisation = round((active_tasks / total_tasks) * 100)
+        resource_capacity = int(
+            member.get("resource_capacity") or 100
+        )
+
+        workload_points = active_tasks * 10
+
+        if resource_capacity > 0:
+            utilisation = round(
+                (workload_points / resource_capacity) * 100
+            )
         else:
             utilisation = 0
 
+        utilisation = min(utilisation, 150)
+
+        if utilisation >= 90:
+
+            status = "Overloaded"
+            overloaded_count += 1
+            burnout_risk = "High"
+            burnout_risk_count += 1
+
+        elif utilisation >= 60:
+
+            status = "Balanced"
+            balanced_count += 1
+            burnout_risk = "Medium"
+
+        else:
+
+            status = "Available"
+            available_count += 1
+            burnout_risk = "Low"
+
+        utilisation_trend = "Stable"
+
+        if utilisation >= 90:
+            utilisation_trend = "Increasing"
+
+        elif utilisation <= 30:
+            utilisation_trend = "Underutilised"
+
+        redistribution_recommendation = "No action required."
+
+        if status == "Overloaded":
+            redistribution_recommendation = (
+                "Redistribute workload immediately."
+            )
+
+        elif status == "Available":
+            redistribution_recommendation = (
+                "Candidate for additional work allocation."
+            )
+
         utilisation_data.append({
+
             "name": member["name"],
-            "role": member["role"],
-            "total_tasks": total_tasks,
-            "completed_tasks": completed_tasks,
+            "role": member.get("role"),
+            "department": member.get("department"),
             "active_tasks": active_tasks,
-            "blocked_tasks": blocked_tasks,
-            "utilisation": utilisation
+            "completed_tasks": completed_tasks,
+            "utilisation": utilisation,
+            "status": status,
+            "burnout_risk": burnout_risk,
+            "utilisation_trend": utilisation_trend,
+            "redistribution_recommendation": redistribution_recommendation
+
         })
 
-    if utilisation_data:
+    total_members = len(utilisation_data)
+
+    if total_members > 0:
 
         average_utilisation = round(
             sum(item["utilisation"] for item in utilisation_data)
-            / len(utilisation_data)
-        )
-
-        most_loaded = max(
-            utilisation_data,
-            key=lambda item: item["utilisation"]
+            / total_members
         )
 
     else:
-
         average_utilisation = 0
 
-        most_loaded = {
-            "name": "N/A",
-            "utilisation": 0
-        }
-
-    overloaded_count = len([
-        item for item in utilisation_data
-        if item["utilisation"] >= 80
-    ])
-
-    balanced_count = len([
-        item for item in utilisation_data
-        if 40 <= item["utilisation"] < 80
-    ])
-
-    available_count = len([
-        item for item in utilisation_data
-        if item["utilisation"] < 40
-    ])
-
-    average_capacity = 100 - average_utilisation
+    average_capacity = max(
+        0,
+        100 - average_utilisation
+    )
 
     smart_insights = []
 
     if overloaded_count > 0:
         smart_insights.append(
-            f"Attention required: {overloaded_count} resource(s) are overloaded and may require workload redistribution."
-        )
-
-    if balanced_count > 0:
-        smart_insights.append(
-            "Team workload is currently well balanced."
+            f"{overloaded_count} resource(s) require workload reduction."
         )
 
     if available_count > 0:
         smart_insights.append(
-            f"{available_count} team member(s) have spare delivery capacity available."
+            f"{available_count} resource(s) can absorb additional work."
         )
 
-    smart_insights.append(
-        f"Average team utilisation is currently {average_utilisation}%."
-    )
-
-    if average_capacity > 50:
-
+    if burnout_risk_count > 0:
         smart_insights.append(
-            "The team currently has significant capacity available for additional project work."
+            f"{burnout_risk_count} resource(s) have elevated burnout risk."
         )
 
-    elif average_capacity > 25:
+    if average_utilisation < 50:
 
         smart_insights.append(
-            "The team has moderate spare capacity available for upcoming project demand."
+            "Overall team capacity remains healthy."
+        )
+
+    elif average_utilisation < 80:
+
+        smart_insights.append(
+            "Team utilisation is balanced."
         )
 
     else:
 
         smart_insights.append(
-            "The team is approaching full utilisation and resource planning should be reviewed."
-        )
-
-    if average_utilisation < 40:
-
-        smart_insights.append(
-            "Opportunity: Additional projects can be onboarded without increasing headcount."
-        )
-
-    elif average_utilisation >= 80:
-
-        smart_insights.append(
-            "Risk: Current utilisation levels may impact delivery performance and team wellbeing."
+            "Team utilisation is approaching critical levels."
         )
 
     conn.close()
@@ -11818,14 +11800,16 @@ def team_utilisation():
     return render_template(
         "team_utilisation.html",
         utilisation_data=utilisation_data,
+        total_members=total_members,
         average_utilisation=average_utilisation,
         average_capacity=average_capacity,
         overloaded_count=overloaded_count,
         balanced_count=balanced_count,
         available_count=available_count,
-        most_loaded=most_loaded,
+        burnout_risk_count=burnout_risk_count,
         smart_insights=smart_insights
     )
+
 
 @app.route("/stakeholders")
 def stakeholders():
