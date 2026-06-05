@@ -39,13 +39,13 @@
             <form method="POST">
 
                 <label>Project</label>
-
                 <select name="project_id" required>
+                    <option value="{{ budget['project_id'] }}">
+                        Current Project
+                    </option>
+
                     {% for project in projects %}
-                        <option
-                            value="{{ project['id'] }}"
-                            {% if project['id'] == budget['project_id'] %}selected{% endif %}
-                        >
+                        <option value="{{ project['id'] }}">
                             {{ project['name'] }}
                         </option>
                     {% endfor %}
@@ -63,6 +63,42 @@
                 <label>Forecast Cost (£)</label>
                 <input type="number" step="0.01" name="forecast_cost" value="{{ budget['forecast_cost'] }}" required>
 
+                <label>Baseline Forecast (£)</label>
+                <input type="number" step="0.01" name="baseline_forecast" value="{{ budget['baseline_forecast'] or 0 }}">
+
+                <label>Forecast Owner</label>
+                <input type="text" name="forecast_owner" value="{{ budget['forecast_owner'] or '' }}">
+
+                <label>Forecast Approver</label>
+                <input type="text" name="forecast_approver" value="{{ budget['forecast_approver'] or '' }}">
+
+                <label>Forecast Version</label>
+                <input type="text" name="forecast_version" value="{{ budget['forecast_version'] or '' }}">
+
+                <label>Forecast Confidence</label>
+                <select name="forecast_confidence">
+                    <option value="{{ budget['forecast_confidence'] or '' }}">
+                        {{ budget['forecast_confidence'] or 'Select' }}
+                    </option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+
+                <label>Forecast Approval Status</label>
+                <select name="forecast_approval_status">
+                    <option value="{{ budget['forecast_approval_status'] or 'Draft' }}">
+                        {{ budget['forecast_approval_status'] or 'Draft' }}
+                    </option>
+                    <option value="Draft">Draft</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+
+                <label>Forecast Assumptions</label>
+                <textarea name="forecast_assumptions" rows="4">{{ budget['forecast_assumptions'] or '' }}</textarea>
+
                 <label>Budget Owner</label>
                 <input type="text" name="budget_owner" value="{{ budget['budget_owner'] or '' }}">
 
@@ -77,20 +113,25 @@
 
                 <label>Status</label>
                 <select name="status">
-                    <option value="Draft" {% if budget['status'] == 'Draft' %}selected{% endif %}>Draft</option>
-                    <option value="Pending" {% if budget['status'] == 'Pending' %}selected{% endif %}>Pending</option>
-                    <option value="Approved" {% if budget['status'] == 'Approved' %}selected{% endif %}>Approved</option>
-                    <option value="Rejected" {% if budget['status'] == 'Rejected' %}selected{% endif %}>Rejected</option>
-                    <option value="In Review" {% if budget['status'] == 'In Review' %}selected{% endif %}>In Review</option>
+                    <option value="{{ budget['status'] or 'Draft' }}">
+                        {{ budget['status'] or 'Draft' }}
+                    </option>
+                    <option value="Draft">Draft</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="In Review">In Review</option>
                 </select>
 
                 <label>Budget Category</label>
                 <select name="budget_category">
-                    <option value="">Select</option>
-                    <option value="Operational" {% if budget['budget_category'] == 'Operational' %}selected{% endif %}>Operational</option>
-                    <option value="Project" {% if budget['budget_category'] == 'Project' %}selected{% endif %}>Project</option>
-                    <option value="Programme" {% if budget['budget_category'] == 'Programme' %}selected{% endif %}>Programme</option>
-                    <option value="Portfolio" {% if budget['budget_category'] == 'Portfolio' %}selected{% endif %}>Portfolio</option>
+                    <option value="{{ budget['budget_category'] or '' }}">
+                        {{ budget['budget_category'] or 'Select' }}
+                    </option>
+                    <option value="Operational">Operational</option>
+                    <option value="Project">Project</option>
+                    <option value="Programme">Programme</option>
+                    <option value="Portfolio">Portfolio</option>
                 </select>
 
                 <label>Funding Source</label>
@@ -98,9 +139,11 @@
 
                 <label>CAPEX / OPEX</label>
                 <select name="capex_opex">
-                    <option value="">Select</option>
-                    <option value="CAPEX" {% if budget['capex_opex'] == 'CAPEX' %}selected{% endif %}>CAPEX</option>
-                    <option value="OPEX" {% if budget['capex_opex'] == 'OPEX' %}selected{% endif %}>OPEX</option>
+                    <option value="{{ budget['capex_opex'] or '' }}">
+                        {{ budget['capex_opex'] or 'Select' }}
+                    </option>
+                    <option value="CAPEX">CAPEX</option>
+                    <option value="OPEX">OPEX</option>
                 </select>
 
                 <label>Cost Centre</label>

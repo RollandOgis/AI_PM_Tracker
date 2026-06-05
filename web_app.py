@@ -3272,6 +3272,95 @@ def init_db():
                    )
                    """)
 
+    # Forecast vs Actual v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS forecast_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS forecast_approver TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS baseline_forecast NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS forecast_assumptions TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS forecast_version TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS forecast_confidence TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE budgets
+                       ADD COLUMN IF NOT EXISTS forecast_approval_status TEXT DEFAULT 'Draft'
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS forecast_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       budget_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       old_forecast_cost
+                       NUMERIC,
+                       new_forecast_cost
+                       NUMERIC,
+                       old_actual_cost
+                       NUMERIC,
+                       new_actual_cost
+                       NUMERIC,
+                       forecast_version
+                       TEXT,
+                       change_note
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+    # Profitability Dashboard v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS revenue NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS profit_forecast NUMERIC DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS cost_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS benefits_realisation_value NUMERIC DEFAULT 0
+                   """)
+
 
 
 
@@ -13006,7 +13095,6 @@ def budgets():
         financial_recommendation=financial_recommendation
     )
 
-
 @app.route("/add-budget", methods=["GET", "POST"])
 def add_budget():
 
@@ -13028,6 +13116,7 @@ def add_budget():
         actual_cost = float(request.form.get("actual_cost") or 0)
         forecast_cost = float(request.form.get("forecast_cost") or 0)
         budget_baseline = float(request.form.get("budget_baseline") or 0)
+        baseline_forecast = float(request.form.get("baseline_forecast") or 0)
 
         cursor.execute("""
             INSERT INTO budgets
@@ -13050,9 +13139,21 @@ def add_budget():
                 cost_centre,
                 programme_link,
                 portfolio_link,
+                baseline_forecast,
+                forecast_owner,
+                forecast_approver,
+                forecast_assumptions,
+                forecast_version,
+                forecast_confidence,
+                forecast_approval_status,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES
+            (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                %s,%s,%s,%s,%s,%s
+            )
             RETURNING id
         """, (
             session["user_id"],
@@ -13073,6 +13174,13 @@ def add_budget():
             request.form.get("cost_centre"),
             request.form.get("programme_link"),
             request.form.get("portfolio_link"),
+            baseline_forecast,
+            request.form.get("forecast_owner"),
+            request.form.get("forecast_approver"),
+            request.form.get("forecast_assumptions"),
+            request.form.get("forecast_version"),
+            request.form.get("forecast_confidence"),
+            request.form.get("forecast_approval_status"),
             str(date.today())
         ))
 
@@ -13105,6 +13213,34 @@ def add_budget():
             0,
             forecast_cost,
             "Initial budget record created",
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO forecast_history
+            (
+                budget_id,
+                user_id,
+                action,
+                old_forecast_cost,
+                new_forecast_cost,
+                old_actual_cost,
+                new_actual_cost,
+                forecast_version,
+                change_note,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            budget_id,
+            session["user_id"],
+            "Forecast created",
+            0,
+            forecast_cost,
+            0,
+            actual_cost,
+            request.form.get("forecast_version"),
+            "Initial forecast record created",
             str(date.today())
         ))
 
@@ -13162,27 +13298,23 @@ def edit_budget(budget_id):
         conn.close()
         return redirect("/budgets")
 
-    cursor.execute("""
-        SELECT *
-        FROM projects
-        WHERE user_id = %s
-        ORDER BY name
-    """, (
-        session["user_id"],
-    ))
-
-    projects = cursor.fetchall()
-
     if request.method == "POST":
 
         old_budget_amount = float(budget["budget_amount"] or 0)
         old_actual_cost = float(budget["actual_cost"] or 0)
         old_forecast_cost = float(budget["forecast_cost"] or 0)
 
-        new_budget_amount = float(request.form.get("budget_amount") or 0)
-        new_actual_cost = float(request.form.get("actual_cost") or 0)
-        new_forecast_cost = float(request.form.get("forecast_cost") or 0)
-        new_budget_baseline = float(request.form.get("budget_baseline") or 0)
+        new_budget_amount = float(
+            request.form.get("budget_amount") or 0
+        )
+
+        new_actual_cost = float(
+            request.form.get("actual_cost") or 0
+        )
+
+        new_forecast_cost = float(
+            request.form.get("forecast_cost") or 0
+        )
 
         cursor.execute("""
             UPDATE budgets
@@ -13203,7 +13335,16 @@ def edit_budget(budget_id):
                 budget_notes = %s,
                 cost_centre = %s,
                 programme_link = %s,
-                portfolio_link = %s
+                portfolio_link = %s,
+
+                baseline_forecast = %s,
+                forecast_owner = %s,
+                forecast_approver = %s,
+                forecast_assumptions = %s,
+                forecast_version = %s,
+                forecast_confidence = %s,
+                forecast_approval_status = %s
+
             WHERE id = %s
             AND user_id = %s
         """, (
@@ -13215,7 +13356,7 @@ def edit_budget(budget_id):
             request.form.get("status"),
             request.form.get("budget_owner"),
             request.form.get("budget_approver"),
-            new_budget_baseline,
+            request.form.get("budget_baseline") or 0,
             request.form.get("budget_category"),
             request.form.get("funding_source"),
             request.form.get("capex_opex"),
@@ -13224,6 +13365,15 @@ def edit_budget(budget_id):
             request.form.get("cost_centre"),
             request.form.get("programme_link"),
             request.form.get("portfolio_link"),
+
+            request.form.get("baseline_forecast") or 0,
+            request.form.get("forecast_owner"),
+            request.form.get("forecast_approver"),
+            request.form.get("forecast_assumptions"),
+            request.form.get("forecast_version"),
+            request.form.get("forecast_confidence"),
+            request.form.get("forecast_approval_status"),
+
             budget_id,
             session["user_id"]
         ))
@@ -13243,18 +13393,52 @@ def edit_budget(budget_id):
                 change_note,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES
+            (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+            )
         """, (
             budget_id,
             session["user_id"],
-            "Budget updated",
+            "Budget Updated",
             old_budget_amount,
             new_budget_amount,
             old_actual_cost,
             new_actual_cost,
             old_forecast_cost,
             new_forecast_cost,
-            request.form.get("change_note") or "Budget record updated",
+            request.form.get("change_note"),
+            str(date.today())
+        ))
+
+        cursor.execute("""
+            INSERT INTO forecast_history
+            (
+                budget_id,
+                user_id,
+                action,
+                old_forecast_cost,
+                new_forecast_cost,
+                old_actual_cost,
+                new_actual_cost,
+                forecast_version,
+                change_note,
+                created_at
+            )
+            VALUES
+            (
+                %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+            )
+        """, (
+            budget_id,
+            session["user_id"],
+            "Forecast Updated",
+            old_forecast_cost,
+            new_forecast_cost,
+            old_actual_cost,
+            new_actual_cost,
+            request.form.get("forecast_version"),
+            request.form.get("change_note"),
             str(date.today())
         ))
 
@@ -13262,6 +13446,17 @@ def edit_budget(budget_id):
         conn.close()
 
         return redirect("/budgets")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
 
     conn.close()
 
@@ -16409,7 +16604,7 @@ def forecast_vs_actual():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (budgets.id)
             budgets.*,
             projects.name AS project_name
         FROM budgets
@@ -16428,34 +16623,92 @@ def forecast_vs_actual():
     total_budget = 0
     total_actual = 0
     total_forecast = 0
+    total_baseline_forecast = 0
+
+    over_forecast_count = 0
+    under_forecast_count = 0
+    on_forecast_count = 0
+    forecast_risk_count = 0
 
     for item in budgets:
 
         budget_amount = float(item["budget_amount"] or 0)
         actual_cost = float(item["actual_cost"] or 0)
         forecast_cost = float(item["forecast_cost"] or 0)
+        baseline_forecast = float(item.get("baseline_forecast") or 0)
 
         total_budget += budget_amount
         total_actual += actual_cost
         total_forecast += forecast_cost
+        total_baseline_forecast += baseline_forecast
 
         variance = forecast_cost - actual_cost
+        budget_forecast_variance = budget_amount - forecast_cost
+        baseline_variance = forecast_cost - baseline_forecast
+
+        if forecast_cost > 0:
+            forecast_accuracy = round((1 - abs(forecast_cost - actual_cost) / forecast_cost) * 100)
+            forecast_accuracy = max(0, min(100, forecast_accuracy))
+        else:
+            forecast_accuracy = 0
 
         if actual_cost > forecast_cost:
             status = "Over Forecast"
-        elif actual_cost == forecast_cost:
-            status = "On Forecast"
-        else:
+            over_forecast_count += 1
+        elif actual_cost < forecast_cost:
             status = "Under Forecast"
+            under_forecast_count += 1
+        else:
+            status = "On Forecast"
+            on_forecast_count += 1
+
+        if budget_amount > 0 and forecast_cost > budget_amount:
+            forecast_risk = "High"
+            forecast_risk_count += 1
+        elif forecast_accuracy < 70:
+            forecast_risk = "Medium"
+        else:
+            forecast_risk = "Low"
 
         forecast_items.append({
+            "id": item["id"],
             "project_name": item["project_name"],
             "budget_amount": budget_amount,
             "actual_cost": actual_cost,
             "forecast_cost": forecast_cost,
+            "baseline_forecast": baseline_forecast,
             "variance": variance,
-            "status": status
+            "budget_forecast_variance": budget_forecast_variance,
+            "baseline_variance": baseline_variance,
+            "forecast_accuracy": forecast_accuracy,
+            "status": status,
+            "forecast_risk": forecast_risk,
+            "forecast_owner": item.get("forecast_owner"),
+            "forecast_approver": item.get("forecast_approver"),
+            "forecast_assumptions": item.get("forecast_assumptions"),
+            "forecast_version": item.get("forecast_version"),
+            "forecast_confidence": item.get("forecast_confidence"),
+            "forecast_approval_status": item.get("forecast_approval_status")
         })
+
+    total_variance = total_forecast - total_actual
+    total_budget_forecast_variance = total_budget - total_forecast
+
+    if total_forecast > 0:
+        overall_accuracy = round((1 - abs(total_forecast - total_actual) / total_forecast) * 100)
+        overall_accuracy = max(0, min(100, overall_accuracy))
+    else:
+        overall_accuracy = 0
+
+    if forecast_risk_count > 0:
+        forecast_health = "Red"
+        forecast_message = "One or more forecasts exceed approved budget. Review forecast assumptions."
+    elif overall_accuracy < 70:
+        forecast_health = "Amber"
+        forecast_message = "Forecast accuracy requires monitoring."
+    else:
+        forecast_health = "Green"
+        forecast_message = "Forecast performance is currently stable."
 
     conn.close()
 
@@ -16464,7 +16717,50 @@ def forecast_vs_actual():
         forecast_items=forecast_items,
         total_budget=total_budget,
         total_actual=total_actual,
-        total_forecast=total_forecast
+        total_forecast=total_forecast,
+        total_baseline_forecast=total_baseline_forecast,
+        total_variance=total_variance,
+        total_budget_forecast_variance=total_budget_forecast_variance,
+        overall_accuracy=overall_accuracy,
+        over_forecast_count=over_forecast_count,
+        under_forecast_count=under_forecast_count,
+        on_forecast_count=on_forecast_count,
+        forecast_risk_count=forecast_risk_count,
+        forecast_health=forecast_health,
+        forecast_message=forecast_message
+    )
+
+@app.route("/forecast-history/<int:budget_id>")
+def forecast_history(budget_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Budgets", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM forecast_history
+        WHERE budget_id = %s
+        ORDER BY id DESC
+    """, (
+        budget_id,
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "forecast_history.html",
+        history=history
     )
 
 @app.route("/profitability-dashboard")
@@ -16483,14 +16779,19 @@ def profitability_dashboard():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (projects.id)
             projects.id,
             projects.name,
             projects.estimated_budget,
-            projects.actual_cost
+            projects.actual_cost,
+            projects.revenue,
+            projects.profit_forecast,
+            projects.cost_category,
+            projects.benefits_realisation_value
         FROM projects
         WHERE projects.user_id = %s
-        ORDER BY projects.name
+        AND COALESCE(projects.is_archived, FALSE) = FALSE
+        ORDER BY projects.id DESC
     """, (
         session["user_id"],
     ))
@@ -16501,46 +16802,80 @@ def profitability_dashboard():
 
     total_budget = 0
     total_actual = 0
+    total_revenue = 0
     total_profit = 0
+    total_forecast_profit = 0
+    total_benefits_value = 0
+
+    profitable_projects = 0
+    loss_projects = 0
+    high_profit_projects = 0
 
     for project in projects:
 
-        budget = float(
-            project["estimated_budget"] or 0
-        )
+        budget = float(project["estimated_budget"] or 0)
+        actual = float(project["actual_cost"] or 0)
+        revenue = float(project["revenue"] or 0)
+        profit_forecast = float(project["profit_forecast"] or 0)
+        benefits_value = float(project["benefits_realisation_value"] or 0)
 
-        actual = float(
-            project["actual_cost"] or 0
-        )
+        if revenue == 0:
+            revenue = budget
 
-        profit = budget - actual
+        profit = revenue - actual
 
         total_budget += budget
         total_actual += actual
+        total_revenue += revenue
         total_profit += profit
+        total_forecast_profit += profit_forecast
+        total_benefits_value += benefits_value
 
-        if budget > 0:
-            profitability_percent = round(
-                (profit / budget) * 100
-            )
+        if actual > 0:
+            roi_percent = round((profit / actual) * 100)
+        else:
+            roi_percent = 0
+
+        if revenue > 0:
+            profitability_percent = round((profit / revenue) * 100)
         else:
             profitability_percent = 0
 
-        if profitability_percent >= 30:
+        if profit > 0 and roi_percent >= 30:
             status = "High Profit"
-        elif profitability_percent >= 0:
+            high_profit_projects += 1
+            profitable_projects += 1
+        elif profit >= 0:
             status = "Profitable"
+            profitable_projects += 1
         else:
             status = "Loss"
+            loss_projects += 1
 
         profitability_data.append({
             "project_name": project["name"],
             "budget": budget,
             "actual": actual,
+            "revenue": revenue,
             "profit": profit,
+            "profit_forecast": profit_forecast,
+            "benefits_value": benefits_value,
+            "roi_percent": roi_percent,
             "profitability_percent": profitability_percent,
+            "cost_category": project["cost_category"] or "Not Categorised",
             "status": status
         })
+
+    if total_actual > 0:
+        portfolio_roi = round((total_profit / total_actual) * 100)
+    else:
+        portfolio_roi = 0
+
+    profitability_data = sorted(
+        profitability_data,
+        key=lambda item: item["profit"],
+        reverse=True
+    )
 
     conn.close()
 
@@ -16549,7 +16884,14 @@ def profitability_dashboard():
         profitability_data=profitability_data,
         total_budget=total_budget,
         total_actual=total_actual,
-        total_profit=total_profit
+        total_revenue=total_revenue,
+        total_profit=total_profit,
+        total_forecast_profit=total_forecast_profit,
+        total_benefits_value=total_benefits_value,
+        portfolio_roi=portfolio_roi,
+        profitable_projects=profitable_projects,
+        loss_projects=loss_projects,
+        high_profit_projects=high_profit_projects
     )
 
 @app.route("/resource-allocation")

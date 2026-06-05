@@ -14,17 +14,20 @@
 
     <main class="main-content">
 
-        <h1>Profitability Dashboard</h1>
-
-        <p class="page-subtitle">
-            Track project profitability by comparing budget against actual cost.
-        </p>
+        <div class="dashboard-header">
+            <div>
+                <h1>Profitability Dashboard</h1>
+                <p class="dashboard-subtitle">
+                    Track revenue, actual cost, profit, ROI, forecast profit and benefits realisation.
+                </p>
+            </div>
+        </div>
 
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
-                <h3>Total Budget</h3>
-                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
+                <h3>Total Revenue</h3>
+                <p>£{{ "{:,.0f}".format(total_revenue) }}</p>
             </div>
 
             <div class="stat-card red-card">
@@ -37,52 +40,138 @@
                 <p>£{{ "{:,.0f}".format(total_profit) }}</p>
             </div>
 
-        </div>
+            <div class="stat-card amber-card">
+                <h3>Portfolio ROI</h3>
+                <p>{{ portfolio_roi }}%</p>
+            </div>
 
-        <div class="table-container">
+            <div class="stat-card blue-card">
+                <h3>Forecast Profit</h3>
+                <p>£{{ "{:,.0f}".format(total_forecast_profit) }}</p>
+            </div>
 
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Budget</th>
-                        <th>Actual Cost</th>
-                        <th>Profit</th>
-                        <th>Profitability %</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for item in profitability_data %}
-
-                    <tr>
-                        <td>{{ item.project_name }}</td>
-                        <td>£{{ "{:,.0f}".format(item.budget) }}</td>
-                        <td>£{{ "{:,.0f}".format(item.actual) }}</td>
-                        <td>£{{ "{:,.0f}".format(item.profit) }}</td>
-                        <td>{{ item.profitability_percent }}%</td>
-
-                        <td>
-                            {% if item.status == "High Profit" %}
-                                <span class="badge badge-green">High Profit</span>
-                            {% elif item.status == "Profitable" %}
-                                <span class="badge badge-yellow">Profitable</span>
-                            {% else %}
-                                <span class="badge badge-red">Loss</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="stat-card green-card">
+                <h3>Benefits Value</h3>
+                <p>£{{ "{:,.0f}".format(total_benefits_value) }}</p>
+            </div>
 
         </div>
+
+        <div class="workload-summary-grid">
+
+            <div class="project-card">
+                <h3>Profitability Summary</h3>
+
+                <div class="smart-insight">
+                    <p>High Profit Projects: <strong>{{ high_profit_projects }}</strong></p>
+                    <p>Profitable Projects: <strong>{{ profitable_projects }}</strong></p>
+                    <p>Loss Projects: <strong>{{ loss_projects }}</strong></p>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <h3>Executive Financial Insight</h3>
+
+                <div class="smart-insight">
+                    {% if total_profit > 0 %}
+                        Portfolio is currently generating positive financial return.
+                    {% elif total_profit == 0 %}
+                        Portfolio is currently breaking even.
+                    {% else %}
+                        Portfolio is currently operating at a loss and requires financial review.
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        {% if profitability_data %}
+
+        <div class="projects-grid">
+
+            {% for item in profitability_data %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name }}</h3>
+
+                        {% if item.status == "High Profit" %}
+                            <span class="badge badge-green">High Profit</span>
+                        {% elif item.status == "Profitable" %}
+                            <span class="badge badge-yellow">Profitable</span>
+                        {% else %}
+                            <span class="badge badge-red">Loss</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Revenue</span>
+                        <strong>£{{ "{:,.0f}".format(item.revenue) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item.budget) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item.actual) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Profit</span>
+                        <strong>£{{ "{:,.0f}".format(item.profit) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Profit Forecast</span>
+                        <strong>£{{ "{:,.0f}".format(item.profit_forecast) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>ROI</span>
+                        <strong>{{ item.roi_percent }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Profitability</span>
+                        <strong>{{ item.profitability_percent }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Benefits Realisation</span>
+                        <strong>£{{ "{:,.0f}".format(item.benefits_value) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Cost Category</span>
+                        <strong>{{ item.cost_category }}</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Profitability Data</h3>
+            <p>Add projects with financial values to generate profitability reporting.</p>
+        </div>
+
+        {% endif %}
 
     </main>
 

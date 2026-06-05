@@ -14,11 +14,14 @@
 
     <main class="main-content">
 
-        <h1>Forecast vs Actual</h1>
-
-        <p class="page-subtitle">
-            Compare project budgets, forecast costs and actual spend.
-        </p>
+        <div class="dashboard-header">
+            <div>
+                <h1>Forecast vs Actual</h1>
+                <p class="dashboard-subtitle">
+                    Compare approved budgets, baseline forecasts, current forecasts and actual spend.
+                </p>
+            </div>
+        </div>
 
         <div class="stats-grid">
 
@@ -37,52 +40,194 @@
                 <p>£{{ "{:,.0f}".format(total_actual) }}</p>
             </div>
 
-        </div>
+            <div class="stat-card blue-card">
+                <h3>Baseline Forecast</h3>
+                <p>£{{ "{:,.0f}".format(total_baseline_forecast) }}</p>
+            </div>
 
-        <div class="table-container">
+            <div class="stat-card green-card">
+                <h3>Forecast Accuracy</h3>
+                <p>{{ overall_accuracy }}%</p>
+            </div>
 
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Budget</th>
-                        <th>Forecast</th>
-                        <th>Actual</th>
-                        <th>Variance</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    {% for item in forecast_items %}
-
-                    <tr>
-                        <td>{{ item.project_name or "No Project" }}</td>
-                        <td>£{{ "{:,.0f}".format(item.budget_amount) }}</td>
-                        <td>£{{ "{:,.0f}".format(item.forecast_cost) }}</td>
-                        <td>£{{ "{:,.0f}".format(item.actual_cost) }}</td>
-                        <td>£{{ "{:,.0f}".format(item.variance) }}</td>
-
-                        <td>
-                            {% if item.status == "Under Forecast" %}
-                                <span class="badge badge-green">Under Forecast</span>
-                            {% elif item.status == "On Forecast" %}
-                                <span class="badge badge-yellow">On Forecast</span>
-                            {% else %}
-                                <span class="badge badge-red">Over Forecast</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="stat-card red-card">
+                <h3>Forecast Risks</h3>
+                <p>{{ forecast_risk_count }}</p>
+            </div>
 
         </div>
+
+        <div class="workload-summary-grid">
+
+            <div class="project-card">
+                <h3>Forecast Health</h3>
+
+                <div class="smart-insight">
+                    <p>
+                        Forecast Health:
+                        <strong>{{ forecast_health }}</strong>
+                    </p>
+
+                    <p>
+                        Total Forecast Variance:
+                        <strong>£{{ "{:,.0f}".format(total_variance) }}</strong>
+                    </p>
+
+                    <p>
+                        Budget vs Forecast Variance:
+                        <strong>£{{ "{:,.0f}".format(total_budget_forecast_variance) }}</strong>
+                    </p>
+
+                    <p>{{ forecast_message }}</p>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <h3>Forecast Status Distribution</h3>
+
+                <div class="smart-insight">
+                    <p>Over Forecast: <strong>{{ over_forecast_count }}</strong></p>
+                    <p>Under Forecast: <strong>{{ under_forecast_count }}</strong></p>
+                    <p>On Forecast: <strong>{{ on_forecast_count }}</strong></p>
+                </div>
+            </div>
+
+        </div>
+
+        {% if forecast_items %}
+
+        <div class="projects-grid">
+
+            {% for item in forecast_items %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name or "No Project" }}</h3>
+
+                        {% if item.status == "Under Forecast" %}
+                            <span class="badge badge-green">Under Forecast</span>
+                        {% elif item.status == "On Forecast" %}
+                            <span class="badge badge-yellow">On Forecast</span>
+                        {% else %}
+                            <span class="badge badge-red">Over Forecast</span>
+                        {% endif %}
+
+                        {% if item.forecast_risk == "High" %}
+                            <span class="badge badge-red">High Forecast Risk</span>
+                        {% elif item.forecast_risk == "Medium" %}
+                            <span class="badge badge-yellow">Medium Forecast Risk</span>
+                        {% else %}
+                            <span class="badge badge-green">Low Forecast Risk</span>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item.budget_amount) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline Forecast</span>
+                        <strong>£{{ "{:,.0f}".format(item.baseline_forecast) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast</span>
+                        <strong>£{{ "{:,.0f}".format(item.forecast_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual</span>
+                        <strong>£{{ "{:,.0f}".format(item.actual_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast vs Actual</span>
+                        <strong>£{{ "{:,.0f}".format(item.variance) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget vs Forecast</span>
+                        <strong>£{{ "{:,.0f}".format(item.budget_forecast_variance) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Baseline Variance</span>
+                        <strong>£{{ "{:,.0f}".format(item.baseline_variance) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Accuracy</span>
+                        <strong>{{ item.forecast_accuracy }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Owner</span>
+                        <strong>{{ item.forecast_owner or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Approver</span>
+                        <strong>{{ item.forecast_approver or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Version</span>
+                        <strong>{{ item.forecast_version or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Confidence</span>
+                        <strong>{{ item.forecast_confidence or "Not set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Approval Status</span>
+                        <strong>{{ item.forecast_approval_status or "Draft" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Forecast Assumptions:</strong>
+                    <br><br>
+                    {{ item.forecast_assumptions or "No forecast assumptions recorded." }}
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-budget/{{ item.id }}">
+                        Edit Forecast
+                    </a>
+
+                    <a href="/forecast-history/{{ item.id }}">
+                        Forecast History
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Forecast Records</h3>
+            <p>Add budget records first to compare forecast against actual spend.</p>
+            <a href="/add-budget" class="btn-primary">Add Budget</a>
+        </div>
+
+        {% endif %}
 
     </main>
 
