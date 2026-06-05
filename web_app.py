@@ -3785,6 +3785,48 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS satisfaction_score INTEGER DEFAULT 0
                    """)
 
+    # User Management v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Active'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS organisation TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS last_login TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS password_reset_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS failed_login_count INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS mfa_enabled TEXT DEFAULT 'No'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE users
+                       ADD COLUMN IF NOT EXISTS created_at TEXT
+                   """)
+
 
 
 
@@ -20702,24 +20744,61 @@ def user_management():
     )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (users.id)
             users.id,
             users.username,
             users.email,
-            users.avatar_initials
+            users.avatar_initials,
+            users.status,
+            users.organisation,
+            users.last_login,
+            users.password_reset_date,
+            users.login_count,
+            users.failed_login_count,
+            users.mfa_enabled,
+            users.created_at,
+            user_roles.role
         FROM users
-        ORDER BY users.id DESC
+        LEFT JOIN user_roles
+        ON users.id = user_roles.user_id
+        ORDER BY users.id DESC, user_roles.id DESC
     """)
 
     users = cursor.fetchall()
+
+    total_users = len(users)
+
+    active_users = len([
+        user for user in users
+        if user["status"] == "Active"
+    ])
+
+    inactive_users = len([
+        user for user in users
+        if user["status"] == "Inactive"
+    ])
+
+    admin_users = len([
+        user for user in users
+        if user["role"] == "Admin"
+    ])
+
+    mfa_enabled_count = len([
+        user for user in users
+        if user["mfa_enabled"] == "Yes"
+    ])
 
     conn.close()
 
     return render_template(
         "user_management.html",
-        users=users
+        users=users,
+        total_users=total_users,
+        active_users=active_users,
+        inactive_users=inactive_users,
+        admin_users=admin_users,
+        mfa_enabled_count=mfa_enabled_count
     )
-
 
 @app.route("/user-invitations")
 def user_invitations():
@@ -20878,12 +20957,20 @@ def edit_user(user_id):
             SET
                 username = %s,
                 email = %s,
-                avatar_initials = %s
+                avatar_initials = %s,
+                status = %s,
+                organisation = %s,
+                mfa_enabled = %s,
+                password_reset_date = %s
             WHERE id = %s
         """, (
-            request.form["username"],
-            request.form["email"],
-            request.form["avatar_initials"],
+            request.form.get("username"),
+            request.form.get("email"),
+            request.form.get("avatar_initials"),
+            request.form.get("status"),
+            request.form.get("organisation"),
+            request.form.get("mfa_enabled"),
+            request.form.get("password_reset_date"),
             user_id
         ))
 

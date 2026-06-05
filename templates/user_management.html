@@ -14,91 +14,154 @@
 
     <main class="main-content">
 
-        <h1>User Management</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>User Management</h1>
+                <p class="dashboard-subtitle">
+                    Manage platform users, access status, roles, MFA and account activity.
+                </p>
+            </div>
+        </div>
 
-        <p class="page-subtitle">
-            Manage platform users and account access.
-        </p>
+        <div class="stats-grid">
 
-        <div class="card">
+            <div class="stat-card blue-card">
+                <h3>Total Users</h3>
+                <p>{{ total_users }}</p>
+            </div>
 
-            <div class="table-container">
+            <div class="stat-card green-card">
+                <h3>Active Users</h3>
+                <p>{{ active_users }}</p>
+            </div>
 
-                <table>
+            <div class="stat-card red-card">
+                <h3>Inactive Users</h3>
+                <p>{{ inactive_users }}</p>
+            </div>
 
-                    <thead>
+            <div class="stat-card amber-card">
+                <h3>Admins</h3>
+                <p>{{ admin_users }}</p>
+            </div>
 
-                        <tr>
-
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Avatar</th>
-                            <th>Actions</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {% for user in users %}
-
-                        <tr>
-
-                            <td>
-                                {{ user.id }}
-                            </td>
-
-                            <td>
-                                {{ user.username }}
-                            </td>
-
-                            <td>
-                                {{ user.email or "" }}
-                            </td>
-
-                            <td>
-                                {{ user.avatar_initials }}
-                            </td>
-
-                            <td>
-
-                                <a
-                                    href="/edit-user/{{ user.id }}"
-                                    class="btn-primary"
-                                >
-                                    Edit
-                                </a>
-
-                                <a
-                                    href="/admin-reset-password/{{ user.id }}"
-                                    class="btn-warning"
-                                >
-                                    Reset Password
-                                </a>
-
-                                <a
-                                    href="/delete-user/{{ user.id }}"
-                                    class="btn-danger"
-                                    onclick="return confirm('Delete this user?')"
-                                >
-                                    Delete
-                                </a>
-
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-
+            <div class="stat-card green-card">
+                <h3>MFA Enabled</h3>
+                <p>{{ mfa_enabled_count }}</p>
             </div>
 
         </div>
+
+        {% if users %}
+
+        <div class="projects-grid">
+
+            {% for user in users %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+                    <div>
+                        <h3>{{ user["username"] }}</h3>
+                        <p>{{ user["email"] or "No email recorded" }}</p>
+                    </div>
+
+                    {% if user["status"] == "Active" %}
+                        <span class="badge badge-green">Active</span>
+                    {% elif user["status"] == "Inactive" %}
+                        <span class="badge badge-red">Inactive</span>
+                    {% else %}
+                        <span class="badge badge-yellow">{{ user["status"] or "Unknown" }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>User ID</span>
+                        <strong>{{ user["id"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>{{ user["role"] or "No role assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Organisation</span>
+                        <strong>{{ user["organisation"] or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Avatar</span>
+                        <strong>{{ user["avatar_initials"] or "N/A" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Last Login</span>
+                        <strong>{{ user["last_login"] or "Never" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Login Count</span>
+                        <strong>{{ user["login_count"] or 0 }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Failed Logins</span>
+                        <strong>{{ user["failed_login_count"] or 0 }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>MFA Enabled</span>
+                        <strong>{{ user["mfa_enabled"] or "No" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Password Reset Date</span>
+                        <strong>{{ user["password_reset_date"] or "Not reset" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Created At</span>
+                        <strong>{{ user["created_at"] or "Not recorded" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="project-actions">
+
+                    <a href="/edit-user/{{ user['id'] }}">
+                        Edit
+                    </a>
+
+                    <a href="/admin-reset-password/{{ user['id'] }}">
+                        Reset Password
+                    </a>
+
+                    <a
+                        href="/delete-user/{{ user['id'] }}"
+                        onclick="return confirm('This will permanently delete the user account. Are you sure?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Users Found</h3>
+            <p>No users are currently registered.</p>
+        </div>
+
+        {% endif %}
 
     </main>
 

@@ -14,41 +14,110 @@
 
     <main class="main-content">
 
-        <h1>Edit User</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Edit User</h1>
+                <p class="dashboard-subtitle">
+                    Update user account details, status, organisation and security settings.
+                </p>
+            </div>
 
-        <p class="page-subtitle">
-            Update user account details.
-        </p>
+            <div class="dashboard-actions">
+                <a href="/user-management" class="btn-primary">
+                    Back to User Management
+                </a>
+            </div>
+        </div>
 
-        <form method="POST" class="form-card">
+        <div class="form-container">
 
-            <label>Username</label>
-            <input
-                type="text"
-                name="username"
-                value="{{ user.username }}"
-                required
-            >
+            <form method="POST">
 
-            <label>Email</label>
-            <input
-                type="email"
-                name="email"
-                value="{{ user.email or '' }}"
-            >
+                <label>Username</label>
+                <input
+                    type="text"
+                    name="username"
+                    value="{{ user['username'] }}"
+                    required
+                >
 
-            <label>Avatar Initials</label>
-            <input
-                type="text"
-                name="avatar_initials"
-                value="{{ user.avatar_initials or '' }}"
-            >
+                <label>Email</label>
+                <input
+                    type="email"
+                    name="email"
+                    value="{{ user['email'] or '' }}"
+                >
 
-            <button type="submit" class="btn-primary">
-                Update User
-            </button>
+                <label>Avatar Initials</label>
+                <input
+                    type="text"
+                    name="avatar_initials"
+                    value="{{ user['avatar_initials'] or '' }}"
+                >
 
-        </form>
+                <label>Status</label>
+                <select name="status">
+
+                    <option value="Active"
+                        {% if user['status'] == 'Active' %}selected{% endif %}
+                    >
+                        Active
+                    </option>
+
+                    <option value="Inactive"
+                        {% if user['status'] == 'Inactive' %}selected{% endif %}
+                    >
+                        Inactive
+                    </option>
+
+                    <option value="Suspended"
+                        {% if user['status'] == 'Suspended' %}selected{% endif %}
+                    >
+                        Suspended
+                    </option>
+
+                </select>
+
+                <label>Organisation</label>
+                <input
+                    type="text"
+                    name="organisation"
+                    value="{{ user['organisation'] or '' }}"
+                >
+
+                <label>MFA Enabled</label>
+                <select name="mfa_enabled">
+
+                    <option value="No"
+                        {% if user['mfa_enabled'] == 'No' %}selected{% endif %}
+                    >
+                        No
+                    </option>
+
+                    <option value="Yes"
+                        {% if user['mfa_enabled'] == 'Yes' %}selected{% endif %}
+                    >
+                        Yes
+                    </option>
+
+                </select>
+
+                <label>Password Reset Date</label>
+                <input
+                    type="date"
+                    name="password_reset_date"
+                    value="{{ user['password_reset_date'] or '' }}"
+                >
+
+                <br><br>
+
+                <button type="submit" class="btn-primary">
+                    Update User
+                </button>
+
+            </form>
+
+        </div>
 
     </main>
 
