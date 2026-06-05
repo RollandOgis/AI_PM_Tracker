@@ -20109,31 +20109,88 @@ def admin_dashboard():
         return "Access denied"
 
     conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-
-    cursor.execute("SELECT COUNT(*) AS total_users FROM users")
+    cursor.execute("SELECT COUNT(DISTINCT id) AS total_users FROM users")
     total_users = cursor.fetchone()["total_users"]
 
-    cursor.execute("SELECT COUNT(*) AS total_projects FROM projects")
+    cursor.execute("SELECT COUNT(DISTINCT id) AS total_projects FROM projects")
     total_projects = cursor.fetchone()["total_projects"]
 
-    cursor.execute("SELECT COUNT(*) AS total_tasks FROM tasks")
+    cursor.execute("SELECT COUNT(DISTINCT id) AS total_tasks FROM tasks")
     total_tasks = cursor.fetchone()["total_tasks"]
 
-    cursor.execute("SELECT COUNT(*) AS total_risks FROM risks")
+    cursor.execute("SELECT COUNT(DISTINCT id) AS total_risks FROM risks")
     total_risks = cursor.fetchone()["total_risks"]
 
-    cursor.execute("SELECT COUNT(*) AS total_issues FROM issues")
+    cursor.execute("SELECT COUNT(DISTINCT id) AS total_issues FROM issues")
     total_issues = cursor.fetchone()["total_issues"]
 
-    cursor.execute("SELECT COUNT(*) AS total_roles FROM user_roles")
+    cursor.execute("SELECT COUNT(DISTINCT role) AS total_roles FROM user_roles")
     total_roles = cursor.fetchone()["total_roles"]
 
-    cursor.execute("SELECT COUNT(*) AS total_permissions FROM permissions")
+    cursor.execute("""
+        SELECT COUNT(DISTINCT role || '-' || module) AS total_permissions
+        FROM permissions
+    """)
     total_permissions = cursor.fetchone()["total_permissions"]
+
+    cursor.execute("SELECT COUNT(DISTINCT id) AS total_activities FROM activities")
+    total_activities = cursor.fetchone()["total_activities"]
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT id) AS active_users
+        FROM users
+        WHERE id IN (
+            SELECT DISTINCT user_id
+            FROM activities
+        )
+    """)
+    active_users = cursor.fetchone()["active_users"]
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT id) AS organisations_count
+        FROM organisations
+    """)
+    organisations_count = cursor.fetchone()["organisations_count"]
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT id) AS workspaces_count
+        FROM workspaces
+    """)
+    workspaces_count = cursor.fetchone()["workspaces_count"]
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT user_id) AS last_30_day_logins
+        FROM activities
+        WHERE created_at >= %s
+    """, (
+        str(date.today() - timedelta(days=30)),
+    ))
+    last_30_day_logins = cursor.fetchone()["last_30_day_logins"]
+
+    admin_health_score = 100
+
+    if total_users == 0:
+        admin_health_score -= 30
+
+    if total_roles == 0:
+        admin_health_score -= 20
+
+    if total_permissions == 0:
+        admin_health_score -= 20
+
+    if total_activities == 0:
+        admin_health_score -= 15
+
+    admin_health_score = max(0, admin_health_score)
+
+    if admin_health_score >= 80:
+        admin_health_status = "Healthy"
+    elif admin_health_score >= 60:
+        admin_health_status = "Monitor"
+    else:
+        admin_health_status = "Needs Attention"
 
     cursor.execute("""
         SELECT *
@@ -20141,8 +20198,15 @@ def admin_dashboard():
         ORDER BY id DESC
         LIMIT 10
     """)
-
     recent_logs = cursor.fetchall()
+
+    cursor.execute("""
+        SELECT *
+        FROM activities
+        ORDER BY id DESC
+        LIMIT 10
+    """)
+    recent_activities = cursor.fetchall()
 
     conn.close()
 
@@ -20155,7 +20219,15 @@ def admin_dashboard():
         total_issues=total_issues,
         total_roles=total_roles,
         total_permissions=total_permissions,
-        recent_logs=recent_logs
+        total_activities=total_activities,
+        active_users=active_users,
+        organisations_count=organisations_count,
+        workspaces_count=workspaces_count,
+        last_30_day_logins=last_30_day_logins,
+        admin_health_score=admin_health_score,
+        admin_health_status=admin_health_status,
+        recent_logs=recent_logs,
+        recent_activities=recent_activities
     )
 
 @app.route("/admin-reset-password/<int:user_id>")

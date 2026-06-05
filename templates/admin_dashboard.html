@@ -20,7 +20,7 @@
             <div>
                 <h1>Admin Dashboard</h1>
                 <p class="dashboard-subtitle">
-                    Monitor users, access control, platform activity and system usage.
+                    Monitor live platform usage, access control, governance activity and administration health.
                 </p>
             </div>
         </div>
@@ -31,6 +31,30 @@
                 <h3>Users</h3>
                 <p>{{ total_users }}</p>
             </div>
+
+            <div class="stat-card green-card">
+                <h3>Active Users</h3>
+                <p>{{ active_users }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Last 30 Day Logins</h3>
+                <p>{{ last_30_day_logins }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Organisations</h3>
+                <p>{{ organisations_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Workspaces</h3>
+                <p>{{ workspaces_count }}</p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
 
             <div class="stat-card green-card">
                 <h3>Projects</h3>
@@ -47,16 +71,16 @@
                 <p>{{ total_risks }}</p>
             </div>
 
+            <div class="stat-card red-card">
+                <h3>Issues</h3>
+                <p>{{ total_issues }}</p>
+            </div>
+
         </div>
 
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
-                <h3>Issues</h3>
-                <p>{{ total_issues }}</p>
-            </div>
-
-            <div class="stat-card green-card">
                 <h3>User Roles</h3>
                 <p>{{ total_roles }}</p>
             </div>
@@ -66,39 +90,115 @@
                 <p>{{ total_permissions }}</p>
             </div>
 
+            <div class="stat-card green-card">
+                <h3>Activity Records</h3>
+                <p>{{ total_activities }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Admin Health</h3>
+                <p>{{ admin_health_score }}%</p>
+            </div>
+
         </div>
 
         <div class="smart-card">
 
-            <h3>Recent Audit Logs</h3>
+            <h3>Administration Health Summary</h3>
 
-            {% if recent_logs %}
+            <div class="smart-insight">
 
-                <div class="budget-section">
+                <p>
+                    Status:
+                    <strong>{{ admin_health_status }}</strong>
+                </p>
 
-                    {% for log in recent_logs %}
+                <p>
+                    Health Score:
+                    <strong>{{ admin_health_score }}%</strong>
+                </p>
 
-                        <div class="budget-row">
-                            <span>
-                                {{ log["module"] }} - {{ log["action"] }}
-                            </span>
+                {% if admin_health_score >= 80 %}
+                    <p>Administration setup is healthy.</p>
+                {% elif admin_health_score >= 60 %}
+                    <p>Administration setup is usable but should be reviewed.</p>
+                {% else %}
+                    <p>Administration setup requires attention.</p>
+                {% endif %}
 
-                            <strong>
-                                {{ log["created_at"] }}
-                            </strong>
-                        </div>
+            </div>
 
-                    {% endfor %}
+        </div>
 
-                </div>
+        <div class="workload-summary-grid">
 
-            {% else %}
+            <div class="project-card">
 
-                <div class="smart-insight">
-                    No audit logs recorded yet.
-                </div>
+                <h3>Recent Audit Logs</h3>
 
-            {% endif %}
+                {% if recent_logs %}
+
+                    <div class="budget-section">
+
+                        {% for log in recent_logs %}
+
+                            <div class="budget-row">
+                                <span>
+                                    {{ log["module"] }} - {{ log["action"] }}
+                                </span>
+
+                                <strong>
+                                    {{ log["created_at"] }}
+                                </strong>
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% else %}
+
+                    <div class="smart-insight">
+                        No audit logs recorded yet.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+            <div class="project-card">
+
+                <h3>Recent Activity</h3>
+
+                {% if recent_activities %}
+
+                    <div class="budget-section">
+
+                        {% for activity in recent_activities %}
+
+                            <div class="budget-row">
+                                <span>
+                                    {{ activity["message"] }}
+                                </span>
+
+                                <strong>
+                                    {{ activity["created_at"] }}
+                                </strong>
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% else %}
+
+                    <div class="smart-insight">
+                        No recent activity recorded.
+                    </div>
+
+                {% endif %}
+
+            </div>
 
         </div>
 
