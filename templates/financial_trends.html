@@ -24,7 +24,7 @@
                 <h1>Financial Trend Charts</h1>
 
                 <p class="dashboard-subtitle">
-                    Track project budgets, actual costs, forecast costs and financial variance.
+                    Track budget, actual cost, forecast cost, variance and financial health across the portfolio.
                 </p>
             </div>
 
@@ -41,23 +41,57 @@
 
             <div class="stat-card green-card">
                 <h3>Total Budget</h3>
-                <p>
-                    £{{ budgets | sum(attribute="budget_amount") }}
-                </p>
+                <p>£{{ "{:,.0f}".format(total_budget) }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Total Actual Cost</h3>
-                <p>
-                    £{{ budgets | sum(attribute="actual_cost") }}
-                </p>
+                <p>£{{ "{:,.0f}".format(total_actual) }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Total Forecast Cost</h3>
-                <p>
-                    £{{ budgets | sum(attribute="forecast_cost") }}
-                </p>
+                <p>£{{ "{:,.0f}".format(total_forecast) }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Total Variance</h3>
+                <p>£{{ "{:,.0f}".format(total_variance) }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Financial Health</h3>
+                <p>{{ financial_health }}%</p>
+            </div>
+
+        </div>
+
+        <div class="workload-summary-grid">
+
+            <div class="project-card">
+                <h3>Trend Summary</h3>
+
+                <div class="smart-insight">
+                    <p>
+                        On Track Projects:
+                        <strong>{{ under_budget_projects }}</strong>
+                    </p>
+
+                    <p>
+                        Over Budget Projects:
+                        <strong>{{ over_budget_projects }}</strong>
+                    </p>
+
+                    {% if over_budget_projects > 0 %}
+                        <p>
+                            Some projects are over budget. Review cost control and forecast assumptions.
+                        </p>
+                    {% else %}
+                        <p>
+                            Financial trend position is currently stable.
+                        </p>
+                    {% endif %}
+                </div>
             </div>
 
         </div>
@@ -70,9 +104,17 @@
 
         </div>
 
+        <div class="smart-card">
+
+            <h3>Variance Trend</h3>
+
+            <canvas id="varianceTrendChart"></canvas>
+
+        </div>
+
         <div class="projects-grid">
 
-            {% for budget in budgets %}
+            {% for item in financial_cards %}
 
             <div class="project-card">
 
@@ -81,19 +123,13 @@
                     <div>
 
                         <h3>
-                            {{ budget["project_name"] or "No Project" }}
+                            {{ item["project_name"] or "No Project" }}
                         </h3>
 
-                        {% if budget["actual_cost"] > budget["budget_amount"] %}
+                        {% if item["status"] == "Over Budget" %}
 
                             <span class="badge badge-red">
                                 Over Budget
-                            </span>
-
-                        {% elif budget["forecast_cost"] > budget["budget_amount"] %}
-
-                            <span class="badge badge-yellow">
-                                Forecast Risk
                             </span>
 
                         {% else %}
@@ -112,29 +148,37 @@
 
                     <div class="budget-row">
                         <span>Budget Amount</span>
-                        <strong>£{{ budget["budget_amount"] }}</strong>
+                        <strong>
+                            £{{ "{:,.0f}".format(item["budget_amount"]) }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Actual Cost</span>
-                        <strong>£{{ budget["actual_cost"] }}</strong>
+                        <strong>
+                            £{{ "{:,.0f}".format(item["actual_cost"]) }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Forecast Cost</span>
-                        <strong>£{{ budget["forecast_cost"] }}</strong>
+                        <strong>
+                            £{{ "{:,.0f}".format(item["forecast_cost"]) }}
+                        </strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Variance</span>
                         <strong>
-                            £{{ budget["budget_amount"] - budget["actual_cost"] }}
+                            £{{ "{:,.0f}".format(item["variance"]) }}
                         </strong>
                     </div>
 
                     <div class="budget-row">
-                        <span>Status</span>
-                        <strong>{{ budget["status"] }}</strong>
+                        <span>Snapshot Date</span>
+                        <strong>
+                            {{ item["created_at"] or "Not set" }}
+                        </strong>
                     </div>
 
                 </div>
@@ -148,26 +192,32 @@
         <script>
 
             const labels = [
-                {% for budget in budgets %}
-                    "{{ budget['project_name'] or 'No Project' }}",
+                {% for item in financial_cards %}
+                    "{{ item['project_name'] or 'No Project' }}",
                 {% endfor %}
             ];
 
             const budgetAmounts = [
-                {% for budget in budgets %}
-                    {{ budget['budget_amount'] }},
+                {% for item in financial_cards %}
+                    {{ item['budget_amount'] or 0 }},
                 {% endfor %}
             ];
 
             const actualCosts = [
-                {% for budget in budgets %}
-                    {{ budget['actual_cost'] }},
+                {% for item in financial_cards %}
+                    {{ item['actual_cost'] or 0 }},
                 {% endfor %}
             ];
 
             const forecastCosts = [
-                {% for budget in budgets %}
-                    {{ budget['forecast_cost'] }},
+                {% for item in financial_cards %}
+                    {{ item['forecast_cost'] or 0 }},
+                {% endfor %}
+            ];
+
+            const variances = [
+                {% for item in financial_cards %}
+                    {{ item['variance'] or 0 }},
                 {% endfor %}
             ];
 
@@ -200,6 +250,31 @@
                     scales: {
                         y: {
                             beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            const varianceCtx = document.getElementById("varianceTrendChart");
+
+            new Chart(varianceCtx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: "Variance",
+                            data: variances,
+                            borderWidth: 3,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: false
                         }
                     }
                 }

@@ -16567,26 +16567,96 @@ def financial_trends():
         return "Access denied"
 
     conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (budgets.id)
             budgets.*,
             projects.name AS project_name
         FROM budgets
         LEFT JOIN projects
         ON budgets.project_id = projects.id
         WHERE budgets.user_id = %s
-        ORDER BY budgets.created_at ASC
-    """, (session["user_id"],))
+        ORDER BY budgets.id DESC
+    """, (
+        session["user_id"],
+    ))
 
     budgets = cursor.fetchall()
+
+    total_budget = 0
+    total_actual = 0
+    total_forecast = 0
+    total_variance = 0
+
+    over_budget_projects = 0
+    under_budget_projects = 0
+
+    financial_cards = []
+
+    for budget in budgets:
+
+        budget_amount = float(
+            budget["budget_amount"] or 0
+        )
+
+        actual_cost = float(
+            budget["actual_cost"] or 0
+        )
+
+        forecast_cost = float(
+            budget["forecast_cost"] or 0
+        )
+
+        variance = budget_amount - actual_cost
+
+        total_budget += budget_amount
+        total_actual += actual_cost
+        total_forecast += forecast_cost
+        total_variance += variance
+
+        if variance < 0:
+            over_budget_projects += 1
+            status = "Over Budget"
+        else:
+            under_budget_projects += 1
+            status = "On Track"
+
+        financial_cards.append({
+            "project_name": budget["project_name"],
+            "budget_amount": budget_amount,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "variance": variance,
+            "status": status,
+            "created_at": budget["created_at"]
+        })
+
+    if total_budget > 0:
+        financial_health = round(
+            ((total_budget - total_actual) / total_budget) * 100
+        )
+    else:
+        financial_health = 0
+
     conn.close()
 
     return render_template(
         "financial_trends.html",
-        budgets=budgets
+        budgets=budgets,
+        financial_cards=financial_cards,
+        total_budget=total_budget,
+        total_actual=total_actual,
+        total_forecast=total_forecast,
+        total_variance=total_variance,
+        financial_health=financial_health,
+        over_budget_projects=over_budget_projects,
+        under_budget_projects=under_budget_projects
     )
+
 
 @app.route("/forecast-vs-actual")
 def forecast_vs_actual():
