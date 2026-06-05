@@ -731,6 +731,289 @@ def init_db():
                    )
                    """)
 
+    # BUSINESS CASES
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS business_cases
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       user_id
+                       INTEGER,
+
+                       project_id
+                       INTEGER,
+
+                       programme_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       strategic_objective
+                       TEXT,
+
+                       business_driver
+                       TEXT,
+
+                       problem_statement
+                       TEXT,
+
+                       proposed_solution
+                       TEXT,
+
+                       options_considered
+                       TEXT,
+
+                       preferred_option
+                       TEXT,
+
+                       expected_benefits
+                       TEXT,
+
+                       disbenefits
+                       TEXT,
+
+                       estimated_cost
+                       NUMERIC,
+
+                       expected_roi
+                       NUMERIC,
+
+                       payback_period
+                       TEXT,
+
+                       investment_category
+                       TEXT,
+
+                       sponsor
+                       TEXT,
+
+                       benefit_owner
+                       TEXT,
+
+                       approval_status
+                       TEXT,
+
+                       review_date
+                       TEXT,
+
+                       approval_date
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS project_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS programme_id INTEGER
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS strategic_objective TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS business_driver TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS problem_statement TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS proposed_solution TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS options_considered TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS preferred_option TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS expected_benefits TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS disbenefits TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS estimated_cost NUMERIC
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS expected_roi NUMERIC
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS payback_period TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS investment_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS sponsor TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS benefit_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS approval_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS review_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS approval_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE business_cases
+                       ADD COLUMN IF NOT EXISTS status TEXT
+                   """)
+
+    # BUSINESS CASE BENEFITS
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS business_case_benefits
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       business_case_id
+                       INTEGER,
+
+                       benefit_name
+                       TEXT,
+
+                       benefit_type
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       target_value
+                       TEXT,
+
+                       actual_value
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
+    # BUSINESS CASE APPROVALS
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS business_case_approvals
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       business_case_id
+                       INTEGER,
+
+                       approver
+                       TEXT,
+
+                       decision
+                       TEXT,
+
+                       comments
+                       TEXT,
+
+                       decision_date
+                       TEXT
+
+                   )
+                   """)
+
+    # BUSINESS CASE HISTORY
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS business_case_history
+                   (
+
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       business_case_id
+                       INTEGER,
+
+                       user_id
+                       INTEGER,
+
+                       action
+                       TEXT,
+
+                       previous_status
+                       TEXT,
+
+                       new_status
+                       TEXT,
+
+                       created_at
+                       TEXT
+
+                   )
+                   """)
+
+
 
     # BENEFITS
     cursor.execute("""
@@ -1967,6 +2250,43 @@ def init_db():
                    )
                    """)
 
+    # Project Prioritisation Table v2
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS roi_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS benefits_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS resource_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS weighted_priority_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS priority_band TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS investment_category TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE project_prioritisation
+                       ADD COLUMN IF NOT EXISTS strategic_objective TEXT
+                   """)
+
 
     # Programmes Table
 
@@ -2015,6 +2335,145 @@ def init_db():
                        TEXT
                    )
                    """)
+
+    # Programmes Table v2
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS health_score INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS health_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS linked_projects INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS milestone_count INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS open_risks INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS open_issues INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS lessons_count INTEGER DEFAULT 0
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE programmes
+                       ADD COLUMN IF NOT EXISTS archived BOOLEAN DEFAULT FALSE
+                   """)
+
+    # Programmes Performance History
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS programme_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       programme_id
+                       INTEGER,
+
+                       user_id
+                       INTEGER,
+
+                       health_score
+                       INTEGER,
+
+                       open_risks
+                       INTEGER,
+
+                       open_issues
+                       INTEGER,
+
+                       linked_projects
+                       INTEGER,
+
+                       action
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+    # Programmes Milestones
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS programme_milestones
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       programme_id
+                       INTEGER,
+
+                       title
+                       TEXT,
+
+                       milestone_date
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
+
+    # Programmes Register
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS programme_benefits
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+
+                       programme_id
+                       INTEGER,
+
+                       benefit_name
+                       TEXT,
+
+                       owner
+                       TEXT,
+
+                       target_value
+                       TEXT,
+
+                       actual_value
+                       TEXT,
+
+                       status
+                       TEXT,
+
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
     # Portfolio Board v2 upgrades
 
@@ -8571,6 +9030,529 @@ def delete_change(change_id):
     return redirect("/changes")
 
 
+@app.route("/business-cases")
+def business_cases():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Business Cases", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT
+            business_cases.*,
+            projects.name AS project_name
+        FROM business_cases
+        LEFT JOIN projects
+        ON business_cases.project_id = projects.id
+        WHERE business_cases.user_id = %s
+        ORDER BY business_cases.created_at DESC
+    """, (
+        session["user_id"],
+    ))
+
+    business_cases = cursor.fetchall()
+
+    total_cases = len(business_cases)
+
+    approved_cases = len([
+        case for case in business_cases
+        if case["approval_status"] == "Approved"
+    ])
+
+    pending_cases = len([
+        case for case in business_cases
+        if case["approval_status"] == "Pending"
+    ])
+
+    rejected_cases = len([
+        case for case in business_cases
+        if case["approval_status"] == "Rejected"
+    ])
+
+    total_investment = sum(
+        float(case["estimated_cost"] or 0)
+        for case in business_cases
+    )
+
+    total_roi = sum(
+        float(case["expected_roi"] or 0)
+        for case in business_cases
+    )
+
+    benefits_realised = 0
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total
+        FROM business_case_benefits
+        WHERE status = 'Realised'
+    """)
+
+    result = cursor.fetchone()
+
+    if result:
+        benefits_realised = result["total"]
+
+    conn.close()
+
+    return render_template(
+        "business_cases.html",
+        business_cases=business_cases,
+        total_cases=total_cases,
+        approved_cases=approved_cases,
+        pending_cases=pending_cases,
+        rejected_cases=rejected_cases,
+        total_investment=total_investment,
+        total_roi=total_roi,
+        benefits_realised=benefits_realised
+    )
+
+@app.route("/add-business-case", methods=["GET", "POST"])
+def add_business_case():
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Business Cases", "create"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO business_cases
+            (
+                user_id,
+                project_id,
+                programme_id,
+                title,
+                strategic_objective,
+                business_driver,
+                problem_statement,
+                proposed_solution,
+                options_considered,
+                preferred_option,
+                expected_benefits,
+                disbenefits,
+                estimated_cost,
+                expected_roi,
+                payback_period,
+                investment_category,
+                sponsor,
+                benefit_owner,
+                approval_status,
+                review_date,
+                approval_date,
+                status,
+                created_at
+            )
+            VALUES
+            (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            request.form.get("project_id"),
+            request.form.get("programme_id"),
+            request.form.get("title"),
+            request.form.get("strategic_objective"),
+            request.form.get("business_driver"),
+            request.form.get("problem_statement"),
+            request.form.get("proposed_solution"),
+            request.form.get("options_considered"),
+            request.form.get("preferred_option"),
+            request.form.get("expected_benefits"),
+            request.form.get("disbenefits"),
+            request.form.get("estimated_cost") or 0,
+            request.form.get("expected_roi") or 0,
+            request.form.get("payback_period"),
+            request.form.get("investment_category"),
+            request.form.get("sponsor"),
+            request.form.get("benefit_owner"),
+            request.form.get("approval_status"),
+            request.form.get("review_date"),
+            request.form.get("approval_date"),
+            request.form.get("status"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/business-cases")
+
+    conn.close()
+
+    return render_template(
+        "add_business_case.html",
+        projects=projects
+    )
+
+@app.route("/edit-business-case/<int:case_id>", methods=["GET", "POST"])
+def edit_business_case(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Business Cases", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM business_cases
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        case_id,
+        session["user_id"]
+    ))
+
+    business_case = cursor.fetchone()
+
+    if not business_case:
+        conn.close()
+        return redirect("/business-cases")
+
+    cursor.execute("""
+        SELECT *
+        FROM projects
+        WHERE user_id = %s
+        ORDER BY name
+    """, (
+        session["user_id"],
+    ))
+
+    projects = cursor.fetchall()
+
+    if request.method == "POST":
+
+        previous_status = business_case["status"]
+
+        cursor.execute("""
+            UPDATE business_cases
+            SET
+                project_id = %s,
+                programme_id = %s,
+                title = %s,
+                strategic_objective = %s,
+                business_driver = %s,
+                problem_statement = %s,
+                proposed_solution = %s,
+                options_considered = %s,
+                preferred_option = %s,
+                expected_benefits = %s,
+                disbenefits = %s,
+                estimated_cost = %s,
+                expected_roi = %s,
+                payback_period = %s,
+                investment_category = %s,
+                sponsor = %s,
+                benefit_owner = %s,
+                approval_status = %s,
+                review_date = %s,
+                approval_date = %s,
+                status = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("project_id"),
+            request.form.get("programme_id"),
+            request.form.get("title"),
+            request.form.get("strategic_objective"),
+            request.form.get("business_driver"),
+            request.form.get("problem_statement"),
+            request.form.get("proposed_solution"),
+            request.form.get("options_considered"),
+            request.form.get("preferred_option"),
+            request.form.get("expected_benefits"),
+            request.form.get("disbenefits"),
+            request.form.get("estimated_cost") or 0,
+            request.form.get("expected_roi") or 0,
+            request.form.get("payback_period"),
+            request.form.get("investment_category"),
+            request.form.get("sponsor"),
+            request.form.get("benefit_owner"),
+            request.form.get("approval_status"),
+            request.form.get("review_date"),
+            request.form.get("approval_date"),
+            request.form.get("status"),
+            case_id,
+            session["user_id"]
+        ))
+
+        cursor.execute("""
+            INSERT INTO business_case_history
+            (
+                business_case_id,
+                user_id,
+                action,
+                previous_status,
+                new_status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """, (
+            case_id,
+            session["user_id"],
+            "Business Case Updated",
+            previous_status,
+            request.form.get("status"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/business-cases")
+
+    conn.close()
+
+    return render_template(
+        "edit_business_case.html",
+        business_case=business_case,
+        projects=projects
+    )
+
+@app.route("/delete-business-case/<int:case_id>")
+def delete_business_case(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Business Cases", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM business_cases
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        case_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/business-cases")
+
+@app.route("/business-case-history/<int:case_id>")
+def business_case_history(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM business_case_history
+        WHERE business_case_id = %s
+        ORDER BY id DESC
+    """, (
+        case_id,
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "business_case_history.html",
+        history=history
+    )
+
+@app.route("/business-case-benefits/<int:case_id>")
+def business_case_benefits(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM business_case_benefits
+        WHERE business_case_id = %s
+        ORDER BY id DESC
+    """, (
+        case_id,
+    ))
+
+    benefits = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "business_case_benefits.html",
+        benefits=benefits,
+        case_id=case_id
+    )
+
+@app.route("/add-business-case-benefit/<int:case_id>", methods=["GET", "POST"])
+def add_business_case_benefit(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO business_case_benefits
+            (
+                business_case_id,
+                benefit_name,
+                benefit_type,
+                owner,
+                target_value,
+                actual_value,
+                status,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            case_id,
+            request.form.get("benefit_name"),
+            request.form.get("benefit_type"),
+            request.form.get("owner"),
+            request.form.get("target_value"),
+            request.form.get("actual_value"),
+            request.form.get("status"),
+            str(date.today())
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(
+            f"/business-case-benefits/{case_id}"
+        )
+
+    conn.close()
+
+    return render_template(
+        "add_business_case_benefit.html",
+        case_id=case_id
+    )
+@app.route("/business-case-approvals/<int:case_id>")
+def business_case_approvals(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM business_case_approvals
+        WHERE business_case_id = %s
+        ORDER BY id DESC
+    """, (
+        case_id,
+    ))
+
+    approvals = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "business_case_approvals.html",
+        approvals=approvals,
+        case_id=case_id
+    )
+
+@app.route("/add-business-case-approval/<int:case_id>", methods=["GET", "POST"])
+def add_business_case_approval(case_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            INSERT INTO business_case_approvals
+            (
+                business_case_id,
+                approver,
+                decision,
+                comments,
+                decision_date
+            )
+            VALUES (%s,%s,%s,%s,%s)
+        """, (
+            case_id,
+            request.form.get("approver"),
+            request.form.get("decision"),
+            request.form.get("comments"),
+            request.form.get("decision_date")
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(
+            f"/business-case-approvals/{case_id}"
+        )
+
+    conn.close()
+
+    return render_template(
+        "add_business_case_approval.html",
+        case_id=case_id
+    )
+
+
 @app.route("/benefits")
 def benefits():
 
@@ -14417,16 +15399,16 @@ def add_programme():
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
-            request.form["programme_name"],
-            request.form["description"],
-            request.form["sponsor"],
-            request.form["manager"],
-            request.form["status"],
-            request.form["start_date"],
-            request.form["end_date"],
-            request.form["budget"],
-            request.form["benefits"],
-            request.form["risks"],
+            request.form.get("programme_name"),
+            request.form.get("description"),
+            request.form.get("sponsor"),
+            request.form.get("manager"),
+            request.form.get("status"),
+            request.form.get("start_date"),
+            request.form.get("end_date"),
+            request.form.get("budget") or 0,
+            request.form.get("benefits"),
+            request.form.get("risks"),
             str(date.today())
         ))
 
@@ -14438,6 +15420,213 @@ def add_programme():
     conn.close()
 
     return render_template("add_programme.html")
+
+
+@app.route("/edit-programme/<int:programme_id>", methods=["GET", "POST"])
+def edit_programme(programme_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Programmes", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM programmes
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        programme_id,
+        session["user_id"]
+    ))
+
+    programme = cursor.fetchone()
+
+    if not programme:
+        conn.close()
+        return redirect("/programmes")
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE programmes
+            SET
+                programme_name = %s,
+                description = %s,
+                sponsor = %s,
+                manager = %s,
+                status = %s,
+                start_date = %s,
+                end_date = %s,
+                budget = %s,
+                benefits = %s,
+                risks = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form.get("programme_name"),
+            request.form.get("description"),
+            request.form.get("sponsor"),
+            request.form.get("manager"),
+            request.form.get("status"),
+            request.form.get("start_date"),
+            request.form.get("end_date"),
+            request.form.get("budget") or 0,
+            request.form.get("benefits"),
+            request.form.get("risks"),
+            programme_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/programmes")
+
+    conn.close()
+
+    return render_template(
+        "edit_programme.html",
+        programme=programme
+    )
+
+
+@app.route("/delete-programme/<int:programme_id>")
+def delete_programme(programme_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Programmes", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM programmes
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        programme_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/programmes")
+
+
+@app.route("/edit-programme/<int:programme_id>", methods=["GET", "POST"])
+def edit_programme(programme_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Programmes", "edit"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM programmes
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        programme_id,
+        session["user_id"]
+    ))
+
+    programme = cursor.fetchone()
+
+    if not programme:
+        conn.close()
+        return redirect("/programmes")
+
+    if request.method == "POST":
+
+        cursor.execute("""
+            UPDATE programmes
+            SET
+                programme_name = %s,
+                description = %s,
+                sponsor = %s,
+                manager = %s,
+                status = %s,
+                start_date = %s,
+                end_date = %s,
+                budget = %s,
+                benefits = %s,
+                risks = %s
+            WHERE id = %s
+            AND user_id = %s
+        """, (
+            request.form["programme_name"],
+            request.form["description"],
+            request.form["sponsor"],
+            request.form["manager"],
+            request.form["status"],
+            request.form["start_date"],
+            request.form["end_date"],
+            request.form["budget"],
+            request.form["benefits"],
+            request.form["risks"],
+            programme_id,
+            session["user_id"]
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/programmes")
+
+    conn.close()
+
+    return render_template(
+        "edit_programme.html",
+        programme=programme
+    )
+
+@app.route("/delete-programme/<int:programme_id>")
+def delete_programme(programme_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Programmes", "delete"):
+        return "Access denied"
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM programmes
+        WHERE id = %s
+        AND user_id = %s
+    """, (
+        programme_id,
+        session["user_id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/programmes")
 
 
 @app.route("/portfolio-health")

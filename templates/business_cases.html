@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Cases</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Business Cases</h1>
+
+                <p class="dashboard-subtitle">
+                    Strategic investment justification, approval governance and benefits realisation management.
+                </p>
+
+            </div>
+
+            <div class="dashboard-actions">
+
+                <a href="/add-business-case"
+                   class="btn-primary">
+                    + Add Business Case
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Cases</h3>
+                <p>{{ total_cases }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Approved</h3>
+                <p>{{ approved_cases }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Pending</h3>
+                <p>{{ pending_cases }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Rejected</h3>
+                <p>{{ rejected_cases }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Total Investment</h3>
+                <p>£{{ "{:,.0f}".format(total_investment) }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Expected ROI</h3>
+                <p>{{ total_roi }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Benefits Realised</h3>
+                <p>{{ benefits_realised }}</p>
+            </div>
+
+        </div>
+
+
+        {% if business_cases %}
+
+        {% set top_case = business_cases[0] %}
+
+        <div class="smart-card">
+
+            <h3>Executive Recommendation</h3>
+
+            <div class="smart-insight">
+
+                <strong>
+                    {{ top_case["title"] }}
+                </strong>
+
+                <p>
+                    Project:
+                    {{ top_case["project_name"] or "No Project" }}
+                </p>
+
+                <p>
+                    Investment Category:
+                    {{ top_case["investment_category"] or "Not Set" }}
+                </p>
+
+                <p>
+                    Estimated Cost:
+                    £{{ "{:,.0f}".format(top_case["estimated_cost"] or 0) }}
+                </p>
+
+                <p>
+                    Expected ROI:
+                    {{ top_case["expected_roi"] or 0 }}%
+                </p>
+
+                <p>
+                    Approval Status:
+                    {{ top_case["approval_status"] }}
+                </p>
+
+                <p>
+                    Sponsor:
+                    {{ top_case["sponsor"] or "Not Assigned" }}
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="projects-grid">
+
+            {% for case in business_cases %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+
+                        <h3>
+                            {{ case["title"] }}
+                        </h3>
+
+                        {% if case["approval_status"] == "Approved" %}
+
+                            <span class="badge badge-green">
+                                Approved
+                            </span>
+
+                        {% elif case["approval_status"] == "Pending" %}
+
+                            <span class="badge badge-yellow">
+                                Pending
+                            </span>
+
+                        {% elif case["approval_status"] == "Rejected" %}
+
+                            <span class="badge badge-red">
+                                Rejected
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge badge-blue">
+                                Draft
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="smart-insight">
+
+                    <strong>Strategic Objective</strong>
+
+                    <br><br>
+
+                    {{ case["strategic_objective"] or "Not Provided" }}
+
+                </div>
+
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project</span>
+                        <strong>{{ case["project_name"] or "No Project" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Investment Category</span>
+                        <strong>{{ case["investment_category"] or "Not Set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Estimated Cost</span>
+                        <strong>£{{ "{:,.0f}".format(case["estimated_cost"] or 0) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Expected ROI</span>
+                        <strong>{{ case["expected_roi"] or 0 }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Payback Period</span>
+                        <strong>{{ case["payback_period"] or "Not Set" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Sponsor</span>
+                        <strong>{{ case["sponsor"] or "Not Assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Benefit Owner</span>
+                        <strong>{{ case["benefit_owner"] or "Not Assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Approval Status</span>
+                        <strong>{{ case["approval_status"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ case["status"] }}</strong>
+                    </div>
+
+                </div>
+
+
+                <div class="smart-insight">
+
+                    <strong>Business Driver</strong>
+
+                    <br><br>
+
+                    {{ case["business_driver"] or "Not Provided" }}
+
+                </div>
+
+
+                <div class="smart-insight">
+
+                    <strong>Expected Benefits</strong>
+
+                    <br><br>
+
+                    {{ case["expected_benefits"] or "Not Provided" }}
+
+                </div>
+
+
+                <div class="project-actions">
+
+                    <a href="/business-case-benefits/{{ case['id'] }}">
+                        Benefits
+                    </a>
+
+                    <a href="/business-case-approvals/{{ case['id'] }}">
+                        Approvals
+                    </a>
+
+                    <a href="/business-case-history/{{ case['id'] }}">
+                        History
+                    </a>
+
+                    <a href="/edit-business-case/{{ case['id'] }}">
+                        Edit
+                    </a>
+
+                    <a
+                        href="/delete-business-case/{{ case['id'] }}"
+                        onclick="return confirm('Delete this business case?')"
+                    >
+                        Delete
+                    </a>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Business Cases Added</h3>
+
+            <p>
+                Create business cases to support investment decisions, approvals and benefits realisation.
+            </p>
+
+            <a href="/add-business-case"
+               class="btn-primary">
+
+                Add First Business Case
+
+            </a>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

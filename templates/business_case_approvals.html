@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Case Approvals</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+{% include "sidebar.html" %}
+
+<div class="main-content">
+
+    <div class="dashboard-header">
+
+        <div>
+
+            <h1>Business Case Approvals</h1>
+
+        </div>
+
+        <div class="dashboard-actions">
+
+            <a href="/add-business-case-approval/{{ case_id }}"
+               class="btn-primary">
+
+                + Add Approval
+
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Approver</th>
+                    <th>Decision</th>
+                    <th>Comments</th>
+                    <th>Date</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for approval in approvals %}
+
+                <tr>
+
+                    <td>{{ approval["approver"] }}</td>
+                    <td>{{ approval["decision"] }}</td>
+                    <td>{{ approval["comments"] }}</td>
+                    <td>{{ approval["decision_date"] }}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</div>
+
+</body>
+</html>

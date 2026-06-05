@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Business Case</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Edit Business Case</h1>
+
+                <p class="dashboard-subtitle">
+                    Update investment details, approvals and benefits.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Title</label>
+
+                <input type="text"
+                       name="title"
+                       value="{{ business_case['title'] }}"
+                       required>
+
+                <label>Strategic Objective</label>
+
+                <textarea name="strategic_objective">{{ business_case['strategic_objective'] }}</textarea>
+
+                <label>Business Driver</label>
+
+                <textarea name="business_driver">{{ business_case['business_driver'] }}</textarea>
+
+                <label>Problem Statement</label>
+
+                <textarea name="problem_statement">{{ business_case['problem_statement'] }}</textarea>
+
+                <label>Proposed Solution</label>
+
+                <textarea name="proposed_solution">{{ business_case['proposed_solution'] }}</textarea>
+
+                <label>Options Considered</label>
+
+                <textarea name="options_considered">{{ business_case['options_considered'] }}</textarea>
+
+                <label>Preferred Option</label>
+
+                <textarea name="preferred_option">{{ business_case['preferred_option'] }}</textarea>
+
+                <label>Expected Benefits</label>
+
+                <textarea name="expected_benefits">{{ business_case['expected_benefits'] }}</textarea>
+
+                <label>Disbenefits</label>
+
+                <textarea name="disbenefits">{{ business_case['disbenefits'] }}</textarea>
+
+                <label>Estimated Cost</label>
+
+                <input type="number"
+                       step="0.01"
+                       name="estimated_cost"
+                       value="{{ business_case['estimated_cost'] }}">
+
+                <label>Expected ROI</label>
+
+                <input type="number"
+                       step="0.01"
+                       name="expected_roi"
+                       value="{{ business_case['expected_roi'] }}">
+
+                <label>Payback Period</label>
+
+                <input type="text"
+                       name="payback_period"
+                       value="{{ business_case['payback_period'] }}">
+
+                <label>Sponsor</label>
+
+                <input type="text"
+                       name="sponsor"
+                       value="{{ business_case['sponsor'] }}">
+
+                <label>Benefit Owner</label>
+
+                <input type="text"
+                       name="benefit_owner"
+                       value="{{ business_case['benefit_owner'] }}">
+
+                <label>Approval Status</label>
+
+                <input type="text"
+                       name="approval_status"
+                       value="{{ business_case['approval_status'] }}">
+
+                <label>Status</label>
+
+                <input type="text"
+                       name="status"
+                       value="{{ business_case['status'] }}">
+
+                <br><br>
+
+                <button type="submit"
+                        class="btn-primary">
+
+                    Update Business Case
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

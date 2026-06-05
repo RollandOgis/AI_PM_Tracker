@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Business Case</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+
+                <h1>Add Business Case</h1>
+
+                <p class="dashboard-subtitle">
+                    Create an investment proposal for approval and benefits realisation.
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <form method="POST">
+
+                <label>Project</label>
+
+                <select name="project_id">
+
+                    <option value="">
+                        No Project
+                    </option>
+
+                    {% for project in projects %}
+
+                    <option value="{{ project['id'] }}">
+                        {{ project['name'] }}
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <label>Business Case Title</label>
+                <input type="text"
+                       name="title"
+                       required>
+
+                <label>Strategic Objective</label>
+                <textarea name="strategic_objective"></textarea>
+
+                <label>Business Driver</label>
+                <textarea name="business_driver"></textarea>
+
+                <label>Problem Statement</label>
+                <textarea name="problem_statement"></textarea>
+
+                <label>Proposed Solution</label>
+                <textarea name="proposed_solution"></textarea>
+
+                <label>Options Considered</label>
+                <textarea name="options_considered"></textarea>
+
+                <label>Preferred Option</label>
+                <textarea name="preferred_option"></textarea>
+
+                <label>Expected Benefits</label>
+                <textarea name="expected_benefits"></textarea>
+
+                <label>Disbenefits</label>
+                <textarea name="disbenefits"></textarea>
+
+                <label>Estimated Cost (£)</label>
+                <input type="number"
+                       step="0.01"
+                       name="estimated_cost">
+
+                <label>Expected ROI (%)</label>
+                <input type="number"
+                       step="0.01"
+                       name="expected_roi">
+
+                <label>Payback Period</label>
+                <input type="text"
+                       name="payback_period">
+
+                <label>Investment Category</label>
+
+                <select name="investment_category">
+
+                    <option>Growth</option>
+                    <option>Compliance</option>
+                    <option>Cost Reduction</option>
+                    <option>Strategic</option>
+                    <option>Transformation</option>
+
+                </select>
+
+                <label>Sponsor</label>
+                <input type="text"
+                       name="sponsor">
+
+                <label>Benefit Owner</label>
+                <input type="text"
+                       name="benefit_owner">
+
+                <label>Approval Status</label>
+
+                <select name="approval_status">
+
+                    <option>Draft</option>
+                    <option>Pending</option>
+                    <option>Approved</option>
+                    <option>Rejected</option>
+
+                </select>
+
+                <label>Review Date</label>
+                <input type="date"
+                       name="review_date">
+
+                <label>Approval Date</label>
+                <input type="date"
+                       name="approval_date">
+
+                <label>Status</label>
+
+                <select name="status">
+
+                    <option>Draft</option>
+                    <option>Active</option>
+                    <option>Closed</option>
+
+                </select>
+
+                <br><br>
+
+                <button type="submit"
+                        class="btn-primary">
+
+                    Save Business Case
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

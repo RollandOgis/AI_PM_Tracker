@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Approval</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+{% include "sidebar.html" %}
+
+<div class="main-content">
+
+    <h1>Add Approval</h1>
+
+    <div class="smart-card">
+
+        <form method="POST">
+
+            <label>Approver</label>
+
+            <input type="text"
+                   name="approver"
+                   required>
+
+            <label>Decision</label>
+
+            <select name="decision">
+
+                <option>Approved</option>
+                <option>Rejected</option>
+                <option>Pending</option>
+
+            </select>
+
+            <label>Comments</label>
+
+            <textarea name="comments"></textarea>
+
+            <label>Decision Date</label>
+
+            <input type="date"
+                   name="decision_date">
+
+            <br><br>
+
+            <button type="submit"
+                    class="btn-primary">
+
+                Save Approval
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</div>
+
+</body>
+</html>

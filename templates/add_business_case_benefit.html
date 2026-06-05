@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Business Case Benefit</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+{% include "sidebar.html" %}
+
+<div class="main-content">
+
+    <h1>Add Business Case Benefit</h1>
+
+    <div class="smart-card">
+
+        <form method="POST">
+
+            <label>Benefit Name</label>
+            <input type="text"
+                   name="benefit_name"
+                   required>
+
+            <label>Benefit Type</label>
+            <input type="text"
+                   name="benefit_type">
+
+            <label>Owner</label>
+            <input type="text"
+                   name="owner">
+
+            <label>Target Value</label>
+            <input type="text"
+                   name="target_value">
+
+            <label>Actual Value</label>
+            <input type="text"
+                   name="actual_value">
+
+            <label>Status</label>
+
+            <select name="status">
+
+                <option>Planned</option>
+                <option>Tracking</option>
+                <option>Realised</option>
+
+            </select>
+
+            <br><br>
+
+            <button type="submit"
+                    class="btn-primary">
+
+                Save Benefit
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</div>
+
+</body>
+</html>
