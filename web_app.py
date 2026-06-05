@@ -7294,7 +7294,7 @@ def clients():
         SELECT *
         FROM clients
         WHERE user_id = %s
-        ORDER BY company_name ASC
+        ORDER BY company ASC
     """, (
         session["user_id"],
     ))
@@ -7319,10 +7319,7 @@ def clients():
 
         total_pipeline_value += estimated_value
 
-        status = (
-            client.get("status")
-            or "Lead"
-        )
+        status = client.get("status") or "Lead"
 
         if status == "Active":
             active_clients += 1
@@ -7333,29 +7330,8 @@ def clients():
         elif status == "At Risk":
             at_risk_clients += 1
 
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM projects
-            WHERE user_id = %s
-            AND client_name = %s
-        """, (
-            session["user_id"],
-            client.get("company_name")
-        ))
-
-        linked_projects = cursor.fetchone()["count"]
-
-        cursor.execute("""
-            SELECT COUNT(*)
-            FROM invoices
-            WHERE user_id = %s
-            AND organisation_id = %s
-        """, (
-            session["user_id"],
-            client["id"]
-        ))
-
-        linked_invoices = cursor.fetchone()["count"]
+        linked_projects = 0
+        linked_invoices = 0
 
         health_score = 90
 
@@ -7380,25 +7356,21 @@ def clients():
     executive_insights = []
 
     if active_clients > 0:
-
         executive_insights.append(
             f"{active_clients} active client(s) generating delivery work."
         )
 
     if lead_clients > 0:
-
         executive_insights.append(
             f"{lead_clients} lead client(s) available for conversion."
         )
 
     if at_risk_clients > 0:
-
         executive_insights.append(
             f"{at_risk_clients} client(s) require relationship attention."
         )
 
     if total_clients == 0:
-
         executive_insights.append(
             "No client records currently available."
         )
