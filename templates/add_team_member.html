@@ -11,78 +11,102 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
 
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
-        <div class="form-container">
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Team Member</h1>
+                <p class="dashboard-subtitle">
+                    Add a resource profile with role, department, availability, skills and training records.
+                </p>
+            </div>
 
-            <h1>Add Team Member</h1>
+            <div class="dashboard-actions">
+                <a href="/team" class="btn-primary">
+                    Back to Team
+                </a>
+            </div>
+        </div>
+
+        <div class="form-container">
 
             <form method="POST">
 
                 <label>Full Name</label>
-
-                <input
-                    type="text"
-                    name="name"
-                    required
-                >
-
+                <input type="text" name="name" required>
 
                 <label>Role</label>
-
-                <input
-                    type="text"
-                    name="role"
-                    placeholder="Developer, BA, PM, QA"
-                >
-
+                <input type="text" name="role" placeholder="Developer, BA, PM, QA">
 
                 <label>Email</label>
-
-                <input
-                    type="email"
-                    name="email"
-                >
-
+                <input type="email" name="email">
 
                 <label>Phone</label>
+                <input type="text" name="phone">
 
-                <input
-                    type="text"
-                    name="phone"
-                >
+                <label>Manager</label>
+                <input type="text" name="manager">
 
+                <label>Department</label>
+                <input type="text" name="department" placeholder="Delivery, Engineering, QA, PMO">
+
+                <label>Employment Status</label>
+                <select name="employment_status">
+                    <option value="">Select</option>
+                    <option value="Permanent">Permanent</option>
+                    <option value="Contractor">Contractor</option>
+                    <option value="Part Time">Part Time</option>
+                    <option value="Temporary">Temporary</option>
+                </select>
+
+                <label>Availability</label>
+                <select name="availability">
+                    <option value="">Select</option>
+                    <option value="Available">Available</option>
+                    <option value="Partially Available">Partially Available</option>
+                    <option value="Fully Allocated">Fully Allocated</option>
+                    <option value="On Leave">On Leave</option>
+                </select>
+
+                <label>Status</label>
+                <select name="status">
+                    <option value="Active">Active</option>
+                    <option value="Unavailable">Unavailable</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
 
                 <label>Skills</label>
-
                 <textarea
                     name="skills"
                     rows="4"
                     placeholder="Python, React, SQL, Testing, Stakeholder Management"
                 ></textarea>
 
+                <label>Certifications</label>
+                <textarea
+                    name="certifications"
+                    rows="4"
+                    placeholder="PRINCE2, Scrum, AWS, Azure, ISTQB"
+                ></textarea>
 
-                <label>Status</label>
+                <label>Training Records</label>
+                <textarea
+                    name="training_records"
+                    rows="4"
+                    placeholder="Recent training, planned training, completed courses"
+                ></textarea>
 
-                <select name="status">
+                <label>Performance Notes</label>
+                <textarea
+                    name="performance_notes"
+                    rows="4"
+                    placeholder="Performance notes, strengths, development areas"
+                ></textarea>
 
-                    <option value="Active">
-                        Active
-                    </option>
-
-                    <option value="Unavailable">
-                        Unavailable
-                    </option>
-
-                    <option value="Inactive">
-                        Inactive
-                    </option>
-
-                </select>
-
+                <br><br>
 
                 <button type="submit" class="btn-primary">
                     Save Team Member

@@ -3528,6 +3528,73 @@ def init_db():
                    )
                    """)
 
+    # Team Members v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS manager TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS department TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS employment_status TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS availability TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS certifications TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS training_records TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE team_members
+                       ADD COLUMN IF NOT EXISTS performance_notes TEXT
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS team_member_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       team_member_id
+                       INTEGER,
+                       user_id
+                       INTEGER,
+                       action
+                       TEXT,
+                       total_tasks
+                       INTEGER,
+                       active_tasks
+                       INTEGER,
+                       completed_tasks
+                       INTEGER,
+                       blocked_tasks
+                       INTEGER,
+                       utilisation
+                       INTEGER,
+                       notes
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
 
 
@@ -10388,16 +10455,14 @@ def team():
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(TRIM(name)), LOWER(TRIM(email)))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name ASC
+        ORDER BY LOWER(TRIM(name)), LOWER(TRIM(email)), id DESC
     """, (
         session["user_id"],
     ))
@@ -10406,15 +10471,20 @@ def team():
 
     team_data = []
 
+    total_members = len(members)
+    active_members = 0
+    unavailable_members = 0
+    inactive_members = 0
+    high_workload_count = 0
+    blocked_work_count = 0
+
     for member in members:
 
         cursor.execute("""
             SELECT COUNT(DISTINCT tasks.id) AS total_tasks
             FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            LEFT JOIN task_team_members
-            ON task_team_members.task_id = tasks.id
+            JOIN projects ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
             AND (
                 tasks.assigned_to = %s
@@ -10431,10 +10501,8 @@ def team():
         cursor.execute("""
             SELECT COUNT(DISTINCT tasks.id) AS completed_tasks
             FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            LEFT JOIN task_team_members
-            ON task_team_members.task_id = tasks.id
+            JOIN projects ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
             AND tasks.status = 'Completed'
             AND (
@@ -10452,10 +10520,8 @@ def team():
         cursor.execute("""
             SELECT COUNT(DISTINCT tasks.id) AS active_tasks
             FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            LEFT JOIN task_team_members
-            ON task_team_members.task_id = tasks.id
+            JOIN projects ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
             AND tasks.status != 'Completed'
             AND (
@@ -10473,10 +10539,8 @@ def team():
         cursor.execute("""
             SELECT COUNT(DISTINCT tasks.id) AS blocked_tasks
             FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            LEFT JOIN task_team_members
-            ON task_team_members.task_id = tasks.id
+            JOIN projects ON tasks.project_id = projects.id
+            LEFT JOIN task_team_members ON task_team_members.task_id = tasks.id
             WHERE projects.user_id = %s
             AND tasks.status = 'Blocked'
             AND (
@@ -10491,10 +10555,54 @@ def team():
 
         blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
-        if total_tasks > 0:
-            utilisation = round((active_tasks / total_tasks) * 100)
-        else:
-            utilisation = 0
+        utilisation = min(active_tasks * 10, 100)
+
+        workload_warning = ""
+
+        if active_tasks >= 8:
+            workload_warning = "High workload detected."
+            high_workload_count += 1
+
+        blocked_warning = ""
+
+        if blocked_tasks > 0:
+            blocked_warning = "Blocked work needs attention."
+            blocked_work_count += 1
+
+        if member["status"] == "Active":
+            active_members += 1
+        elif member["status"] == "Unavailable":
+            unavailable_members += 1
+        elif member["status"] == "Inactive":
+            inactive_members += 1
+
+        cursor.execute("""
+            INSERT INTO team_member_history
+            (
+                team_member_id,
+                user_id,
+                action,
+                total_tasks,
+                active_tasks,
+                completed_tasks,
+                blocked_tasks,
+                utilisation,
+                notes,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            member["id"],
+            session["user_id"],
+            "Team member workload snapshot",
+            total_tasks,
+            active_tasks,
+            completed_tasks,
+            blocked_tasks,
+            utilisation,
+            "Automatic team workload snapshot",
+            str(date.today())
+        ))
 
         team_data.append({
             "member": member,
@@ -10502,14 +10610,23 @@ def team():
             "completed_tasks": completed_tasks,
             "active_tasks": active_tasks,
             "blocked_tasks": blocked_tasks,
-            "utilisation": utilisation
+            "utilisation": utilisation,
+            "workload_warning": workload_warning,
+            "blocked_warning": blocked_warning
         })
 
+    conn.commit()
     conn.close()
 
     return render_template(
         "team.html",
-        team_data=team_data
+        team_data=team_data,
+        total_members=total_members,
+        active_members=active_members,
+        unavailable_members=unavailable_members,
+        inactive_members=inactive_members,
+        high_workload_count=high_workload_count,
+        blocked_work_count=blocked_work_count
     )
 
 
@@ -10525,8 +10642,26 @@ def add_team_member():
     if request.method == "POST":
 
         conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id
+            FROM team_members
+            WHERE user_id = %s
+            AND LOWER(TRIM(name)) = LOWER(TRIM(%s))
+            AND LOWER(TRIM(email)) = LOWER(TRIM(%s))
+            LIMIT 1
+        """, (
+            session["user_id"],
+            request.form.get("name", ""),
+            request.form.get("email", "")
+        ))
+
+        existing = cursor.fetchone()
+
+        if existing:
+            conn.close()
+            return redirect("/team")
 
         cursor.execute("""
             INSERT INTO team_members
@@ -10538,9 +10673,16 @@ def add_team_member():
                 phone,
                 skills,
                 status,
+                manager,
+                department,
+                employment_status,
+                availability,
+                certifications,
+                training_records,
+                performance_notes,
                 created_at
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             session["user_id"],
             request.form.get("name", ""),
@@ -10549,15 +10691,20 @@ def add_team_member():
             request.form.get("phone", ""),
             request.form.get("skills", ""),
             request.form.get("status", "Active"),
+            request.form.get("manager", ""),
+            request.form.get("department", ""),
+            request.form.get("employment_status", ""),
+            request.form.get("availability", ""),
+            request.form.get("certifications", ""),
+            request.form.get("training_records", ""),
+            request.form.get("performance_notes", ""),
             str(date.today())
         ))
 
         conn.commit()
         conn.close()
 
-        create_activity(
-            f"{session['username']} added a team member"
-        )
+        create_activity(f"{session['username']} added a team member")
 
         return redirect("/team")
 
@@ -10574,10 +10721,7 @@ def edit_team_member(member_id):
         return "Access denied"
 
     conn = get_db_connection()
-
-    cursor = conn.cursor(
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("""
         SELECT *
@@ -10605,7 +10749,14 @@ def edit_team_member(member_id):
                 email = %s,
                 phone = %s,
                 skills = %s,
-                status = %s
+                status = %s,
+                manager = %s,
+                department = %s,
+                employment_status = %s,
+                availability = %s,
+                certifications = %s,
+                training_records = %s,
+                performance_notes = %s
             WHERE id = %s
             AND user_id = %s
         """, (
@@ -10615,6 +10766,13 @@ def edit_team_member(member_id):
             request.form.get("phone", ""),
             request.form.get("skills", ""),
             request.form.get("status", "Active"),
+            request.form.get("manager", ""),
+            request.form.get("department", ""),
+            request.form.get("employment_status", ""),
+            request.form.get("availability", ""),
+            request.form.get("certifications", ""),
+            request.form.get("training_records", ""),
+            request.form.get("performance_notes", ""),
             member_id,
             session["user_id"]
         ))
@@ -10622,9 +10780,7 @@ def edit_team_member(member_id):
         conn.commit()
         conn.close()
 
-        create_activity(
-            f"{session['username']} updated a team member"
-        )
+        create_activity(f"{session['username']} updated a team member")
 
         return redirect("/team")
 
@@ -10646,7 +10802,6 @@ def delete_team_member(member_id):
         return "Access denied"
 
     conn = get_db_connection()
-
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -10661,11 +10816,42 @@ def delete_team_member(member_id):
     conn.commit()
     conn.close()
 
-    create_activity(
-        f"{session['username']} deleted a team member"
-    )
+    create_activity(f"{session['username']} deleted a team member")
 
     return redirect("/team")
+
+
+@app.route("/team-member-history/<int:member_id>")
+def team_member_history(member_id):
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    if not has_permission("Team", "view"):
+        return "Access denied"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    cursor.execute("""
+        SELECT *
+        FROM team_member_history
+        WHERE team_member_id = %s
+        AND user_id = %s
+        ORDER BY id DESC
+    """, (
+        member_id,
+        session["user_id"]
+    ))
+
+    history = cursor.fetchall()
+
+    conn.close()
+
+    return render_template(
+        "team_member_history.html",
+        history=history
+    )
 
 @app.route("/raid")
 def raid():

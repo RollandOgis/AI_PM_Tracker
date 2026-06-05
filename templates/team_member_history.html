@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Team Member History</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <main class="main-content">
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Team Member History</h1>
+                <p class="dashboard-subtitle">
+                    Review workload, utilisation and performance snapshots for this team member.
+                </p>
+            </div>
+
+            <div class="dashboard-actions">
+                <a href="/team" class="btn-primary">
+                    Back to Team
+                </a>
+            </div>
+        </div>
+
+        {% if history %}
+
+        <div class="table-container">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Action</th>
+                        <th>Total Tasks</th>
+                        <th>Active</th>
+                        <th>Completed</th>
+                        <th>Blocked</th>
+                        <th>Utilisation</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in history %}
+
+                    <tr>
+                        <td>{{ item["created_at"] }}</td>
+                        <td>{{ item["action"] }}</td>
+                        <td>{{ item["total_tasks"] }}</td>
+                        <td>{{ item["active_tasks"] }}</td>
+                        <td>{{ item["completed_tasks"] }}</td>
+                        <td>{{ item["blocked_tasks"] }}</td>
+                        <td>{{ item["utilisation"] }}%</td>
+                        <td>{{ item["notes"] }}</td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+            </table>
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Team Member History</h3>
+            <p>No workload snapshots have been recorded yet.</p>
+        </div>
+
+        {% endif %}
+
+    </main>
+
+</div>
+
+</body>
+</html>
