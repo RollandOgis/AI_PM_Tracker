@@ -11,84 +11,97 @@
 <body>
 
 <div class="layout">
-      {% include "sidebar.html" %}
+
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
-        <div class="form-container">
+        <div class="dashboard-header">
+            <div>
+                <h1>Add Client</h1>
+                <p class="dashboard-subtitle">
+                    Add client relationship, opportunity, ownership, contract and renewal details.
+                </p>
+            </div>
 
-            <h1>Add Client</h1>
+            <div class="dashboard-actions">
+                <a href="/clients" class="btn-primary">
+                    Back to Clients
+                </a>
+            </div>
+        </div>
+
+        <div class="form-container">
 
             <form method="POST">
 
                 <label>Client Name</label>
-
-                <input
-                    type="text"
-                    name="name"
-                    required
-                >
-
+                <input type="text" name="name" required>
 
                 <label>Company</label>
-
-                <input
-                    type="text"
-                    name="company"
-                >
-
+                <input type="text" name="company">
 
                 <label>Email</label>
-
-                <input
-                    type="email"
-                    name="email"
-                >
-
+                <input type="email" name="email">
 
                 <label>Phone</label>
+                <input type="text" name="phone">
 
-                <input
-                    type="text"
-                    name="phone"
-                >
+                <label>Client Owner</label>
+                <input type="text" name="client_owner">
 
+                <label>Account Manager</label>
+                <input type="text" name="account_manager">
 
                 <label>Status</label>
-
                 <select name="status">
-
-                    <option value="Lead">
-                        Lead
-                    </option>
-
-                    <option value="Active">
-                        Active
-                    </option>
-
-                    <option value="Completed">
-                        Completed
-                    </option>
-
+                    <option value="Lead">Lead</option>
+                    <option value="Active">Active</option>
+                    <option value="At Risk">At Risk</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Won">Won</option>
+                    <option value="Lost">Lost</option>
+                    <option value="Completed">Completed</option>
                 </select>
 
+                <label>Opportunity Stage</label>
+                <select name="opportunity_stage">
+                    <option value="">Select</option>
+                    <option value="Prospecting">Prospecting</option>
+                    <option value="Qualified">Qualified</option>
+                    <option value="Proposal Sent">Proposal Sent</option>
+                    <option value="Negotiation">Negotiation</option>
+                    <option value="Won">Won</option>
+                    <option value="Lost">Lost</option>
+                </select>
 
                 <label>Estimated Value (£)</label>
+                <input type="number" step="0.01" name="estimated_value">
 
-                <input
-                    type="number"
-                    step="0.01"
-                    name="estimated_value"
-                >
+                <label>Client Health Score</label>
+                <input type="number" name="client_health_score" min="0" max="100" value="70">
 
+                <label>Client Risk Rating</label>
+                <select name="client_risk_rating">
+                    <option value="">Select</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                </select>
+
+                <label>Satisfaction Score</label>
+                <input type="number" name="satisfaction_score" min="0" max="100" value="0">
+
+                <label>Renewal Date</label>
+                <input type="date" name="renewal_date">
+
+                <label>Contract Expiry Date</label>
+                <input type="date" name="contract_expiry_date">
 
                 <label>Notes</label>
+                <textarea name="notes" rows="5"></textarea>
 
-                <textarea
-                    name="notes"
-                    rows="5"
-                ></textarea>
-
+                <br><br>
 
                 <button type="submit" class="btn-primary">
                     Add Client

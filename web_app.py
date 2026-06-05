@@ -3669,6 +3669,48 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS satisfaction_score INTEGER DEFAULT 0
                    """)
 
+    # Clients v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS client_owner TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS account_manager TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS client_health_score INTEGER DEFAULT 70
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS client_risk_rating TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS opportunity_stage TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS renewal_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS contract_expiry_date TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE clients
+                       ADD COLUMN IF NOT EXISTS satisfaction_score INTEGER DEFAULT 0
+                   """)
+
 
 
 
@@ -7400,17 +7442,6 @@ def add_client():
 
     if request.method == "POST":
 
-        name = request.form.get("name", "")
-        company = request.form.get("company", "")
-        email = request.form.get("email", "")
-        phone = request.form.get("phone", "")
-        status = request.form.get("status", "Lead")
-        notes = request.form.get("notes", "")
-
-        estimated_value = float(
-            request.form.get("estimated_value", 0) or 0
-        )
-
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -7424,26 +7455,64 @@ def add_client():
                 status,
                 notes,
                 estimated_value,
+                client_owner,
+                account_manager,
+                opportunity_stage,
+                client_health_score,
+                client_risk_rating,
+                renewal_date,
+                contract_expiry_date,
+                satisfaction_score,
                 user_id
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES
+            (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            name,
-            company,
-            email,
-            phone,
-            status,
-            notes,
-            estimated_value,
+
+            request.form.get("name"),
+            request.form.get("company"),
+            request.form.get("email"),
+            request.form.get("phone"),
+            request.form.get("status"),
+            request.form.get("notes"),
+            float(request.form.get("estimated_value") or 0),
+
+            request.form.get("client_owner"),
+            request.form.get("account_manager"),
+            request.form.get("opportunity_stage"),
+
+            int(
+                request.form.get(
+                    "client_health_score"
+                ) or 70
+            ),
+
+            request.form.get("client_risk_rating"),
+            request.form.get("renewal_date"),
+            request.form.get("contract_expiry_date"),
+
+            int(
+                request.form.get(
+                    "satisfaction_score"
+                ) or 0
+            ),
+
             session["user_id"]
+
         ))
 
         conn.commit()
         conn.close()
 
+        create_activity(
+            f"{session['username']} added a client"
+        )
+
         return redirect("/clients")
 
-    return render_template("add_client.html")
+    return render_template(
+        "add_client.html"
+    )
 
 @app.route("/edit-client/<int:client_id>", methods=["GET", "POST"])
 def edit_client(client_id):
@@ -7473,44 +7542,73 @@ def edit_client(client_id):
     client = cursor.fetchone()
 
     if not client:
+
         conn.close()
         return redirect("/clients")
 
     if request.method == "POST":
 
-        name = request.form.get("name", "")
-        company = request.form.get("company", "")
-        email = request.form.get("email", "")
-        phone = request.form.get("phone", "")
-        status = request.form.get("status", "Lead")
-        notes = request.form.get("notes", "")
-
-        estimated_value = float(
-            request.form.get("estimated_value", 0) or 0
-        )
-
         cursor.execute("""
             UPDATE clients
             SET
+
                 name = %s,
                 company = %s,
                 email = %s,
                 phone = %s,
                 status = %s,
                 notes = %s,
-                estimated_value = %s
+                estimated_value = %s,
+
+                client_owner = %s,
+                account_manager = %s,
+                opportunity_stage = %s,
+                client_health_score = %s,
+                client_risk_rating = %s,
+                renewal_date = %s,
+                contract_expiry_date = %s,
+                satisfaction_score = %s
+
             WHERE id = %s
             AND user_id = %s
         """, (
-            name,
-            company,
-            email,
-            phone,
-            status,
-            notes,
-            estimated_value,
+
+            request.form.get("name"),
+            request.form.get("company"),
+            request.form.get("email"),
+            request.form.get("phone"),
+            request.form.get("status"),
+            request.form.get("notes"),
+
+            float(
+                request.form.get(
+                    "estimated_value"
+                ) or 0
+            ),
+
+            request.form.get("client_owner"),
+            request.form.get("account_manager"),
+            request.form.get("opportunity_stage"),
+
+            int(
+                request.form.get(
+                    "client_health_score"
+                ) or 70
+            ),
+
+            request.form.get("client_risk_rating"),
+            request.form.get("renewal_date"),
+            request.form.get("contract_expiry_date"),
+
+            int(
+                request.form.get(
+                    "satisfaction_score"
+                ) or 0
+            ),
+
             client_id,
             session["user_id"]
+
         ))
 
         conn.commit()
