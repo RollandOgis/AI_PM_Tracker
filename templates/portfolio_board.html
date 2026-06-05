@@ -14,7 +14,14 @@
 
     <main class="main-content">
 
-        <h1>Portfolio Board</h1>
+        <div class="dashboard-header">
+            <div>
+                <h1>Portfolio Board</h1>
+                <p class="dashboard-subtitle">
+                    Executive portfolio view covering health, budget, risks, issues, benefits and strategic alignment.
+                </p>
+            </div>
+        </div>
 
         <div class="stats-grid">
 
@@ -33,56 +40,167 @@
                 <p>£{{ "{:,.0f}".format(total_actual) }}</p>
             </div>
 
-        </div>
+            <div class="stat-card blue-card">
+                <h3>Budget Variance</h3>
+                <p>£{{ "{:,.0f}".format(budget_variance) }}</p>
+            </div>
 
-        <div class="table-container">
+            <div class="stat-card red-card">
+                <h3>Open Risks</h3>
+                <p>{{ total_open_risks }}</p>
+            </div>
 
-            <table>
+            <div class="stat-card amber-card">
+                <h3>Open Issues</h3>
+                <p>{{ total_open_issues }}</p>
+            </div>
 
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Status</th>
-                        <th>Completion</th>
-                        <th>Risks</th>
-                        <th>Issues</th>
-                        <th>Budget</th>
-                        <th>Actual Cost</th>
-                        <th>Health</th>
-                    </tr>
-                </thead>
+            <div class="stat-card green-card">
+                <h3>Avg Completion</h3>
+                <p>{{ average_completion }}%</p>
+            </div>
 
-                <tbody>
-
-                    {% for project in portfolio_projects %}
-
-                    <tr>
-                        <td>{{ project.name }}</td>
-                        <td>{{ project.status }}</td>
-                        <td>{{ project.completion_rate }}%</td>
-                        <td>{{ project.open_risks }}</td>
-                        <td>{{ project.open_issues }}</td>
-                        <td>£{{ "{:,.0f}".format(project.budget) }}</td>
-                        <td>£{{ "{:,.0f}".format(project.actual_cost) }}</td>
-
-                        <td>
-                            {% if project.health_status == "Green" %}
-                                <span class="badge badge-green">Green</span>
-                            {% elif project.health_status == "Amber" %}
-                                <span class="badge badge-yellow">Amber</span>
-                            {% else %}
-                                <span class="badge badge-red">Red</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
+            <div class="stat-card blue-card">
+                <h3>Avg Health</h3>
+                <p>{{ average_health_score }}%</p>
+            </div>
 
         </div>
+
+        <div class="smart-card">
+            <h3>Executive Portfolio Dashboard</h3>
+
+            <div class="smart-insight">
+                <p><strong>Portfolio Status:</strong> {{ portfolio_status }}</p>
+                <p><strong>Portfolio Trend:</strong> {{ portfolio_trend }}</p>
+                <p><strong>Green Projects:</strong> {{ green_projects }}</p>
+                <p><strong>Amber Projects:</strong> {{ amber_projects }}</p>
+                <p><strong>Red Projects:</strong> {{ red_projects }}</p>
+            </div>
+        </div>
+
+        <div class="smart-card">
+            <h3>Executive Alerts</h3>
+
+            <div class="smart-insight">
+                {% for alert in executive_alerts %}
+                    <p>{{ alert }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if portfolio_projects %}
+
+        <div class="projects-grid">
+
+            {% for project in portfolio_projects %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+                    <div>
+                        <h3>{{ project.name }}</h3>
+
+                        {% if project.health_status == "Green" %}
+                            <span class="badge badge-green">Green</span>
+                        {% elif project.health_status == "Amber" %}
+                            <span class="badge badge-yellow">Amber</span>
+                        {% else %}
+                            <span class="badge badge-red">Red</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ project.status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completion</span>
+                        <strong>{{ project.completion_rate }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Portfolio Sponsor</span>
+                        <strong>{{ project.portfolio_sponsor or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Portfolio Manager</span>
+                        <strong>{{ project.portfolio_manager or "Not assigned" }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Risks</span>
+                        <strong>{{ project.open_risks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Issues</span>
+                        <strong>{{ project.open_issues }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ "{:,.0f}".format(project.budget) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Cost</span>
+                        <strong>£{{ "{:,.0f}".format(project.actual_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget Used</span>
+                        <strong>{{ project.budget_used_percent }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Health Score</span>
+                        <strong>{{ project.health_score }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Trend</span>
+                        <strong>{{ project.trend_status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Benefits Status</span>
+                        <strong>{{ project.benefits_status or "Not Started" }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Strategic Objective:</strong>
+                    <br><br>
+                    {{ project.strategic_objective or "No strategic objective recorded." }}
+                </div>
+
+                <div class="smart-insight">
+                    <strong>Expected Benefits:</strong>
+                    <br><br>
+                    {{ project.expected_benefits or "No expected benefits recorded." }}
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+            <h3>No Portfolio Projects</h3>
+            <p>No active portfolio projects are available.</p>
+        </div>
+
+        {% endif %}
 
     </main>
 

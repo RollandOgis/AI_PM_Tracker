@@ -1913,6 +1913,7 @@ def init_db():
                    )
                    """)
 
+
     # Programmes Table
 
     cursor.execute("""
@@ -1958,6 +1959,70 @@ def init_db():
 
                        created_at
                        TEXT
+                   )
+                   """)
+
+    # Portfolio Board v2 upgrades
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS portfolio_sponsor TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS portfolio_manager TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS strategic_objective TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS expected_benefits TEXT
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS benefits_status TEXT DEFAULT 'Not Started'
+                   """)
+
+    cursor.execute("""
+                   ALTER TABLE projects
+                       ADD COLUMN IF NOT EXISTS portfolio_archived BOOLEAN DEFAULT FALSE
+                   """)
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS portfolio_performance_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       user_id
+                       INTEGER,
+                       total_projects
+                       INTEGER,
+                       total_budget
+                       NUMERIC,
+                       total_actual
+                       NUMERIC,
+                       total_open_risks
+                       INTEGER,
+                       total_open_issues
+                       INTEGER,
+                       average_completion
+                       INTEGER,
+                       average_health_score
+                       INTEGER,
+                       portfolio_status
+                       TEXT,
+                       created_at
+                       TIMESTAMP
+                       DEFAULT
+                       CURRENT_TIMESTAMP
                    )
                    """)
 
@@ -18495,6 +18560,7 @@ def billing_dashboard():
         unpaid_subscriptions=unpaid_subscriptions
     )
 
+
 @app.route("/portfolio-board")
 def portfolio_board():
 
@@ -18511,10 +18577,13 @@ def portfolio_board():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (projects.id)
+            projects.*
         FROM projects
-        WHERE user_id = %s
-        ORDER BY id DESC
+        WHERE projects.user_id = %s
+        AND COALESCE(projects.is_archived, FALSE) = FALSE
+        AND COALESCE(projects.portfolio_archived, FALSE) = FALSE
+        ORDER BY projects.id DESC
     """, (
         session["user_id"],
     ))
@@ -18525,18 +18594,21 @@ def portfolio_board():
 
     total_budget = 0
     total_actual = 0
+    total_open_risks = 0
+    total_open_issues = 0
+    total_completion = 0
+    total_health_score = 0
+
+    green_projects = 0
+    amber_projects = 0
+    red_projects = 0
 
     for project in projects:
 
         project_id = project["id"]
 
-        estimated_budget = float(
-            project["estimated_budget"] or 0
-        )
-
-        actual_cost = float(
-            project["actual_cost"] or 0
-        )
+        estimated_budget = float(project["estimated_budget"] or 0)
+        actual_cost = float(project["actual_cost"] or 0)
 
         total_budget += estimated_budget
         total_actual += actual_cost
@@ -18584,33 +18656,60 @@ def portfolio_board():
 
         open_issues = cursor.fetchone()["open_issues"]
 
+        total_open_risks += open_risks
+        total_open_issues += open_issues
+
         if total_tasks > 0:
-            completion_rate = round(
-                (completed_tasks / total_tasks) * 100
-            )
+            completion_rate = round((completed_tasks / total_tasks) * 100)
         else:
             completion_rate = 0
+
+        total_completion += completion_rate
+
+        budget_pressure = 0
+
+        if estimated_budget > 0:
+            budget_used_percent = round((actual_cost / estimated_budget) * 100)
+
+            if budget_used_percent > 100:
+                budget_pressure = 25
+            elif budget_used_percent > 80:
+                budget_pressure = 10
+        else:
+            budget_used_percent = 0
 
         health_score = (
             100
             - (open_risks * 10)
             - (open_issues * 5)
+            - budget_pressure
         )
 
-        health_score = max(
-            0,
-            min(100, health_score)
-        )
+        health_score = max(0, min(100, health_score))
+
+        total_health_score += health_score
 
         if health_score >= 80:
             health_status = "Green"
+            green_projects += 1
         elif health_score >= 50:
             health_status = "Amber"
+            amber_projects += 1
         else:
             health_status = "Red"
+            red_projects += 1
+
+        if health_score >= 80:
+            trend_status = "Stable"
+        elif open_risks > 2 or open_issues > 2:
+            trend_status = "Needs Attention"
+        elif budget_used_percent > 90:
+            trend_status = "Financial Pressure"
+        else:
+            trend_status = "Monitor"
 
         portfolio_projects.append({
-
+            "id": project["id"],
             "name": project["name"],
             "status": project["status"],
             "completion_rate": completion_rate,
@@ -18618,19 +18717,123 @@ def portfolio_board():
             "open_issues": open_issues,
             "budget": estimated_budget,
             "actual_cost": actual_cost,
+            "budget_used_percent": budget_used_percent,
             "health_score": health_score,
-            "health_status": health_status
-
+            "health_status": health_status,
+            "trend_status": trend_status,
+            "portfolio_sponsor": project.get("portfolio_sponsor"),
+            "portfolio_manager": project.get("portfolio_manager"),
+            "strategic_objective": project.get("strategic_objective"),
+            "expected_benefits": project.get("expected_benefits"),
+            "benefits_status": project.get("benefits_status")
         })
+
+    total_projects = len(projects)
+
+    if total_projects > 0:
+        average_completion = round(total_completion / total_projects)
+        average_health_score = round(total_health_score / total_projects)
+    else:
+        average_completion = 0
+        average_health_score = 0
+
+    if average_health_score >= 80:
+        portfolio_status = "Healthy"
+    elif average_health_score >= 50:
+        portfolio_status = "At Risk"
+    else:
+        portfolio_status = "Critical"
+
+    budget_variance = total_budget - total_actual
+
+    cursor.execute("""
+        INSERT INTO portfolio_performance_history
+        (
+            user_id,
+            total_projects,
+            total_budget,
+            total_actual,
+            total_open_risks,
+            total_open_issues,
+            average_completion,
+            average_health_score,
+            portfolio_status
+        )
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (
+        session["user_id"],
+        total_projects,
+        total_budget,
+        total_actual,
+        total_open_risks,
+        total_open_issues,
+        average_completion,
+        average_health_score,
+        portfolio_status
+    ))
+
+    conn.commit()
+
+    cursor.execute("""
+        SELECT *
+        FROM portfolio_performance_history
+        WHERE user_id = %s
+        ORDER BY id DESC
+        LIMIT 2
+    """, (
+        session["user_id"],
+    ))
+
+    history = cursor.fetchall()
+
+    portfolio_trend = "Stable"
+
+    if len(history) >= 2:
+
+        latest = history[0]
+        previous = history[1]
+
+        if latest["average_health_score"] > previous["average_health_score"]:
+            portfolio_trend = "Improving"
+        elif latest["average_health_score"] < previous["average_health_score"]:
+            portfolio_trend = "Declining"
+
+    executive_alerts = []
+
+    if red_projects > 0:
+        executive_alerts.append(f"{red_projects} project(s) are in red health status.")
+
+    if total_open_risks > 0:
+        executive_alerts.append(f"{total_open_risks} open portfolio risk(s) require monitoring.")
+
+    if total_open_issues > 0:
+        executive_alerts.append(f"{total_open_issues} open issue(s) require resolution.")
+
+    if total_actual > total_budget and total_budget > 0:
+        executive_alerts.append("Portfolio actual cost is above budget.")
+
+    if not executive_alerts:
+        executive_alerts.append("Portfolio is currently stable with no major executive alerts.")
 
     conn.close()
 
     return render_template(
         "portfolio_board.html",
         portfolio_projects=portfolio_projects,
-        total_projects=len(projects),
+        total_projects=total_projects,
         total_budget=total_budget,
-        total_actual=total_actual
+        total_actual=total_actual,
+        budget_variance=budget_variance,
+        total_open_risks=total_open_risks,
+        total_open_issues=total_open_issues,
+        average_completion=average_completion,
+        average_health_score=average_health_score,
+        portfolio_status=portfolio_status,
+        portfolio_trend=portfolio_trend,
+        green_projects=green_projects,
+        amber_projects=amber_projects,
+        red_projects=red_projects,
+        executive_alerts=executive_alerts
     )
 
 
