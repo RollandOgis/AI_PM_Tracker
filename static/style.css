@@ -3221,3 +3221,71 @@ td {
     }
 
 }
+
+/* ==================================
+   GLOBAL DARK MODE CARD FIX
+================================== */
+
+body.dark-mode .card,
+body.dark-mode .stat-card,
+body.dark-mode .project-card,
+body.dark-mode .task-card,
+body.dark-mode .smart-card,
+body.dark-mode .analytics-card,
+body.dark-mode .calendar-card,
+body.dark-mode .alert-card,
+body.dark-mode .heatmap-card,
+body.dark-mode .portfolio-card,
+body.dark-mode .dashboard-card,
+body.dark-mode .summary-card,
+body.dark-mode .info-card,
+body.dark-mode .form-card,
+body.dark-mode .table-container {
+
+    background: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+/* Headings */
+
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+    color: #f8fafc !important;
+}
+
+/* Text */
+
+body.dark-mode p,
+body.dark-mode span,
+body.dark-mode small,
+body.dark-mode strong,
+body.dark-mode label,
+body.dark-mode td,
+body.dark-mode th {
+    color: #e2e8f0 !important;
+}
+
+/* Tables */
+
+body.dark-mode table {
+    background: #1e293b !important;
+}
+
+body.dark-mode th {
+    background: #334155 !important;
+}
+
+/* Inputs */
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background: #111827 !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+}
