@@ -19760,8 +19760,40 @@ def ai_risk_engine():
         severity = int(risk.get("severity_score") or 0)
         status = risk.get("status") or "Open"
 
-        probability = int(risk.get("probability") or 0) if risk.get("probability") else 0
-        impact = int(risk.get("impact") or 0) if risk.get("impact") else 0
+        probability_value = risk.get("probability")
+        impact_value = risk.get("impact")
+
+        def convert_risk_value(value):
+
+            if value is None:
+                return 0
+
+            value = str(value).strip()
+
+            if value.isdigit():
+                return int(value)
+
+            value = value.lower()
+
+            if value in ["very high", "critical"]:
+                return 5
+
+            if value == "high":
+                return 4
+
+            if value == "medium":
+                return 3
+
+            if value == "low":
+                return 2
+
+            if value in ["very low", "minimal"]:
+                return 1
+
+            return 0
+
+        probability = convert_risk_value(probability_value)
+        impact = convert_risk_value(impact_value)
 
         if probability == 0:
             probability = min(5, max(1, round(severity / 2)))
