@@ -22976,13 +22976,13 @@ def ai_pm_copilot():
     blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
     cursor.execute("""
-        SELECT COUNT(*) AS pending_changes
-        FROM changes
-        WHERE user_id = %s
-        AND status != 'Approved'
-    """, (
-        session["user_id"],
-    ))
+                   SELECT COUNT(*) AS pending_changes
+                   FROM changes
+                   WHERE user_id = %s
+                     AND approval_status != 'Approved'
+                   """, (
+                       session["user_id"],
+                   ))
 
     pending_changes = cursor.fetchone()["pending_changes"]
 
