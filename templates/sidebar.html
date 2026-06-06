@@ -124,3 +124,25 @@
     <a href="/logout">🚪 Logout</a>
 
 </div>
+
+<script>
+function toggleTheme() {
+    const body = document.body;
+
+    body.classList.toggle("dark-mode");
+
+    if (body.classList.contains("dark-mode")) {
+        localStorage.setItem("ai_pm_theme", "dark");
+    } else {
+        localStorage.setItem("ai_pm_theme", "light");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const savedTheme = localStorage.getItem("ai_pm_theme");
+
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+});
+</script>
