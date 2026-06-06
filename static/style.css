@@ -2993,23 +2993,34 @@ td {
 }
 
 
-/* =========================
-   MODERN SIDEBAR
-========================= */
+/* =========================================
+   MODERN SIDEBAR V2
+========================================= */
 
 .modern-sidebar {
-    width: 280px;
-    background: #0f172a;
-    color: #ffffff;
     position: fixed;
-    left: 0;
     top: 0;
-    bottom: 0;
+    left: 0;
+    width: 340px;
+    height: 100vh;
     overflow-y: auto;
-    padding: 20px 16px;
+
+    background: linear-gradient(
+        180deg,
+        #081028 0%,
+        #0f172a 100%
+    );
+
+    color: white;
+
+    padding: 24px;
+
     border-right: 1px solid rgba(255,255,255,0.08);
-    scrollbar-width: thin;
+
+    z-index: 1000;
 }
+
+/* Scrollbar */
 
 .modern-sidebar::-webkit-scrollbar {
     width: 8px;
@@ -3020,61 +3031,115 @@ td {
     border-radius: 20px;
 }
 
+/* Brand */
+
 .sidebar-brand {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 25px;
-    padding-bottom: 20px;
+    gap: 16px;
+
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+
     border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .brand-icon {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
+
     background: #2563eb;
-    border-radius: 12px;
+
+    border-radius: 14px;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    font-size: 22px;
     font-weight: 800;
-    font-size: 18px;
 }
 
 .sidebar-brand h2 {
+    font-size: 34px;
     margin: 0;
-    font-size: 22px;
-    color: white;
+    line-height: 1;
 }
 
 .sidebar-brand span {
-    font-size: 13px;
+    display: block;
+    margin-top: 4px;
+
     color: #94a3b8;
+
+    font-size: 16px;
 }
 
-.sidebar-section {
-    margin-top: 28px;
-    margin-bottom: 10px;
-    padding-left: 12px;
-    font-size: 11px;
+/* Theme Button */
+
+.theme-toggle {
+    background: #1e293b;
+
+    padding: 16px;
+
+    border-radius: 14px;
+
+    text-align: center;
+
+    font-size: 18px;
     font-weight: 700;
+
+    cursor: pointer;
+
+    margin-bottom: 28px;
+
+    transition: 0.2s;
+}
+
+.theme-toggle:hover {
+    background: #334155;
+}
+
+/* Section Headers */
+
+.sidebar-section {
+    margin-top: 30px;
+    margin-bottom: 12px;
+
     color: #94a3b8;
-    letter-spacing: 1px;
+
+    font-size: 14px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+
     text-transform: uppercase;
 }
+
+/* Links */
 
 .modern-sidebar a {
     display: flex;
     align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: #e2e8f0;
-    padding: 12px 14px;
-    border-radius: 12px;
+
+    gap: 14px;
+
+    min-height: 54px;
+
+    padding: 14px 16px;
+
     margin-bottom: 4px;
-    transition: all 0.2s ease;
-    font-size: 14px;
+
+    border-radius: 12px;
+
+    text-decoration: none;
+
+    color: #e2e8f0;
+
+    font-size: 18px;
     font-weight: 500;
+
+    transition: all 0.2s ease;
 }
 
 .modern-sidebar a:hover {
@@ -3088,103 +3153,59 @@ td {
     color: white;
 }
 
-.theme-toggle {
-    background: #1e293b;
-    color: white;
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-    cursor: pointer;
-    margin-bottom: 20px;
-    font-weight: 600;
-    transition: 0.2s ease;
-}
-
-.theme-toggle:hover {
-    background: #334155;
-}
+/* User Box */
 
 .sidebar-user-box {
-    margin-top: 30px;
-    padding: 16px;
-    border-radius: 14px;
+    margin-top: 40px;
+
     background: #1e293b;
+
+    border-radius: 16px;
+
+    padding: 16px;
+
     display: flex;
-    gap: 12px;
     align-items: center;
+    gap: 14px;
 }
 
 .sidebar-avatar {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
+
     border-radius: 50%;
+
     background: #2563eb;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+
+    font-weight: 800;
 }
 
 .sidebar-user-box strong {
     display: block;
-    color: white;
-    font-size: 14px;
+
+    font-size: 15px;
 }
 
 .sidebar-user-box span {
+    display: block;
+
+    font-size: 13px;
+
     color: #94a3b8;
-    font-size: 12px;
 }
 
-/* =========================
-   MAIN CONTENT OFFSET
-========================= */
+/* Main Content Offset */
 
 .main-content {
-    margin-left: 280px;
-    width: calc(100% - 280px);
+    margin-left: 340px;
+    width: calc(100% - 340px);
 }
 
-/* =========================
-   DARK MODE
-========================= */
-
-.dark-mode {
-    background: #020617;
-}
-
-.dark-mode .main-content {
-    background: #020617;
-    color: #e2e8f0;
-}
-
-.dark-mode .stat-card,
-.dark-mode .project-card,
-.dark-mode .analytics-card,
-.dark-mode .smart-card,
-.dark-mode .form-card,
-.dark-mode .table-container,
-.dark-mode .calendar-card,
-.dark-mode .task-card {
-    background: #111827;
-    color: #e2e8f0;
-}
-
-.dark-mode table {
-    color: #e2e8f0;
-}
-
-.dark-mode th {
-    background: #1e293b;
-}
-
-.dark-mode td {
-    border-color: #334155;
-}
-
-/* =========================
-   MOBILE
-========================= */
+/* Mobile */
 
 @media (max-width: 900px) {
 
@@ -3199,201 +3220,4 @@ td {
         width: 100%;
     }
 
-}
-
-/* FINAL SIDEBAR SIZE + DARK MODE FIX */
-
-.modern-sidebar {
-    width: 300px !important;
-}
-
-.main-content {
-    margin-left: 300px !important;
-    width: calc(100% - 300px) !important;
-}
-
-.modern-sidebar a {
-    font-size: 17px !important;
-    line-height: 1.4 !important;
-    padding: 13px 14px !important;
-    margin-bottom: 6px !important;
-}
-
-.modern-sidebar .sidebar-section {
-    font-size: 13px !important;
-    margin-top: 30px !important;
-    margin-bottom: 12px !important;
-}
-
-.sidebar-brand h2 {
-    font-size: 26px !important;
-}
-
-.sidebar-brand span {
-    font-size: 15px !important;
-}
-
-.theme-toggle {
-    font-size: 17px !important;
-    padding: 15px 14px !important;
-}
-
-/* Dark mode full page override */
-
-body.dark-mode,
-body.dark-mode .main-content {
-    background: #020617 !important;
-    color: #e5e7eb !important;
-}
-
-body.dark-mode h1,
-body.dark-mode h2,
-body.dark-mode h3,
-body.dark-mode h4 {
-    color: #f8fafc !important;
-}
-
-body.dark-mode .stat-card,
-body.dark-mode .project-card,
-body.dark-mode .task-card,
-body.dark-mode .smart-card,
-body.dark-mode .analytics-card,
-body.dark-mode .form-card,
-body.dark-mode .table-container,
-body.dark-mode .calendar-card,
-body.dark-mode .empty-box {
-    background: #111827 !important;
-    color: #e5e7eb !important;
-    border-color: #334155 !important;
-}
-
-body.dark-mode .stat-card p,
-body.dark-mode .stat-card h3,
-body.dark-mode .budget-row strong,
-body.dark-mode .budget-row span,
-body.dark-mode p,
-body.dark-mode span,
-body.dark-mode small {
-    color: #e5e7eb !important;
-}
-
-.dark-mode .stat-card,
-.dark-mode .project-card,
-.dark-mode .smart-card,
-.dark-mode .summary-card,
-.dark-mode .card,
-.dark-mode .table-container {
-    background: #111827 !important;
-    color: #f8fafc !important;
-}
-
-.dark-mode .smart-insight {
-    background: #1e293b !important;
-    color: #e5e7eb !important;
-}
-
-.dark-mode .overview-progress-track {
-    background: #334155 !important;
-}
-
-.sidebar-section {
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 1px;
-}
-
-.modern-sidebar a {
-    font-size: 18px;
-    font-weight: 500;
-    padding: 14px 16px;
-}
-
-.sidebar-brand h2 {
-    font-size: 42px;
-}
-
-.sidebar-brand span {
-    font-size: 18px;
-}
-
-.modern-sidebar a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 50px;
-}
-
-/* =====================================
-   FINAL SIDEBAR OVERRIDE
-===================================== */
-
-.modern-sidebar {
-    width: 340px !important;
-    padding: 24px !important;
-}
-
-.main-content {
-    margin-left: 340px !important;
-    width: calc(100% - 340px) !important;
-}
-
-.sidebar-brand h2 {
-    font-size: 34px !important;
-    font-weight: 800 !important;
-}
-
-.sidebar-brand span {
-    font-size: 18px !important;
-}
-
-.sidebar-section {
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    letter-spacing: 1.5px !important;
-}
-
-.modern-sidebar a {
-    font-size: 20px !important;
-    font-weight: 500 !important;
-    min-height: 56px !important;
-    padding: 14px 18px !important;
-    gap: 14px !important;
-}
-
-.theme-toggle {
-    font-size: 18px !important;
-    padding: 16px !important;
-}
-
-.sidebar-user-box strong {
-    font-size: 16px !important;
-}
-
-.sidebar-user-box span {
-    font-size: 14px !important;
-}
-
-/* =====================================
-   DARK MODE CARD FIX
-===================================== */
-
-body.dark-mode .smart-card,
-body.dark-mode .card,
-body.dark-mode .summary-card,
-body.dark-mode .stat-card,
-body.dark-mode .project-card {
-    background: #111827 !important;
-    color: #f8fafc !important;
-}
-
-body.dark-mode .smart-insight {
-    background: #1e293b !important;
-    color: #e5e7eb !important;
-}
-
-body.dark-mode .green-card,
-body.dark-mode .amber-card,
-body.dark-mode .red-card,
-body.dark-mode .blue-card {
-    background: #111827 !important;
 }
