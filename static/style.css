@@ -2991,3 +2991,212 @@ td {
     width: fit-content;
     margin-top: 15px;
 }
+
+
+/* =========================
+   MODERN SIDEBAR
+========================= */
+
+.modern-sidebar {
+    width: 280px;
+    background: #0f172a;
+    color: #ffffff;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    overflow-y: auto;
+    padding: 20px 16px;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    scrollbar-width: thin;
+}
+
+.modern-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modern-sidebar::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 20px;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.brand-icon {
+    width: 48px;
+    height: 48px;
+    background: #2563eb;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.sidebar-brand h2 {
+    margin: 0;
+    font-size: 22px;
+    color: white;
+}
+
+.sidebar-brand span {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.sidebar-section {
+    margin-top: 28px;
+    margin-bottom: 10px;
+    padding-left: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.modern-sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #e2e8f0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.modern-sidebar a:hover {
+    background: #1e293b;
+    color: white;
+    transform: translateX(4px);
+}
+
+.modern-sidebar a.active {
+    background: #2563eb;
+    color: white;
+}
+
+.theme-toggle {
+    background: #1e293b;
+    color: white;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 20px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.theme-toggle:hover {
+    background: #334155;
+}
+
+.sidebar-user-box {
+    margin-top: 30px;
+    padding: 16px;
+    border-radius: 14px;
+    background: #1e293b;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.sidebar-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.sidebar-user-box strong {
+    display: block;
+    color: white;
+    font-size: 14px;
+}
+
+.sidebar-user-box span {
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+/* =========================
+   MAIN CONTENT OFFSET
+========================= */
+
+.main-content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+}
+
+/* =========================
+   DARK MODE
+========================= */
+
+.dark-mode {
+    background: #020617;
+}
+
+.dark-mode .main-content {
+    background: #020617;
+    color: #e2e8f0;
+}
+
+.dark-mode .stat-card,
+.dark-mode .project-card,
+.dark-mode .analytics-card,
+.dark-mode .smart-card,
+.dark-mode .form-card,
+.dark-mode .table-container,
+.dark-mode .calendar-card,
+.dark-mode .task-card {
+    background: #111827;
+    color: #e2e8f0;
+}
+
+.dark-mode table {
+    color: #e2e8f0;
+}
+
+.dark-mode th {
+    background: #1e293b;
+}
+
+.dark-mode td {
+    border-color: #334155;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 900px) {
+
+    .modern-sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+}
