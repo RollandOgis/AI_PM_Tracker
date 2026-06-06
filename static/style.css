@@ -3276,3 +3276,124 @@ body.dark-mode span,
 body.dark-mode small {
     color: #e5e7eb !important;
 }
+
+.dark-mode .stat-card,
+.dark-mode .project-card,
+.dark-mode .smart-card,
+.dark-mode .summary-card,
+.dark-mode .card,
+.dark-mode .table-container {
+    background: #111827 !important;
+    color: #f8fafc !important;
+}
+
+.dark-mode .smart-insight {
+    background: #1e293b !important;
+    color: #e5e7eb !important;
+}
+
+.dark-mode .overview-progress-track {
+    background: #334155 !important;
+}
+
+.sidebar-section {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.modern-sidebar a {
+    font-size: 18px;
+    font-weight: 500;
+    padding: 14px 16px;
+}
+
+.sidebar-brand h2 {
+    font-size: 42px;
+}
+
+.sidebar-brand span {
+    font-size: 18px;
+}
+
+.modern-sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 50px;
+}
+
+/* =====================================
+   FINAL SIDEBAR OVERRIDE
+===================================== */
+
+.modern-sidebar {
+    width: 340px !important;
+    padding: 24px !important;
+}
+
+.main-content {
+    margin-left: 340px !important;
+    width: calc(100% - 340px) !important;
+}
+
+.sidebar-brand h2 {
+    font-size: 34px !important;
+    font-weight: 800 !important;
+}
+
+.sidebar-brand span {
+    font-size: 18px !important;
+}
+
+.sidebar-section {
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1.5px !important;
+}
+
+.modern-sidebar a {
+    font-size: 20px !important;
+    font-weight: 500 !important;
+    min-height: 56px !important;
+    padding: 14px 18px !important;
+    gap: 14px !important;
+}
+
+.theme-toggle {
+    font-size: 18px !important;
+    padding: 16px !important;
+}
+
+.sidebar-user-box strong {
+    font-size: 16px !important;
+}
+
+.sidebar-user-box span {
+    font-size: 14px !important;
+}
+
+/* =====================================
+   DARK MODE CARD FIX
+===================================== */
+
+body.dark-mode .smart-card,
+body.dark-mode .card,
+body.dark-mode .summary-card,
+body.dark-mode .stat-card,
+body.dark-mode .project-card {
+    background: #111827 !important;
+    color: #f8fafc !important;
+}
+
+body.dark-mode .smart-insight {
+    background: #1e293b !important;
+    color: #e5e7eb !important;
+}
+
+body.dark-mode .green-card,
+body.dark-mode .amber-card,
+body.dark-mode .red-card,
+body.dark-mode .blue-card {
+    background: #111827 !important;
+}
