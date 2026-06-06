@@ -22,7 +22,7 @@
                 <h1>AI Project Intelligence</h1>
 
                 <p class="dashboard-subtitle">
-                    Predict project health, delivery risk and schedule pressure using project data.
+                    Predict project health, delivery risk, budget pressure and data quality using project evidence.
                 </p>
             </div>
 
@@ -32,22 +32,42 @@
 
             <div class="stat-card blue-card">
                 <h3>Projects Analysed</h3>
-                <p>{{ project_intelligence|length }}</p>
+                <p>{{ total_projects }}</p>
             </div>
 
             <div class="stat-card green-card">
                 <h3>Healthy</h3>
-                <p>{{ project_intelligence | selectattr("ai_status", "equalto", "Healthy") | list | length }}</p>
+                <p>{{ healthy_count }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>Watch</h3>
-                <p>{{ project_intelligence | selectattr("ai_status", "equalto", "Watch") | list | length }}</p>
+                <p>{{ watch_count }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>At Risk</h3>
-                <p>{{ project_intelligence | selectattr("ai_status", "equalto", "At Risk") | list | length }}</p>
+                <p>{{ at_risk_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Incomplete Data</h3>
+                <p>{{ incomplete_data_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Average Health</h3>
+                <p>{{ average_health }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Project Intelligence Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_summary }}
             </div>
 
         </div>
@@ -78,6 +98,12 @@
                                 Watch
                             </span>
 
+                        {% elif project["ai_status"] == "Insufficient Data" %}
+
+                            <span class="badge badge-blue">
+                                Insufficient Data
+                            </span>
+
                         {% else %}
 
                             <span class="badge badge-red">
@@ -88,9 +114,18 @@
 
                     </div>
 
+                    <span class="badge badge-blue">
+                        {{ project["confidence_score"] }}% Confidence
+                    </span>
+
                 </div>
 
                 <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Project Status</span>
+                        <strong>{{ project["status"] }}</strong>
+                    </div>
 
                     <div class="budget-row">
                         <span>Completion Rate</span>
@@ -103,8 +138,18 @@
                     </div>
 
                     <div class="budget-row">
+                        <span>Data Quality Score</span>
+                        <strong>{{ project["data_quality_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
                         <span>Total Tasks</span>
                         <strong>{{ project["total_tasks"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completed Tasks</span>
+                        <strong>{{ project["completed_tasks"] }}</strong>
                     </div>
 
                     <div class="budget-row">
@@ -127,6 +172,16 @@
                         <strong>{{ project["open_issues"] }}</strong>
                     </div>
 
+                    <div class="budget-row">
+                        <span>Budget Usage</span>
+                        <strong>{{ project["budget_usage"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Usage</span>
+                        <strong>{{ project["forecast_usage"] }}%</strong>
+                    </div>
+
                 </div>
 
                 <div class="smart-insight">
@@ -138,6 +193,32 @@
                     {{ project["forecast"] }}
 
                 </div>
+
+                <div class="smart-insight">
+
+                    <strong>Prediction Explanation:</strong>
+
+                    <br><br>
+
+                    {{ project["prediction_explanation"] }}
+
+                </div>
+
+                {% if project["data_quality_flags"] %}
+
+                <div class="smart-insight">
+
+                    <strong>Data Quality Flags:</strong>
+
+                    <br><br>
+
+                    {% for flag in project["data_quality_flags"] %}
+                        {{ flag }}<br>
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
 
             </div>
 
@@ -162,6 +243,34 @@
         </div>
 
         {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Project Intelligence Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
 
     </div>
 

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Insights</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="layout">
+
+    {% include "sidebar.html" %}
+
+    <div class="main-content">
+
+        <div class="dashboard-header">
+
+            <div>
+                <h1>AI Insights</h1>
+
+                <p class="dashboard-subtitle">
+                    Automated portfolio analysis, delivery health, risk pressure and AI recommendations.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Total Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Total Tasks</h3>
+                <p>{{ total }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completed</h3>
+                <p>{{ completed }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Overdue</h3>
+                <p>{{ overdue }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Blocked</h3>
+                <p>{{ blocked }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>High Priority</h3>
+                <p>{{ high_priority }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Delivery Health</h3>
+                <p>{{ delivery_health_score }}%</p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card red-card">
+                <h3>Open Risks</h3>
+                <p>{{ total_risks }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Open Issues</h3>
+                <p>{{ total_issues }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Risk Pressure</h3>
+                <p>{{ risk_pressure_score }}%</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Budget Usage</h3>
+                <p>{{ budget_usage }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Forecast Usage</h3>
+                <p>{{ forecast_usage }}%</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Delivery Status</h3>
+                <p>{{ delivery_status }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Risk Status</h3>
+                <p>{{ risk_status }}</p>
+            </div>
+
+        </div>
+
+        <div class="chart-grid">
+
+            <div class="analytics-card">
+
+                <h3>Completion Rate</h3>
+
+                <canvas id="completionChart"></canvas>
+
+            </div>
+
+            <div class="analytics-card">
+
+                <h3>Task Breakdown</h3>
+
+                <canvas id="taskChart"></canvas>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>AI Recommendations</h3>
+
+            {% if insights %}
+
+                {% for insight in insights %}
+
+                    <div class="smart-insight">
+                        {{ insight }}
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-box">
+                    No AI recommendations generated yet.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>AI Data Validation & Anomaly Detection</h3>
+
+            {% if anomaly_flags %}
+
+                {% for flag in anomaly_flags %}
+
+                    <div class="smart-insight">
+                        {{ flag }}
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="smart-insight">
+                    No major data anomalies detected from the current task, risk, issue and budget data.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>AI Explanation Notes</h3>
+
+            {% for explanation in ai_explanations %}
+
+                <div class="budget-row">
+                    <span>Explanation</span>
+                    <strong>{{ explanation }}</strong>
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Future Forecasting & Pipe Cleaning Foundation</h3>
+
+            {% for note in trend_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const completionRate = Number('{{ completion_rate }}');
+const remainingRate = Math.max(0, 100 - completionRate);
+
+const completedTasks = Number('{{ completed }}');
+const inProgressTasks = Number('{{ in_progress }}');
+const pendingTasks = Number('{{ pending }}');
+const blockedTasks = Number('{{ blocked }}');
+
+const completionCtx = document.getElementById('completionChart');
+
+new Chart(completionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            'Completed',
+            'Remaining'
+        ],
+        datasets: [{
+            data: [
+                completionRate,
+                remainingRate
+            ]
+        }]
+    }
+});
+
+const taskCtx = document.getElementById('taskChart');
+
+new Chart(taskCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            'Completed',
+            'In Progress',
+            'Pending',
+            'Blocked'
+        ],
+        datasets: [{
+            label: 'Tasks',
+            data: [
+                completedTasks,
+                inProgressTasks,
+                pendingTasks,
+                blockedTasks
+            ]
+        }]
+    }
+});
+
+</script>
+
+</body>
+</html>

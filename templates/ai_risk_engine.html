@@ -22,7 +22,7 @@
                 <h1>AI Risk Engine</h1>
 
                 <p class="dashboard-subtitle">
-                    Predict risk severity, escalation need and recommended mitigation actions.
+                    Predict risk severity, escalation need, mitigation strength and governance pressure.
                 </p>
             </div>
 
@@ -31,25 +31,53 @@
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
-                <h3>Total AI Risks</h3>
-                <p>{{ ai_risks|length }}</p>
+                <h3>Total Risks</h3>
+                <p>{{ total_risks }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Critical Risks</h3>
-                <p>{{ ai_risks | selectattr("ai_level", "equalto", "Critical") | list | length }}</p>
+                <p>{{ critical_count }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>High Risks</h3>
-                <p>{{ ai_risks | selectattr("ai_level", "equalto", "High") | list | length }}</p>
+                <p>{{ high_count }}</p>
             </div>
 
             <div class="stat-card green-card">
-                <h3>Low / Medium</h3>
-                <p>
-                    {{ ai_risks | rejectattr("ai_level", "equalto", "Critical") | rejectattr("ai_level", "equalto", "High") | list | length }}
-                </p>
+                <h3>Medium Risks</h3>
+                <p>{{ medium_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Low Risks</h3>
+                <p>{{ low_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Escalations</h3>
+                <p>{{ escalation_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Critical %</h3>
+                <p>{{ critical_percentage }}%</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Open Risks</h3>
+                <p>{{ open_risks }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Risk Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_risk_summary }}
             </div>
 
         </div>
@@ -86,6 +114,12 @@
                                 Medium AI Risk
                             </span>
 
+                        {% elif risk["ai_level"] == "Closed" %}
+
+                            <span class="badge badge-blue">
+                                Closed
+                            </span>
+
                         {% else %}
 
                             <span class="badge badge-green">
@@ -96,18 +130,22 @@
 
                     </div>
 
+                    <span class="badge badge-blue">
+                        {{ risk["confidence_score"] }}% Confidence
+                    </span>
+
                 </div>
 
                 <div class="budget-section">
 
                     <div class="budget-row">
                         <span>Project</span>
-                        <strong>{{ risk["project_name"] or "No Project" }}</strong>
+                        <strong>{{ risk["project_name"] }}</strong>
                     </div>
 
                     <div class="budget-row">
                         <span>Owner</span>
-                        <strong>{{ risk["owner"] or "Not assigned" }}</strong>
+                        <strong>{{ risk["owner"] }}</strong>
                     </div>
 
                     <div class="budget-row">
@@ -118,6 +156,21 @@
                     <div class="budget-row">
                         <span>Severity Score</span>
                         <strong>{{ risk["severity_score"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Probability</span>
+                        <strong>{{ risk["probability"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Impact</span>
+                        <strong>{{ risk["impact"] }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Predictive Score</span>
+                        <strong>{{ risk["predictive_score"] }}%</strong>
                     </div>
 
                     <div class="budget-row">
@@ -139,6 +192,26 @@
                     <br><br>
 
                     {{ risk["recommendation"] }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Risk Explanation:</strong>
+
+                    <br><br>
+
+                    {{ risk["risk_explanation"] }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Mitigation Status:</strong>
+
+                    <br><br>
+
+                    {{ risk["mitigation_status"] }}
 
                 </div>
 
@@ -165,6 +238,34 @@
         </div>
 
         {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Risk Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
 
     </div>
 

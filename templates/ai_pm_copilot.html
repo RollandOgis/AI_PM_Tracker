@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI PM Copilot</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,17 +15,28 @@
 
     <main class="main-content">
 
-        <h1>AI PM Copilot</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            A central AI assistant view for delivery risks, blockers, issues and portfolio actions.
-        </p>
+            <div>
+                <h1>AI PM Copilot</h1>
+
+                <p class="dashboard-subtitle">
+                    Central AI delivery command centre for risks, blockers, issues, budget pressure and portfolio actions.
+                </p>
+            </div>
+
+        </div>
 
         <div class="stats-grid">
 
             <div class="stat-card blue-card">
                 <h3>Projects</h3>
                 <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
             </div>
 
             <div class="stat-card red-card">
@@ -47,44 +59,192 @@
                 <p>{{ blocked_tasks }}</p>
             </div>
 
+            <div class="stat-card blue-card">
+                <h3>Urgency Score</h3>
+                <p>{{ urgency_score }}%</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Confidence</h3>
+                <p>{{ confidence_score }}%</p>
+            </div>
+
         </div>
 
-        <div class="card">
+        <div class="smart-card">
 
-            <h2>Copilot Recommendations</h2>
+            <h3>Copilot Executive Summary</h3>
 
-            <div class="table-container">
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
 
-                <table>
+        </div>
 
-                    <thead>
-                        <tr>
-                            <th>Priority</th>
-                            <th>Recommendation</th>
-                        </tr>
-                    </thead>
+        <div class="smart-card">
 
-                    <tbody>
+            <h3>Copilot Status</h3>
 
-                        {% for recommendation in recommendations %}
+            <div class="budget-section">
 
-                        <tr>
-                            <td>
-                                <span class="badge badge-yellow">
-                                    Action Required
-                                </span>
-                            </td>
+                <div class="budget-row">
+                    <span>Status</span>
+                    <strong>
+                        {% if copilot_status == "Immediate Attention" %}
+                            <span class="badge badge-red">Immediate Attention</span>
+                        {% elif copilot_status == "Monitor Closely" %}
+                            <span class="badge badge-yellow">Monitor Closely</span>
+                        {% else %}
+                            <span class="badge badge-green">Stable</span>
+                        {% endif %}
+                    </strong>
+                </div>
 
-                            <td>{{ recommendation }}</td>
-                        </tr>
+                <div class="budget-row">
+                    <span>Pending Changes</span>
+                    <strong>{{ pending_changes }}</strong>
+                </div>
 
-                        {% endfor %}
+                <div class="budget-row">
+                    <span>Budget Usage</span>
+                    <strong>{{ budget_usage }}%</strong>
+                </div>
 
-                    </tbody>
-
-                </table>
+                <div class="budget-row">
+                    <span>Forecast Usage</span>
+                    <strong>{{ forecast_usage }}%</strong>
+                </div>
 
             </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Copilot Recommendations</h3>
+
+            {% for recommendation in recommendations %}
+
+                <div class="smart-insight">
+                    {{ recommendation }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Prioritised Action Centre</h3>
+
+            {% if action_items %}
+
+                <div class="projects-grid">
+
+                    {% for item in action_items %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+                                <h3>{{ item.area }}</h3>
+
+                                {% if item.priority == "High" %}
+                                    <span class="badge badge-red">High Priority</span>
+                                {% elif item.priority == "Medium" %}
+                                    <span class="badge badge-yellow">Medium Priority</span>
+                                {% else %}
+                                    <span class="badge badge-green">Low Priority</span>
+                                {% endif %}
+                            </div>
+
+                            <span class="badge badge-blue">
+                                {{ item.mode }}
+                            </span>
+
+                        </div>
+
+                        <div class="smart-insight">
+                            {{ item.action }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-box">
+                    No copilot action items found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Portfolio Evidence</h3>
+
+            <div class="budget-section">
+
+                <div class="budget-row">
+                    <span>Total Tasks</span>
+                    <strong>{{ total_tasks }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Completed Tasks</span>
+                    <strong>{{ completed_tasks }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Total Budget</span>
+                    <strong>£{{ "{:,.0f}".format(total_budget) }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Total Actual</span>
+                    <strong>£{{ "{:,.0f}".format(total_actual) }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Total Forecast</span>
+                    <strong>£{{ "{:,.0f}".format(total_forecast) }}</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>AI PM Copilot Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

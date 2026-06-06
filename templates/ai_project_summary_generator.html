@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Project Summary Generator</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,51 +15,243 @@
 
     <main class="main-content">
 
-        <h1>AI Project Summary Generator</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Generate executive-style project summaries using delivery, risk and issue indicators.
-        </p>
+            <div>
+                <h1>AI Project Summary Generator</h1>
 
-        <div class="card">
+                <p class="dashboard-subtitle">
+                    Generate executive-style project summaries using delivery, risk, issue, budget and data-quality indicators.
+                </p>
+            </div>
 
-            <h2>Generated Project Summaries</h2>
+        </div>
 
-            <div class="table-container">
+        <div class="stats-grid">
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Status</th>
-                            <th>Completion</th>
-                            <th>Tasks</th>
-                            <th>Overdue</th>
-                            <th>Blocked</th>
-                            <th>Risks</th>
-                            <th>Issues</th>
-                            <th>AI Summary</th>
-                        </tr>
-                    </thead>
+            <div class="stat-card blue-card">
+                <h3>Summaries Generated</h3>
+                <p>{{ summaries|length }}</p>
+            </div>
 
-                    <tbody>
-                        {% for item in summaries %}
-                        <tr>
-                            <td>{{ item.project_name }}</td>
-                            <td>{{ item.status }}</td>
-                            <td>{{ item.completion_rate }}%</td>
-                            <td>{{ item.completed_tasks }} / {{ item.total_tasks }}</td>
-                            <td>{{ item.overdue_tasks }}</td>
-                            <td>{{ item.blocked_tasks }}</td>
-                            <td>{{ item.open_risks }}</td>
-                            <td>{{ item.open_issues }}</td>
-                            <td>{{ item.summary }}</td>
-                        </tr>
+            <div class="stat-card green-card">
+                <h3>Strong</h3>
+                <p>{{ strong_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Monitor</h3>
+                <p>{{ monitor_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Attention Required</h3>
+                <p>{{ attention_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Insufficient Data</h3>
+                <p>{{ insufficient_data_count }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Summary Generator Overview</h3>
+
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
+
+        </div>
+
+        {% if summaries %}
+
+        <div class="projects-grid">
+
+            {% for item in summaries %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name }}</h3>
+
+                        {% if item.summary_status == "Strong" %}
+                            <span class="badge badge-green">Strong</span>
+                        {% elif item.summary_status == "Monitor" %}
+                            <span class="badge badge-yellow">Monitor</span>
+                        {% elif item.summary_status == "Insufficient Data" %}
+                            <span class="badge badge-blue">Insufficient Data</span>
+                        {% else %}
+                            <span class="badge badge-red">Attention Required</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="badge badge-blue">
+                        {{ item.confidence_score }}% Confidence
+                    </span>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ item.status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completion</span>
+                        <strong>{{ item.completion_rate }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Tasks</span>
+                        <strong>{{ item.completed_tasks }} / {{ item.total_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Overdue</span>
+                        <strong>{{ item.overdue_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Blocked</span>
+                        <strong>{{ item.blocked_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risks</span>
+                        <strong>{{ item.open_risks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Issues</span>
+                        <strong>{{ item.open_issues }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Budget Usage</span>
+                        <strong>{{ item.budget_usage }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Usage</span>
+                        <strong>{{ item.forecast_usage }}%</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Summary:</strong>
+
+                    <br><br>
+
+                    {{ item.summary }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Highlights:</strong>
+
+                    <br><br>
+
+                    {% if item.highlights %}
+                        {% for highlight in item.highlights %}
+                            {{ highlight }}<br>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    {% else %}
+                        No major highlights identified.
+                    {% endif %}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Concerns:</strong>
+
+                    <br><br>
+
+                    {% if item.concerns %}
+                        {% for concern in item.concerns %}
+                            {{ concern }}<br>
+                        {% endfor %}
+                    {% else %}
+                        No major concerns identified.
+                    {% endif %}
+
+                </div>
+
+                {% if item.data_quality_flags %}
+
+                <div class="smart-insight">
+
+                    <strong>Data Quality Flags:</strong>
+
+                    <br><br>
+
+                    {% for flag in item.data_quality_flags %}
+                        {{ flag }}<br>
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
 
             </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Project Summaries Found</h3>
+
+            <p>
+                Add projects, tasks, risks, issues and budgets before AI summary generation can run.
+            </p>
+
+            <a href="/add-project" class="btn-primary">
+                Add Project
+            </a>
+
+        </div>
+
+        {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Summary Generator Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

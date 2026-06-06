@@ -22,7 +22,7 @@
                 <h1>AI Sprint Management</h1>
 
                 <p class="dashboard-subtitle">
-                    Generate sprint recommendations using task priority, blockers and due dates.
+                    Generate sprint recommendations using task priority, blockers, due dates and workload signals.
                 </p>
             </div>
 
@@ -32,23 +32,111 @@
 
             <div class="stat-card blue-card">
                 <h3>Tasks Analysed</h3>
-                <p>{{ sprint_recommendations|length }}</p>
+                <p>{{ total_items }}</p>
             </div>
 
             <div class="stat-card red-card">
                 <h3>Critical Sprint Items</h3>
-                <p>{{ sprint_recommendations | selectattr("sprint_level", "equalto", "Critical") | list | length }}</p>
+                <p>{{ critical_count }}</p>
             </div>
 
             <div class="stat-card amber-card">
                 <h3>High Priority</h3>
-                <p>{{ sprint_recommendations | selectattr("sprint_level", "equalto", "High") | list | length }}</p>
+                <p>{{ high_count }}</p>
             </div>
 
             <div class="stat-card green-card">
-                <h3>Backlog / Low</h3>
-                <p>{{ sprint_recommendations | selectattr("sprint_level", "equalto", "Low") | list | length }}</p>
+                <h3>Medium Priority</h3>
+                <p>{{ medium_count }}</p>
             </div>
+
+            <div class="stat-card blue-card">
+                <h3>Low / Backlog</h3>
+                <p>{{ low_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Blocked</h3>
+                <p>{{ blocked_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Overdue</h3>
+                <p>{{ overdue_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Unassigned</h3>
+                <p>{{ unassigned_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Average Sprint Score</h3>
+                <p>{{ average_sprint_score }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Sprint Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_sprint_summary }}
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Recommended Current Sprint Items</h3>
+
+            {% if recommended_current_sprint %}
+
+                <div class="projects-grid">
+
+                    {% for task in recommended_current_sprint %}
+
+                    <div class="project-card">
+
+                        <h3>{{ task["title"] }}</h3>
+
+                        <div class="budget-section">
+
+                            <div class="budget-row">
+                                <span>Project</span>
+                                <strong>{{ task["project_name"] or "No Project" }}</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Score</span>
+                                <strong>{{ task["ai_priority_score"] }}%</strong>
+                            </div>
+
+                            <div class="budget-row">
+                                <span>Sprint Level</span>
+                                <strong>{{ task["sprint_level"] }}</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="smart-insight">
+                            {{ task["sprint_action"] }}
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-box">
+                    No critical or high-priority sprint items found.
+                </div>
+
+            {% endif %}
 
         </div>
 
@@ -94,6 +182,10 @@
 
                     </div>
 
+                    <span class="badge badge-blue">
+                        {{ task["ai_priority_score"] }}%
+                    </span>
+
                 </div>
 
                 <div class="budget-section">
@@ -125,7 +217,12 @@
 
                     <div class="budget-row">
                         <span>AI Sprint Score</span>
-                        <strong>{{ task["ai_priority_score"] }}</strong>
+                        <strong>{{ task["ai_priority_score"] }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Capacity Warning</span>
+                        <strong>{{ task["capacity_warning"] }}</strong>
                     </div>
 
                 </div>
@@ -137,6 +234,18 @@
                     <br><br>
 
                     {{ task["sprint_action"] }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Score Reasons:</strong>
+
+                    <br><br>
+
+                    {% for reason in task["score_reasons"] %}
+                        {{ reason }}<br>
+                    {% endfor %}
 
                 </div>
 
@@ -163,6 +272,34 @@
         </div>
 
         {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Sprint Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
 
     </div>
 

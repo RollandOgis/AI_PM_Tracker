@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Budget Forecasting</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,53 +15,236 @@
 
     <main class="main-content">
 
-        <h1>AI Budget Forecasting</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Forecast final project costs using current actual spend and delivery progress.
-        </p>
+            <div>
+                <h1>AI Budget Forecasting</h1>
 
-        <div class="card">
+                <p class="dashboard-subtitle">
+                    Forecast final project costs using budget, actual spend, delivery progress and cost pressure.
+                </p>
+            </div>
 
-            <h2>Forecast Analysis</h2>
+        </div>
 
-            <div class="table-container">
+        <div class="stats-grid">
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Budget</th>
-                            <th>Actual Cost</th>
-                            <th>Forecast Cost</th>
-                            <th>Variance</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
+            <div class="stat-card blue-card">
+                <h3>Projects Forecasted</h3>
+                <p>{{ forecasts|length }}</p>
+            </div>
 
-                    <tbody>
-                        {% for item in forecasts %}
-                        <tr>
-                            <td>{{ item.project_name }}</td>
-                            <td>£{{ "{:,.0f}".format(item.estimated_budget) }}</td>
-                            <td>£{{ "{:,.0f}".format(item.actual_cost) }}</td>
-                            <td>£{{ "{:,.0f}".format(item.forecast_cost) }}</td>
-                            <td>£{{ "{:,.0f}".format(item.variance) }}</td>
-                            <td>
-                                {% if item.forecast_status == "Over Budget" %}
-                                    <span class="badge badge-red">Over Budget</span>
-                                {% elif item.forecast_status == "On Budget" %}
-                                    <span class="badge badge-yellow">On Budget</span>
-                                {% else %}
-                                    <span class="badge badge-green">Under Budget</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="stat-card red-card">
+                <h3>Over Budget</h3>
+                <p>{{ over_budget_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Under Budget</h3>
+                <p>{{ under_budget_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Insufficient Data</h3>
+                <p>{{ insufficient_data_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Actual Usage</h3>
+                <p>{{ portfolio_actual_usage }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Forecast Usage</h3>
+                <p>{{ portfolio_forecast_usage }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Forecast Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
+
+        </div>
+
+        {% if forecasts %}
+
+        <div class="projects-grid">
+
+            {% for item in forecasts %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name }}</h3>
+
+                        {% if item.forecast_status == "Over Budget" %}
+                            <span class="badge badge-red">Over Budget</span>
+                        {% elif item.forecast_status == "On Budget" %}
+                            <span class="badge badge-yellow">On Budget</span>
+                        {% elif item.forecast_status == "Insufficient Data" %}
+                            <span class="badge badge-blue">Insufficient Data</span>
+                        {% else %}
+                            <span class="badge badge-green">Under Budget</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="badge badge-blue">
+                        {{ item.confidence_score }}% Confidence
+                    </span>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Budget</span>
+                        <strong>£{{ "{:,.0f}".format(item.estimated_budget) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item.actual_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Stored Forecast</span>
+                        <strong>£{{ "{:,.0f}".format(item.stored_forecast_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>AI Forecast Cost</span>
+                        <strong>£{{ "{:,.0f}".format(item.forecast_cost) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Variance</span>
+                        <strong>£{{ "{:,.0f}".format(item.variance) }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completion Rate</span>
+                        <strong>{{ item.completion_rate }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Actual Usage</span>
+                        <strong>{{ item.actual_usage }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Forecast Usage</span>
+                        <strong>{{ item.forecast_usage }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Overdue Tasks</span>
+                        <strong>{{ item.overdue_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Blocked Tasks</span>
+                        <strong>{{ item.blocked_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Data Quality</span>
+                        <strong>{{ item.data_quality_score }}%</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Forecast Method:</strong>
+
+                    <br><br>
+
+                    {{ item.forecast_method }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Recommendation:</strong>
+
+                    <br><br>
+
+                    {{ item.recommendation }}
+
+                </div>
+
+                {% if item.data_quality_flags %}
+
+                <div class="smart-insight">
+
+                    <strong>Data Quality Flags:</strong>
+
+                    <br><br>
+
+                    {% for flag in item.data_quality_flags %}
+                        {{ flag }}<br>
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
 
             </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Budget Forecasts Found</h3>
+
+            <p>
+                Add budgets, actual costs and project tasks before AI Budget Forecasting can run.
+            </p>
+
+            <a href="/add-budget" class="btn-primary">
+                Add Budget
+            </a>
+
+        </div>
+
+        {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Budget Forecasting Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

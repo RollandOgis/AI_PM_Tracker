@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Schedule Forecasting</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,53 +15,221 @@
 
     <main class="main-content">
 
-        <h1>AI Schedule Forecasting</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Forecast delivery delay risk using completion rate and overdue tasks.
-        </p>
+            <div>
+                <h1>AI Schedule Forecasting</h1>
 
-        <div class="card">
+                <p class="dashboard-subtitle">
+                    Forecast delivery delay risk using completion rate, overdue work, blockers and due-date quality.
+                </p>
+            </div>
 
-            <h2>Schedule Forecast Analysis</h2>
+        </div>
 
-            <div class="table-container">
+        <div class="stats-grid">
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Project</th>
-                            <th>Status</th>
-                            <th>Completion</th>
-                            <th>Overdue Tasks</th>
-                            <th>Delay Risk</th>
-                            <th>Forecast</th>
-                        </tr>
-                    </thead>
+            <div class="stat-card blue-card">
+                <h3>Projects Forecasted</h3>
+                <p>{{ forecasts|length }}</p>
+            </div>
 
-                    <tbody>
-                        {% for item in forecasts %}
-                        <tr>
-                            <td>{{ item.project_name }}</td>
-                            <td>{{ item.status }}</td>
-                            <td>{{ item.completion_rate }}%</td>
-                            <td>{{ item.overdue_tasks }}</td>
-                            <td>{{ item.delay_risk }}</td>
-                            <td>
-                                {% if item.forecast == "High Delay Risk" %}
-                                    <span class="badge badge-red">High Delay Risk</span>
-                                {% elif item.forecast == "Minor Delay Risk" %}
-                                    <span class="badge badge-yellow">Minor Delay Risk</span>
-                                {% else %}
-                                    <span class="badge badge-green">On Track</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="stat-card green-card">
+                <h3>On Track</h3>
+                <p>{{ on_track_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Minor Delay Risk</h3>
+                <p>{{ minor_delay_count }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>High Delay Risk</h3>
+                <p>{{ high_delay_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Insufficient Data</h3>
+                <p>{{ insufficient_data_count }}</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Schedule Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
+
+        </div>
+
+        {% if forecasts %}
+
+        <div class="projects-grid">
+
+            {% for item in forecasts %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name }}</h3>
+
+                        {% if item.forecast == "High Delay Risk" %}
+                            <span class="badge badge-red">High Delay Risk</span>
+                        {% elif item.forecast == "Minor Delay Risk" %}
+                            <span class="badge badge-yellow">Minor Delay Risk</span>
+                        {% elif item.forecast == "Insufficient Data" %}
+                            <span class="badge badge-blue">Insufficient Data</span>
+                        {% else %}
+                            <span class="badge badge-green">On Track</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="badge badge-blue">
+                        {{ item.confidence_score }}% Confidence
+                    </span>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ item.status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Total Tasks</span>
+                        <strong>{{ item.total_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completed Tasks</span>
+                        <strong>{{ item.completed_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completion</span>
+                        <strong>{{ item.completion_rate }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Overdue Tasks</span>
+                        <strong>{{ item.overdue_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Blocked Tasks</span>
+                        <strong>{{ item.blocked_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Missing Due Dates</span>
+                        <strong>{{ item.undated_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Delay Risk</span>
+                        <strong>{{ item.delay_risk }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Data Quality</span>
+                        <strong>{{ item.data_quality_score }}%</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Forecast Explanation:</strong>
+
+                    <br><br>
+
+                    {{ item.forecast_explanation }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Recommendation:</strong>
+
+                    <br><br>
+
+                    {{ item.recommendation }}
+
+                </div>
+
+                {% if item.data_quality_flags %}
+
+                <div class="smart-insight">
+
+                    <strong>Data Quality Flags:</strong>
+
+                    <br><br>
+
+                    {% for flag in item.data_quality_flags %}
+                        {{ flag }}<br>
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
 
             </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Schedule Forecasts Found</h3>
+
+            <p>
+                Add projects and dated tasks before AI Schedule Forecasting can run.
+            </p>
+
+            <a href="/add-task" class="btn-primary">
+                Add Task
+            </a>
+
+        </div>
+
+        {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Schedule Forecasting Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

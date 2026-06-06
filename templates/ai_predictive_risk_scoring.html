@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Predictive Risk Scoring</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,63 +15,195 @@
 
     <main class="main-content">
 
-        <h1>AI Predictive Risk Scoring</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Predict project risk using overdue tasks, blockers, open risks, issues and completion rate.
-        </p>
+            <div>
+                <h1>AI Predictive Risk Scoring</h1>
 
-        <div class="table-container">
+                <p class="dashboard-subtitle">
+                    Predict future project risk using overdue work, blockers, risks, issues, completion rate and data quality.
+                </p>
+            </div>
 
-            <table>
+        </div>
 
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Status</th>
-                        <th>Completion</th>
-                        <th>Overdue</th>
-                        <th>Blocked</th>
-                        <th>Risks</th>
-                        <th>Issues</th>
-                        <th>Risk Score</th>
-                        <th>Prediction</th>
-                        <th>Recommendation</th>
-                    </tr>
-                </thead>
+        <div class="stats-grid">
 
-                <tbody>
+            <div class="stat-card blue-card">
+                <h3>Projects Analysed</h3>
+                <p>{{ risk_predictions|length }}</p>
+            </div>
 
-                    {% for item in risk_predictions %}
+            <div class="stat-card red-card">
+                <h3>High Risk</h3>
+                <p>{{ high_risk_count }}</p>
+            </div>
 
-                    <tr>
-                        <td>{{ item.project_name }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.completion_rate }}%</td>
-                        <td>{{ item.overdue_tasks }}</td>
-                        <td>{{ item.blocked_tasks }}</td>
-                        <td>{{ item.open_risks }}</td>
-                        <td>{{ item.open_issues }}</td>
-                        <td>{{ item.risk_score }}%</td>
+            <div class="stat-card amber-card">
+                <h3>Medium Risk</h3>
+                <p>{{ medium_risk_count }}</p>
+            </div>
 
-                        <td>
-                            {% if item.prediction == "High Risk" %}
-                                <span class="badge badge-red">High Risk</span>
-                            {% elif item.prediction == "Medium Risk" %}
-                                <span class="badge badge-yellow">Medium Risk</span>
-                            {% else %}
-                                <span class="badge badge-green">Low Risk</span>
-                            {% endif %}
-                        </td>
+            <div class="stat-card green-card">
+                <h3>Low Risk</h3>
+                <p>{{ low_risk_count }}</p>
+            </div>
 
-                        <td>{{ item.recommendation }}</td>
-                    </tr>
+        </div>
 
-                    {% endfor %}
+        {% if risk_predictions %}
 
-                </tbody>
+        <div class="projects-grid">
 
-            </table>
+            {% for item in risk_predictions %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.project_name }}</h3>
+
+                        {% if item.prediction == "High Risk" %}
+                            <span class="badge badge-red">High Risk</span>
+                        {% elif item.prediction == "Medium Risk" %}
+                            <span class="badge badge-yellow">Medium Risk</span>
+                        {% elif item.prediction == "Insufficient Data" %}
+                            <span class="badge badge-blue">Insufficient Data</span>
+                        {% else %}
+                            <span class="badge badge-green">Low Risk</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="badge badge-blue">
+                        {{ item.confidence_score }}% Confidence
+                    </span>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ item.status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Completion</span>
+                        <strong>{{ item.completion_rate }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Overdue Tasks</span>
+                        <strong>{{ item.overdue_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Blocked Tasks</span>
+                        <strong>{{ item.blocked_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Risks</span>
+                        <strong>{{ item.open_risks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Open Issues</span>
+                        <strong>{{ item.open_issues }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Risk Score</span>
+                        <strong>{{ item.risk_score }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Escalation Forecast</span>
+                        <strong>{{ item.escalation_forecast }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Recommendation:</strong>
+
+                    <br><br>
+
+                    {{ item.recommendation }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Risk Drivers:</strong>
+
+                    <br><br>
+
+                    {% if item.risk_drivers %}
+
+                        {% for driver in item.risk_drivers %}
+                            {{ driver }}<br>
+                        {% endfor %}
+
+                    {% else %}
+
+                        No major risk drivers detected.
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Projects Found</h3>
+
+            <p>
+                Add projects, tasks, risks and issues before predictive risk scoring can run.
+            </p>
+
+            <a href="/add-project" class="btn-primary">
+                Add Project
+            </a>
+
+        </div>
+
+        {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Risk Scoring Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

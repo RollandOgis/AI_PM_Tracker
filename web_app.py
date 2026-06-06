@@ -4158,6 +4158,34 @@ def init_db():
                        ADD COLUMN IF NOT EXISTS failed_login_count INTEGER DEFAULT 0
                    """)
 
+    # ==================================================
+    # AI ASSISTANT CHAT HISTORY
+    # ==================================================
+
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS ai_chat_history
+                   (
+                       id
+                       SERIAL
+                       PRIMARY
+                       KEY,
+                       user_id
+                       INTEGER,
+                       prompt
+                       TEXT,
+                       response
+                       TEXT,
+                       confidence_score
+                       INTEGER,
+                       source_summary
+                       TEXT,
+                       mode
+                       TEXT,
+                       created_at
+                       TEXT
+                   )
+                   """)
+
 
 
     conn.commit()
@@ -6251,7 +6279,8 @@ def executive_charts():
 
 
 @app.route("/insights")
-def insights():
+@app.route("/ai-insights")
+def ai_insights():
 
     if "user_id" not in session:
         return redirect("/login")
@@ -6273,50 +6302,245 @@ def insights():
         JOIN projects
         ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
+        ORDER BY tasks.id DESC
     """, (
         session["user_id"],
     ))
 
     tasks = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_risks
+        FROM risks
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_issues
+        FROM issues
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("""
+        SELECT
+            COALESCE(SUM(budget_amount), 0) AS total_budget,
+            COALESCE(SUM(actual_cost), 0) AS total_actual_cost,
+            COALESCE(SUM(forecast_cost), 0) AS total_forecast_cost
+        FROM budgets
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    budget_data = cursor.fetchone()
+
     conn.close()
 
     total = len(tasks)
-    completed = len([task for task in tasks if task["status"] == "Completed"])
-    in_progress = len([task for task in tasks if task["status"] == "In Progress"])
-    pending = len([task for task in tasks if task["status"] == "Pending"])
-    blocked = len([task for task in tasks if task["status"] == "Blocked"])
-    high_priority = len([task for task in tasks if task["priority"] == "High"])
-    overdue = len([task for task in tasks if is_overdue(task["due_date"], task["status"])])
+
+    completed = len([
+        task for task in tasks
+        if task["status"] == "Completed"
+    ])
+
+    in_progress = len([
+        task for task in tasks
+        if task["status"] == "In Progress"
+    ])
+
+    pending = len([
+        task for task in tasks
+        if task["status"] == "Pending"
+    ])
+
+    blocked = len([
+        task for task in tasks
+        if task["status"] == "Blocked"
+    ])
+
+    high_priority = len([
+        task for task in tasks
+        if task["priority"] == "High"
+        and task["status"] != "Completed"
+    ])
+
+    overdue = len([
+        task for task in tasks
+        if is_overdue(
+            task["due_date"],
+            task["status"]
+        )
+    ])
+
+    if total > 0:
+        completion_rate = round((completed / total) * 100)
+        blocked_rate = round((blocked / total) * 100)
+        overdue_rate = round((overdue / total) * 100)
+        high_priority_rate = round((high_priority / total) * 100)
+    else:
+        completion_rate = 0
+        blocked_rate = 0
+        overdue_rate = 0
+        high_priority_rate = 0
+
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual_cost = float(budget_data["total_actual_cost"] or 0)
+    total_forecast_cost = float(budget_data["total_forecast_cost"] or 0)
+
+    if total_budget > 0:
+        budget_usage = round((total_actual_cost / total_budget) * 100)
+        forecast_usage = round((total_forecast_cost / total_budget) * 100)
+    else:
+        budget_usage = 0
+        forecast_usage = 0
+
+    delivery_health_score = max(
+        0,
+        min(
+            100,
+            completion_rate
+            - overdue_rate
+            - blocked_rate
+            - round(high_priority_rate / 2)
+        )
+    )
+
+    risk_pressure_score = min(
+        100,
+        (total_risks * 2) + (total_issues * 2) + blocked
+    )
+
+    if delivery_health_score >= 75:
+        delivery_status = "Healthy"
+    elif delivery_health_score >= 50:
+        delivery_status = "Monitor"
+    else:
+        delivery_status = "At Risk"
+
+    if risk_pressure_score >= 70:
+        risk_status = "High"
+    elif risk_pressure_score >= 35:
+        risk_status = "Medium"
+    else:
+        risk_status = "Low"
 
     insights_list = []
 
     if total == 0:
-        insights_list.append("You do not have any tasks yet. Start by creating tasks under your projects.")
+        insights_list.append(
+            "No task data is available yet. Add tasks to generate meaningful AI insights."
+        )
 
-    if overdue > 0:
-        insights_list.append(f"You have {overdue} overdue task(s). Review deadlines and update priorities.")
+    if completion_rate < 30 and total > 0:
+        insights_list.append(
+            f"Completion rate is low at {completion_rate}%. Review delivery blockers and task ownership."
+        )
 
     if high_priority > 0:
-        insights_list.append(f"You have {high_priority} high-priority task(s). Focus on these first.")
+        insights_list.append(
+            f"There are {high_priority} open high-priority task(s). These should be reviewed first."
+        )
+
+    if overdue > 0:
+        insights_list.append(
+            f"There are {overdue} overdue task(s). Deadline review is recommended."
+        )
 
     if blocked > 0:
-        insights_list.append(f"{blocked} task(s) are blocked. These may need escalation or support.")
+        insights_list.append(
+            f"{blocked} task(s) are blocked. Escalation or dependency review may be required."
+        )
 
-    if total > 0 and completed == total:
-        insights_list.append("All current tasks are completed. Great progress.")
+    if total_risks > 0:
+        insights_list.append(
+            f"There are {total_risks} open risk(s). Risk ownership and mitigation should be checked."
+        )
 
-    if total > 0 and completed < total and overdue == 0 and blocked == 0:
-        insights_list.append("Your workload looks healthy. Keep reviewing progress regularly.")
+    if total_issues > 0:
+        insights_list.append(
+            f"There are {total_issues} open issue(s). Active resolution tracking is recommended."
+        )
 
-    if total > 0:
-        completion_rate = round((completed / total) * 100)
-    else:
-        completion_rate = 0
+    if budget_usage > 90:
+        insights_list.append(
+            f"Budget usage is high at {budget_usage}%. Financial control should be reviewed."
+        )
+    elif forecast_usage > 90:
+        insights_list.append(
+            f"Forecast usage is high at {forecast_usage}%. Cost forecasting should be reviewed."
+        )
+
+    if (
+        total > 0
+        and overdue == 0
+        and blocked == 0
+        and risk_pressure_score < 35
+    ):
+        insights_list.append(
+            "Portfolio delivery appears stable based on current task, risk and issue data."
+        )
+
+    ai_explanations = [
+        "Delivery Health Score uses completion rate, overdue rate, blocked rate and high-priority workload.",
+        "Risk Pressure Score uses open risks, open issues and blocked tasks.",
+        "Budget Usage compares actual cost against approved budget.",
+        "Forecast Usage compares forecast cost against approved budget.",
+        "Recommendations are rule-based at this milestone and will become more predictive later."
+    ]
+
+    anomaly_flags = []
+
+    if total > 0 and overdue == 0 and completion_rate < 30:
+        anomaly_flags.append(
+            "Completion is low but overdue tasks are zero. Check whether due dates are missing."
+        )
+
+    if high_priority > total * 0.4 and total > 0:
+        anomaly_flags.append(
+            "High-priority workload is unusually high. Priority classifications may need review."
+        )
+
+    if total_projects > 0 and total == 0:
+        anomaly_flags.append(
+            "Projects exist but no tasks are linked. Project delivery metrics may be incomplete."
+        )
+
+    if total_budget > 0 and total_actual_cost == 0:
+        anomaly_flags.append(
+            "Budget exists but actual cost is zero. Financial data may be incomplete."
+        )
+
+    trend_notes = [
+        "Trend analysis will compare current metrics against future historical snapshots.",
+        "Forecast charts will be added once reporting history is captured.",
+        "Portfolio heatmaps will use project, risk, issue and budget data."
+    ]
 
     return render_template(
-        "insights.html",
+        "ai_insights.html",
         insights=insights_list,
+        ai_explanations=ai_explanations,
+        anomaly_flags=anomaly_flags,
+        trend_notes=trend_notes,
+        total_projects=total_projects,
         total=total,
         completed=completed,
         in_progress=in_progress,
@@ -6324,7 +6548,21 @@ def insights():
         blocked=blocked,
         overdue=overdue,
         high_priority=high_priority,
-        completion_rate=completion_rate
+        completion_rate=completion_rate,
+        blocked_rate=blocked_rate,
+        overdue_rate=overdue_rate,
+        high_priority_rate=high_priority_rate,
+        total_risks=total_risks,
+        total_issues=total_issues,
+        total_budget=total_budget,
+        total_actual_cost=total_actual_cost,
+        total_forecast_cost=total_forecast_cost,
+        budget_usage=budget_usage,
+        forecast_usage=forecast_usage,
+        delivery_health_score=delivery_health_score,
+        risk_pressure_score=risk_pressure_score,
+        delivery_status=delivery_status,
+        risk_status=risk_status
     )
 
 
@@ -9464,7 +9702,6 @@ def analytics():
         ]
     )
 
-
 @app.route("/ai-assistant", methods=["GET", "POST"])
 def ai_assistant():
 
@@ -9475,115 +9712,198 @@ def ai_assistant():
         return "Access denied"
 
     response_message = ""
+    confidence_score = 0
+    source_summary = ""
+    mode = "General"
+
+    prompt_suggestions = [
+        "Summarise my current project delivery risks.",
+        "Which tasks need urgent attention?",
+        "Are any projects likely to be delayed?",
+        "Give me a budget and cost risk summary.",
+        "Which blockers should I escalate?",
+        "Create an executive summary for my portfolio."
+    ]
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_projects
+        FROM projects
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_projects = cursor.fetchone()["total_projects"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Completed'
+    """, (
+        session["user_id"],
+    ))
+
+    completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS overdue_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.due_date IS NOT NULL
+        AND tasks.due_date != ''
+        AND tasks.due_date < %s
+        AND tasks.status != 'Completed'
+    """, (
+        session["user_id"],
+        str(date.today())
+    ))
+
+    overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS blocked_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Blocked'
+    """, (
+        session["user_id"],
+    ))
+
+    blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS high_priority_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.priority = 'High'
+        AND tasks.status != 'Completed'
+    """, (
+        session["user_id"],
+    ))
+
+    high_priority_tasks = cursor.fetchone()["high_priority_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_risks
+        FROM risks
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_risks = cursor.fetchone()["total_risks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_issues
+        FROM issues
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_issues = cursor.fetchone()["total_issues"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_changes
+        FROM changes
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_changes = cursor.fetchone()["total_changes"]
+
+    cursor.execute("""
+        SELECT
+            COALESCE(SUM(budget_amount), 0) AS total_budget,
+            COALESCE(SUM(actual_cost), 0) AS total_actual_cost,
+            COALESCE(SUM(forecast_cost), 0) AS total_forecast_cost
+        FROM budgets
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    budget_data = cursor.fetchone()
+
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual_cost = float(budget_data["total_actual_cost"] or 0)
+    total_forecast_cost = float(budget_data["total_forecast_cost"] or 0)
+
+    if total_tasks > 0:
+        completion_rate = round((completed_tasks / total_tasks) * 100)
+    else:
+        completion_rate = 0
+
+    if total_budget > 0:
+        budget_usage = round((total_actual_cost / total_budget) * 100)
+    else:
+        budget_usage = 0
+
+    source_summary = (
+        f"Projects: {total_projects}, Tasks: {total_tasks}, "
+        f"Completed: {completed_tasks}, Overdue: {overdue_tasks}, "
+        f"Blocked: {blocked_tasks}, High Priority: {high_priority_tasks}, "
+        f"Risks: {total_risks}, Issues: {total_issues}, Changes: {total_changes}, "
+        f"Budget Usage: {budget_usage}%"
+    )
+
+    cursor.execute("""
+        SELECT *
+        FROM ai_chat_history
+        WHERE user_id = %s
+        ORDER BY id DESC
+        LIMIT 8
+    """, (
+        session["user_id"],
+    ))
+
+    chat_history = cursor.fetchall()
 
     if request.method == "POST":
 
-        prompt = request.form.get("prompt", "")
+        prompt = request.form.get("prompt", "").strip()
+        mode = request.form.get("mode", "General")
 
-        conn = get_db_connection()
+        if not prompt:
 
-        cursor = conn.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
+            response_message = "Please enter a question for the AI Assistant."
 
-        cursor.execute("""
-            SELECT COUNT(*) AS total_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            WHERE projects.user_id = %s
-        """, (
-            session["user_id"],
-        ))
-
-        total_tasks = cursor.fetchone()["total_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS completed_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            WHERE projects.user_id = %s
-            AND tasks.status = 'Completed'
-        """, (
-            session["user_id"],
-        ))
-
-        completed_tasks = cursor.fetchone()["completed_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS overdue_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            WHERE projects.user_id = %s
-            AND tasks.due_date < %s
-            AND tasks.status != 'Completed'
-        """, (
-            session["user_id"],
-            str(date.today())
-        ))
-
-        overdue_tasks = cursor.fetchone()["overdue_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS blocked_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            WHERE projects.user_id = %s
-            AND tasks.status = 'Blocked'
-        """, (
-            session["user_id"],
-        ))
-
-        blocked_tasks = cursor.fetchone()["blocked_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS high_priority_tasks
-            FROM tasks
-            JOIN projects
-            ON tasks.project_id = projects.id
-            WHERE projects.user_id = %s
-            AND tasks.priority = 'High'
-            AND tasks.status != 'Completed'
-        """, (
-            session["user_id"],
-        ))
-
-        high_priority_tasks = cursor.fetchone()["high_priority_tasks"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS total_projects
-            FROM projects
-            WHERE user_id = %s
-        """, (
-            session["user_id"],
-        ))
-
-        total_projects = cursor.fetchone()["total_projects"]
-
-        cursor.execute("""
-            SELECT COUNT(*) AS over_budget_projects
-            FROM projects
-            WHERE user_id = %s
-            AND estimated_budget > 0
-            AND actual_cost > estimated_budget
-        """, (
-            session["user_id"],
-        ))
-
-        over_budget_projects = cursor.fetchone()["over_budget_projects"]
-
-        conn.close()
-
-        if client is None:
+        elif client is None:
 
             response_message = (
                 "AI assistant is not connected yet. "
-                "Please add OPENAI_API_KEY "
-                "inside Render environment variables."
+                "Please add OPENAI_API_KEY inside Render environment variables."
             )
+
+            confidence_score = 0
 
         else:
 
@@ -9595,50 +9915,121 @@ def ai_assistant():
                         {
                             "role": "system",
                             "content": (
-                                "You are an AI project management assistant. "
-                                "Help the user understand delivery risks, "
-                                "budgets, blockers, task priorities "
-                                "and project health."
+                                "You are an AI project management assistant for an enterprise PM platform. "
+                                "Answer using the user's project data only. "
+                                "Be practical, clear and structured. "
+                                "When giving recommendations, mention the data points used. "
+                                "If data is weak or incomplete, say so clearly."
                             )
                         },
                         {
                             "role": "user",
-                            "content": (
-                                f"""
+                            "content": f"""
+Mode:
+{mode}
+
 User question:
 {prompt}
 
-Project statistics:
+Current portfolio context:
 - Total projects: {total_projects}
 - Total tasks: {total_tasks}
 - Completed tasks: {completed_tasks}
+- Completion rate: {completion_rate}%
 - Overdue tasks: {overdue_tasks}
 - Blocked tasks: {blocked_tasks}
 - High priority open tasks: {high_priority_tasks}
-- Over-budget projects: {over_budget_projects}
+- Open risks: {total_risks}
+- Open issues: {total_issues}
+- Open changes: {total_changes}
+- Total budget: £{total_budget:,.2f}
+- Actual cost: £{total_actual_cost:,.2f}
+- Forecast cost: £{total_forecast_cost:,.2f}
+- Budget usage: {budget_usage}%
 
-Give practical project management advice.
-                                """
-                            )
+Give useful project management advice.
+                            """
                         }
                     ]
                 )
 
-                response_message = (
-                    completion.choices[0]
-                    .message
-                    .content
-                )
+                response_message = completion.choices[0].message.content
+
+                confidence_score = 75
+
+                if total_tasks > 0:
+                    confidence_score += 10
+
+                if total_risks > 0 or total_issues > 0:
+                    confidence_score += 5
+
+                if total_budget > 0:
+                    confidence_score += 5
+
+                confidence_score = min(confidence_score, 95)
 
             except Exception as e:
 
-                response_message = (
-                    f"AI assistant error: {str(e)}"
-                )
+                response_message = f"AI assistant error: {str(e)}"
+                confidence_score = 0
+
+        cursor.execute("""
+            INSERT INTO ai_chat_history
+            (
+                user_id,
+                prompt,
+                response,
+                confidence_score,
+                source_summary,
+                mode,
+                created_at
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            session["user_id"],
+            prompt,
+            response_message,
+            confidence_score,
+            source_summary,
+            mode,
+            str(datetime.now())
+        ))
+
+        conn.commit()
+
+        cursor.execute("""
+            SELECT *
+            FROM ai_chat_history
+            WHERE user_id = %s
+            ORDER BY id DESC
+            LIMIT 8
+        """, (
+            session["user_id"],
+        ))
+
+        chat_history = cursor.fetchall()
+
+    conn.close()
 
     return render_template(
         "ai_assistant.html",
-        response_message=response_message
+        response_message=response_message,
+        prompt_suggestions=prompt_suggestions,
+        chat_history=chat_history,
+        confidence_score=confidence_score,
+        source_summary=source_summary,
+        mode=mode,
+        total_projects=total_projects,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion_rate=completion_rate,
+        overdue_tasks=overdue_tasks,
+        blocked_tasks=blocked_tasks,
+        high_priority_tasks=high_priority_tasks,
+        total_risks=total_risks,
+        total_issues=total_issues,
+        total_changes=total_changes,
+        budget_usage=budget_usage
     )
 
 @app.route("/risks")
@@ -19349,7 +19740,7 @@ def ai_risk_engine():
         LEFT JOIN projects
         ON risks.project_id = projects.id
         WHERE risks.user_id = %s
-        ORDER BY risks.severity_score DESC
+        ORDER BY risks.id DESC
     """, (
         session["user_id"],
     ))
@@ -19358,48 +19749,164 @@ def ai_risk_engine():
 
     ai_risks = []
 
+    critical_count = 0
+    high_count = 0
+    medium_count = 0
+    low_count = 0
+    escalation_count = 0
+
     for risk in risks:
 
-        severity = risk["severity_score"] or 0
-        status = risk["status"] or ""
+        severity = int(risk.get("severity_score") or 0)
+        status = risk.get("status") or "Open"
 
-        if severity >= 8:
+        probability = int(risk.get("probability") or 0) if risk.get("probability") else 0
+        impact = int(risk.get("impact") or 0) if risk.get("impact") else 0
+
+        if probability == 0:
+            probability = min(5, max(1, round(severity / 2)))
+
+        if impact == 0:
+            impact = min(5, max(1, round(severity / 2)))
+
+        predictive_score = min(
+            100,
+            (probability * impact * 4) + (severity * 5)
+        )
+
+        if status == "Closed":
+            ai_level = "Closed"
+            recommendation = "Risk is closed. No active escalation required."
+            escalation_warning = "No Escalation Required"
+            confidence_score = 90
+
+        elif predictive_score >= 80:
             ai_level = "Critical"
-            recommendation = "Escalate immediately and create a mitigation action plan."
-        elif severity >= 6:
+            recommendation = (
+                "Escalate immediately, confirm ownership, create a mitigation plan "
+                "and review this risk in the next governance meeting."
+            )
+            escalation_warning = "Escalation Recommended"
+            confidence_score = 85
+            critical_count += 1
+            escalation_count += 1
+
+        elif predictive_score >= 60:
             ai_level = "High"
-            recommendation = "Review weekly and assign a clear mitigation owner."
-        elif severity >= 3:
+            recommendation = (
+                "Assign a clear owner, review mitigation progress weekly "
+                "and monitor trigger conditions."
+            )
+            escalation_warning = "Escalation Recommended"
+            confidence_score = 80
+            high_count += 1
+            escalation_count += 1
+
+        elif predictive_score >= 30:
             ai_level = "Medium"
-            recommendation = "Monitor regularly and update mitigation progress."
+            recommendation = (
+                "Monitor regularly, keep mitigation actions updated "
+                "and review during project status meetings."
+            )
+            escalation_warning = "Monitor Closely"
+            confidence_score = 75
+            medium_count += 1
+
         else:
             ai_level = "Low"
-            recommendation = "Keep under observation during normal project reviews."
-
-        if status != "Closed" and severity >= 6:
-            escalation_warning = "Escalation Recommended"
-        else:
+            recommendation = (
+                "Keep under observation during normal project reviews."
+            )
             escalation_warning = "No Escalation Required"
+            confidence_score = 70
+            low_count += 1
+
+        risk_explanation = (
+            f"Predictive score uses severity ({severity}), "
+            f"probability ({probability}) and impact ({impact})."
+        )
+
+        mitigation_status = (
+            risk.get("mitigation")
+            or risk.get("mitigation_plan")
+            or risk.get("response_plan")
+            or "No mitigation recorded"
+        )
 
         ai_risks.append({
             "id": risk["id"],
             "title": risk["title"],
-            "project_name": risk["project_name"],
-            "owner": risk["owner"],
-            "status": risk["status"],
+            "project_name": risk["project_name"] or "No Project",
+            "owner": risk.get("owner") or "Not assigned",
+            "status": status,
             "severity_score": severity,
+            "probability": probability,
+            "impact": impact,
+            "predictive_score": predictive_score,
             "ai_level": ai_level,
             "escalation_warning": escalation_warning,
-            "recommendation": recommendation
+            "recommendation": recommendation,
+            "confidence_score": confidence_score,
+            "risk_explanation": risk_explanation,
+            "mitigation_status": mitigation_status
         })
+
+    total_risks = len(ai_risks)
+
+    open_risks = len([
+        item for item in ai_risks
+        if item["status"] != "Closed"
+    ])
+
+    if total_risks > 0:
+        critical_percentage = round((critical_count / total_risks) * 100)
+    else:
+        critical_percentage = 0
+
+    if escalation_count > 0:
+        executive_risk_summary = (
+            f"{escalation_count} risk(s) require escalation. "
+            f"Critical risk concentration is {critical_percentage}%."
+        )
+    else:
+        executive_risk_summary = (
+            "No immediate AI escalation is required based on current risk scoring."
+        )
+
+    model_notes = [
+        "Risk scoring uses severity, probability and impact.",
+        "Where probability or impact is missing, the model estimates them from severity.",
+        "Closed risks are excluded from active escalation pressure.",
+        "Recommendations are rule-based at this milestone and will become more predictive later.",
+        "Future risk trends will compare current scores against historical snapshots."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add dedicated probability and impact fields if missing from the Risk Register.",
+        "Add risk trend history for movement over time.",
+        "Add risk heatmaps by project and portfolio.",
+        "Add mitigation progress tracking.",
+        "Add AI confidence scoring history.",
+        "Add escalation outcome tracking."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_risk_engine.html",
-        ai_risks=ai_risks
+        ai_risks=ai_risks,
+        total_risks=total_risks,
+        open_risks=open_risks,
+        critical_count=critical_count,
+        high_count=high_count,
+        medium_count=medium_count,
+        low_count=low_count,
+        escalation_count=escalation_count,
+        critical_percentage=critical_percentage,
+        executive_risk_summary=executive_risk_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
-
 
 @app.route("/ai-project-intelligence")
 def ai_project_intelligence():
@@ -19448,6 +19955,11 @@ def ai_project_intelligence():
 
     project_intelligence = []
 
+    healthy_count = 0
+    watch_count = 0
+    at_risk_count = 0
+    incomplete_data_count = 0
+
     for project in projects:
 
         project_id = project["id"]
@@ -19485,6 +19997,8 @@ def ai_project_intelligence():
             SELECT COUNT(*) AS overdue_tasks
             FROM tasks
             WHERE project_id = %s
+            AND due_date IS NOT NULL
+            AND due_date != ''
             AND due_date < %s
             AND status != 'Completed'
         """, (
@@ -19513,32 +20027,132 @@ def ai_project_intelligence():
         ))
         open_issues = cursor.fetchone()["open_issues"]
 
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(budget_amount), 0) AS total_budget,
+                COALESCE(SUM(actual_cost), 0) AS actual_cost,
+                COALESCE(SUM(forecast_cost), 0) AS forecast_cost
+            FROM budgets
+            WHERE project_id = %s
+            AND user_id = %s
+        """, (
+            project_id,
+            session["user_id"]
+        ))
+
+        budget_data = cursor.fetchone()
+
+        total_budget = float(budget_data["total_budget"] or 0)
+        actual_cost = float(budget_data["actual_cost"] or 0)
+        forecast_cost = float(budget_data["forecast_cost"] or 0)
+
         if total_tasks > 0:
             completion_rate = round((completed_tasks / total_tasks) * 100)
         else:
             completion_rate = 0
 
+        if total_budget > 0:
+            budget_usage = round((actual_cost / total_budget) * 100)
+            forecast_usage = round((forecast_cost / total_budget) * 100)
+        else:
+            budget_usage = 0
+            forecast_usage = 0
+
+        data_quality_flags = []
+
+        if total_tasks == 0:
+            data_quality_flags.append("No tasks linked")
+
+        if open_risks == 0:
+            data_quality_flags.append("No open risks recorded")
+
+        if open_issues == 0:
+            data_quality_flags.append("No open issues recorded")
+
+        if total_budget == 0:
+            data_quality_flags.append("No budget data")
+
+        data_quality_score = 100
+
+        if total_tasks == 0:
+            data_quality_score -= 35
+
+        if total_budget == 0:
+            data_quality_score -= 20
+
+        if open_risks == 0 and open_issues == 0:
+            data_quality_score -= 10
+
+        data_quality_score = max(0, data_quality_score)
+
         risk_points = (
-            overdue_tasks * 2
-            + blocked_tasks * 2
-            + open_risks * 2
-            + open_issues * 2
+            overdue_tasks * 8
+            + blocked_tasks * 10
+            + open_risks * 6
+            + open_issues * 6
         )
 
-        health_prediction = 100 - risk_points
+        budget_pressure = 0
 
-        if health_prediction < 0:
-            health_prediction = 0
+        if budget_usage > 100:
+            budget_pressure = 20
+        elif budget_usage > 85:
+            budget_pressure = 10
 
-        if health_prediction >= 75:
+        forecast_pressure = 0
+
+        if forecast_usage > 100:
+            forecast_pressure = 15
+        elif forecast_usage > 85:
+            forecast_pressure = 8
+
+        health_prediction = max(
+            0,
+            min(
+                100,
+                100
+                - risk_points
+                - budget_pressure
+                - forecast_pressure
+                + round(completion_rate * 0.2)
+            )
+        )
+
+        if data_quality_score < 50:
+            ai_status = "Insufficient Data"
+            forecast = (
+                "Project intelligence is limited because key delivery data is missing."
+            )
+            incomplete_data_count += 1
+
+        elif health_prediction >= 75:
             ai_status = "Healthy"
-            forecast = "Project is likely to stay on track."
+            forecast = "Project is likely to stay on track based on current delivery, risk and budget data."
+            healthy_count += 1
+
         elif health_prediction >= 50:
             ai_status = "Watch"
-            forecast = "Project may need management attention."
+            forecast = "Project may need management attention. Review blockers, risks, issues and budget pressure."
+            watch_count += 1
+
         else:
             ai_status = "At Risk"
-            forecast = "Project has a high chance of delay or escalation."
+            forecast = "Project has a high chance of delay, escalation or financial pressure."
+            at_risk_count += 1
+
+        if data_quality_score >= 80:
+            confidence_score = 85
+        elif data_quality_score >= 50:
+            confidence_score = 65
+        else:
+            confidence_score = 40
+
+        prediction_explanation = (
+            f"Health prediction uses completion rate ({completion_rate}%), "
+            f"overdue tasks ({overdue_tasks}), blocked tasks ({blocked_tasks}), "
+            f"risks ({open_risks}), issues ({open_issues}), "
+            f"budget usage ({budget_usage}%) and forecast usage ({forecast_usage}%)."
+        )
 
         project_intelligence.append({
             "project_name": project["name"],
@@ -19550,16 +20164,71 @@ def ai_project_intelligence():
             "blocked_tasks": blocked_tasks,
             "open_risks": open_risks,
             "open_issues": open_issues,
+            "total_budget": total_budget,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "budget_usage": budget_usage,
+            "forecast_usage": forecast_usage,
+            "data_quality_score": data_quality_score,
+            "data_quality_flags": data_quality_flags,
             "health_prediction": health_prediction,
             "ai_status": ai_status,
-            "forecast": forecast
+            "forecast": forecast,
+            "confidence_score": confidence_score,
+            "prediction_explanation": prediction_explanation
         })
+
+    total_projects = len(project_intelligence)
+
+    if total_projects > 0:
+        average_health = round(
+            sum(item["health_prediction"] for item in project_intelligence)
+            / total_projects
+        )
+    else:
+        average_health = 0
+
+    executive_summary = (
+        f"AI analysed {total_projects} project(s). "
+        f"Average predicted project health is {average_health}%. "
+        f"{at_risk_count} project(s) are at risk, "
+        f"{watch_count} require monitoring, "
+        f"and {incomplete_data_count} have insufficient data."
+    )
+
+    model_notes = [
+        "Project Health Prediction uses delivery progress, overdue work, blockers, risks, issues and budget pressure.",
+        "Projects with no tasks or no budget data receive a lower data quality score.",
+        "100% health is no longer given automatically where project data is incomplete.",
+        "Confidence score is based on data completeness.",
+        "Recommendations are rule-based at this milestone and will become more predictive later."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add milestone prediction.",
+        "Add delay prediction history.",
+        "Add success probability trend.",
+        "Add schedule forecasting integration.",
+        "Add budget forecasting integration.",
+        "Add portfolio intelligence roll-up.",
+        "Add confidence score history.",
+        "Add project-specific AI commentary."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_project_intelligence.html",
-        project_intelligence=project_intelligence
+        project_intelligence=project_intelligence,
+        total_projects=total_projects,
+        healthy_count=healthy_count,
+        watch_count=watch_count,
+        at_risk_count=at_risk_count,
+        incomplete_data_count=incomplete_data_count,
+        average_health=average_health,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -19621,39 +20290,85 @@ def ai_sprint_management():
 
     sprint_recommendations = []
 
+    critical_count = 0
+    high_count = 0
+    medium_count = 0
+    low_count = 0
+    blocked_count = 0
+    overdue_count = 0
+    unassigned_count = 0
+
+    workload_by_person = {}
+
     for task in tasks:
 
         priority = task["priority"] or "Low"
         status = task["status"] or "Pending"
         due_date = task["due_date"]
+        assigned_to = task["assigned_to"] or "Unassigned"
+
+        if assigned_to not in workload_by_person:
+            workload_by_person[assigned_to] = 0
+
+        workload_by_person[assigned_to] += 1
 
         ai_priority_score = 0
+        score_reasons = []
 
         if priority == "High":
-            ai_priority_score += 5
+            ai_priority_score += 30
+            score_reasons.append("High priority")
         elif priority == "Medium":
-            ai_priority_score += 3
+            ai_priority_score += 18
+            score_reasons.append("Medium priority")
         else:
-            ai_priority_score += 1
+            ai_priority_score += 8
+            score_reasons.append("Low priority")
 
         if status == "Blocked":
-            ai_priority_score += 4
+            ai_priority_score += 25
+            blocked_count += 1
+            score_reasons.append("Blocked work")
 
         if due_date and str(due_date) < str(date.today()):
-            ai_priority_score += 5
+            ai_priority_score += 30
+            overdue_count += 1
+            score_reasons.append("Overdue task")
 
-        if ai_priority_score >= 9:
-            sprint_action = "Move into current sprint immediately."
+        elif due_date and str(due_date) == str(date.today()):
+            ai_priority_score += 15
+            score_reasons.append("Due today")
+
+        if assigned_to == "Unassigned":
+            ai_priority_score += 10
+            unassigned_count += 1
+            score_reasons.append("Unassigned task")
+
+        ai_priority_score = min(ai_priority_score, 100)
+
+        if ai_priority_score >= 80:
+            sprint_action = "Move into the current sprint immediately and review in daily stand-up."
             sprint_level = "Critical"
-        elif ai_priority_score >= 6:
-            sprint_action = "Prioritise in the next sprint."
+            critical_count += 1
+        elif ai_priority_score >= 60:
+            sprint_action = "Prioritise in the next sprint and assign clear ownership."
             sprint_level = "High"
-        elif ai_priority_score >= 3:
-            sprint_action = "Schedule after high priority work."
+            high_count += 1
+        elif ai_priority_score >= 35:
+            sprint_action = "Schedule after critical and high-priority work."
             sprint_level = "Medium"
+            medium_count += 1
         else:
             sprint_action = "Keep in backlog for later planning."
             sprint_level = "Low"
+            low_count += 1
+
+        if assigned_to != "Unassigned" and workload_by_person.get(assigned_to, 0) > 5:
+            capacity_warning = "Assigned person may have high workload."
+        elif assigned_to == "Unassigned":
+            capacity_warning = "Task needs an owner before sprint commitment."
+        else:
+            capacity_warning = "No immediate capacity warning."
 
         sprint_recommendations.append({
             "title": task["title"],
@@ -19661,17 +20376,78 @@ def ai_sprint_management():
             "priority": priority,
             "status": status,
             "due_date": due_date,
-            "assigned_to": task["assigned_to"],
+            "assigned_to": assigned_to,
             "ai_priority_score": ai_priority_score,
             "sprint_level": sprint_level,
-            "sprint_action": sprint_action
+            "sprint_action": sprint_action,
+            "score_reasons": score_reasons,
+            "capacity_warning": capacity_warning
         })
+
+    sprint_recommendations = sorted(
+        sprint_recommendations,
+        key=lambda item: item["ai_priority_score"],
+        reverse=True
+    )
+
+    total_items = len(sprint_recommendations)
+
+    if total_items > 0:
+        average_sprint_score = round(
+            sum(item["ai_priority_score"] for item in sprint_recommendations)
+            / total_items
+        )
+    else:
+        average_sprint_score = 0
+
+    recommended_current_sprint = [
+        item for item in sprint_recommendations
+        if item["sprint_level"] in ["Critical", "High"]
+    ]
+
+    executive_sprint_summary = (
+        f"AI reviewed {total_items} open task(s). "
+        f"{critical_count} are critical, {high_count} are high priority, "
+        f"{blocked_count} are blocked and {overdue_count} are overdue."
+    )
+
+    model_notes = [
+        "Sprint score uses priority, blocked status, due date urgency and assignment status.",
+        "Critical sprint items are now based on a 0-100 score instead of a small static score.",
+        "Unassigned work increases sprint planning risk.",
+        "Blocked and overdue work receive higher sprint urgency.",
+        "Recommendations are rule-based at this milestone and will become more predictive later."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add sprint velocity tracking.",
+        "Add team capacity linkage.",
+        "Add blocker prediction.",
+        "Add sprint burn-down charts.",
+        "Add sprint planning assistant.",
+        "Add auto sprint generation.",
+        "Add workload optimisation.",
+        "Add sprint history and forecast accuracy tracking."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_sprint_management.html",
-        sprint_recommendations=sprint_recommendations
+        sprint_recommendations=sprint_recommendations,
+        recommended_current_sprint=recommended_current_sprint,
+        total_items=total_items,
+        critical_count=critical_count,
+        high_count=high_count,
+        medium_count=medium_count,
+        low_count=low_count,
+        blocked_count=blocked_count,
+        overdue_count=overdue_count,
+        unassigned_count=unassigned_count,
+        average_sprint_score=average_sprint_score,
+        executive_sprint_summary=executive_sprint_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -19719,6 +20495,57 @@ def ai_executive_assistant():
     total_projects = cursor.fetchone()["total_projects"]
 
     cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Completed'
+    """, (
+        session["user_id"],
+    ))
+    completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS overdue_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.due_date IS NOT NULL
+        AND tasks.due_date != ''
+        AND tasks.due_date < %s
+        AND tasks.status != 'Completed'
+    """, (
+        session["user_id"],
+        str(date.today())
+    ))
+    overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS blocked_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Blocked'
+    """, (
+        session["user_id"],
+    ))
+    blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+    cursor.execute("""
         SELECT COUNT(*) AS open_risks
         FROM risks
         WHERE user_id = %s
@@ -19742,32 +20569,41 @@ def ai_executive_assistant():
         SELECT COUNT(*) AS pending_changes
         FROM changes
         WHERE user_id = %s
+        AND status != 'Approved'
     """, (
         session["user_id"],
     ))
     pending_changes = cursor.fetchone()["pending_changes"]
 
     cursor.execute("""
-        SELECT *
-        FROM portfolio_health
+        SELECT
+            COALESCE(SUM(budget_amount), 0) AS total_budget,
+            COALESCE(SUM(actual_cost), 0) AS total_actual_cost,
+            COALESCE(SUM(forecast_cost), 0) AS total_forecast_cost
+        FROM budgets
         WHERE user_id = %s
-        ORDER BY created_at DESC
-        LIMIT 1
     """, (
         session["user_id"],
     ))
-    latest_health = cursor.fetchone()
+    budget_data = cursor.fetchone()
+
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual_cost = float(budget_data["total_actual_cost"] or 0)
+    total_forecast_cost = float(budget_data["total_forecast_cost"] or 0)
 
     cursor.execute("""
-        SELECT
+        SELECT DISTINCT ON (project_prioritisation.project_id)
             project_prioritisation.*,
             projects.name AS project_name
         FROM project_prioritisation
         LEFT JOIN projects
         ON project_prioritisation.project_id = projects.id
         WHERE project_prioritisation.user_id = %s
-        ORDER BY project_prioritisation.priority_score DESC
-        LIMIT 3
+        ORDER BY
+            project_prioritisation.project_id,
+            project_prioritisation.priority_score DESC,
+            project_prioritisation.id DESC
+        LIMIT 5
     """, (
         session["user_id"],
     ))
@@ -19775,42 +20611,194 @@ def ai_executive_assistant():
 
     conn.close()
 
-    if latest_health:
-        health_score = latest_health["health_score"]
-        risk_exposure = latest_health["risk_exposure"]
-        financial_health = latest_health["financial_health"]
-        trend = latest_health["trend"]
+    if total_tasks > 0:
+        completion_rate = round((completed_tasks / total_tasks) * 100)
     else:
-        health_score = 0
-        risk_exposure = 0
-        financial_health = 0
-        trend = "No data"
+        completion_rate = 0
 
-    if health_score >= 75 and open_risks <= 3 and open_issues <= 3:
-        executive_summary = "Portfolio position is healthy. Current delivery indicators suggest the portfolio is broadly under control."
-        board_recommendation = "Continue monitoring key projects and maintain the current governance rhythm."
+    if total_budget > 0:
+        budget_usage = round((total_actual_cost / total_budget) * 100)
+        forecast_usage = round((total_forecast_cost / total_budget) * 100)
+    else:
+        budget_usage = 0
+        forecast_usage = 0
+
+    governance_pressure = min(
+        100,
+        (open_risks * 2)
+        + (open_issues * 2)
+        + pending_changes
+        + blocked_tasks
+    )
+
+    delivery_pressure = min(
+        100,
+        (overdue_tasks * 3)
+        + (blocked_tasks * 4)
+        + max(0, 60 - completion_rate)
+    )
+
+    financial_pressure = max(
+        budget_usage,
+        forecast_usage
+    )
+
+    health_score = max(
+        0,
+        min(
+            100,
+            100
+            - round(governance_pressure * 0.35)
+            - round(delivery_pressure * 0.35)
+            - round(financial_pressure * 0.30)
+            + round(completion_rate * 0.20)
+        )
+    )
+
+    risk_exposure = min(
+        100,
+        (open_risks * 3)
+        + (open_issues * 2)
+        + blocked_tasks
+    )
+
+    financial_health = max(
+        0,
+        min(
+            100,
+            100 - financial_pressure
+        )
+    )
+
+    if health_score >= 75:
+        portfolio_status = "Healthy"
+        executive_summary = (
+            "Portfolio position is healthy. Current delivery, governance and financial indicators "
+            "suggest the portfolio is broadly under control."
+        )
+        board_recommendation = (
+            "Continue monitoring priority projects and maintain the current governance rhythm."
+        )
 
     elif health_score >= 50:
-        executive_summary = "Portfolio position requires attention. Some delivery or governance indicators suggest potential pressure."
-        board_recommendation = "Review high-priority projects, open risks, issues and budget exposure in the next governance meeting."
+        portfolio_status = "Monitor"
+        executive_summary = (
+            "Portfolio position requires attention. Delivery, governance or financial indicators "
+            "show pressure that should be reviewed."
+        )
+        board_recommendation = (
+            "Review open risks, issues, blocked work, budget exposure and priority projects "
+            "in the next governance meeting."
+        )
 
     else:
-        executive_summary = "Portfolio position is at risk. Current indicators suggest escalation may be required."
-        board_recommendation = "Escalate portfolio health, review recovery plans and assign ownership for urgent corrective actions."
+        portfolio_status = "At Risk"
+        executive_summary = (
+            "Portfolio position is at risk. Current indicators suggest that leadership intervention "
+            "may be required."
+        )
+        board_recommendation = (
+            "Escalate portfolio health, review recovery plans and assign owners for urgent corrective actions."
+        )
+
+    strategic_actions = []
+
+    if open_risks > 0:
+        strategic_actions.append(
+            f"Review ownership and mitigation plans for {open_risks} open risk(s)."
+        )
+
+    if open_issues > 0:
+        strategic_actions.append(
+            f"Confirm resolution plans for {open_issues} open issue(s)."
+        )
+
+    if blocked_tasks > 0:
+        strategic_actions.append(
+            f"Escalate {blocked_tasks} blocked task(s) affecting delivery flow."
+        )
+
+    if overdue_tasks > 0:
+        strategic_actions.append(
+            f"Review delivery dates for {overdue_tasks} overdue task(s)."
+        )
+
+    if budget_usage > 85:
+        strategic_actions.append(
+            f"Review budget usage at {budget_usage}% and agree financial controls."
+        )
+
+    if forecast_usage > 85:
+        strategic_actions.append(
+            f"Review forecast usage at {forecast_usage}% before cost pressure increases."
+        )
+
+    if not strategic_actions:
+        strategic_actions.append(
+            "No urgent strategic actions detected from current indicators."
+        )
+
+    confidence_score = 70
+
+    if total_projects > 0:
+        confidence_score += 5
+
+    if total_tasks > 0:
+        confidence_score += 10
+
+    if total_budget > 0:
+        confidence_score += 5
+
+    if open_risks > 0 or open_issues > 0:
+        confidence_score += 5
+
+    confidence_score = min(confidence_score, 95)
+
+    model_notes = [
+        "Portfolio health is calculated from governance pressure, delivery pressure, financial pressure and completion rate.",
+        "Duplicate project rankings are reduced using one prioritisation record per project.",
+        "Board recommendations are generated from risk, issue, blocked work, overdue work and budget indicators.",
+        "Confidence score is based on available project, task, governance and budget data.",
+        "Recommendations are rule-based at this milestone and will become more predictive later."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add board pack generation.",
+        "Add executive dashboard comparison.",
+        "Add strategic objective tracking.",
+        "Add benefits realisation tracking.",
+        "Add executive action register.",
+        "Add governance reporting pack.",
+        "Add AI briefing pack export.",
+        "Add portfolio forecasting."
+    ]
 
     return render_template(
         "ai_executive_assistant.html",
         total_projects=total_projects,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion_rate=completion_rate,
+        overdue_tasks=overdue_tasks,
+        blocked_tasks=blocked_tasks,
         open_risks=open_risks,
         open_issues=open_issues,
         pending_changes=pending_changes,
         health_score=health_score,
         risk_exposure=risk_exposure,
         financial_health=financial_health,
-        trend=trend,
+        budget_usage=budget_usage,
+        forecast_usage=forecast_usage,
+        governance_pressure=governance_pressure,
+        delivery_pressure=delivery_pressure,
+        portfolio_status=portfolio_status,
         top_priorities=top_priorities,
         executive_summary=executive_summary,
-        board_recommendation=board_recommendation
+        board_recommendation=board_recommendation,
+        strategic_actions=strategic_actions,
+        confidence_score=confidence_score,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -19898,6 +20886,8 @@ def ai_predictive_risk_scoring():
             SELECT COUNT(*) AS overdue_tasks
             FROM tasks
             WHERE project_id = %s
+            AND due_date IS NOT NULL
+            AND due_date != ''
             AND due_date < %s
             AND status != 'Completed'
         """, (
@@ -19947,32 +20937,174 @@ def ai_predictive_risk_scoring():
 
         if risk_score >= 70:
             prediction = "High Risk"
-            recommendation = "Immediate management attention is required."
+            recommendation = (
+                "Immediate management attention is required."
+            )
+
         elif risk_score >= 40:
             prediction = "Medium Risk"
-            recommendation = "Monitor closely and review delivery blockers."
+            recommendation = (
+                "Monitor closely and review delivery blockers."
+            )
+
         else:
             prediction = "Low Risk"
-            recommendation = "Project currently appears stable."
+            recommendation = (
+                "Project currently appears stable."
+            )
+
+        risk_drivers = []
+
+        if overdue_tasks > 0:
+            risk_drivers.append(
+                f"{overdue_tasks} overdue task(s)"
+            )
+
+        if blocked_tasks > 0:
+            risk_drivers.append(
+                f"{blocked_tasks} blocked task(s)"
+            )
+
+        if open_risks > 0:
+            risk_drivers.append(
+                f"{open_risks} open risk(s)"
+            )
+
+        if open_issues > 0:
+            risk_drivers.append(
+                f"{open_issues} open issue(s)"
+            )
+
+        if completion_rate < 30 and total_tasks > 0:
+            risk_drivers.append(
+                "Low completion rate"
+            )
+
+        if total_tasks == 0:
+
+            prediction = "Insufficient Data"
+
+            recommendation = (
+                "Add tasks, risks and issues before risk prediction can be trusted."
+            )
+
+        confidence_score = 40
+
+        if total_tasks > 0:
+            confidence_score += 20
+
+        if open_risks > 0:
+            confidence_score += 15
+
+        if open_issues > 0:
+            confidence_score += 15
+
+        confidence_score = min(
+            confidence_score,
+            100
+        )
+
+        escalation_forecast = "No"
+
+        if risk_score >= 70:
+            escalation_forecast = "Likely"
+
+        elif risk_score >= 40:
+            escalation_forecast = "Possible"
 
         risk_predictions.append({
+
             "project_name": project["name"],
             "status": project["status"],
+
             "completion_rate": completion_rate,
+
             "overdue_tasks": overdue_tasks,
             "blocked_tasks": blocked_tasks,
             "open_risks": open_risks,
             "open_issues": open_issues,
+
             "risk_score": risk_score,
+
             "prediction": prediction,
-            "recommendation": recommendation
+            "recommendation": recommendation,
+
+            "confidence_score": confidence_score,
+
+            "risk_drivers": risk_drivers,
+
+            "escalation_forecast": escalation_forecast
+
         })
+
+    risk_predictions = sorted(
+        risk_predictions,
+        key=lambda x: x["risk_score"],
+        reverse=True
+    )
 
     conn.close()
 
+    high_risk_count = len([
+        x for x in risk_predictions
+        if x["prediction"] == "High Risk"
+    ])
+
+    medium_risk_count = len([
+        x for x in risk_predictions
+        if x["prediction"] == "Medium Risk"
+    ])
+
+    low_risk_count = len([
+        x for x in risk_predictions
+        if x["prediction"] == "Low Risk"
+    ])
+
+    model_notes = [
+
+        "Risk score uses overdue tasks, blocked work, open risks, open issues and completion performance.",
+
+        "Projects with no delivery data are marked as Insufficient Data.",
+
+        "Confidence score reflects available evidence.",
+
+        "Escalation forecasts are generated from risk severity.",
+
+        "Current model is rules-based and will become predictive later."
+
+    ]
+
+    pipe_cleaning_notes = [
+
+        "Risk trend analysis",
+
+        "Escalation forecasting",
+
+        "Risk heatmaps",
+
+        "Portfolio risk ranking",
+
+        "Predictive risk engine",
+
+        "Confidence percentages",
+
+        "Risk learning models",
+
+        "Future risk forecasting"
+
+    ]
+
     return render_template(
         "ai_predictive_risk_scoring.html",
-        risk_predictions=risk_predictions
+
+        risk_predictions=risk_predictions,
+
+        high_risk_count=high_risk_count,
+        medium_risk_count=medium_risk_count,
+        low_risk_count=low_risk_count,
+
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -20023,14 +21155,44 @@ def ai_budget_forecasting():
 
     forecasts = []
 
+    over_budget_count = 0
+    under_budget_count = 0
+    on_budget_count = 0
+    insufficient_data_count = 0
+
+    total_budget_value = 0
+    total_actual_value = 0
+    total_forecast_value = 0
+
     for project in projects:
 
+        project_id = project["id"]
+
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(budget_amount), 0) AS estimated_budget,
+                COALESCE(SUM(actual_cost), 0) AS actual_cost,
+                COALESCE(SUM(forecast_cost), 0) AS stored_forecast_cost
+            FROM budgets
+            WHERE project_id = %s
+            AND user_id = %s
+        """, (
+            project_id,
+            session["user_id"]
+        ))
+
+        budget_data = cursor.fetchone()
+
         estimated_budget = float(
-            project["estimated_budget"] or 0
+            budget_data["estimated_budget"] or 0
         )
 
         actual_cost = float(
-            project["actual_cost"] or 0
+            budget_data["actual_cost"] or 0
+        )
+
+        stored_forecast_cost = float(
+            budget_data["stored_forecast_cost"] or 0
         )
 
         cursor.execute("""
@@ -20038,7 +21200,7 @@ def ai_budget_forecasting():
             FROM tasks
             WHERE project_id = %s
         """, (
-            project["id"],
+            project_id,
         ))
 
         total_tasks = cursor.fetchone()["total_tasks"]
@@ -20049,54 +21211,240 @@ def ai_budget_forecasting():
             WHERE project_id = %s
             AND status = 'Completed'
         """, (
-            project["id"],
+            project_id,
         ))
 
         completed_tasks = cursor.fetchone()["completed_tasks"]
 
+        cursor.execute("""
+            SELECT COUNT(*) AS overdue_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND due_date IS NOT NULL
+            AND due_date != ''
+            AND due_date < %s
+            AND status != 'Completed'
+        """, (
+            project_id,
+            str(date.today())
+        ))
+
+        overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS blocked_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Blocked'
+        """, (
+            project_id,
+        ))
+
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
         if total_tasks > 0:
-            completion_rate = (
-                completed_tasks / total_tasks
+            completion_rate = round(
+                (completed_tasks / total_tasks) * 100
             )
         else:
             completion_rate = 0
 
-        if completion_rate > 0:
-            forecast_cost = round(
-                actual_cost / completion_rate,
+        data_quality_flags = []
+
+        if estimated_budget == 0:
+            data_quality_flags.append("No approved budget")
+
+        if actual_cost == 0:
+            data_quality_flags.append("No actual cost recorded")
+
+        if total_tasks == 0:
+            data_quality_flags.append("No tasks linked")
+
+        data_quality_score = 100
+
+        if estimated_budget == 0:
+            data_quality_score -= 35
+
+        if actual_cost == 0:
+            data_quality_score -= 25
+
+        if total_tasks == 0:
+            data_quality_score -= 25
+
+        data_quality_score = max(0, data_quality_score)
+
+        if estimated_budget == 0 or actual_cost == 0 or total_tasks == 0:
+
+            forecast_cost = stored_forecast_cost or actual_cost
+            forecast_status = "Insufficient Data"
+            variance = forecast_cost - estimated_budget
+            forecast_method = "Forecast limited because budget, actual cost or task progress data is incomplete."
+
+            insufficient_data_count += 1
+
+        else:
+
+            progress_decimal = completion_rate / 100
+
+            if progress_decimal > 0:
+                eac_forecast = round(
+                    actual_cost / progress_decimal,
+                    2
+                )
+            else:
+                eac_forecast = actual_cost
+
+            pressure_adjustment = 0
+
+            if overdue_tasks > 0:
+                pressure_adjustment += overdue_tasks * 250
+
+            if blocked_tasks > 0:
+                pressure_adjustment += blocked_tasks * 300
+
+            if stored_forecast_cost > 0:
+                forecast_cost = max(
+                    eac_forecast,
+                    stored_forecast_cost,
+                    actual_cost + pressure_adjustment
+                )
+            else:
+                forecast_cost = max(
+                    eac_forecast,
+                    actual_cost + pressure_adjustment
+                )
+
+            variance = round(
+                forecast_cost - estimated_budget,
                 2
             )
-        else:
-            forecast_cost = actual_cost
 
-        variance = round(
-            forecast_cost - estimated_budget,
-            2
-        )
+            if variance > 0:
+                forecast_status = "Over Budget"
+                over_budget_count += 1
+            elif variance < 0:
+                forecast_status = "Under Budget"
+                under_budget_count += 1
+            else:
+                forecast_status = "On Budget"
+                on_budget_count += 1
 
-        if variance > 0:
-            forecast_status = "Over Budget"
-        elif variance < 0:
-            forecast_status = "Under Budget"
+            forecast_method = (
+                "Forecast uses Estimate At Completion logic based on actual cost, "
+                "completion rate, stored forecast cost, overdue work and blocked work."
+            )
+
+        if estimated_budget > 0:
+            forecast_usage = round(
+                (forecast_cost / estimated_budget) * 100
+            )
+            actual_usage = round(
+                (actual_cost / estimated_budget) * 100
+            )
         else:
-            forecast_status = "On Budget"
+            forecast_usage = 0
+            actual_usage = 0
+
+        confidence_score = data_quality_score
+
+        if completion_rate > 0:
+            confidence_score += 10
+
+        confidence_score = min(confidence_score, 95)
+
+        recommendation = "Continue normal financial monitoring."
+
+        if forecast_status == "Over Budget":
+            recommendation = (
+                "Review cost drivers, validate forecast assumptions and agree financial controls."
+            )
+        elif forecast_status == "Under Budget":
+            recommendation = (
+                "Forecast is currently below budget. Confirm whether scope or costs are fully captured."
+            )
+        elif forecast_status == "Insufficient Data":
+            recommendation = (
+                "Add budget, actual cost and task progress data before relying on the forecast."
+            )
+
+        total_budget_value += estimated_budget
+        total_actual_value += actual_cost
+        total_forecast_value += forecast_cost
 
         forecasts.append({
-
             "project_name": project["name"],
             "estimated_budget": estimated_budget,
             "actual_cost": actual_cost,
+            "stored_forecast_cost": stored_forecast_cost,
             "forecast_cost": forecast_cost,
             "variance": variance,
-            "forecast_status": forecast_status
-
+            "forecast_status": forecast_status,
+            "forecast_usage": forecast_usage,
+            "actual_usage": actual_usage,
+            "completion_rate": completion_rate,
+            "overdue_tasks": overdue_tasks,
+            "blocked_tasks": blocked_tasks,
+            "confidence_score": confidence_score,
+            "forecast_method": forecast_method,
+            "recommendation": recommendation,
+            "data_quality_score": data_quality_score,
+            "data_quality_flags": data_quality_flags
         })
+
+    if total_budget_value > 0:
+        portfolio_forecast_usage = round(
+            (total_forecast_value / total_budget_value) * 100
+        )
+        portfolio_actual_usage = round(
+            (total_actual_value / total_budget_value) * 100
+        )
+    else:
+        portfolio_forecast_usage = 0
+        portfolio_actual_usage = 0
+
+    executive_summary = (
+        f"AI reviewed {len(forecasts)} project budget forecast(s). "
+        f"{over_budget_count} are forecast over budget, "
+        f"{under_budget_count} are forecast under budget, "
+        f"and {insufficient_data_count} have insufficient data."
+    )
+
+    model_notes = [
+        "Budget forecasting uses approved budget, actual cost, completion rate, stored forecast cost, overdue work and blocked work.",
+        "Forecast cost no longer simply repeats actual cost where progress data exists.",
+        "Projects with missing budget, cost or task data are marked as Insufficient Data.",
+        "Confidence score is based on data quality and progress evidence.",
+        "Current forecasting is rule-based and will later support EAC, CPI and earned value methods."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add Earned Value Management.",
+        "Add Estimate At Completion history.",
+        "Add Cost Performance Index.",
+        "Add budget burn trends.",
+        "Add cashflow forecasting.",
+        "Add financial risk forecasting.",
+        "Add forecast confidence trend.",
+        "Add monthly forecast snapshots."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_budget_forecasting.html",
-        forecasts=forecasts
+        forecasts=forecasts,
+        over_budget_count=over_budget_count,
+        under_budget_count=under_budget_count,
+        on_budget_count=on_budget_count,
+        insufficient_data_count=insufficient_data_count,
+        total_budget_value=total_budget_value,
+        total_actual_value=total_actual_value,
+        total_forecast_value=total_forecast_value,
+        portfolio_forecast_usage=portfolio_forecast_usage,
+        portfolio_actual_usage=portfolio_actual_usage,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -20147,14 +21495,21 @@ def ai_schedule_forecasting():
 
     forecasts = []
 
+    on_track_count = 0
+    minor_delay_count = 0
+    high_delay_count = 0
+    insufficient_data_count = 0
+
     for project in projects:
+
+        project_id = project["id"]
 
         cursor.execute("""
             SELECT COUNT(*) AS total_tasks
             FROM tasks
             WHERE project_id = %s
         """, (
-            project["id"],
+            project_id,
         ))
 
         total_tasks = cursor.fetchone()["total_tasks"]
@@ -20165,7 +21520,7 @@ def ai_schedule_forecasting():
             WHERE project_id = %s
             AND status = 'Completed'
         """, (
-            project["id"],
+            project_id,
         ))
 
         completed_tasks = cursor.fetchone()["completed_tasks"]
@@ -20174,14 +21529,39 @@ def ai_schedule_forecasting():
             SELECT COUNT(*) AS overdue_tasks
             FROM tasks
             WHERE project_id = %s
+            AND due_date IS NOT NULL
+            AND due_date != ''
             AND due_date < %s
             AND status != 'Completed'
         """, (
-            project["id"],
+            project_id,
             str(date.today())
         ))
 
         overdue_tasks = cursor.fetchone()["overdue_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS blocked_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND status = 'Blocked'
+        """, (
+            project_id,
+        ))
+
+        blocked_tasks = cursor.fetchone()["blocked_tasks"]
+
+        cursor.execute("""
+            SELECT COUNT(*) AS undated_tasks
+            FROM tasks
+            WHERE project_id = %s
+            AND (due_date IS NULL OR due_date = '')
+            AND status != 'Completed'
+        """, (
+            project_id,
+        ))
+
+        undated_tasks = cursor.fetchone()["undated_tasks"]
 
         if total_tasks > 0:
             completion_rate = round(
@@ -20190,33 +21570,147 @@ def ai_schedule_forecasting():
         else:
             completion_rate = 0
 
-        delay_risk = overdue_tasks * 10
+        data_quality_flags = []
 
-        if completion_rate >= 80 and overdue_tasks == 0:
-            forecast = "On Track"
-        elif completion_rate >= 50:
-            forecast = "Minor Delay Risk"
-        else:
+        if total_tasks == 0:
+            data_quality_flags.append("No tasks linked")
+
+        if undated_tasks > 0:
+            data_quality_flags.append(
+                f"{undated_tasks} open task(s) missing due dates"
+            )
+
+        data_quality_score = 100
+
+        if total_tasks == 0:
+            data_quality_score -= 50
+
+        if undated_tasks > 0 and total_tasks > 0:
+            data_quality_score -= min(
+                30,
+                round((undated_tasks / total_tasks) * 100)
+            )
+
+        data_quality_score = max(0, data_quality_score)
+
+        delay_risk = 0
+
+        delay_risk += overdue_tasks * 20
+        delay_risk += blocked_tasks * 15
+        delay_risk += undated_tasks * 5
+
+        if total_tasks > 0 and completion_rate < 30:
+            delay_risk += 25
+        elif total_tasks > 0 and completion_rate < 60:
+            delay_risk += 10
+
+        delay_risk = min(delay_risk, 100)
+
+        if total_tasks == 0:
+            forecast = "Insufficient Data"
+            recommendation = (
+                "Add tasks and due dates before schedule forecasting can be trusted."
+            )
+            insufficient_data_count += 1
+
+        elif delay_risk >= 70:
             forecast = "High Delay Risk"
+            recommendation = (
+                "Review project plan immediately, confirm blockers, reset due dates and escalate delivery risk."
+            )
+            high_delay_count += 1
+
+        elif delay_risk >= 35:
+            forecast = "Minor Delay Risk"
+            recommendation = (
+                "Monitor schedule closely, review overdue or blocked work and update delivery dates."
+            )
+            minor_delay_count += 1
+
+        else:
+            forecast = "On Track"
+            recommendation = (
+                "Current schedule indicators are acceptable. Continue routine monitoring."
+            )
+            on_track_count += 1
+
+        confidence_score = data_quality_score
+
+        if total_tasks > 0:
+            confidence_score += 10
+
+        confidence_score = min(confidence_score, 95)
+
+        forecast_explanation = (
+            f"Delay risk uses completion rate ({completion_rate}%), "
+            f"overdue tasks ({overdue_tasks}), blocked tasks ({blocked_tasks}) "
+            f"and open tasks missing due dates ({undated_tasks})."
+        )
 
         forecasts.append({
-
             "project_name": project["name"],
             "status": project["status"],
             "completion_rate": completion_rate,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
             "overdue_tasks": overdue_tasks,
+            "blocked_tasks": blocked_tasks,
+            "undated_tasks": undated_tasks,
             "delay_risk": delay_risk,
-            "forecast": forecast
-
+            "forecast": forecast,
+            "recommendation": recommendation,
+            "confidence_score": confidence_score,
+            "data_quality_score": data_quality_score,
+            "data_quality_flags": data_quality_flags,
+            "forecast_explanation": forecast_explanation
         })
+
+    forecasts = sorted(
+        forecasts,
+        key=lambda item: item["delay_risk"],
+        reverse=True
+    )
+
+    executive_summary = (
+        f"AI reviewed {len(forecasts)} project schedule forecast(s). "
+        f"{high_delay_count} have high delay risk, "
+        f"{minor_delay_count} have minor delay risk, "
+        f"{on_track_count} are on track and "
+        f"{insufficient_data_count} have insufficient schedule data."
+    )
+
+    model_notes = [
+        "Schedule forecast uses completion rate, overdue tasks, blocked tasks and missing due dates.",
+        "Projects with no tasks are marked as Insufficient Data.",
+        "High Delay Risk is no longer assigned without supporting delay indicators.",
+        "Confidence score is based on available task and due-date data.",
+        "Current model is rule-based and will later support SPI, critical path and trend forecasting."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add milestone forecasting.",
+        "Add critical path analysis.",
+        "Add Schedule Performance Index.",
+        "Add delivery trend forecasting.",
+        "Add deadline confidence score.",
+        "Add forecast timeline charts.",
+        "Add schedule risk history.",
+        "Add baseline versus actual finish tracking."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_schedule_forecasting.html",
-        forecasts=forecasts
+        forecasts=forecasts,
+        on_track_count=on_track_count,
+        minor_delay_count=minor_delay_count,
+        high_delay_count=high_delay_count,
+        insufficient_data_count=insufficient_data_count,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
-
 
 @app.route("/ai-workload-balancer")
 def ai_workload_balancer():
@@ -20253,10 +21747,11 @@ def ai_workload_balancer():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(name), LOWER(role))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY LOWER(name), LOWER(role), id DESC
     """, (
         session["user_id"],
     ))
@@ -20264,6 +21759,30 @@ def ai_workload_balancer():
     team_members = cursor.fetchall()
 
     workload_data = []
+
+    overloaded_members = []
+    available_members = []
+    balanced_members = []
+
+    duplicate_warning = False
+
+    cursor.execute("""
+        SELECT
+            LOWER(name) AS member_name,
+            LOWER(role) AS member_role,
+            COUNT(*) AS duplicate_count
+        FROM team_members
+        WHERE user_id = %s
+        GROUP BY LOWER(name), LOWER(role)
+        HAVING COUNT(*) > 1
+    """, (
+        session["user_id"],
+    ))
+
+    duplicate_records = cursor.fetchall()
+
+    if duplicate_records:
+        duplicate_warning = True
 
     for member in team_members:
 
@@ -20277,7 +21796,7 @@ def ai_workload_balancer():
             WHERE projects.user_id = %s
             AND tasks.status != 'Completed'
             AND (
-                tasks.assigned_to = %s
+                LOWER(tasks.assigned_to) = LOWER(%s)
                 OR task_team_members.team_member_id = %s
             )
         """, (
@@ -20288,36 +21807,159 @@ def ai_workload_balancer():
 
         active_tasks = cursor.fetchone()["active_tasks"]
 
-        utilisation = min(active_tasks * 10, 100)
+        capacity_limit = int(member.get("capacity_limit") or 10)
 
-        if utilisation >= 80:
+        if capacity_limit <= 0:
+            capacity_limit = 10
+
+        utilisation = min(
+            100,
+            round((active_tasks / capacity_limit) * 100)
+        )
+
+        if utilisation >= 85:
             workload_status = "Overloaded"
-            recommendation = "Reassign some tasks to available team members."
-
         elif utilisation >= 50:
             workload_status = "Balanced"
-            recommendation = "Workload is manageable but should be monitored."
-
         else:
             workload_status = "Available"
-            recommendation = "This team member can take on more work."
 
-        workload_data.append({
+        workload_record = {
+            "id": member["id"],
             "name": member["name"],
             "role": member["role"],
             "active_tasks": active_tasks,
+            "capacity_limit": capacity_limit,
             "utilisation": utilisation,
             "workload_status": workload_status,
-            "recommendation": recommendation
-        })
+            "recommendation": "",
+            "recommended_receiver": "Not identified yet",
+            "balancing_reason": "",
+            "confidence_score": 75
+        }
+
+        if workload_status == "Overloaded":
+            overloaded_members.append(workload_record)
+        elif workload_status == "Available":
+            available_members.append(workload_record)
+        else:
+            balanced_members.append(workload_record)
+
+        workload_data.append(workload_record)
+
+    for item in workload_data:
+
+        if item["workload_status"] == "Overloaded":
+
+            if available_members:
+
+                receiver = sorted(
+                    available_members,
+                    key=lambda x: x["utilisation"]
+                )[0]
+
+                item["recommended_receiver"] = receiver["name"]
+
+                item["recommendation"] = (
+                    f"Reassign suitable work to {receiver['name']} "
+                    f"because they currently have {receiver['utilisation']}% utilisation."
+                )
+
+                item["balancing_reason"] = (
+                    "Recommendation is based on lowest available utilisation."
+                )
+
+            else:
+
+                item["recommendation"] = (
+                    "No clearly available receiver found. Review workload manually or consider additional resource."
+                )
+
+                item["balancing_reason"] = (
+                    "All visible resources are already balanced or overloaded."
+                )
+
+        elif item["workload_status"] == "Available":
+
+            item["recommendation"] = (
+                "This team member has spare capacity and may be able to receive suitable work."
+            )
+
+            item["balancing_reason"] = (
+                "Utilisation is below 50%."
+            )
+
+        else:
+
+            item["recommendation"] = (
+                "Workload is currently balanced. Continue monitoring."
+            )
+
+            item["balancing_reason"] = (
+                "Utilisation is between 50% and 84%."
+            )
+
+    workload_data = sorted(
+        workload_data,
+        key=lambda x: x["utilisation"],
+        reverse=True
+    )
+
+    total_resources = len(workload_data)
+    overloaded_count = len(overloaded_members)
+    available_count = len(available_members)
+    balanced_count = len(balanced_members)
+
+    if total_resources > 0:
+        average_utilisation = round(
+            sum(item["utilisation"] for item in workload_data)
+            / total_resources
+        )
+    else:
+        average_utilisation = 0
+
+    executive_summary = (
+        f"AI reviewed {total_resources} unique resource(s). "
+        f"{overloaded_count} are overloaded, "
+        f"{balanced_count} are balanced and "
+        f"{available_count} have spare capacity."
+    )
+
+    model_notes = [
+        "Workload balancing uses active open tasks and resource capacity limits.",
+        "Duplicate team member records are deduplicated by name and role.",
+        "Overloaded resources are matched to the lowest-utilised available resource where possible.",
+        "Recommendations are no longer identical for every person.",
+        "Current logic is rule-based and will later support skill matching and workload simulations."
+    ]
+
+    pipe_cleaning_notes = [
+        "Skill-based balancing.",
+        "Project-specific balancing.",
+        "Capacity forecasting.",
+        "Availability forecasting.",
+        "Vacation awareness.",
+        "Resource succession planning.",
+        "Contractor recommendations.",
+        "Work transfer simulation."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_workload_balancer.html",
-        workload_data=workload_data
+        workload_data=workload_data,
+        overloaded_count=overloaded_count,
+        available_count=available_count,
+        balanced_count=balanced_count,
+        total_resources=total_resources,
+        average_utilisation=average_utilisation,
+        duplicate_warning=duplicate_warning,
+        duplicate_records=duplicate_records,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
-
 
 @app.route("/ai-resource-optimisation")
 def ai_resource_optimisation():
@@ -20354,17 +21996,38 @@ def ai_resource_optimisation():
     )
 
     cursor.execute("""
-        SELECT *
+        SELECT DISTINCT ON (LOWER(name), LOWER(role))
+            *
         FROM team_members
         WHERE user_id = %s
-        ORDER BY name
+        ORDER BY LOWER(name), LOWER(role), id DESC
     """, (
         session["user_id"],
     ))
 
     team_members = cursor.fetchall()
 
+    cursor.execute("""
+        SELECT
+            LOWER(name) AS member_name,
+            LOWER(role) AS member_role,
+            COUNT(*) AS duplicate_count
+        FROM team_members
+        WHERE user_id = %s
+        GROUP BY LOWER(name), LOWER(role)
+        HAVING COUNT(*) > 1
+    """, (
+        session["user_id"],
+    ))
+
+    duplicate_records = cursor.fetchall()
+    duplicate_warning = True if duplicate_records else False
+
     optimisation_data = []
+
+    overloaded_resources = []
+    available_resources = []
+    balanced_resources = []
 
     for member in team_members:
 
@@ -20378,7 +22041,7 @@ def ai_resource_optimisation():
             WHERE projects.user_id = %s
             AND tasks.status != 'Completed'
             AND (
-                tasks.assigned_to = %s
+                LOWER(tasks.assigned_to) = LOWER(%s)
                 OR task_team_members.team_member_id = %s
             )
         """, (
@@ -20389,39 +22052,179 @@ def ai_resource_optimisation():
 
         active_tasks = cursor.fetchone()["active_tasks"]
 
-        utilisation = min(active_tasks * 10, 100)
+        capacity_limit = int(member.get("capacity_limit") or 10)
 
-        if utilisation >= 80:
+        if capacity_limit <= 0:
+            capacity_limit = 10
 
+        utilisation = min(
+            100,
+            round((active_tasks / capacity_limit) * 100)
+        )
+
+        skills = (
+            member.get("skills")
+            or member.get("skillset")
+            or member.get("role")
+            or "No skills recorded"
+        )
+
+        availability_status = (
+            member.get("availability")
+            or member.get("status")
+            or "Available"
+        )
+
+        if utilisation >= 85:
             optimisation = "Reduce workload"
-            action = "Move tasks away from this resource."
-
+            resource_status = "Overloaded"
         elif utilisation >= 50:
-
             optimisation = "Maintain"
-            action = "Current workload appears balanced."
+            resource_status = "Balanced"
+        else:
+            optimisation = "Increase workload"
+            resource_status = "Available"
+
+        record = {
+            "id": member["id"],
+            "name": member["name"],
+            "role": member["role"],
+            "skills": skills,
+            "availability_status": availability_status,
+            "active_tasks": active_tasks,
+            "capacity_limit": capacity_limit,
+            "utilisation": utilisation,
+            "resource_status": resource_status,
+            "optimisation": optimisation,
+            "action": "",
+            "recommended_match": "Not identified yet",
+            "optimisation_reason": "",
+            "confidence_score": 75
+        }
+
+        if resource_status == "Overloaded":
+            overloaded_resources.append(record)
+        elif resource_status == "Available":
+            available_resources.append(record)
+        else:
+            balanced_resources.append(record)
+
+        optimisation_data.append(record)
+
+    for item in optimisation_data:
+
+        if item["resource_status"] == "Overloaded":
+
+            matching_candidates = sorted(
+                available_resources,
+                key=lambda x: x["utilisation"]
+            )
+
+            if matching_candidates:
+
+                receiver = matching_candidates[0]
+
+                item["recommended_match"] = receiver["name"]
+
+                item["action"] = (
+                    f"Move suitable work from {item['name']} to {receiver['name']}."
+                )
+
+                item["optimisation_reason"] = (
+                    f"{item['name']} is at {item['utilisation']}% utilisation, "
+                    f"while {receiver['name']} is at {receiver['utilisation']}%."
+                )
+
+            else:
+
+                item["action"] = (
+                    "No available resource found. Consider reducing scope, extending timeline or adding resource."
+                )
+
+                item["optimisation_reason"] = (
+                    "All visible resources are balanced or overloaded."
+                )
+
+        elif item["resource_status"] == "Available":
+
+            item["action"] = (
+                "This resource can receive additional suitable work."
+            )
+
+            item["optimisation_reason"] = (
+                "Utilisation is below 50%."
+            )
 
         else:
 
-            optimisation = "Increase workload"
-            action = "Assign additional tasks to this resource."
+            item["action"] = (
+                "Maintain current allocation and monitor workload."
+            )
 
-        optimisation_data.append({
+            item["optimisation_reason"] = (
+                "Utilisation is within a balanced range."
+            )
 
-            "name": member["name"],
-            "role": member["role"],
-            "active_tasks": active_tasks,
-            "utilisation": utilisation,
-            "optimisation": optimisation,
-            "action": action
+    optimisation_data = sorted(
+        optimisation_data,
+        key=lambda item: item["utilisation"],
+        reverse=True
+    )
 
-        })
+    total_resources = len(optimisation_data)
+    overloaded_count = len(overloaded_resources)
+    available_count = len(available_resources)
+    balanced_count = len(balanced_resources)
+
+    if total_resources > 0:
+        average_utilisation = round(
+            sum(item["utilisation"] for item in optimisation_data)
+            / total_resources
+        )
+    else:
+        average_utilisation = 0
+
+    executive_summary = (
+        f"AI reviewed {total_resources} unique resource(s). "
+        f"{overloaded_count} require workload reduction, "
+        f"{available_count} can receive more work and "
+        f"{balanced_count} should maintain current allocation."
+    )
+
+    model_notes = [
+        "Resource optimisation deduplicates team members by name and role.",
+        "Utilisation is calculated using open task count against capacity limit.",
+        "Overloaded resources are matched to the lowest-utilised available resource.",
+        "Recommendations are no longer identical for every resource.",
+        "Current optimisation is rule-based and will later support skill matching and simulations."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add skill-based allocation.",
+        "Add project matching.",
+        "Add resource availability forecasting.",
+        "Add capacity optimisation.",
+        "Add AI workload simulations.",
+        "Add resource transfer suggestions.",
+        "Add hiring recommendations.",
+        "Add contractor recommendations."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_resource_optimisation.html",
-        optimisation_data=optimisation_data
+        optimisation_data=optimisation_data,
+        total_resources=total_resources,
+        overloaded_count=overloaded_count,
+        available_count=available_count,
+        balanced_count=balanced_count,
+        average_utilisation=average_utilisation,
+        duplicate_warning=duplicate_warning,
+        duplicate_records=duplicate_records,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -20500,6 +22303,8 @@ def ai_portfolio_health_predictor():
         JOIN projects
         ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
+        AND tasks.due_date IS NOT NULL
+        AND tasks.due_date != ''
         AND tasks.due_date < %s
         AND tasks.status != 'Completed'
     """, (
@@ -20546,8 +22351,9 @@ def ai_portfolio_health_predictor():
 
     cursor.execute("""
         SELECT
-            SUM(budget_amount) AS total_budget,
-            SUM(actual_cost) AS total_actual
+            COALESCE(SUM(budget_amount), 0) AS total_budget,
+            COALESCE(SUM(actual_cost), 0) AS total_actual,
+            COALESCE(SUM(forecast_cost), 0) AS total_forecast
         FROM budgets
         WHERE user_id = %s
     """, (
@@ -20558,6 +22364,7 @@ def ai_portfolio_health_predictor():
 
     total_budget = float(budget_data["total_budget"] or 0)
     total_actual = float(budget_data["total_actual"] or 0)
+    total_forecast = float(budget_data["total_forecast"] or 0)
 
     conn.close()
 
@@ -20568,32 +22375,131 @@ def ai_portfolio_health_predictor():
     else:
         completion_rate = 0
 
-    portfolio_score = 100
+    if total_budget > 0:
+        budget_usage = round((total_actual / total_budget) * 100)
+        forecast_usage = round((total_forecast / total_budget) * 100)
+    else:
+        budget_usage = 0
+        forecast_usage = 0
 
-    portfolio_score -= overdue_tasks * 8
-    portfolio_score -= blocked_tasks * 8
-    portfolio_score -= open_risks * 5
-    portfolio_score -= open_issues * 4
+    data_quality_flags = []
 
-    if total_budget > 0 and total_actual > total_budget:
-        portfolio_score -= 15
+    if total_projects == 0:
+        data_quality_flags.append("No projects recorded")
+
+    if total_tasks == 0:
+        data_quality_flags.append("No tasks recorded")
+
+    if total_budget == 0:
+        data_quality_flags.append("No budget data recorded")
+
+    data_quality_score = 100
+
+    if total_projects == 0:
+        data_quality_score -= 30
+
+    if total_tasks == 0:
+        data_quality_score -= 35
+
+    if total_budget == 0:
+        data_quality_score -= 20
+
+    data_quality_score = max(0, data_quality_score)
+
+    delivery_pressure = min(
+        100,
+        (overdue_tasks * 8)
+        + (blocked_tasks * 10)
+        + max(0, 50 - completion_rate)
+    )
+
+    governance_pressure = min(
+        100,
+        (open_risks * 6)
+        + (open_issues * 5)
+    )
+
+    financial_pressure = max(
+        budget_usage,
+        forecast_usage
+    )
 
     portfolio_score = max(
         0,
-        min(100, portfolio_score)
+        min(
+            100,
+            100
+            - round(delivery_pressure * 0.35)
+            - round(governance_pressure * 0.35)
+            - round(financial_pressure * 0.30)
+            + round(completion_rate * 0.20)
+        )
     )
 
-    if portfolio_score >= 75:
+    if data_quality_score < 50:
+        prediction = "Insufficient Data"
+        recommendation = (
+            "Add project tasks, budget records and governance data before relying on portfolio prediction."
+        )
+
+    elif portfolio_score >= 75:
         prediction = "Healthy"
-        recommendation = "Portfolio performance is strong. Continue current governance rhythm."
+        recommendation = (
+            "Portfolio performance is strong. Continue current governance rhythm."
+        )
 
     elif portfolio_score >= 50:
         prediction = "Watch"
-        recommendation = "Portfolio requires monitoring. Review risks, issues and budget pressure."
+        recommendation = (
+            "Portfolio requires monitoring. Review risks, issues, blocked work and budget pressure."
+        )
 
     else:
         prediction = "At Risk"
-        recommendation = "Portfolio requires intervention. Escalate major delivery, risk and budget concerns."
+        recommendation = (
+            "Portfolio requires intervention. Escalate major delivery, risk and budget concerns."
+        )
+
+    confidence_score = data_quality_score
+
+    if total_projects > 0:
+        confidence_score += 5
+
+    if total_tasks > 0:
+        confidence_score += 5
+
+    confidence_score = min(confidence_score, 95)
+
+    executive_summary = (
+        f"AI portfolio predictor reviewed {total_projects} project(s), "
+        f"{total_tasks} task(s), {open_risks} open risk(s), "
+        f"{open_issues} open issue(s), and forecast portfolio health at {portfolio_score}%."
+    )
+
+    score_explanation = (
+        f"Portfolio score uses delivery pressure ({delivery_pressure}%), "
+        f"governance pressure ({governance_pressure}%), financial pressure ({financial_pressure}%), "
+        f"and completion rate ({completion_rate}%)."
+    )
+
+    model_notes = [
+        "Portfolio health uses delivery pressure, governance pressure, financial pressure and completion rate.",
+        "A 0% or unrealistic portfolio score is avoided by separating data quality from health prediction.",
+        "Projects with missing task or budget data are flagged as Insufficient Data.",
+        "Confidence score is based on portfolio data completeness.",
+        "Current model is rule-based and will later support scenarios and predictive modelling."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add health trends.",
+        "Add future forecasting.",
+        "Add portfolio scenarios.",
+        "Add predictive modelling.",
+        "Add financial forecasting.",
+        "Add risk forecasting.",
+        "Add executive alerts.",
+        "Add confidence scoring history."
+    ]
 
     return render_template(
         "ai_portfolio_health_predictor.html",
@@ -20607,9 +22513,22 @@ def ai_portfolio_health_predictor():
         open_issues=open_issues,
         total_budget=total_budget,
         total_actual=total_actual,
+        total_forecast=total_forecast,
+        budget_usage=budget_usage,
+        forecast_usage=forecast_usage,
+        delivery_pressure=delivery_pressure,
+        governance_pressure=governance_pressure,
+        financial_pressure=financial_pressure,
+        data_quality_score=data_quality_score,
+        data_quality_flags=data_quality_flags,
         portfolio_score=portfolio_score,
         prediction=prediction,
-        recommendation=recommendation
+        recommendation=recommendation,
+        confidence_score=confidence_score,
+        executive_summary=executive_summary,
+        score_explanation=score_explanation,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -20660,6 +22579,11 @@ def ai_project_summary_generator():
 
     summaries = []
 
+    strong_count = 0
+    monitor_count = 0
+    attention_count = 0
+    insufficient_data_count = 0
+
     for project in projects:
 
         project_id = project["id"]
@@ -20687,6 +22611,8 @@ def ai_project_summary_generator():
             SELECT COUNT(*) AS overdue_tasks
             FROM tasks
             WHERE project_id = %s
+            AND due_date IS NOT NULL
+            AND due_date != ''
             AND due_date < %s
             AND status != 'Completed'
         """, (
@@ -20725,6 +22651,25 @@ def ai_project_summary_generator():
         ))
         open_issues = cursor.fetchone()["open_issues"]
 
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(budget_amount), 0) AS total_budget,
+                COALESCE(SUM(actual_cost), 0) AS actual_cost,
+                COALESCE(SUM(forecast_cost), 0) AS forecast_cost
+            FROM budgets
+            WHERE project_id = %s
+            AND user_id = %s
+        """, (
+            project_id,
+            session["user_id"]
+        ))
+
+        budget_data = cursor.fetchone()
+
+        total_budget = float(budget_data["total_budget"] or 0)
+        actual_cost = float(budget_data["actual_cost"] or 0)
+        forecast_cost = float(budget_data["forecast_cost"] or 0)
+
         if total_tasks > 0:
             completion_rate = round(
                 (completed_tasks / total_tasks) * 100
@@ -20732,14 +22677,119 @@ def ai_project_summary_generator():
         else:
             completion_rate = 0
 
-        if completion_rate >= 75 and open_risks == 0 and open_issues == 0:
-            summary = "Project is performing well with strong delivery progress and no major governance concerns."
-        elif overdue_tasks > 0 or blocked_tasks > 0:
-            summary = "Project requires delivery attention due to overdue or blocked tasks."
-        elif open_risks > 0 or open_issues > 0:
-            summary = "Project has governance items that should be reviewed in the next project meeting."
+        if total_budget > 0:
+            budget_usage = round(
+                (actual_cost / total_budget) * 100
+            )
+            forecast_usage = round(
+                (forecast_cost / total_budget) * 100
+            )
         else:
-            summary = "Project is stable but should continue to be monitored."
+            budget_usage = 0
+            forecast_usage = 0
+
+        data_quality_flags = []
+
+        if total_tasks == 0:
+            data_quality_flags.append("No tasks linked")
+
+        if total_budget == 0:
+            data_quality_flags.append("No budget data")
+
+        if open_risks == 0:
+            data_quality_flags.append("No open risks recorded")
+
+        if open_issues == 0:
+            data_quality_flags.append("No open issues recorded")
+
+        if total_tasks == 0:
+            summary_status = "Insufficient Data"
+            insufficient_data_count += 1
+
+            summary = (
+                f"{project['name']} does not yet have enough delivery data for a reliable summary. "
+                "Add tasks, due dates, risks, issues and budget records to generate a stronger executive summary."
+            )
+
+        elif overdue_tasks > 0 or blocked_tasks > 0:
+            summary_status = "Attention Required"
+            attention_count += 1
+
+            summary = (
+                f"{project['name']} requires delivery attention. "
+                f"The project has {overdue_tasks} overdue task(s), {blocked_tasks} blocked task(s), "
+                f"{open_risks} open risk(s), and {open_issues} open issue(s). "
+                "Management should review blockers, ownership and delivery dates."
+            )
+
+        elif open_risks > 0 or open_issues > 0:
+            summary_status = "Monitor"
+            monitor_count += 1
+
+            summary = (
+                f"{project['name']} is progressing at {completion_rate}% completion, "
+                f"with {open_risks} open risk(s) and {open_issues} open issue(s). "
+                "Governance items should be reviewed in the next project meeting."
+            )
+
+        elif completion_rate >= 75:
+            summary_status = "Strong"
+            strong_count += 1
+
+            summary = (
+                f"{project['name']} is performing strongly with {completion_rate}% completion "
+                "and no major open delivery or governance concerns currently recorded."
+            )
+
+        else:
+            summary_status = "Monitor"
+            monitor_count += 1
+
+            summary = (
+                f"{project['name']} is stable but should continue to be monitored. "
+                f"Current completion is {completion_rate}% with {total_tasks} task(s) recorded."
+            )
+
+        highlights = []
+
+        if completion_rate >= 75:
+            highlights.append("Strong completion progress")
+
+        if overdue_tasks == 0 and total_tasks > 0:
+            highlights.append("No overdue tasks")
+
+        if blocked_tasks == 0 and total_tasks > 0:
+            highlights.append("No blocked tasks")
+
+        concerns = []
+
+        if overdue_tasks > 0:
+            concerns.append(f"{overdue_tasks} overdue task(s)")
+
+        if blocked_tasks > 0:
+            concerns.append(f"{blocked_tasks} blocked task(s)")
+
+        if open_risks > 0:
+            concerns.append(f"{open_risks} open risk(s)")
+
+        if open_issues > 0:
+            concerns.append(f"{open_issues} open issue(s)")
+
+        if forecast_usage > 100:
+            concerns.append("Forecast cost exceeds budget")
+
+        confidence_score = 65
+
+        if total_tasks > 0:
+            confidence_score += 15
+
+        if total_budget > 0:
+            confidence_score += 10
+
+        if open_risks > 0 or open_issues > 0:
+            confidence_score += 5
+
+        confidence_score = min(confidence_score, 95)
 
         summaries.append({
             "project_name": project["name"],
@@ -20751,14 +22801,56 @@ def ai_project_summary_generator():
             "blocked_tasks": blocked_tasks,
             "open_risks": open_risks,
             "open_issues": open_issues,
-            "summary": summary
+            "total_budget": total_budget,
+            "actual_cost": actual_cost,
+            "forecast_cost": forecast_cost,
+            "budget_usage": budget_usage,
+            "forecast_usage": forecast_usage,
+            "summary_status": summary_status,
+            "summary": summary,
+            "highlights": highlights,
+            "concerns": concerns,
+            "data_quality_flags": data_quality_flags,
+            "confidence_score": confidence_score
         })
+
+    executive_summary = (
+        f"AI generated {len(summaries)} project summary record(s). "
+        f"{strong_count} are strong, {monitor_count} require monitoring, "
+        f"{attention_count} require attention and {insufficient_data_count} have insufficient data."
+    )
+
+    model_notes = [
+        "Project summaries use completion rate, overdue work, blockers, risks, issues and budget signals.",
+        "Projects with no tasks are marked as Insufficient Data instead of receiving a generic stable summary.",
+        "Summaries now include highlights, concerns and data-quality flags.",
+        "Confidence score is based on available delivery, governance and budget data.",
+        "Current summaries are rule-based and will later support richer narrative generation."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add narrative summaries.",
+        "Add project highlights.",
+        "Add milestone summaries.",
+        "Add risk summaries.",
+        "Add budget summaries.",
+        "Add stakeholder summaries.",
+        "Add export to PDF.",
+        "Add board-ready reporting."
+    ]
 
     conn.close()
 
     return render_template(
         "ai_project_summary_generator.html",
-        summaries=summaries
+        summaries=summaries,
+        strong_count=strong_count,
+        monitor_count=monitor_count,
+        attention_count=attention_count,
+        insufficient_data_count=insufficient_data_count,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 
@@ -20807,12 +22899,39 @@ def ai_pm_copilot():
     total_projects = cursor.fetchone()["total_projects"]
 
     cursor.execute("""
+        SELECT COUNT(*) AS total_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    total_tasks = cursor.fetchone()["total_tasks"]
+
+    cursor.execute("""
+        SELECT COUNT(*) AS completed_tasks
+        FROM tasks
+        JOIN projects
+        ON tasks.project_id = projects.id
+        WHERE projects.user_id = %s
+        AND tasks.status = 'Completed'
+    """, (
+        session["user_id"],
+    ))
+
+    completed_tasks = cursor.fetchone()["completed_tasks"]
+
+    cursor.execute("""
         SELECT COUNT(*) AS overdue_tasks
         FROM tasks
         JOIN projects
         ON tasks.project_id = projects.id
         WHERE projects.user_id = %s
         AND tasks.status != 'Completed'
+        AND tasks.due_date IS NOT NULL
+        AND tasks.due_date != ''
         AND tasks.due_date < %s
     """, (
         session["user_id"],
@@ -20856,43 +22975,236 @@ def ai_pm_copilot():
 
     blocked_tasks = cursor.fetchone()["blocked_tasks"]
 
+    cursor.execute("""
+        SELECT COUNT(*) AS pending_changes
+        FROM changes
+        WHERE user_id = %s
+        AND status != 'Approved'
+    """, (
+        session["user_id"],
+    ))
+
+    pending_changes = cursor.fetchone()["pending_changes"]
+
+    cursor.execute("""
+        SELECT
+            COALESCE(SUM(budget_amount), 0) AS total_budget,
+            COALESCE(SUM(actual_cost), 0) AS total_actual,
+            COALESCE(SUM(forecast_cost), 0) AS total_forecast
+        FROM budgets
+        WHERE user_id = %s
+    """, (
+        session["user_id"],
+    ))
+
+    budget_data = cursor.fetchone()
+
     conn.close()
 
+    total_budget = float(budget_data["total_budget"] or 0)
+    total_actual = float(budget_data["total_actual"] or 0)
+    total_forecast = float(budget_data["total_forecast"] or 0)
+
+    if total_tasks > 0:
+        completion_rate = round(
+            (completed_tasks / total_tasks) * 100
+        )
+    else:
+        completion_rate = 0
+
+    if total_budget > 0:
+        budget_usage = round((total_actual / total_budget) * 100)
+        forecast_usage = round((total_forecast / total_budget) * 100)
+    else:
+        budget_usage = 0
+        forecast_usage = 0
+
     recommendations = []
+    action_items = []
+
+    urgency_score = 0
 
     if overdue_tasks > 0:
+        urgency_score += overdue_tasks * 8
+
         recommendations.append(
             f"Review {overdue_tasks} overdue task(s) immediately."
         )
 
+        action_items.append({
+            "area": "Delivery",
+            "priority": "High",
+            "action": f"Review and re-plan {overdue_tasks} overdue task(s).",
+            "mode": "Delivery Mode"
+        })
+
     if blocked_tasks > 0:
+        urgency_score += blocked_tasks * 10
+
         recommendations.append(
             f"Escalate {blocked_tasks} blocked task(s)."
         )
 
+        action_items.append({
+            "area": "Delivery",
+            "priority": "High",
+            "action": f"Escalate blockers affecting {blocked_tasks} task(s).",
+            "mode": "Governance Mode"
+        })
+
     if open_risks > 0:
+        urgency_score += open_risks * 5
+
         recommendations.append(
             f"Review {open_risks} open risk(s)."
         )
 
+        action_items.append({
+            "area": "Risk",
+            "priority": "Medium",
+            "action": f"Review mitigation ownership for {open_risks} open risk(s).",
+            "mode": "Governance Mode"
+        })
+
     if open_issues > 0:
+        urgency_score += open_issues * 5
+
         recommendations.append(
             f"Review {open_issues} open issue(s)."
         )
 
+        action_items.append({
+            "area": "Issue",
+            "priority": "Medium",
+            "action": f"Confirm resolution plans for {open_issues} open issue(s).",
+            "mode": "Governance Mode"
+        })
+
+    if pending_changes > 0:
+        urgency_score += pending_changes * 3
+
+        recommendations.append(
+            f"Review {pending_changes} pending change request(s)."
+        )
+
+        action_items.append({
+            "area": "Change",
+            "priority": "Medium",
+            "action": f"Check decision status for {pending_changes} pending change request(s).",
+            "mode": "Governance Mode"
+        })
+
+    if budget_usage > 90:
+        urgency_score += 15
+
+        recommendations.append(
+            f"Budget usage is high at {budget_usage}%. Review financial controls."
+        )
+
+        action_items.append({
+            "area": "Finance",
+            "priority": "High",
+            "action": f"Review budget exposure because actual usage is {budget_usage}%.",
+            "mode": "Finance Mode"
+        })
+
+    if forecast_usage > 90:
+        urgency_score += 15
+
+        recommendations.append(
+            f"Forecast usage is high at {forecast_usage}%. Review forecast assumptions."
+        )
+
+        action_items.append({
+            "area": "Finance",
+            "priority": "High",
+            "action": f"Review forecast exposure because forecast usage is {forecast_usage}%.",
+            "mode": "Finance Mode"
+        })
+
+    urgency_score = min(urgency_score, 100)
+
     if not recommendations:
         recommendations.append(
-            "Portfolio currently appears healthy."
+            "Portfolio currently appears healthy based on current delivery, risk, issue and budget indicators."
         )
+
+        action_items.append({
+            "area": "Portfolio",
+            "priority": "Low",
+            "action": "Continue routine governance monitoring.",
+            "mode": "Executive Mode"
+        })
+
+    if urgency_score >= 70:
+        copilot_status = "Immediate Attention"
+    elif urgency_score >= 35:
+        copilot_status = "Monitor Closely"
+    else:
+        copilot_status = "Stable"
+
+    confidence_score = 70
+
+    if total_projects > 0:
+        confidence_score += 5
+
+    if total_tasks > 0:
+        confidence_score += 10
+
+    if total_budget > 0:
+        confidence_score += 5
+
+    confidence_score = min(confidence_score, 95)
+
+    executive_summary = (
+        f"AI PM Copilot reviewed {total_projects} project(s), {total_tasks} task(s), "
+        f"{open_risks} risk(s), {open_issues} issue(s), and {pending_changes} change(s). "
+        f"Current copilot status is {copilot_status} with urgency score {urgency_score}%."
+    )
+
+    model_notes = [
+        "Copilot urgency score uses overdue tasks, blockers, risks, issues, changes and budget pressure.",
+        "Recommendations are converted into action items with priority and operating mode.",
+        "Copilot is an action centre, while AI Assistant remains the question-and-answer interface.",
+        "Confidence score is based on project, task and budget data availability.",
+        "Current model is rule-based and will later support one-click actions and conversational execution."
+    ]
+
+    pipe_cleaning_notes = [
+        "Add conversational copilot.",
+        "Add action tracking.",
+        "Add decision support.",
+        "Add executive mode.",
+        "Add governance mode.",
+        "Add resource mode.",
+        "Add portfolio mode.",
+        "Add one-click actions."
+    ]
 
     return render_template(
         "ai_pm_copilot.html",
         total_projects=total_projects,
+        total_tasks=total_tasks,
+        completed_tasks=completed_tasks,
+        completion_rate=completion_rate,
         overdue_tasks=overdue_tasks,
         open_risks=open_risks,
         open_issues=open_issues,
         blocked_tasks=blocked_tasks,
-        recommendations=recommendations
+        pending_changes=pending_changes,
+        total_budget=total_budget,
+        total_actual=total_actual,
+        total_forecast=total_forecast,
+        budget_usage=budget_usage,
+        forecast_usage=forecast_usage,
+        recommendations=recommendations,
+        action_items=action_items,
+        urgency_score=urgency_score,
+        copilot_status=copilot_status,
+        confidence_score=confidence_score,
+        executive_summary=executive_summary,
+        model_notes=model_notes,
+        pipe_cleaning_notes=pipe_cleaning_notes
     )
 
 

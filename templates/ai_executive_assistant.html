@@ -17,15 +17,13 @@
     <div class="main-content">
 
         <div class="dashboard-header">
-
             <div>
                 <h1>AI Executive Assistant</h1>
 
                 <p class="dashboard-subtitle">
-                    Generate executive summaries, board-level recommendations and portfolio commentary.
+                    Generate executive summaries, board-level recommendations, strategic actions and portfolio commentary.
                 </p>
             </div>
-
         </div>
 
         <div class="stats-grid">
@@ -33,6 +31,11 @@
             <div class="stat-card blue-card">
                 <h3>Total Projects</h3>
                 <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
             </div>
 
             <div class="stat-card red-card">
@@ -45,9 +48,24 @@
                 <p>{{ open_issues }}</p>
             </div>
 
+            <div class="stat-card red-card">
+                <h3>Blocked Tasks</h3>
+                <p>{{ blocked_tasks }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Overdue Tasks</h3>
+                <p>{{ overdue_tasks }}</p>
+            </div>
+
             <div class="stat-card green-card">
                 <h3>Portfolio Health</h3>
                 <p>{{ health_score }}%</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Confidence</h3>
+                <p>{{ confidence_score }}%</p>
             </div>
 
         </div>
@@ -57,9 +75,7 @@
             <h3>Executive Summary</h3>
 
             <div class="smart-insight">
-
                 {{ executive_summary }}
-
             </div>
 
         </div>
@@ -69,10 +85,22 @@
             <h3>Board Recommendation</h3>
 
             <div class="smart-insight">
-
                 {{ board_recommendation }}
-
             </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Strategic Actions</h3>
+
+            {% for action in strategic_actions %}
+
+                <div class="smart-insight">
+                    {{ action }}
+                </div>
+
+            {% endfor %}
 
         </div>
 
@@ -81,6 +109,11 @@
             <h3>Portfolio Commentary</h3>
 
             <div class="budget-section">
+
+                <div class="budget-row">
+                    <span>Portfolio Status</span>
+                    <strong>{{ portfolio_status }}</strong>
+                </div>
 
                 <div class="budget-row">
                     <span>Risk Exposure</span>
@@ -93,8 +126,23 @@
                 </div>
 
                 <div class="budget-row">
-                    <span>Trend</span>
-                    <strong>{{ trend }}</strong>
+                    <span>Budget Usage</span>
+                    <strong>{{ budget_usage }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Forecast Usage</span>
+                    <strong>{{ forecast_usage }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Governance Pressure</span>
+                    <strong>{{ governance_pressure }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Delivery Pressure</span>
+                    <strong>{{ delivery_pressure }}%</strong>
                 </div>
 
                 <div class="budget-row">
@@ -123,8 +171,7 @@
                             </span>
 
                             <strong>
-                                Score:
-                                {{ item["priority_score"] }}
+                                Score: {{ item["priority_score"] }}
                             </strong>
                         </div>
 
@@ -139,6 +186,34 @@
                 </div>
 
             {% endif %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>AI Executive Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

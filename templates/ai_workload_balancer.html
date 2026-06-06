@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Workload Balancer</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,53 +15,207 @@
 
     <main class="main-content">
 
-        <h1>AI Workload Balancer</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Analyse workload pressure and identify who can take on more work.
-        </p>
+            <div>
+                <h1>AI Workload Balancer</h1>
 
-        <div class="card">
+                <p class="dashboard-subtitle">
+                    Analyse workload pressure, identify overloaded resources and recommend redistribution actions.
+                </p>
+            </div>
 
-            <h2>Workload Balance</h2>
+        </div>
 
-            <div class="table-container">
+        <div class="stats-grid">
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Team Member</th>
-                            <th>Role</th>
-                            <th>Active Tasks</th>
-                            <th>Utilisation</th>
-                            <th>Status</th>
-                            <th>AI Recommendation</th>
-                        </tr>
-                    </thead>
+            <div class="stat-card blue-card">
+                <h3>Total Resources</h3>
+                <p>{{ total_resources }}</p>
+            </div>
 
-                    <tbody>
-                        {% for item in workload_data %}
-                        <tr>
-                            <td>{{ item.name }}</td>
-                            <td>{{ item.role }}</td>
-                            <td>{{ item.active_tasks }}</td>
-                            <td>{{ item.utilisation }}%</td>
-                            <td>
-                                {% if item.workload_status == "Overloaded" %}
-                                    <span class="badge badge-red">Overloaded</span>
-                                {% elif item.workload_status == "Balanced" %}
-                                    <span class="badge badge-yellow">Balanced</span>
-                                {% else %}
-                                    <span class="badge badge-green">Available</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ item.recommendation }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="stat-card red-card">
+                <h3>Overloaded</h3>
+                <p>{{ overloaded_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Balanced</h3>
+                <p>{{ balanced_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Available</h3>
+                <p>{{ available_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Average Utilisation</h3>
+                <p>{{ average_utilisation }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Workload Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
+
+        </div>
+
+        {% if duplicate_warning %}
+
+        <div class="smart-card">
+
+            <h3>Duplicate Resource Warning</h3>
+
+            {% for duplicate in duplicate_records %}
+
+                <div class="smart-insight">
+                    {{ duplicate["member_name"] }} / {{ duplicate["member_role"] }}
+                    appears {{ duplicate["duplicate_count"] }} times.
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+        {% if workload_data %}
+
+        <div class="projects-grid">
+
+            {% for item in workload_data %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.name }}</h3>
+
+                        {% if item.workload_status == "Overloaded" %}
+                            <span class="badge badge-red">Overloaded</span>
+                        {% elif item.workload_status == "Balanced" %}
+                            <span class="badge badge-yellow">Balanced</span>
+                        {% else %}
+                            <span class="badge badge-green">Available</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="badge badge-blue">
+                        {{ item.confidence_score }}% Confidence
+                    </span>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>{{ item.role }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Active Tasks</span>
+                        <strong>{{ item.active_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Capacity Limit</span>
+                        <strong>{{ item.capacity_limit }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Utilisation</span>
+                        <strong>{{ item.utilisation }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Status</span>
+                        <strong>{{ item.workload_status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Recommended Receiver</span>
+                        <strong>{{ item.recommended_receiver }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>AI Recommendation:</strong>
+
+                    <br><br>
+
+                    {{ item.recommendation }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Balancing Reason:</strong>
+
+                    <br><br>
+
+                    {{ item.balancing_reason }}
+
+                </div>
 
             </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Team Members Found</h3>
+
+            <p>
+                Add team members before AI Workload Balancer can analyse resource pressure.
+            </p>
+
+            <a href="/team" class="btn-primary">
+                Go to Team Members
+            </a>
+
+        </div>
+
+        {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Workload Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

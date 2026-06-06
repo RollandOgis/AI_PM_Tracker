@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Resource Optimisation</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,45 +15,217 @@
 
     <main class="main-content">
 
-        <h1>AI Resource Optimisation</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Optimise resource allocation based on workload and utilisation.
-        </p>
+            <div>
+                <h1>AI Resource Optimisation</h1>
 
-        <div class="card">
+                <p class="dashboard-subtitle">
+                    Optimise resource allocation using workload, utilisation, availability and capacity signals.
+                </p>
+            </div>
 
-            <h2>Resource Recommendations</h2>
+        </div>
 
-            <div class="table-container">
+        <div class="stats-grid">
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Role</th>
-                            <th>Active Tasks</th>
-                            <th>Utilisation</th>
-                            <th>Optimisation</th>
-                            <th>Recommended Action</th>
-                        </tr>
-                    </thead>
+            <div class="stat-card blue-card">
+                <h3>Total Resources</h3>
+                <p>{{ total_resources }}</p>
+            </div>
 
-                    <tbody>
-                        {% for item in optimisation_data %}
-                        <tr>
-                            <td>{{ item.name }}</td>
-                            <td>{{ item.role }}</td>
-                            <td>{{ item.active_tasks }}</td>
-                            <td>{{ item.utilisation }}%</td>
-                            <td>{{ item.optimisation }}</td>
-                            <td>{{ item.action }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="stat-card red-card">
+                <h3>Reduce Workload</h3>
+                <p>{{ overloaded_count }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Increase Workload</h3>
+                <p>{{ available_count }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Maintain</h3>
+                <p>{{ balanced_count }}</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Average Utilisation</h3>
+                <p>{{ average_utilisation }}%</p>
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Executive Resource Optimisation Summary</h3>
+
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
+
+        </div>
+
+        {% if duplicate_warning %}
+
+        <div class="smart-card">
+
+            <h3>Duplicate Resource Warning</h3>
+
+            {% for duplicate in duplicate_records %}
+
+                <div class="smart-insight">
+                    {{ duplicate["member_name"] }} / {{ duplicate["member_role"] }}
+                    appears {{ duplicate["duplicate_count"] }} times.
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+        {% if optimisation_data %}
+
+        <div class="projects-grid">
+
+            {% for item in optimisation_data %}
+
+            <div class="project-card">
+
+                <div class="project-top">
+
+                    <div>
+                        <h3>{{ item.name }}</h3>
+
+                        {% if item.resource_status == "Overloaded" %}
+                            <span class="badge badge-red">Reduce Workload</span>
+                        {% elif item.resource_status == "Balanced" %}
+                            <span class="badge badge-yellow">Maintain</span>
+                        {% else %}
+                            <span class="badge badge-green">Increase Workload</span>
+                        {% endif %}
+                    </div>
+
+                    <span class="badge badge-blue">
+                        {{ item.confidence_score }}% Confidence
+                    </span>
+
+                </div>
+
+                <div class="budget-section">
+
+                    <div class="budget-row">
+                        <span>Role</span>
+                        <strong>{{ item.role }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Skills</span>
+                        <strong>{{ item.skills }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Availability</span>
+                        <strong>{{ item.availability_status }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Active Tasks</span>
+                        <strong>{{ item.active_tasks }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Capacity Limit</span>
+                        <strong>{{ item.capacity_limit }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Utilisation</span>
+                        <strong>{{ item.utilisation }}%</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Optimisation</span>
+                        <strong>{{ item.optimisation }}</strong>
+                    </div>
+
+                    <div class="budget-row">
+                        <span>Recommended Match</span>
+                        <strong>{{ item.recommended_match }}</strong>
+                    </div>
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Recommended Action:</strong>
+
+                    <br><br>
+
+                    {{ item.action }}
+
+                </div>
+
+                <div class="smart-insight">
+
+                    <strong>Optimisation Reason:</strong>
+
+                    <br><br>
+
+                    {{ item.optimisation_reason }}
+
+                </div>
 
             </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty-box">
+
+            <h3>No Resource Data Found</h3>
+
+            <p>
+                Add team members and assign work before AI Resource Optimisation can run.
+            </p>
+
+            <a href="/team" class="btn-primary">
+                Go to Team Members
+            </a>
+
+        </div>
+
+        {% endif %}
+
+        <div class="smart-card">
+
+            <h3>AI Resource Optimisation Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 

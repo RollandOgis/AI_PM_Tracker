@@ -11,8 +11,8 @@
 <body>
 
 <div class="layout">
-     {% include "sidebar.html" %}
 
+    {% include "sidebar.html" %}
 
     <div class="main-content">
 
@@ -20,9 +20,44 @@
 
             <div>
                 <h1>AI Assistant</h1>
+
                 <p class="dashboard-subtitle">
-                    Ask about overdue tasks, blocked work, budgets and project summaries.
+                    Ask project, risk, budget, blocker and executive questions using live portfolio context.
                 </p>
+            </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card blue-card">
+                <h3>Projects</h3>
+                <p>{{ total_projects }}</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Completion Rate</h3>
+                <p>{{ completion_rate }}%</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Overdue Tasks</h3>
+                <p>{{ overdue_tasks }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Blocked Tasks</h3>
+                <p>{{ blocked_tasks }}</p>
+            </div>
+
+            <div class="stat-card red-card">
+                <h3>Open Risks</h3>
+                <p>{{ total_risks }}</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Open Issues</h3>
+                <p>{{ total_issues }}</p>
             </div>
 
         </div>
@@ -35,12 +70,40 @@
 
                 <form method="POST" action="/ai-assistant" class="assistant-form">
 
+                    <label>Assistant Mode</label>
+
+                    <select name="mode" required>
+                        <option value="General" {% if mode == "General" %}selected{% endif %}>
+                            General PM Assistant
+                        </option>
+
+                        <option value="Executive" {% if mode == "Executive" %}selected{% endif %}>
+                            Executive Mode
+                        </option>
+
+                        <option value="Risk" {% if mode == "Risk" %}selected{% endif %}>
+                            Risk Mode
+                        </option>
+
+                        <option value="Budget" {% if mode == "Budget" %}selected{% endif %}>
+                            Budget Mode
+                        </option>
+
+                        <option value="Delivery" {% if mode == "Delivery" %}selected{% endif %}>
+                            Delivery Mode
+                        </option>
+                    </select>
+
+                    <label>Your Question</label>
+
                     <textarea
                         name="prompt"
                         rows="6"
                         placeholder="Example: Give me a summary of my project risks"
                         required
                     ></textarea>
+
+                    <br>
 
                     <button type="submit" class="btn-primary">
                         Ask AI Assistant
@@ -60,15 +123,132 @@
                         {{ response_message }}
                     </div>
 
+                    <div class="budget-section">
+
+                        <div class="budget-row">
+                            <span>Confidence Score</span>
+                            <strong>{{ confidence_score }}%</strong>
+                        </div>
+
+                        <div class="budget-row">
+                            <span>Mode</span>
+                            <strong>{{ mode }}</strong>
+                        </div>
+
+                    </div>
+
+                    <div class="smart-insight">
+
+                        <strong>Sources Used:</strong>
+
+                        <br><br>
+
+                        {{ source_summary }}
+
+                    </div>
+
                 {% else %}
 
                     <div class="smart-insight">
-                        Try asking: “Show overdue tasks”, “What is blocked?”, “Budget summary”, or “Give me a summary”.
+                        Ask a question to generate a response using your project, task, risk, issue and budget data.
                     </div>
 
                 {% endif %}
 
             </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Prompt Suggestions</h3>
+
+            <div class="projects-grid">
+
+                {% for suggestion in prompt_suggestions %}
+
+                <div class="project-card">
+
+                    <div class="smart-insight">
+                        {{ suggestion }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Recent AI Chat History</h3>
+
+            {% if chat_history %}
+
+                <div class="projects-grid">
+
+                    {% for chat in chat_history %}
+
+                    <div class="project-card">
+
+                        <div class="project-top">
+
+                            <div>
+                                <h3>{{ chat["mode"] or "General" }}</h3>
+                                <p>{{ chat["created_at"] }}</p>
+                            </div>
+
+                            <span class="badge badge-blue">
+                                {{ chat["confidence_score"] or 0 }}%
+                            </span>
+
+                        </div>
+
+                        <div class="smart-insight">
+
+                            <strong>Question:</strong>
+
+                            <br><br>
+
+                            {{ chat["prompt"] }}
+
+                        </div>
+
+                        <div class="smart-insight">
+
+                            <strong>Response:</strong>
+
+                            <br><br>
+
+                            {{ chat["response"] }}
+
+                        </div>
+
+                        <div class="smart-insight">
+
+                            <strong>Sources:</strong>
+
+                            <br><br>
+
+                            {{ chat["source_summary"] }}
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-box">
+                    No AI chat history yet.
+                </div>
+
+            {% endif %}
 
         </div>
 

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI Portfolio Health Predictor</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -14,11 +15,17 @@
 
     <main class="main-content">
 
-        <h1>AI Portfolio Health Predictor</h1>
+        <div class="dashboard-header">
 
-        <p class="page-subtitle">
-            Predict future portfolio health using delivery, risk, issue and budget indicators.
-        </p>
+            <div>
+                <h1>AI Portfolio Health Predictor</h1>
+
+                <p class="dashboard-subtitle">
+                    Predict future portfolio health using delivery, governance, budget and data-quality indicators.
+                </p>
+            </div>
+
+        </div>
 
         <div class="stats-grid">
 
@@ -42,60 +49,189 @@
                 <p>{{ open_issues }}</p>
             </div>
 
+            <div class="stat-card red-card">
+                <h3>Delivery Pressure</h3>
+                <p>{{ delivery_pressure }}%</p>
+            </div>
+
+            <div class="stat-card amber-card">
+                <h3>Governance Pressure</h3>
+                <p>{{ governance_pressure }}%</p>
+            </div>
+
+            <div class="stat-card blue-card">
+                <h3>Financial Pressure</h3>
+                <p>{{ financial_pressure }}%</p>
+            </div>
+
+            <div class="stat-card green-card">
+                <h3>Confidence</h3>
+                <p>{{ confidence_score }}%</p>
+            </div>
+
         </div>
 
-        <div class="card">
+        <div class="smart-card">
 
-            <h2>AI Prediction</h2>
+            <h3>Executive Portfolio Health Summary</h3>
 
-            <p>
-                <strong>Status:</strong>
+            <div class="smart-insight">
+                {{ executive_summary }}
+            </div>
 
-                {% if prediction == "Healthy" %}
-                    <span class="badge badge-green">Healthy</span>
-                {% elif prediction == "Watch" %}
-                    <span class="badge badge-yellow">Watch</span>
-                {% else %}
-                    <span class="badge badge-red">At Risk</span>
-                {% endif %}
-            </p>
+        </div>
 
-            <p>
+        <div class="smart-card">
+
+            <h3>AI Prediction</h3>
+
+            <div class="budget-section">
+
+                <div class="budget-row">
+                    <span>Status</span>
+                    <strong>
+                        {% if prediction == "Healthy" %}
+                            <span class="badge badge-green">Healthy</span>
+                        {% elif prediction == "Watch" %}
+                            <span class="badge badge-yellow">Watch</span>
+                        {% elif prediction == "Insufficient Data" %}
+                            <span class="badge badge-blue">Insufficient Data</span>
+                        {% else %}
+                            <span class="badge badge-red">At Risk</span>
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Data Quality</span>
+                    <strong>{{ data_quality_score }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Budget Usage</span>
+                    <strong>{{ budget_usage }}%</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Forecast Usage</span>
+                    <strong>{{ forecast_usage }}%</strong>
+                </div>
+
+            </div>
+
+            <div class="smart-insight">
+
                 <strong>Recommendation:</strong>
+
+                <br><br>
+
                 {{ recommendation }}
-            </p>
+
+            </div>
+
+            <div class="smart-insight">
+
+                <strong>Score Explanation:</strong>
+
+                <br><br>
+
+                {{ score_explanation }}
+
+            </div>
+
+            {% if data_quality_flags %}
+
+            <div class="smart-insight">
+
+                <strong>Data Quality Flags:</strong>
+
+                <br><br>
+
+                {% for flag in data_quality_flags %}
+                    {{ flag }}<br>
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
 
         </div>
 
-        <div class="table-container">
+        <div class="smart-card">
 
-            <table>
+            <h3>Portfolio Evidence</h3>
 
-                <thead>
-                    <tr>
-                        <th>Total Projects</th>
-                        <th>Total Tasks</th>
-                        <th>Completed Tasks</th>
-                        <th>Overdue Tasks</th>
-                        <th>Blocked Tasks</th>
-                        <th>Total Budget</th>
-                        <th>Total Actual</th>
-                    </tr>
-                </thead>
+            <div class="budget-section">
 
-                <tbody>
-                    <tr>
-                        <td>{{ total_projects }}</td>
-                        <td>{{ total_tasks }}</td>
-                        <td>{{ completed_tasks }}</td>
-                        <td>{{ overdue_tasks }}</td>
-                        <td>{{ blocked_tasks }}</td>
-                        <td>£{{ "{:,.0f}".format(total_budget) }}</td>
-                        <td>£{{ "{:,.0f}".format(total_actual) }}</td>
-                    </tr>
-                </tbody>
+                <div class="budget-row">
+                    <span>Total Projects</span>
+                    <strong>{{ total_projects }}</strong>
+                </div>
 
-            </table>
+                <div class="budget-row">
+                    <span>Total Tasks</span>
+                    <strong>{{ total_tasks }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Completed Tasks</span>
+                    <strong>{{ completed_tasks }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Overdue Tasks</span>
+                    <strong>{{ overdue_tasks }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Blocked Tasks</span>
+                    <strong>{{ blocked_tasks }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Total Budget</span>
+                    <strong>£{{ "{:,.0f}".format(total_budget) }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Total Actual</span>
+                    <strong>£{{ "{:,.0f}".format(total_actual) }}</strong>
+                </div>
+
+                <div class="budget-row">
+                    <span>Total Forecast</span>
+                    <strong>£{{ "{:,.0f}".format(total_forecast) }}</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>AI Portfolio Health Model Notes</h3>
+
+            {% for note in model_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="smart-card">
+
+            <h3>Pipe Cleaning Foundation</h3>
+
+            {% for note in pipe_cleaning_notes %}
+
+                <div class="smart-insight">
+                    {{ note }}
+                </div>
+
+            {% endfor %}
 
         </div>
 
